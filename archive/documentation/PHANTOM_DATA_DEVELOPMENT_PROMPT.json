@@ -1,0 +1,209 @@
+{
+  "project_overview": {
+    "name": "Get2B Project Constructor",
+    "technology_stack": ["Next.js", "React", "TypeScript", "Tailwind CSS", "Supabase"],
+    "current_phase": "Разработка системы фантомных данных для автоматического заполнения шагов",
+    "main_issue": "Фантомные данные не предлагаются автоматически при заполнении Step II"
+  },
+  "core_concepts": {
+    "phantom_data": {
+      "definition": "Реальные реквизиты поставщиков из прошлых завершенных проектов пользователя",
+      "purpose": "Автоматическое предложение данных на основе истории работы с поставщиком",
+      "key_difference": "Это НЕ выбор пользователя, а предложение системы"
+    },
+    "step_states": {
+      "empty": "Пустой шаг - серая рамка",
+      "phantom_unconfirmed": "Фантомные данные предложены, но не подтверждены - индиго рамка",
+      "phantom_confirmed": "Фантомные данные подтверждены - голубая пунктирная рамка",
+      "manual_filled": "Данные заполнены вручную - голубая пунктирная рамка"
+    }
+  },
+  "database_architecture": {
+    "key_tables": {
+      "projects": "Основная таблица проектов",
+      "project_specifications": "Спецификации товаров (содержит supplier_name)",
+      "project_requisites": "Реквизиты поставщиков (JSONB data)",
+      "project_templates": "Шаблоны проектов",
+      "catalog_user_suppliers": "Поставщики пользователя (синяя комната)",
+      "catalog_verified_suppliers": "Верифицированные поставщики (оранжевая комната)"
+    },
+    "phantom_data_flow": [
+      "Step II заполняется товарами поставщика из синей комнаты",
+      "Извлекается supplier_name из project_specifications",
+      "Находятся все проекты с этим supplier_name",
+      "Извлекаются реквизиты из project_requisites по project_id",
+      "Автоматически заполняются Steps IV и V"
+    ]
+  },
+  "current_implementation": {
+    "main_file": "app/dashboard/project-constructor/page.tsx",
+    "key_functions": {
+      "getPhantomSupplierData": {
+        "location": "lines 1111-1223",
+        "purpose": "Получение фантомных данных по supplier_name",
+        "logic": "1. Запрос project_specifications по supplier_name 2. Получение project_id 3. Запрос project_requisites"
+      },
+      "autoFillStepsFromSupplier": {
+        "location": "lines 827-972",
+        "purpose": "Автоматическое заполнение Steps IV и V",
+        "trigger": "Вызывается при заполнении Step II из шаблона"
+      }
+    },
+    "ui_components": {
+      "step_cubes": {
+        "location": "Block 1 - горизонтальная линия из 7 кубиков",
+        "visual_states": {
+          "phantom_unconfirmed": "border-indigo-300 bg-indigo-50/50 phantom-data-step",
+          "phantom_confirmed": "border-blue-500 border-dashed bg-blue-50"
+        }
+      },
+      "mini_dropdown": {
+        "button": "Другие данные",
+        "icon": "ChevronDown с анимацией поворота",
+        "options": ["Профиль", "Шаблон", "Каталог", "Эхо карточки", "Вручную", "Подтвердить"],
+        "state": "showPhantomOptions"
+      }
+    }
+  },
+  "documentation_files": {
+    "architecture": "PROJECT_CONSTRUCTOR_DATABASE_ARCHITECTURE.md",
+    "echo_cards": "ECHO_CARDS_ARCHITECTURE.md",
+    "catalog": "CATALOG_ARCHITECTURE.md",
+    "sql_analysis": "analyze-database-structure-constructor.sql"
+  },
+  "current_problems": {
+    "primary": "Фантомные данные не предлагаются автоматически",
+    "debugging_needed": [
+      "Проверить вызов getPhantomSupplierData в autoFillStepsFromSupplier",
+      "Убедиться что supplier_name корректно передается из Step II",
+      "Логировать SQL запросы и результаты",
+      "Проверить что фантомные данные сохраняются в manualData"
+    ],
+    "visual_issues": [
+      "Пунктирная рамка может появляться на фантомных данных",
+      "CSS стили могут не применяться корректно"
+    ]
+  },
+  "development_plan": {
+    "phase_1_analysis": [
+      "Изучить PROJECT_CONSTRUCTOR_DATABASE_ARCHITECTURE.md",
+      "Запустить /api/analyze-database-structure для анализа БД",
+      "Проверить реальную структуру таблиц через SQL",
+      "Добавить console.log в ключевые функции"
+    ],
+    "phase_2_debugging": [
+      "Отследить поток данных от Step II к фантомной логике",
+      "Проверить SQL запросы в getPhantomSupplierData",
+      "Убедиться что supplier_name корректно извлекается",
+      "Логировать результаты каждого этапа"
+    ],
+    "phase_3_fixing": [
+      "Исправить логику автоматического заполнения",
+      "Убедиться что фантомные данные отображаются в Block 2",
+      "Проверить работу мини-кнопки 'Другие данные'",
+      "Исправить визуальные состояния"
+    ],
+    "phase_4_testing": [
+      "Протестировать все сценарии заполнения",
+      "Проверить различные источники данных",
+      "Убедиться в корректной работе UI",
+      "Обновить документацию при необходимости"
+    ]
+  },
+  "testing_scenarios": {
+    "scenario_1_phantom_trigger": {
+      "steps": [
+        "Заполнить Step II товарами поставщика из синей комнаты (через шаблон)",
+        "Проверить что Steps IV и V автоматически заполняются"
+      ],
+      "expected_result": "Кубики Steps IV и V становятся индиго с сплошной рамкой",
+      "debug_points": [
+        "console.log в autoFillStepsFromSupplier",
+        "console.log в getPhantomSupplierData",
+        "проверить manualData[4] и manualData[5]"
+      ]
+    },
+    "scenario_2_ui_interaction": {
+      "steps": [
+        "Навести на Step IV или V с фантомными данными",
+        "Проверить появление мини-кнопки 'Другие данные'",
+        "Кликнуть на кнопку и проверить выпадающий список"
+      ],
+      "expected_result": "Выпадающий список с 6 опциями",
+      "debug_points": [
+        "проверить состояние showPhantomOptions",
+        "проверить условную отрисовку кнопки"
+      ]
+    },
+    "scenario_3_phantom_confirmation": {
+      "steps": [
+        "Нажать 'Подтвердить' в выпадающем списке",
+        "Проверить изменение визуального состояния"
+      ],
+      "expected_result": "Кубики становятся голубыми с пунктирной рамкой",
+      "debug_points": [
+        "проверить stepConfigs[4] и stepConfigs[5]",
+        "проверить изменение CSS классов"
+      ]
+    }
+  },
+  "code_sections": {
+    "phantom_data_function": {
+      "file": "app/dashboard/project-constructor/page.tsx",
+      "lines": "1111-1223",
+      "function": "getPhantomSupplierData",
+      "key_logic": "SQL запросы для получения фантомных данных"
+    },
+    "auto_fill_logic": {
+      "file": "app/dashboard/project-constructor/page.tsx", 
+      "lines": "827-972",
+      "function": "autoFillStepsFromSupplier",
+      "key_logic": "Автоматическое заполнение Steps IV и V"
+    },
+    "ui_rendering": {
+      "file": "app/dashboard/project-constructor/page.tsx",
+      "lines": "1750-1850",
+      "component": "Step cubes rendering",
+      "key_logic": "Условная отрисовка визуальных состояний"
+    },
+    "mini_dropdown": {
+      "file": "app/dashboard/project-constructor/page.tsx",
+      "lines": "1890-2020",
+      "component": "Mini button and dropdown",
+      "key_logic": "Выпадающий список опций"
+    },
+    "css_styles": {
+      "file": "app/dashboard/project-constructor/page.tsx",
+      "lines": "630-680",
+      "component": "Phantom data CSS injection",
+      "key_logic": "Принудительное отключение пунктира"
+    }
+  },
+  "important_notes": {
+    "phantom_vs_choice": "Фантомные данные - это предложение системы, НЕ выбор пользователя. Пользователь может подтвердить, заменить или игнорировать их.",
+    "visual_feedback": "Пользователь должен четко понимать разницу между предложенными (индиго) и выбранными (голубой пунктир) данными.",
+    "database_accuracy": "Всегда проверяйте реальную структуру БД через SQL запросы. Не полагайтесь на предположения или устаревшую документацию.",
+    "state_management": "Фантомные данные хранятся в manualData с флагом phantom_data: true. Закрепленные данные - в stepConfigs.",
+    "css_priority": "Используйте !important для CSS стилей фантомных данных, чтобы переопределить базовые стили."
+  },
+  "next_developer_instructions": {
+    "start_here": [
+      "1. Изучите PROJECT_CONSTRUCTOR_DATABASE_ARCHITECTURE.md",
+      "2. Запустите /api/analyze-database-structure для анализа БД",
+      "3. Добавьте console.log в getPhantomSupplierData и autoFillStepsFromSupplier",
+      "4. Протестируйте сценарий заполнения Step II из шаблона"
+    ],
+    "debugging_approach": [
+      "Отслеживайте поток данных от Step II к фантомной логике",
+      "Проверяйте SQL запросы и их результаты",
+      "Логируйте состояние manualData и stepConfigs",
+      "Проверяйте визуальные состояния кубиков"
+    ],
+    "success_criteria": [
+      "Фантомные данные автоматически предлагаются при заполнении Step II",
+      "Визуальные состояния корректно отображаются",
+      "Мини-кнопка 'Другие данные' работает правильно",
+      "Пользователь может подтвердить или заменить фантомные данные"
+    ]
+  }
+} 

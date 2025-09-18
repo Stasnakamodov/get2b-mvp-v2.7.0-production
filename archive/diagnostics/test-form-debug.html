@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Диагностика загрузки файлов</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { padding: 8px; margin: 5px 0; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Диагностика загрузки файлов аккредитации</h1>
+    
+    <form id="debugForm">
+        <div class="form-group">
+            <label>Товар 1 - Изображение:</label>
+            <input type="file" name="product_0_image_0" accept="image/*" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Товар 1 - Сертификат:</label>
+            <input type="file" name="product_0_cert_0" accept=".pdf,.doc,.docx,.jpg,.png" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Юридический документ:</label>
+            <input type="file" name="legal_doc_0" accept=".pdf,.doc,.docx,.jpg,.png" required>
+            <input type="hidden" name="legal_doc_0_type" value="business_license">
+            <input type="hidden" name="legal_doc_0_name" value="test_license.pdf">
+        </div>
+        
+        <button type="submit">Отправить и проверить</button>
+    </form>
+    
+    <div id="result" class="result"></div>
+    
+    <script>
+        document.getElementById('debugForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Отправляем запрос...</p>';
+            
+            const formData = new FormData();
+            
+            // Добавляем базовые данные
+            formData.append('supplier_id', 'test-debug-' + Date.now());
+            formData.append('supplier_type', 'profile');
+            formData.append('products', JSON.stringify([{
+                name: 'Тестовый товар',
+                description: 'Описание товара',
+                category: 'Тестовая категория',
+                price: '1000',
+                currency: 'RUB'
+            }]));
+            formData.append('legal_confirmation', JSON.stringify({
+                isLegalEntity: true,
+                hasRightToRepresent: true,
+                confirmAccuracy: true
+            }));
+            
+            // Добавляем файлы
+            const productImage = document.querySelector('input[name="product_0_image_0"]').files[0];
+            const productCert = document.querySelector('input[name="product_0_cert_0"]').files[0];
+            const legalDoc = document.querySelector('input[name="legal_doc_0"]').files[0];
+            
+            if (productImage) {
+                formData.append('product_0_image_0', productImage);
+                console.log('Добавлен файл товара:', productImage.name, productImage.size);
+            }
+            
+            if (productCert) {
+                formData.append('product_0_cert_0', productCert);
+                console.log('Добавлен сертификат:', productCert.name, productCert.size);
+            }
+            
+            if (legalDoc) {
+                formData.append('legal_doc_0', legalDoc);
+                formData.append('legal_doc_0_type', 'business_license');
+                formData.append('legal_doc_0_name', 'test_license.pdf');
+                console.log('Добавлен юр. документ:', legalDoc.name, legalDoc.size);
+            }
+            
+            // Логируем содержимое FormData
+            console.log('=== СОДЕРЖИМОЕ FORMDATA ===');
+            for (const [key, value] of formData.entries()) {
+                console.log(`${key}: ${value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value}`);
+            }
+            
+            try {
+                const response = await fetch('/api/test-accreditation-form', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Запрос успешно отправлен</h3>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Ошибка при отправке</h3>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Ошибка сети</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Catalog Add</title>
+</head>
+<body>
+    <h1>Test Catalog Add Function</h1>
+    <button onclick="testWithSupplier()">Test With Supplier ID</button>
+    <button onclick="testWithoutSupplier()">Test Without Supplier ID</button>
+    
+    <div id="output"></div>
+
+    <script>
+        // Симуляция товара с supplier_id
+        function testWithSupplier() {
+            const products = [{
+                id: 'test-123',
+                name: 'Тестовый товар',
+                description: 'Описание',
+                price: '1000',
+                currency: 'RUB',
+                supplier_id: 'f98c33cc-cfce-4bb4-a959-79cd38bd382d',
+                supplier_name: 'ДомашнийУют'
+            }];
+            
+            console.log('🔥 Тестирование с supplier_id:', products[0].supplier_id);
+            document.getElementById('output').innerHTML = `
+                <h2>С supplier_id:</h2>
+                <pre>${JSON.stringify(products[0], null, 2)}</pre>
+                <p>supplier_id есть? ${products[0]?.supplier_id ? 'ДА ✅' : 'НЕТ ❌'}</p>
+            `;
+        }
+        
+        // Симуляция товара без supplier_id
+        function testWithoutSupplier() {
+            const products = [{
+                id: 'test-456',
+                name: 'Тестовый товар 2',
+                description: 'Описание 2',
+                price: '2000',
+                currency: 'RUB',
+                supplier_name: 'МедТехника'
+            }];
+            
+            console.log('🔥 Тестирование БЕЗ supplier_id');
+            document.getElementById('output').innerHTML = `
+                <h2>БЕЗ supplier_id:</h2>
+                <pre>${JSON.stringify(products[0], null, 2)}</pre>
+                <p>supplier_id есть? ${products[0]?.supplier_id ? 'ДА ✅' : 'НЕТ ❌'}</p>
+            `;
+        }
+    </script>
+</body>
+</html>

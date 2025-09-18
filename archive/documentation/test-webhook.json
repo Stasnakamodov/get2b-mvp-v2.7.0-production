@@ -1,0 +1,12 @@
+{
+  "type": "lead",
+  "data": {
+    "name": "Тест Тестович",
+    "email": "test@get2b.com",
+    "phone": "+7-999-123-45-67",
+    "company": "ООО Тест",
+    "message": "Хочу попробовать Get2B для импорта из Китая",
+    "source": "website"
+  },
+  "timestamp": "2025-01-23T18:05:00.000Z"
+} 

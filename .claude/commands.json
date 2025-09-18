@@ -1,0 +1,51 @@
+{
+  "1": {
+    "command": "@architect",
+    "description": "Активировать Агента #1: Архитектурный Эксперт для унификации Linear Flow и Atomic Constructor",
+    "agent_role": "atomic-constructor-architect",
+    "specialization": "Архитектурная унификация, рефакторинг, API harmonization",
+    "activation_phrases": ["архитектура конструктора", "унификация linear и atomic", "рефакторинг page.tsx", "api harmonization"]
+  },
+  "2": {
+    "command": "@integrator", 
+    "description": "Активировать Агента #2: Интеграционный Специалист для каталога, профилей, шаблонов, OCR",
+    "agent_role": "atomic-constructor-integrator",
+    "specialization": "Интеграции с CatalogModal, ProfileSystem, TemplateSystem, OCR, Telegram",
+    "activation_phrases": ["интеграция каталога", "профили в конструкторе", "шаблоны atomic", "ocr интеграция", "telegram atomic"]
+  },
+  "3": {
+    "command": "@designer",
+    "description": "Активировать Агента #3: UI/UX Гармонизатор для унификации интерфейса",
+    "agent_role": "atomic-constructor-designer", 
+    "specialization": "UI унификация, design patterns, mobile optimization, form validation",
+    "activation_phrases": ["ui унификация", "дизайн конструктора", "мобильная версия", "form patterns"]
+  },
+  "4": {
+    "command": "@optimizer",
+    "description": "Активировать Агента #4: Performance Оптимизатор для производительности и bundle size",
+    "agent_role": "atomic-constructor-optimizer",
+    "specialization": "Code splitting, database optimization, React.memo, bundle analysis",
+    "activation_phrases": ["оптимизация конструктора", "производительность atomic", "bundle size", "database performance"]
+  },
+  "5": {
+    "command": "@tester",
+    "description": "Активировать Агента #5: Тестирование и Качество для тестирования и безопасности",
+    "agent_role": "atomic-constructor-tester",
+    "specialization": "Unit/Integration/E2E тесты, type safety, security audit",
+    "activation_phrases": ["тестирование конструктора", "безопасность atomic", "типизация atomic", "e2e tests"]
+  },
+  "6": {
+    "command": "@atomic-team",
+    "description": "Активировать всю команду агентов атомарного конструктора",
+    "agent_role": "atomic-constructor-full-team",
+    "specialization": "Комплексное решение всех проблем атомарного конструктора",
+    "activation_phrases": ["команда конструктора", "все агенты atomic", "полное решение конструктора"]
+  },
+  "7": {
+    "command": "@atomic-crisis",
+    "description": "Экстренная активация всех агентов для критических проблем",
+    "agent_role": "atomic-constructor-crisis-team",
+    "specialization": "Экстренное реагирование на критические проблемы атомарного конструктора", 
+    "activation_phrases": ["экстренно конструктор", "критическая проблема atomic", "срочно исправить конструктор"]
+  }
+}

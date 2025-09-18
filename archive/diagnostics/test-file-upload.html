@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест загрузки файлов аккредитации</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { padding: 8px; margin: 5px 0; width: 300px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+        .debug { background: #f5f5f5; padding: 10px; margin: 10px 0; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Тест загрузки файлов аккредитации</h1>
+    
+    <form id="testForm">
+        <div class="form-group">
+            <label>Название поставщика:</label>
+            <input type="text" name="supplier_name" value="Тестовый поставщик" required>
+        </div>
+
+        <div class="form-group">
+            <label>Название товара:</label>
+            <input type="text" name="product_name" value="Тестовый товар" required>
+        </div>
+
+        <div class="form-group">
+            <label>Изображение товара:</label>
+            <input type="file" name="product_image" accept="image/*" required>
+        </div>
+
+        <div class="form-group">
+            <label>Сертификат товара:</label>
+            <input type="file" name="product_certificate" accept=".pdf,.doc,.docx,.jpg,.png" required>
+        </div>
+
+        <div class="form-group">
+            <label>Юридический документ:</label>
+            <input type="file" name="legal_document" accept=".pdf,.doc,.docx,.jpg,.png" required>
+            <input type="hidden" name="legal_doc_type" value="business_license">
+            <input type="hidden" name="legal_doc_name" value="test_license.pdf">
+        </div>
+
+        <button type="submit">Отправить заявку</button>
+    </form>
+
+    <div id="result" class="result"></div>
+
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Отправляем заявку...</p>';
+
+            const formData = new FormData();
+
+            // Добавляем базовые данные
+            formData.append('supplier_id', 'test-' + Date.now());
+            formData.append('supplier_type', 'profile');
+            formData.append('supplier_name', document.querySelector('input[name="supplier_name"]').value);
+            
+            // Добавляем товар
+            const product = {
+                name: document.querySelector('input[name="product_name"]').value,
+                description: 'Описание тестового товара',
+                category: 'Тестовая категория',
+                price: '1000',
+                currency: 'RUB'
+            };
+            formData.append('products', JSON.stringify([product]));
+
+            // Добавляем юридическое подтверждение
+            const legalConfirmation = {
+                isLegalEntity: true,
+                hasRightToRepresent: true,
+                confirmAccuracy: true
+            };
+            formData.append('legal_confirmation', JSON.stringify(legalConfirmation));
+
+            // Добавляем файлы
+            const productImage = document.querySelector('input[name="product_image"]').files[0];
+            const productCert = document.querySelector('input[name="product_certificate"]').files[0];
+            const legalDoc = document.querySelector('input[name="legal_document"]').files[0];
+
+            if (productImage) {
+                formData.append('product_0_image_0', productImage);
+                console.log('Добавлен файл товара:', productImage.name, productImage.size);
+            }
+
+            if (productCert) {
+                formData.append('product_0_cert_0', productCert);
+                console.log('Добавлен сертификат:', productCert.name, productCert.size);
+            }
+
+            if (legalDoc) {
+                formData.append('legal_doc_0', legalDoc);
+                formData.append('legal_doc_0_type', 'business_license');
+                formData.append('legal_doc_0_name', 'test_license.pdf');
+                console.log('Добавлен юр. документ:', legalDoc.name, legalDoc.size);
+            }
+
+            // Логируем содержимое FormData
+            console.log('=== СОДЕРЖИМОЕ FORMDATA ===');
+            for (const [key, value] of formData.entries()) {
+                console.log(`${key}: ${value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value}`);
+            }
+
+            try {
+                console.log('Отправляем запрос на /api/catalog/submit-accreditation...');
+                
+                const response = await fetch('/api/catalog/submit-accreditation', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('Получен ответ:', response.status, response.statusText);
+
+                const result = await response.json();
+                console.log('Результат:', result);
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Заявка успешно отправлена!</h3>
+                            <div class="debug">
+                                <strong>ID заявки:</strong> ${result.application_id}<br>
+                                <strong>Статус:</strong> ${result.status}<br>
+                                <strong>Товаров:</strong> ${result.products_count}<br>
+                                <strong>Изображений:</strong> ${result.images_count}<br>
+                                <strong>Сертификатов:</strong> ${result.certificates_count}<br>
+                                <strong>Документов:</strong> ${result.legal_documents_count}
+                            </div>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Ошибка при отправке заявки</h3>
+                            <div class="debug">
+                                <strong>Статус:</strong> ${response.status}<br>
+                                <strong>Статус текст:</strong> ${response.statusText}
+                            </div>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Ошибка сети</h3>
+                        <p>${error.message}</p>
+                        <div class="debug">
+                            <strong>Тип ошибки:</strong> ${error.name}<br>
+                            <strong>Сообщение:</strong> ${error.message}
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html> 
