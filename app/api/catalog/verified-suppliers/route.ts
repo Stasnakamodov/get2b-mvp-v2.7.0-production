@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 // GET: Получение аккредитованных поставщиков Get2B (оранжевая комната)
 export async function GET(request: NextRequest) {
   try {
+    console.log("🚀 [API] Получение аккредитованных поставщиков");
+    const supabase = await getSupabaseClient();
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const category = searchParams.get("category");
@@ -34,15 +37,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ supplier: data });
     }
 
-    // Иначе возвращаем список поставщиков
+    // Иначе возвращаем список поставщиков БЕЗ продуктов для ускорения
     let query = supabase
       .from("catalog_verified_suppliers")
-      .select(`
-        *,
-        catalog_verified_products (
-          id, name, price, currency, in_stock, min_order, images
-        )
-      `)
+      .select("*")
       .eq("is_active", true)
       .order("is_featured", { ascending: false })
       .order("public_rating", { ascending: false })
@@ -73,9 +71,9 @@ export async function GET(request: NextRequest) {
     }
 
     console.log("✅ [API] Аккредитованные поставщики загружены:", data?.length);
-    return NextResponse.json({ 
+    return NextResponse.json({
       suppliers: data,
-      total: data?.length || 0 
+      total: data?.length || 0
     });
 
   } catch (error) {
@@ -87,8 +85,9 @@ export async function GET(request: NextRequest) {
 // POST: Добавление нового аккредитованного поставщика (только для менеджеров Get2B)
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await getSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -102,8 +101,8 @@ export async function POST(request: NextRequest) {
     const requiredFields = ["name", "company_name", "category", "country"];
     for (const field of requiredFields) {
       if (!supplierData[field]) {
-        return NextResponse.json({ 
-          error: `Поле ${field} обязательно` 
+        return NextResponse.json({
+          error: `Поле ${field} обязательно`
         }, { status: 400 });
       }
     }
@@ -138,17 +137,18 @@ export async function POST(request: NextRequest) {
 // PATCH: Обновление аккредитованного поставщика (только для менеджеров)
 export async function PATCH(request: NextRequest) {
   try {
+    const supabase = await getSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id, ...updateData } = await request.json();
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        error: "Поле id обязательно для обновления" 
+      return NextResponse.json({
+        error: "Поле id обязательно для обновления"
       }, { status: 400 });
     }
 
@@ -174,4 +174,4 @@ export async function PATCH(request: NextRequest) {
     console.error("❌ [API] Критическая ошибка:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

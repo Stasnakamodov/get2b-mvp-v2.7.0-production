@@ -489,12 +489,14 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   })
   const [currentImportData, setCurrentImportData] = useState<any>(null)
 
-  // Получение токена авторизации
+  // Функция получения токена авторизации
+  const getAuthToken = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    setAuthToken(session?.access_token || null)
+  }
+
+  // Получение токена при открытии
   useEffect(() => {
-    const getAuthToken = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setAuthToken(session?.access_token || null)
-    }
     if (open) {
       getAuthToken()
     }
@@ -571,6 +573,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
 
   // Загрузка аккредитованных поставщиков Get2B
   const loadVerifiedSuppliers = async () => {
+    console.log('🚀🚀🚀 [CATALOG MODAL] *** ВЫЗОВ loadVerifiedSuppliers() ***')
     setLoadingVerified(true)
     try {
       const response = await fetch('/api/catalog/verified-suppliers')
@@ -578,8 +581,11 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       
       if (data.suppliers) {
         console.log('✅ [CATALOG MODAL] Загружено аккредитованных поставщиков Get2B:', data.suppliers.length)
+        console.log('📊 [CATALOG MODAL] Данные поставщиков:', data.suppliers.slice(0, 2).map(s => s.name))
         setVerifiedSuppliers(data.suppliers)
+        console.log('🔄 [CATALOG MODAL] Состояние verifiedSuppliers обновлено, длина:', data.suppliers.length)
       } else {
+        console.log('❌ [CATALOG MODAL] Нет данных поставщиков в ответе API')
         setVerifiedSuppliers([])
       }
     } catch (error) {
@@ -594,7 +600,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   const loadCategoryStats = async () => {
     try {
       setLoadingStats(true)
-      console.log('📊 [CatalogModal] Загружаем статистику категорий')
+      console.log('📊📊📊 [CatalogModal] *** ВЫЗОВ loadCategoryStats() ***')
 
       const response = await fetch(`/api/catalog/category-stats?t=${Date.now()}`)
       const data = await response.json()
@@ -664,21 +670,52 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
     }
   }
 
-  // Загружаем данные при открытии модального окна
+  // Загружаем только минимальные данные при открытии модального окна
   useEffect(() => {
+    console.log('🔄🔄🔄 [CatalogModal] *** useEffect [open] срабатывает, open =', open)
     if (open) {
-      loadPersonalSuppliers()
-      loadEchoCards()
-      loadVerifiedSuppliers()
+      console.log('🔄🔄🔄 [CatalogModal] *** Модальное окно открыто, загружаем данные ***')
+      getAuthToken()
+      // Загружаем статистику категорий для режима "По категориям"
       loadCategoryStats()
+      // Не грузим все сразу - будем грузить по требованию при переключении режимов
     }
   }, [open])
 
-  // Сброс фильтров при смене режима
+  // Сброс фильтров при смене режима + ленивая загрузка данных
   useEffect(() => {
     setCategoryFilter('all')
     setSortBy('default')
-  }, [activeMode])
+
+    // Загружаем данные только для активного режима
+    if (open) {
+      switch (activeMode) {
+        case 'personal':
+          if (personalSuppliers.length === 0 && !loadingPersonal) {
+            console.log("🔄 [CATALOG MODAL] Загружаем персональных поставщиков по требованию")
+            loadPersonalSuppliers()
+          }
+          break
+        case 'echo':
+          if (echoCards.length === 0 && !loadingEcho) {
+            console.log("🔄 [CATALOG MODAL] Загружаем эхо карточки по требованию")
+            loadEchoCards()
+          }
+          break
+        case 'verified':
+          console.log("🔍 [CATALOG MODAL] Проверка verified:", {
+            suppliersLength: verifiedSuppliers.length,
+            loadingVerified,
+            activeMode
+          })
+          if (verifiedSuppliers.length === 0 && !loadingVerified) {
+            console.log("🔄 [CATALOG MODAL] Загружаем аккредитованных поставщиков по требованию")
+            loadVerifiedSuppliers()
+          }
+          break
+      }
+    }
+  }, [activeMode, open])
 
   // Получение уникальных категорий для текущего режима
   const getUniqueCategories = () => {
@@ -844,12 +881,29 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       supplier.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       supplier.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       supplier.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    
+
     // Фильтр по категории
     const matchesCategory = categoryFilter === 'all' || supplier.category === categoryFilter
-    
+
     return matchesSearch && matchesCategory
   })
+
+  // Debug для фильтрации verified suppliers
+  if (activeMode === 'verified' && verifiedSuppliers.length > 0) {
+    console.log('🔍 [FILTER DEBUG] verifiedSuppliers:', verifiedSuppliers.length, 'filteredVerifiedSuppliers:', filteredVerifiedSuppliers.length)
+    console.log('🔍 [FILTER DEBUG] searchQuery:', searchQuery, 'categoryFilter:', categoryFilter)
+    if (filteredVerifiedSuppliers.length === 0 && verifiedSuppliers.length > 0) {
+      console.log('❌ [FILTER DEBUG] ВСЕ ПОСТАВЩИКИ ОТФИЛЬТРОВАНЫ!')
+      verifiedSuppliers.slice(0, 2).forEach(s => {
+        const matchesSearch = s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter
+        console.log(`🔍 [FILTER DEBUG] ${s.name}: matchesSearch=${matchesSearch}, matchesCategory=${matchesCategory}, category="${s.category}"`)
+      })
+    }
+  }
 
   // Обработка добавления товара в проект
   const handleAddProduct = (product: Product) => {
@@ -1204,7 +1258,10 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                   📋 Ваши поставщики ({filteredPersonalSuppliers.length})
                 </button>
                 <button
-                  onClick={() => setActiveMode('verified')}
+                  onClick={() => {
+                    console.log('🧡🧡🧡 [CATALOG MODAL] *** КЛИК ПО ОРАНЖЕВОЙ КНОПКЕ ***')
+                    setActiveMode('verified')
+                  }}
                   className={`px-4 py-2 text-sm font-medium border-l-2 border-black dark:border-gray-600 transition-all duration-300 ${
                     activeMode === 'verified'
                       ? 'bg-orange-600 text-white'
