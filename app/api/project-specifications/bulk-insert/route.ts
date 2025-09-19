@@ -4,20 +4,29 @@ import { supabase } from '@/lib/supabaseClient';
 export async function POST(request: NextRequest) {
   try {
     const { projectId, items, role } = await request.json();
-    
+
     console.log('[bulk-insert] Получен запрос:', { projectId, itemsCount: items?.length, role });
-    
+
     if (!projectId) {
       return NextResponse.json({ error: 'projectId обязателен' }, { status: 400 });
     }
-    
+
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'items должен быть непустым массивом' }, { status: 400 });
     }
-    
-    // Получаем пользователя
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    // Получаем токен авторизации из заголовка
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Отсутствует токен авторизации' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7); // Убираем "Bearer "
+
+    // Получаем пользователя через токен
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
+      console.error('[bulk-insert] Ошибка авторизации:', userError);
       return NextResponse.json({ error: 'Ошибка авторизации' }, { status: 401 });
     }
     
@@ -26,13 +35,12 @@ export async function POST(request: NextRequest) {
       project_id: projectId,
       role: role || 'client',
       user_id: user.id,
-      item_name: item.name || '',
-      item_code: item.code || '',
+      item_name: item.name || item.product_name || '',
+      item_code: item.code || item.sku || '',
       quantity: item.quantity || 1,
       unit: item.unit || 'шт',
       price: item.pricePerUnit || item.price || 0,
-      total: item.totalPrice || item.total || 0,
-      description: item.description || '',
+      total: item.totalPrice || item.total_price || item.total || 0,
       image_url: item.image_url || '',
       supplier_name: item.supplier_name || '',
       currency: item.currency || 'USD',

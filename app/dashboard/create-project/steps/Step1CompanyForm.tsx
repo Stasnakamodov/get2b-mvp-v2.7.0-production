@@ -182,6 +182,60 @@ export default function Step1CompanyForm(props: {
           console.error("[Step1] Ошибка update проекта:", updateError);
           return;
         }
+
+        // --- СОХРАНЕНИЕ ТОВАРОВ ИЗ КОРЗИНЫ (если есть) ---
+        // Получаем товары из контекста или localStorage
+        let itemsToSave = specificationItems;
+        if ((!itemsToSave || itemsToSave.length === 0) && typeof window !== 'undefined') {
+          const stored = localStorage.getItem('cart_items_temp');
+          if (stored) {
+            itemsToSave = JSON.parse(stored);
+            console.log("[Step1] Товары восстановлены из localStorage:", itemsToSave);
+          }
+        }
+
+        // Если есть товары (из корзины), сохраняем их в БД
+        if (itemsToSave && itemsToSave.length > 0) {
+          console.log("[Step1] Сохраняем товары из корзины в БД для проекта:", currentProjectId);
+          console.log("[Step1] Товары для сохранения:", itemsToSave);
+          try {
+            // Получаем токен авторизации
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+              console.error("[Step1] Нет активной сессии для сохранения товаров");
+              return;
+            }
+
+            const response = await fetch('/api/project-specifications/bulk-insert', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({
+                projectId: currentProjectId,
+                items: itemsToSave,
+                role: 'client'
+              }),
+            });
+
+            if (!response.ok) {
+              console.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
+              const errorText = await response.text();
+              console.error("[Step1] Детали ошибки:", errorText);
+              return;
+            }
+
+            const result = await response.json();
+            console.log("[Step1] Товары успешно сохранены в БД:", result);
+
+            // Очищаем localStorage после успешного сохранения
+            localStorage.removeItem('cart_items_temp');
+          } catch (saveError) {
+            console.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
+          }
+        }
+
         // --- SAVE SPECIFICATION (если нужно) ---
         let saveSpecResult = true;
         try {
@@ -311,21 +365,40 @@ export default function Step1CompanyForm(props: {
         // Если есть товары (из корзины), сохраняем их в БД
         if (itemsToSave && itemsToSave.length > 0) {
           console.log("[Step1] Сохраняем товары из корзины в БД для проекта:", newProjectId);
-          console.log("[Step1] Товары для сохранения:", specificationItems);
+          console.log("[Step1] Товары для сохранения:", itemsToSave);
           try {
+            // Получаем токен авторизации
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+              console.error("[Step1] Нет активной сессии для сохранения товаров");
+              return;
+            }
+
             const response = await fetch('/api/project-specifications/bulk-insert', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
               },
               body: JSON.stringify({
                 projectId: newProjectId,
-                items: specificationItems,
+                items: itemsToSave,
                 role: 'client'
               }),
             });
+
+            if (!response.ok) {
+              console.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
+              const errorText = await response.text();
+              console.error("[Step1] Детали ошибки:", errorText);
+              return;
+            }
+
             const result = await response.json();
             console.log("[Step1] Товары успешно сохранены в БД:", result);
+
+            // Очищаем localStorage после успешного сохранения
+            localStorage.removeItem('cart_items_temp');
           } catch (saveError) {
             console.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
           }

@@ -162,10 +162,11 @@ const steps = [
 ]
 
 function CreateProjectPageContent() {
-  const { currentStep, setCurrentStep, maxStepReached, setMaxStepReached, setCompanyData, setProjectName, setSpecificationItems, projectId, setSupplierData } = useCreateProjectContext();
+  const { currentStep, setCurrentStep, maxStepReached, setMaxStepReached, setCompanyData, setProjectName, setSpecificationItems, projectId, setSupplierData, hasCartItems } = useCreateProjectContext();
   const searchParams = useSearchParams();
   const router = useRouter();
   const templateId = searchParams.get("templateId");
+  const fromCart = searchParams.get("from_cart");
   const defaultCompanyData = useMemo(() => ({
     name: "",
     legalName: "",
@@ -182,14 +183,27 @@ function CreateProjectPageContent() {
     website: "",
   }), []);
   useEffect(() => {
+    // ❌ НЕ сбрасываем данные если пользователь пришел из корзины каталога
+    if (fromCart === 'true') {
+      console.log("[CreateProjectPageContent] Пропускаем сброс данных - пользователь пришел из корзины");
+      return;
+    }
+
+    // ❌ НЕ сбрасываем данные если в контексте есть товары из корзины
+    if (hasCartItems) {
+      console.log("[CreateProjectPageContent] Пропускаем сброс данных - в контексте есть товары из корзины");
+      return;
+    }
+
     // Если нет templateId и projectId — сбрасываем всё в дефолт
     if (!projectId && !templateId) {
+      console.log("[CreateProjectPageContent] Сбрасываем данные в дефолт");
       setCompanyData(defaultCompanyData);
       setProjectName("");
       setSpecificationItems([]);
       setMaxStepReached(1); // Сброс maxStepReached только при новом проекте/шаблоне
     }
-  }, [projectId, templateId, setCompanyData, setProjectName, setSpecificationItems, setMaxStepReached, defaultCompanyData]);
+  }, [projectId, templateId, fromCart, hasCartItems, setCompanyData, setProjectName, setSpecificationItems, setMaxStepReached, defaultCompanyData]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -940,6 +954,7 @@ function CartLoader() {
   const { setSpecificationItems, setCurrentStep, setMaxStepReached, setPaymentMethod, setBankDetails, setHasCartItems, setSupplierData } = useCreateProjectContext();
   const [isCartLoading, setIsCartLoading] = useState(false);
   const [cartProcessed, setCartProcessed] = useState(false);
+  const [lastProcessedCartId, setLastProcessedCartId] = useState<string | null>(null);
   // Используем импортированный supabase
 
   useEffect(() => {
@@ -951,8 +966,21 @@ function CartLoader() {
     });
     
     // Проверяем что пришли из корзины
-    if (fromCart !== 'true' || cartProcessed) {
-      console.log("[CartLoader] Пропускаем загрузку", { fromCart, cartProcessed });
+    if (fromCart !== 'true') {
+      console.log("[CartLoader] Пропускаем загрузку - не из корзины", { fromCart });
+      return;
+    }
+
+    // Если это новый cartId, сбрасываем флаг обработки
+    if (cartId && cartId !== lastProcessedCartId) {
+      console.log("[CartLoader] Новый cartId, сбрасываем обработку", { cartId, lastProcessedCartId });
+      setCartProcessed(false);
+      setLastProcessedCartId(cartId);
+    }
+
+    // Если корзина уже обработана для ЭТОГО cartId, не обрабатываем повторно
+    if (cartProcessed && cartId === lastProcessedCartId) {
+      console.log("[CartLoader] Корзина уже обработана для этого ID", { cartId, lastProcessedCartId });
       return;
     }
 
@@ -969,7 +997,9 @@ function CartLoader() {
       try {
         let cartItems = [];
         let supplierData = null;
-        
+        let hasPaymentData = false;
+        let hasBankData = false;
+
         // Новый способ: загрузка из БД по cart_id
         if (cartId) {
           console.log("[CartLoader] Загружаем корзину из БД по ID:", cartId);
@@ -1001,15 +1031,21 @@ function CartLoader() {
               // Если способ оплаты один - автовыбираем
               console.log("[CartLoader] Автовыбор единственного способа оплаты:", supplierData.payment_methods[0]);
               setPaymentMethod?.(supplierData.payment_methods[0]);
+              hasPaymentData = true;
             } else if (supplierData.payment_methods?.length > 1) {
               // Если способов несколько - НЕ автовыбираем, пусть пользователь выбирает
               console.log("[CartLoader] Найдено несколько способов оплаты:", supplierData.payment_methods, "- пользователь выберет сам");
+              hasPaymentData = true;
             }
-            
+
             // 🎯 АВТОЗАПОЛНЕНИЕ ШАГА 5: Реквизиты поставщика
-            if (supplierData.bank_requisites) {
-              console.log("[CartLoader] Автозаполнение реквизитов:", supplierData.bank_requisites);
-              setBankDetails?.(supplierData.bank_requisites);
+            if (supplierData.bank_accounts?.length > 0 || supplierData.crypto_wallets?.length > 0 || supplierData.p2p_cards?.length > 0) {
+              console.log("[CartLoader] Автозаполнение реквизитов поставщика");
+              // Устанавливаем банковские реквизиты если есть
+              if (supplierData.bank_accounts?.length > 0) {
+                setBankDetails?.(supplierData.bank_accounts[0]);
+              }
+              hasBankData = true;
             }
             
             // Помечаем корзину как конвертированную
@@ -1050,19 +1086,35 @@ function CartLoader() {
           // Устанавливаем товары в контекст
           setSpecificationItems(specItems);
           setHasCartItems(true); // Устанавливаем флаг
-          
+
           // Сохраняем в localStorage как запасной вариант
           localStorage.setItem('cart_items_temp', JSON.stringify(specItems));
           console.log("[CartLoader] Товары установлены в контекст и localStorage, будут сохранены в БД после создания проекта");
-          
-          // Остаемся на первом шаге, но товары уже загружены для второго шага
+
+          // Остаемся на первом шаге, но товары уже загружены и доступ к шагу 2 открыт
           setCurrentStep(1);
-          setMaxStepReached(1);
+
+          // Рассчитываем максимальный доступный шаг
+          let maxStep = 2; // Шаг 2 всегда доступен если есть товары
+          if (hasPaymentData || hasBankData) {
+            maxStep = Math.max(maxStep, 4); // Открываем шаг 4 если есть способы оплаты
+          }
+          if (hasBankData) {
+            maxStep = Math.max(maxStep, 5); // Открываем шаг 5 если есть реквизиты
+          }
+
+          setMaxStepReached(maxStep);
+          console.log("[CartLoader] Открыт доступ до шага:", maxStep);
           
           // Отмечаем что корзина обработана
           setCartProcessed(true);
-          
-          console.log("[CartLoader] Данные корзины загружены");
+
+          console.log("[CartLoader] ✅ Автозаполнение завершено:", {
+            товары: specItems.length,
+            способыОплаты: hasPaymentData ? "✅" : "❌",
+            реквизиты: hasBankData ? "✅" : "❌",
+            максШаг: maxStep
+          });
         }
       } catch (error) {
         console.error("[CartLoader] Ошибка загрузки данных корзины:", error);
@@ -1072,7 +1124,7 @@ function CartLoader() {
     }
     
     loadCartData();
-  }, [fromCart, cartData, cartId, cartProcessed, setSpecificationItems, setCurrentStep, setMaxStepReached, setPaymentMethod, setBankDetails, setHasCartItems]);
+  }, [fromCart, cartData, cartId, cartProcessed, lastProcessedCartId, setSpecificationItems, setCurrentStep, setMaxStepReached, setPaymentMethod, setBankDetails, setHasCartItems]);
 
   if (isCartLoading) {
     return (
