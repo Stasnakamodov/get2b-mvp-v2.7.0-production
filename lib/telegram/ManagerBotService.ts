@@ -124,8 +124,8 @@ export class ManagerBotService {
       replyMarkup = {
         inline_keyboard: [
           [
-            { text: "✅ Одобрить", callback_data: `approve_${projectId}` },
-            { text: "❌ Отклонить", callback_data: `reject_${projectId}` },
+            { text: "✅ Одобрить проект", callback_data: `approve_project_${projectId}` },
+            { text: "❌ Отклонить проект", callback_data: `reject_project_${projectId}` },
           ],
         ],
       };
