@@ -243,8 +243,8 @@ export async function POST(req: NextRequest) {
     };
 
     // Обработка одобрения/отклонения проекта (исключаем атомарный конструктор и короткие ID)
-    if ((data.startsWith("approve_") || data.startsWith("reject_")) && 
-        !data.includes("atomic") && 
+    if ((data.startsWith("approve_") || data.startsWith("reject_")) &&
+        !data.includes("atomic") &&
         !data.includes("client_receipt") &&
         !isShortId(data)) {
       console.log("📝 Обрабатываем одобрение/отклонение обычного проекта")
@@ -258,9 +258,15 @@ export async function POST(req: NextRequest) {
       
       // Парсим callback_data в зависимости от формата
       if (parts.length >= 3) {
-        // Формат: approve_receipt_uuid или approve_invoice_uuid
-        type = parts[1]; // receipt, invoice, spec, etc.
-        projectId = parts.slice(2).join("_"); // все что после типа (может содержать _ в UUID)
+        if (parts[1] === "project") {
+          // Формат: approve_project_uuid или reject_project_uuid (классический конструктор)
+          type = "project";
+          projectId = parts.slice(2).join("_"); // все что после project (может содержать _ в UUID)
+        } else {
+          // Формат: approve_receipt_uuid или approve_invoice_uuid
+          type = parts[1]; // receipt, invoice, spec, etc.
+          projectId = parts.slice(2).join("_"); // все что после типа (может содержать _ в UUID)
+        }
       } else if (parts.length === 2) {
         // Формат: approve_uuid (без типа)
         type = "spec"; // по умолчанию спецификация
@@ -282,8 +288,18 @@ export async function POST(req: NextRequest) {
 
       let newStatus: ProjectStatus;
       if (action === "approve") {
+        // Обработка апрува проекта (классический конструктор)
+        if (type === "project") {
+          switch (project.status) {
+            case "waiting_approval":
+              newStatus = "waiting_receipt";
+              break;
+            default:
+              throw new Error("Некорректный статус для апрува проекта: " + project.status);
+          }
+        }
         // Обработка апрува инвойса
-        if (type === "invoice") {
+        else if (type === "invoice") {
           switch (project.status) {
             case "waiting_approval":
               newStatus = "waiting_receipt";
@@ -331,8 +347,18 @@ export async function POST(req: NextRequest) {
           }
         }
       } else if (action === "reject") {
+        // Обработка отклонения проекта (классический конструктор)
+        if (type === "project") {
+          switch (project.status) {
+            case "waiting_approval":
+              newStatus = "receipt_rejected";
+              break;
+            default:
+              throw new Error("Некорректный статус для отклонения проекта: " + project.status);
+          }
+        }
         // Обработка отклонения инвойса
-        if (type === "invoice") {
+        else if (type === "invoice") {
           switch (project.status) {
             case "waiting_approval":
               newStatus = "draft"; // Возвращаем в черновик для доработки
@@ -390,7 +416,9 @@ export async function POST(req: NextRequest) {
         if (body.callback_query?.id && process.env.TELEGRAM_BOT_TOKEN) {
           let responseText = "";
           if (action === "approve") {
-            if (type === "invoice") {
+            if (type === "project") {
+              responseText = "Проект одобрен! Клиент может загружать чек.";
+            } else if (type === "invoice") {
               responseText = "Инвойс одобрен! Проект переходит к загрузке чека.";
             } else {
             switch (project.status) {
@@ -411,7 +439,9 @@ export async function POST(req: NextRequest) {
               }
             }
           } else {
-            if (type === "invoice") {
+            if (type === "project") {
+              responseText = "Проект отклонен. Клиент может внести правки.";
+            } else if (type === "invoice") {
               responseText = "Инвойс отклонен. Клиент должен загрузить новый инвойс.";
           } else {
             switch (project.status) {
