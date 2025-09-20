@@ -4047,216 +4047,235 @@ export default function ProjectConstructorPage() {
       alert('🚨 ATOMIC: Товары получены! Количество: ' + (products?.length || 0))
       console.log('🔥 [ATOMIC] ВЫЗОВ handleCatalogProductsAdd функции!', products?.length || 0, 'товаров')
       console.log('📦 [ATOMIC] Получены товары из каталога:', products)
-    
-    // Преобразуем товары в формат Step II
-    const catalogItems = products.map(product => ({
-      name: product.name || product.item_name || 'Товар из каталога',
-      quantity: product.quantity || 1,
-      price: parseFloat(product.price) || 0,
-      currency: product.currency || 'USD',
-      supplier_id: product.supplier_id,
-      supplier_name: product.supplier_name,
-      image_url: product.image_url || product.images?.[0] || '',
-      sku: product.sku || product.item_code || ''
-    }))
-    
-    // Добавляем товары в Step II
-    setManualData(prev => ({
-      ...prev,
-      2: {
-        ...prev[2],
-        supplier: catalogItems[0]?.supplier_name || prev[2]?.supplier,
-        currency: catalogItems[0]?.currency || prev[2]?.currency || 'USD',
-        items: [...(prev[2]?.items || []), ...catalogItems]
+
+      // Преобразуем товары в формат Step II
+      const catalogItems = products.map(product => ({
+        name: product.name || product.item_name || 'Товар из каталога',
+        quantity: product.quantity || 1,
+        price: parseFloat(product.price) || 0,
+        currency: product.currency || 'USD',
+        supplier_id: product.supplier_id,
+        supplier_name: product.supplier_name,
+        image_url: product.image_url || product.images?.[0] || '',
+        sku: product.sku || product.item_code || ''
+      }))
+
+      // Добавляем товары в Step II
+      setManualData(prev => ({
+        ...prev,
+        2: {
+          ...prev[2],
+          supplier: catalogItems[0]?.supplier_name || prev[2]?.supplier,
+          currency: catalogItems[0]?.currency || prev[2]?.currency || 'USD',
+          items: [...(prev[2]?.items || []), ...catalogItems]
+        }
+      }))
+
+      // Устанавливаем источник данных для Step II
+      setStepConfigs(prev => ({
+        ...prev,
+        2: 'catalog'
+      }))
+
+      console.log(`✅ [ATOMIC] Добавлено ${catalogItems.length} товаров в спецификацию`)
+
+      // Вызываем автоматическое заполнение для Step II данных (обратная связь)
+      const step2Data = {
+        supplier: catalogItems[0]?.supplier_name,
+        currency: catalogItems[0]?.currency || 'USD',
+        items: catalogItems,
+        supplier_id: catalogItems[0]?.supplier_id // Добавляем supplier_id для правильной работы autoFillStepFromRequisites
       }
-    }))
-    
-    // Устанавливаем источник данных для Step II
-    setStepConfigs(prev => ({
-      ...prev,
-      2: 'catalog'
-    }))
-    
-    console.log(`✅ [ATOMIC] Добавлено ${catalogItems.length} товаров в спецификацию`)
-    
-    // Вызываем автоматическое заполнение для Step II данных (обратная связь)
-    const step2Data = {
-      supplier: catalogItems[0]?.supplier_name,
-      currency: catalogItems[0]?.currency || 'USD',
-      items: catalogItems,
-      supplier_id: catalogItems[0]?.supplier_id // Добавляем supplier_id для правильной работы autoFillStepFromRequisites
-    }
-    
-    // Используем setTimeout для правильной последовательности обновлений состояния
-    setTimeout(() => {
-      if (catalogItems[0]?.supplier_id) {
-        autoFillStepFromRequisites(step2Data, 2)
-      }
-    }, 100)
-    
-    // 🎯 АВТОЗАПОЛНЕНИЕ ДАННЫХ ПОСТАВЩИКА ДЛЯ ШАГОВ IV И V
-    const firstProduct = products[0]
-    if (firstProduct?.supplier_id) {
-      console.log('🔍 [ATOMIC] Загружаем данные поставщика для автозаполнения:', firstProduct.supplier_name)
-      
-      // Пытаемся получить фантомные данные поставщика
-      getEchoSupplierData(firstProduct.supplier_name).then(echoData => {
-        if (echoData) {
-          console.log('✅ [ATOMIC] Найдены фантомные данные для поставщика:', echoData)
-          
-          // Автоматически заполняем Steps IV и V напрямую
-          console.log('🎯 [ATOMIC] Прямое заполнение шагов 4 и 5 с эхо данными')
-          
-          // Заполняем Step IV (Способ оплаты)
-          setManualData(prev => ({
-            ...prev,
-            4: {
-              payment_method: echoData.payment_method?.method || 'bank_transfer',
-              auto_filled: true,
-              supplier_name: firstProduct.supplier_name,
-              echo_source: echoData.project_info?.project_name,
-              user_choice: true
-            }
-          }))
-          
-          // Заполняем Step V (Реквизиты поставщика)  
-          setManualData(prev => ({
-            ...prev,
-            5: {
-              supplier_name: firstProduct.supplier_name,
-              requisites: echoData.requisites || {},
-              auto_filled: true,
-              echo_source: echoData.project_info?.project_name,
-              user_choice: true
-            }
-          }))
-          
-          // Обновляем конфигурацию шагов как завершенные
-          setStepConfigs(prev => ({
-            ...prev,
-            4: 'echoData',
-            5: 'echoData'
-          }))
-          
-          console.log('✅ [ATOMIC] Шаги 4 и 5 автоматически заполнены эхо данными')
-          
-          // Показываем уведомление
-          setAutoFillNotification({
-            show: true,
-            message: `Данные поставщика из проекта "${echoData.project_info.project_name}" автоматически применены`,
-            supplierName: firstProduct.supplier_name,
-            filledSteps: [4, 5]
-          })
-          
-          // Скрываем уведомление через 5 секунд
-          setTimeout(() => {
-            setAutoFillNotification(null)
-          }, 5000)
-        } else {
-          console.log('ℹ️ [ATOMIC] Фантомные данные для поставщика не найдены, загружаем из каталога')
-          
-          // FALLBACK: Загружаем РЕАЛЬНЫЕ данные поставщика из каталога
-          console.log('🎯 [ATOMIC] Загружаем данные каталога для поставщика:', firstProduct.supplier_name)
-          
-          // Получаем данные поставщика из verified_suppliers
-          fetch(`/api/catalog/verified-suppliers?search=${encodeURIComponent(firstProduct.supplier_name)}`)
-            .then(response => response.json())
-            .then(suppliers => {
-              const supplier = suppliers.find((s: any) => 
-                s.name.toLowerCase().includes(firstProduct.supplier_name.toLowerCase())
-              )
-              
-              if (supplier) {
-                console.log('✅ [ATOMIC] Найден поставщик в каталоге:', supplier)
-                
-                // Заполняем Step IV с РЕАЛЬНЫМИ методами оплаты из каталога
-                setManualData(prev => ({
-                  ...prev,
-                  4: {
-                    payment_method: supplier.payment_methods?.[0] || 'bank_transfer',
-                    available_methods: supplier.payment_methods || ['bank_transfer'],
-                    auto_filled: true,
-                    supplier_name: supplier.name,
-                    supplier_data: supplier,
-                    catalog_source: 'verified_supplier',
-                    user_choice: true
-                  }
-                }))
-                
-                // Заполняем Step V с РЕАЛЬНЫМИ реквизитами из каталога  
-                setManualData(prev => ({
-                  ...prev,
-                  5: {
-                    supplier_name: supplier.name,
-                    supplier_data: supplier,
+
+      // Используем setTimeout для правильной последовательности обновлений состояния
+      setTimeout(() => {
+        if (catalogItems[0]?.supplier_id) {
+          autoFillStepFromRequisites(step2Data, 2)
+        }
+      }, 100)
+
+      // 🎯 АВТОЗАПОЛНЕНИЕ ДАННЫХ ПОСТАВЩИКА ДЛЯ ШАГОВ IV И V
+      const firstProduct = products[0]
+      if (firstProduct?.supplier_id) {
+        console.log('🔍 [ATOMIC] Загружаем данные поставщика для автозаполнения:', firstProduct.supplier_name)
+
+        // ПРИОРИТЕТ КАТАЛОГА: Когда товары из каталога, ВСЕГДА используем свежие данные каталога
+        console.log('🎯 [ATOMIC] Товары добавлены из каталога - приоритет данных каталога над эхо данными')
+
+        // Сначала загружаем АКТУАЛЬНЫЕ данные каталога
+        fetch(`/api/catalog/verified-suppliers?search=${encodeURIComponent(firstProduct.supplier_name)}`)
+          .then(response => response.json())
+          .then(data => {
+            console.log('🔍 [ATOMIC] Ответ API verified-suppliers:', data)
+            const supplier = data.suppliers?.find((s: any) =>
+              s.name.toLowerCase().includes(firstProduct.supplier_name.toLowerCase())
+            )
+
+            if (supplier) {
+              console.log('✅ [ATOMIC] Найден поставщик в каталоге:', supplier)
+
+              // Заполняем Step IV с РЕАЛЬНЫМИ методами оплаты из каталога
+              console.log('🎯 [ATOMIC] Заполняю Step 4 с данными поставщика:', supplier.name)
+              console.log('💳 [ATOMIC] Доступные методы оплаты:', supplier.payment_methods)
+
+              // Фильтруем методы оплаты, исключая cash (наличные) и убираем дубликаты
+              const normalizedMethods = (supplier.payment_methods || ['bank_transfer'])
+                .map(method => method === 'bank_transfer' ? 'bank-transfer' : method) // Нормализуем формат
+                .filter(method => method !== 'cash') // Исключаем наличные
+                .filter((value, index, self) => self.indexOf(value) === index) // Убираем дубликаты
+              const availableMethods = normalizedMethods.length > 0 ? normalizedMethods : ['bank-transfer']
+
+              const step4Data = {
+                type: 'multiple',
+                methods: availableMethods,
+                payment_method: availableMethods[0] || 'bank_transfer',
+                auto_filled: true,
+                supplier_name: supplier.name,
+                supplier_data: supplier,
+                catalog_source: 'verified_supplier',
+                user_choice: true
+              }
+
+              console.log('📋 [ATOMIC] Step 4 Data:', step4Data)
+
+              setManualData(prev => ({
+                ...prev,
+                4: step4Data
+              }))
+
+              // Заполняем Step V с РЕАЛЬНЫМИ реквизитами из каталога
+              setManualData(prev => ({
+                ...prev,
+                5: {
+                  supplier_name: supplier.name,
+                  supplier_data: supplier,
+                  bank_accounts: supplier.bank_accounts || [],
+                  crypto_wallets: supplier.crypto_wallets || [],
+                  p2p_cards: supplier.p2p_cards || [],
+                  requisites: {
                     bank_accounts: supplier.bank_accounts || [],
                     crypto_wallets: supplier.crypto_wallets || [],
-                    p2p_cards: supplier.p2p_cards || [],
-                    requisites: {
-                      bank_accounts: supplier.bank_accounts || [],
-                      crypto_wallets: supplier.crypto_wallets || [],
-                      p2p_cards: supplier.p2p_cards || []
-                    },
-                    auto_filled: true,
-                    catalog_source: 'verified_supplier',
-                    user_choice: false
-                  }
-                }))
-                
-                // Устанавливаем конфигурацию как каталожную
-                setStepConfigs(prev => ({
-                  ...prev,
-                  4: 'catalog',
-                  5: 'catalog'  
-                }))
-                
-                console.log('✅ [ATOMIC] Шаги 4 и 5 заполнены РЕАЛЬНЫМИ данными каталога')
-                
-                // Показываем уведомление с реальными данными
-                setAutoFillNotification({
-                  show: true,
-                  message: `Данные поставщика "${supplier.name}" из каталога применены. Доступно методов: ${supplier.payment_methods?.length || 0}`,
-                  supplierName: supplier.name,
-                  filledSteps: [4, 5]
-                })
-                
-              } else {
-                console.log('❌ [ATOMIC] Поставщик не найден в каталоге, используем базовые данные')
-                
-                // Fallback с базовыми данными
-                setManualData(prev => ({
-                  ...prev,
-                  4: {
-                    payment_method: 'bank_transfer',
-                    auto_filled: true,
-                    supplier_name: firstProduct.supplier_name,
-                    catalog_source: 'unknown_supplier',
-                    user_choice: true
-                  }
-                }))
-                
-                setStepConfigs(prev => ({
-                  ...prev,
-                  4: 'catalog'
-                }))
-              }
-              
+                    p2p_cards: supplier.p2p_cards || []
+                  },
+                  auto_filled: true,
+                  catalog_source: 'verified_supplier',
+                  user_choice: false
+                }
+              }))
+
+              // Устанавливаем конфигурацию как каталожную
+              setStepConfigs(prev => ({
+                ...prev,
+                4: 'catalog',
+                5: 'catalog'
+              }))
+
+              console.log('✅ [ATOMIC] Шаги 4 и 5 заполнены РЕАЛЬНЫМИ данными каталога')
+
+              // Показываем уведомление с реальными данными
+              setAutoFillNotification({
+                show: true,
+                message: `Данные поставщика "${supplier.name}" из каталога применены. Доступно методов: ${supplier.payment_methods?.length || 0}`,
+                supplierName: supplier.name,
+                filledSteps: [4, 5]
+              })
+
               // Скрываем уведомление через 7 секунд
               setTimeout(() => {
                 setAutoFillNotification(null)
               }, 7000)
+            } else {
+              console.log('❌ [ATOMIC] Поставщик не найден в каталоге, используем эхо данные как fallback')
+
+              // FALLBACK: Пытаемся получить фантомные данные поставщика
+              getEchoSupplierData(firstProduct.supplier_name).then(echoData => {
+                if (echoData) {
+            console.log('✅ [ATOMIC] Найдены фантомные данные для поставщика:', echoData)
+
+            // Автоматически заполняем Steps IV и V напрямую
+            console.log('🎯 [ATOMIC] Прямое заполнение шагов 4 и 5 с эхо данными')
+
+            // Заполняем Step IV (Способ оплаты)
+            setManualData(prev => ({
+              ...prev,
+              4: {
+                type: 'multiple',
+                methods: echoData.payment_method?.available_methods || [echoData.payment_method?.method] || ['bank_transfer'],
+                payment_method: echoData.payment_method?.method || 'bank_transfer',
+                auto_filled: true,
+                supplier_name: firstProduct.supplier_name,
+                echo_source: echoData.project_info?.project_name,
+                user_choice: true
+              }
+            }))
+
+            // Заполняем Step V (Реквизиты поставщика)
+            setManualData(prev => ({
+              ...prev,
+              5: {
+                supplier_name: firstProduct.supplier_name,
+                requisites: echoData.requisites || {},
+                auto_filled: true,
+                echo_source: echoData.project_info?.project_name,
+                user_choice: true
+              }
+            }))
+
+            // Обновляем конфигурацию шагов как завершенные
+            setStepConfigs(prev => ({
+              ...prev,
+              4: 'echoData',
+              5: 'echoData'
+            }))
+
+            console.log('✅ [ATOMIC] Шаги 4 и 5 автоматически заполнены эхо данными')
+
+            // Показываем уведомление
+            setAutoFillNotification({
+              show: true,
+              message: `Данные поставщика из проекта "${echoData.project_info.project_name}" автоматически применены`,
+              supplierName: firstProduct.supplier_name,
+              filledSteps: [4, 5]
             })
-            .catch(error => {
-              console.error('❌ [ATOMIC] Ошибка загрузки данных каталога:', error)
-            })
-        }
-      }).catch(error => {
-        console.error('❌ [ATOMIC] Ошибка загрузки фантомных данных:', error)
-      })
-    }
-    
-    // Закрываем модальное окно каталога
-    setShowCatalogModal(false)
+
+            // Скрываем уведомление через 5 секунд
+            setTimeout(() => {
+              setAutoFillNotification(null)
+            }, 5000)
+                } else {
+                  console.log('❌ [ATOMIC] Нет эхо данных, используем базовые данные')
+
+                  // Fallback с базовыми данными
+                  setManualData(prev => ({
+                    ...prev,
+                    4: {
+                      type: 'multiple',
+                      methods: ['bank_transfer'],
+                      payment_method: 'bank_transfer',
+                      auto_filled: true,
+                      supplier_name: firstProduct.supplier_name,
+                      catalog_source: 'unknown_supplier',
+                      user_choice: true
+                    }
+                  }))
+
+                  setStepConfigs(prev => ({
+                    ...prev,
+                    4: 'catalog'
+                  }))
+                }
+              }).catch(error => {
+                console.error('❌ [ATOMIC] Ошибка загрузки эхо данных:', error)
+              })
+            }
+          }).catch(error => {
+            console.error('❌ [ATOMIC] Ошибка загрузки данных каталога:', error)
+          })
+      }
+
+      // Закрываем модальное окно каталога
+      setShowCatalogModal(false)
+
     } catch (error) {
       console.error('❌ [ATOMIC] КРИТИЧЕСКАЯ ОШИБКА в handleCatalogProductsAdd:', error)
       alert('🚨 ОШИБКА: ' + error)
@@ -4337,8 +4356,18 @@ export default function ProjectConstructorPage() {
     console.log('🔍 Тип реквизитов:', echoData.requisites?.type)
     
     // Применяем данные для шагов 4 и 5
+    // Фильтруем методы оплаты, исключая cash (наличные) и убираем дубликаты
+    const rawMethods = echoData.payment_method?.available_methods || [echoData.payment_method?.method] || ['bank_transfer']
+    const normalizedEchoMethods = rawMethods
+      .map(method => method === 'bank_transfer' ? 'bank-transfer' : method) // Нормализуем формат
+      .filter(method => method !== 'cash') // Исключаем наличные
+      .filter((value, index, self) => self.indexOf(value) === index) // Убираем дубликаты
+    const availableEchoMethods = normalizedEchoMethods.length > 0 ? normalizedEchoMethods : ['bank-transfer']
+
     const step4Data = {
       ...echoData.payment_method,
+      type: 'multiple',
+      methods: availableEchoMethods,
       user_choice: true,
       source: 'echoData',
       supplier_name: echoData.supplier_name,
@@ -7407,23 +7436,35 @@ export default function ProjectConstructorPage() {
                       {lastHoveredStep === 4 && manualData[lastHoveredStep] && (
                         <div className="flex justify-center">
                           <div className="grid grid-cols-3 gap-4 w-full">
-                            {manualData[lastHoveredStep].type === 'multiple' && manualData[lastHoveredStep].methods ? (
-                              // Показываем кубики для каждого метода оплаты
-                              manualData[lastHoveredStep].methods.map((method: string, index: number) => (
-                                <div 
+                            {['bank-transfer', 'p2p', 'crypto'].map((method: string, index: number) => {
+                                // Логируем данные для отладки
+                                if (lastHoveredStep === 4) {
+                                  console.log('🔍 [DEBUG] Step 4 Check:', {
+                                    method,
+                                    manualData4: manualData[4],
+                                    methods: manualData[4]?.methods,
+                                    includes: manualData[4]?.methods?.includes(method)
+                                  })
+                                }
+                                const hasSupplierData = lastHoveredStep === 4 && manualData[4]?.methods?.includes(method) || false;
+                                return <div 
                                   key={index}
                                   className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
-                                    method === 'crypto' ? 'border-green-200 hover:border-green-300' :
-                                    method === 'p2p' ? 'border-blue-200 hover:border-blue-300' :
-                                    'border-gray-200 hover:border-gray-300'
+                                    hasSupplierData
+                                      ? (method === 'crypto' ? 'border-green-300 bg-green-50 hover:border-green-400' :
+                                         method === 'p2p' ? 'border-blue-300 bg-blue-50 hover:border-blue-400' :
+                                         'border-orange-300 bg-orange-50 hover:border-orange-400')
+                                      : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                                   }`}
                                   onClick={() => handlePaymentMethodSelect(method, selectedSupplierData)}
                                 >
                                   <div className="flex items-center gap-2 mb-3">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                      method === 'crypto' ? 'bg-green-500' :
-                                      method === 'p2p' ? 'bg-blue-500' :
-                                      'bg-gray-500'
+                                      hasSupplierData
+                                        ? (method === 'crypto' ? 'bg-green-500' :
+                                           method === 'p2p' ? 'bg-blue-500' :
+                                           'bg-orange-500')
+                                        : 'bg-gray-400'
                                     }`}>
                                       <CreditCard className="h-4 w-4 text-white" />
                                     </div>
@@ -7444,7 +7485,7 @@ export default function ProjectConstructorPage() {
                                     Статус
                                   </div>
                                   <div className="text-xs text-gray-500">
-                                    Доступен
+                                    {hasSupplierData ? 'Автозаполнение' : 'Ручное заполнение'}
                                   </div>
                                   <div className={`text-xs mt-2 flex items-center gap-1 ${
                                     method === 'crypto' ? 'text-green-600' :
@@ -7455,46 +7496,8 @@ export default function ProjectConstructorPage() {
                                     <CheckCircle className="h-3 w-3" />
                                   </div>
                                 </div>
-                              ))
-                            ) : (
-                              // Показываем один кубик для одиночного метода
-                              <div 
-                                className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ${
-                                  manualData[lastHoveredStep].method === 'crypto' ? 'border-green-200 hover:border-green-300' :
-                                  manualData[lastHoveredStep].method === 'p2p' ? 'border-blue-200 hover:border-blue-300' :
-                                  'border-gray-200 hover:border-gray-300'
-                                }`}
-                                onClick={() => handlePreviewData('payment', manualData[lastHoveredStep])}
-                              >
-                                <div className="flex items-center gap-2 mb-3">
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                    manualData[lastHoveredStep].method === 'crypto' ? 'bg-green-500' :
-                                    manualData[lastHoveredStep].method === 'p2p' ? 'bg-blue-500' :
-                                    'bg-gray-500'
-                                  }`}>
-                                    <CreditCard className="h-4 w-4 text-white" />
-                                  </div>
-                                  <div>
-                                    <div className="text-sm font-semibold text-gray-800">Способ оплаты</div>
-                                    <div className="text-xs text-gray-500">Метод платежа</div>
-                                  </div>
-                                </div>
-                                <div className="text-sm text-gray-800 font-medium">
-                                  {manualData[lastHoveredStep].method === 'bank' ? 'Банковский перевод' :
-                                   manualData[lastHoveredStep].method === 'p2p' ? 'P2P перевод' :
-                                   manualData[lastHoveredStep].method === 'crypto' ? 'Криптовалюта' :
-                                   manualData[lastHoveredStep].method || 'Не указано'}
-                                </div>
-                                <div className={`text-xs mt-2 flex items-center gap-1 ${
-                                  manualData[lastHoveredStep].method === 'crypto' ? 'text-green-600' :
-                                  manualData[lastHoveredStep].method === 'p2p' ? 'text-blue-600' :
-                                  'text-gray-600'
-                                }`}>
-                                  <span>Нажмите для просмотра</span>
-                                  <Eye className="h-3 w-3" />
-                                </div>
-                              </div>
-                            )}
+                              })
+                            }
                           </div>
                         </div>
                       )}
@@ -8605,7 +8608,7 @@ export default function ProjectConstructorPage() {
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Метод оплаты</Label>
                   <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                    {manualData[4].method || 'Не указан'}
+                    {manualData[4].payment_method || manualData[4].method || 'Не указан'}
                   </div>
                 </div>
               </div>

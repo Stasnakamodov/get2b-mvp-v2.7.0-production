@@ -186,13 +186,15 @@ export default function Step4PaymentMethodForm() {
       'p2p': 'p2p', // одинаково
       'crypto': 'crypto', // одинаково
       'card': 'p2p', // карточные переводы = P2P в UI
-      'cash': 'cash' // наличные (если будет добавлено в UI)
+      // 'cash': убран - наличные не поддерживаются на сайте
     };
-    
-    // Преобразуем форматы БД в форматы UI
+
+    // Преобразуем форматы БД в форматы UI, исключая cash (наличные)
     const uiMethods = supplierData.payment_methods
+      .filter((dbMethod: string) => dbMethod !== 'cash') // Исключаем наличные
       .map((dbMethod: string) => dbToUiMapping[dbMethod] || dbMethod)
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index); // Убираем дубликаты
       
     console.log("[Step4] Маппинг методов БД -> UI:", supplierData.payment_methods, "->", uiMethods);
     
@@ -395,11 +397,23 @@ export default function Step4PaymentMethodForm() {
           return (
             <Card
               key={method.id}
-              className={`cursor-pointer transition-all border-2 ${isSelected ? "border-blue-600 shadow-lg bg-blue-50 dark:bg-blue-900/10" : "border-gray-200 dark:border-gray-700 hover:border-blue-400"}`}
+              className={`cursor-pointer transition-all border-2 ${
+                isSelected
+                  ? "border-blue-600 shadow-lg bg-blue-50 dark:bg-blue-900/10"
+                  : method.hasSupplierData
+                    ? "border-green-300 bg-green-50 dark:bg-green-900/10 hover:border-green-400"
+                    : "border-gray-200 dark:border-gray-700 hover:border-blue-400"
+              }`}
               onClick={() => handleSelect(method.id)}
             >
               <CardHeader className="items-center">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${isSelected ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-800"}`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                  isSelected
+                    ? "bg-blue-600"
+                    : method.hasSupplierData
+                      ? `bg-gradient-to-r ${method.luxuryAccent}`
+                      : "bg-gray-200 dark:bg-gray-800"
+                }`}>
                   <Icon className="h-7 w-7 text-white" />
                 </div>
                 <CardTitle className="text-center text-lg">{method.title}</CardTitle>
