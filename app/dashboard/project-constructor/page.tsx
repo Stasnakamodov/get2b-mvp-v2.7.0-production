@@ -4664,45 +4664,60 @@ export default function ProjectConstructorPage() {
   // Функция выбора метода оплаты и автоматического заполнения реквизитов
   const handlePaymentMethodSelect = (method: string, supplier: any) => {
     console.log('🎯 Выбран метод оплаты:', method)
-    
-    // Обновляем шаг 4 - устанавливаем выбранный метод как единственный
+
+    // Обновляем шаг 4 - СОХРАНЯЕМ существующие данные и устанавливаем выбранный метод
     setManualData(prev => ({
       ...prev,
       4: {
+        ...prev[4], // ВАЖНО: сохраняем все существующие данные
         type: 'single',
         method: method,
         selectedMethod: method,
-        defaultMethod: method
+        defaultMethod: method,
+        user_choice: true // Указываем что пользователь сделал выбор
       }
     }))
     
     // Автоматически заполняем шаг 5 соответствующими реквизитами
-    let requisitesData = {}
-    
-    if (method === 'crypto' && supplier.payment_methods?.crypto) {
+    let requisitesData = {
+      user_choice: true,
+      type: method === 'bank-transfer' ? 'bank' : method,
+      source: 'catalog'
+    }
+
+    // Используем правильную структуру данных поставщика
+    const supplierData = supplier || selectedSupplierData
+
+    if (method === 'crypto' && supplierData?.crypto_wallets?.length > 0) {
+      const wallet = supplierData.crypto_wallets[0]
       requisitesData = {
+        ...requisitesData,
         type: 'crypto',
-        crypto_name: supplier.payment_methods.crypto.network || 'ETH',
-        crypto_address: supplier.payment_methods.crypto.address,
-        crypto_network: supplier.payment_methods.crypto.network || 'ETH'
+        crypto_name: wallet.network || 'ETH',
+        crypto_address: wallet.address,
+        crypto_network: wallet.network || 'ETH'
       }
-    } else if (method === 'p2p' && supplier.payment_methods?.card) {
+    } else if (method === 'p2p' && supplierData?.p2p_cards?.length > 0) {
+      const card = supplierData.p2p_cards[0]
       requisitesData = {
+        ...requisitesData,
         type: 'p2p',
-        card_bank: supplier.payment_methods.card.bank,
-        card_number: supplier.payment_methods.card.number,
-        card_holder: supplier.payment_methods.card.holder,
-        card_expiry: supplier.payment_methods.card.expiry || ''
+        card_bank: card.bank,
+        card_number: card.number,
+        card_holder: card.holder,
+        card_expiry: card.expiry || ''
       }
-    } else if (method === 'bank' && supplier.payment_methods?.bank) {
+    } else if ((method === 'bank-transfer' || method === 'bank') && supplierData?.bank_accounts?.length > 0) {
+      const bank = supplierData.bank_accounts[0]
       requisitesData = {
+        ...requisitesData,
         type: 'bank',
-        bankName: supplier.payment_methods.bank.bank_name,
-        recipientName: supplier.name,
-        accountNumber: supplier.payment_methods.bank.account_number,
-        swift: supplier.payment_methods.bank.swift_code,
-        iban: supplier.payment_methods.bank.iban || '',
-        transferCurrency: supplier.currency || 'RUB'
+        bankName: bank.bank_name,
+        recipientName: supplierData.name || supplierData.company_name,
+        accountNumber: bank.account_number,
+        swift: bank.swift_code,
+        iban: bank.iban || '',
+        transferCurrency: bank.currency || 'RUB'
       }
     }
     
@@ -4719,7 +4734,10 @@ export default function ProjectConstructorPage() {
     }))
     
     console.log('✅ Автоматически заполнены реквизиты для метода:', method)
-    
+    console.log('📋 manualData[4]:', manualData[4])
+    console.log('📋 manualData[5]:', requisitesData)
+    console.log('📋 stepConfigs[5]:', 'catalog')
+
     // Показываем уведомление
     alert(`Выбран метод оплаты: ${method === 'crypto' ? 'Криптовалюта' : method === 'p2p' ? 'P2P перевод' : 'Банковский перевод'}. Реквизиты автоматически заполнены.`)
   }
@@ -7485,6 +7503,11 @@ export default function ProjectConstructorPage() {
                         <div className="flex justify-center">
                           <div className="grid grid-cols-3 gap-4 w-full">
                             {['bank-transfer', 'p2p', 'crypto'].map((method: string, index: number) => {
+                                // Проверяем, выбран ли этот метод
+                                const isSelected = manualData[4]?.selectedMethod === method ||
+                                                 manualData[4]?.method === method ||
+                                                 manualData[4]?.defaultMethod === method
+
                                 // Проверяем, есть ли данные поставщика для этого метода
                                 let hasSupplierData = false;
 
@@ -7534,26 +7557,34 @@ export default function ProjectConstructorPage() {
                                     crypto_wallets: selectedSupplierData?.crypto_wallets
                                   }
                                 });
-                                return <div 
+                                return <div
                                   key={index}
                                   className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
-                                    hasSupplierData
-                                      ? (method === 'crypto' ? 'border-green-300 bg-green-50 hover:border-green-400' :
-                                         method === 'p2p' ? 'border-blue-300 bg-blue-50 hover:border-blue-400' :
-                                         'border-orange-300 bg-orange-50 hover:border-orange-400')
-                                      : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                                    isSelected
+                                      ? (method === 'crypto' ? 'ring-4 ring-green-400 border-green-500 bg-green-100' :
+                                         method === 'p2p' ? 'ring-4 ring-blue-400 border-blue-500 bg-blue-100' :
+                                         'ring-4 ring-orange-400 border-orange-500 bg-orange-100')
+                                      : hasSupplierData
+                                        ? (method === 'crypto' ? 'border-green-300 bg-green-50 hover:border-green-400' :
+                                           method === 'p2p' ? 'border-blue-300 bg-blue-50 hover:border-blue-400' :
+                                           'border-orange-300 bg-orange-50 hover:border-orange-400')
+                                        : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                                   }`}
                                   onClick={() => handlePaymentMethodSelect(method, selectedSupplierData)}
                                 >
                                   <div className="flex items-center gap-2 mb-3">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                      hasSupplierData
-                                        ? (method === 'crypto' ? 'bg-green-500' :
-                                           method === 'p2p' ? 'bg-blue-500' :
-                                           'bg-orange-500')
-                                        : 'bg-gray-400'
+                                      isSelected
+                                        ? (method === 'crypto' ? 'bg-green-600 ring-2 ring-green-300' :
+                                           method === 'p2p' ? 'bg-blue-600 ring-2 ring-blue-300' :
+                                           'bg-orange-600 ring-2 ring-orange-300')
+                                        : hasSupplierData
+                                          ? (method === 'crypto' ? 'bg-green-500' :
+                                             method === 'p2p' ? 'bg-blue-500' :
+                                             'bg-orange-500')
+                                          : 'bg-gray-400'
                                     }`}>
-                                      <CreditCard className="h-4 w-4 text-white" />
+                                      {isSelected ? <CheckCircle2 className="h-4 w-4 text-white" /> : <CreditCard className="h-4 w-4 text-white" />}
                                     </div>
                                     <div>
                                       <div className="text-sm font-semibold text-gray-800">
@@ -7572,15 +7603,19 @@ export default function ProjectConstructorPage() {
                                     Статус
                                   </div>
                                   <div className="text-xs text-gray-500">
-                                    {hasSupplierData ? 'Автозаполнение' : 'Ручное заполнение'}
+                                    {isSelected ? 'ВЫБРАН' : hasSupplierData ? 'Автозаполнение' : 'Ручное заполнение'}
                                   </div>
                                   <div className={`text-xs mt-2 flex items-center gap-1 ${
-                                    method === 'crypto' ? 'text-green-600' :
-                                    method === 'p2p' ? 'text-blue-600' :
-                                    'text-gray-600'
+                                    isSelected
+                                      ? (method === 'crypto' ? 'text-green-600 font-bold' :
+                                         method === 'p2p' ? 'text-blue-600 font-bold' :
+                                         'text-orange-600 font-bold')
+                                      : method === 'crypto' ? 'text-green-600' :
+                                        method === 'p2p' ? 'text-blue-600' :
+                                        'text-gray-600'
                                   }`}>
-                                    <span>Выбрать</span>
-                                    <CheckCircle className="h-3 w-3" />
+                                    <span>{isSelected ? 'ВЫБРАНО' : 'Выбрать'}</span>
+                                    {isSelected ? <CheckCircle2 className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />}
                                   </div>
                                 </div>
                               })
@@ -7589,8 +7624,24 @@ export default function ProjectConstructorPage() {
                         </div>
                       )}
                       
-                      {/* Шаг 5: Реквизиты - показываем все доступные типы только если пользователь УЖЕ выбрал тип */}
-                      {lastHoveredStep === 5 && manualData[lastHoveredStep] && manualData[lastHoveredStep].user_choice && manualData[lastHoveredStep].type && (
+                      {/* Шаг 5: Реквизиты - показываем форму если реквизиты были заполнены */}
+                      {(() => {
+                        const step5HasData = !!manualData[5];
+                        const step5HasUserChoice = manualData[5]?.user_choice;
+                        const step5HasType = manualData[5]?.type;
+                        const shouldShowStep5Form = lastHoveredStep === 5 && step5HasData && step5HasUserChoice && step5HasType;
+
+                        console.log('🔍 [Step 5 Debug]:', {
+                          lastHoveredStep,
+                          step5HasData,
+                          step5HasUserChoice,
+                          step5HasType,
+                          shouldShowStep5Form,
+                          manualData5: manualData[5]
+                        });
+
+                        return shouldShowStep5Form;
+                      })() && (
                         <div className="flex justify-center">
                           <div className="grid grid-cols-3 gap-4 w-full">
                             {manualData[lastHoveredStep].type === 'multiple' && manualData[lastHoveredStep].requisites ? (
@@ -7648,13 +7699,21 @@ export default function ProjectConstructorPage() {
                               ))
                             ) : (
                               // Показываем один кубик для одиночного типа
-                              <div 
-                                className="bg-white border-2 border-green-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-green-300 hover:scale-105 col-span-3"
-                                onClick={() => handlePreviewData('requisites', manualData[lastHoveredStep])}
+                              <div
+                                className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${
+                                  manualData[5].type === 'crypto' ? 'border-green-500 bg-green-100 hover:border-green-600 ring-green-400' :
+                                  manualData[5].type === 'p2p' ? 'border-blue-500 bg-blue-100 hover:border-blue-600 ring-blue-400' :
+                                  'border-orange-500 bg-orange-100 hover:border-orange-600 ring-orange-400'
+                                }`}
+                                onClick={() => handlePreviewData('requisites', manualData[5])}
                               >
                                 <div className="flex items-center gap-2 mb-3">
-                                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                                    <Banknote className="h-4 w-4 text-white" />
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-2 ${
+                                    manualData[5].type === 'crypto' ? 'bg-green-600 ring-green-300' :
+                                    manualData[5].type === 'p2p' ? 'bg-blue-600 ring-blue-300' :
+                                    'bg-orange-600 ring-orange-300'
+                                  }`}>
+                                    <CheckCircle2 className="h-4 w-4 text-white" />
                                   </div>
                                   <div>
                                     <div className="text-sm font-semibold text-gray-800">
@@ -7679,9 +7738,13 @@ export default function ProjectConstructorPage() {
                                    manualData[lastHoveredStep].type === 'p2p' ? (manualData[lastHoveredStep].card_bank || 'Не указан') :
                                    `${manualData[lastHoveredStep].accountNumber || 'Не указано'}`}
                                 </div>
-                                <div className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                                  <span>Нажмите для просмотра</span>
-                                  <Eye className="h-3 w-3" />
+                                <div className={`text-xs mt-2 flex items-center gap-1 font-bold ${
+                                  manualData[5].type === 'crypto' ? 'text-green-600' :
+                                  manualData[5].type === 'p2p' ? 'text-blue-600' :
+                                  'text-orange-600'
+                                }`}>
+                                  <span>ЗАПОЛНЕНО</span>
+                                  <CheckCircle2 className="h-3 w-3" />
                                 </div>
                               </div>
                             )}
