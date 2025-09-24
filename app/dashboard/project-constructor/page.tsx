@@ -7479,7 +7479,13 @@ export default function ProjectConstructorPage() {
                                   method,
                                   hasSupplierData,
                                   manualData4: manualData[4],
-                                  selectedSupplierData: selectedSupplierData?.name
+                                  selectedSupplierData: {
+                                    name: selectedSupplierData?.name,
+                                    payment_methods: selectedSupplierData?.payment_methods,
+                                    bank_accounts: selectedSupplierData?.bank_accounts,
+                                    p2p_cards: selectedSupplierData?.p2p_cards,
+                                    crypto_wallets: selectedSupplierData?.crypto_wallets
+                                  }
                                 });
                                 return <div 
                                   key={index}
