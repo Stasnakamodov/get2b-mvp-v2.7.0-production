@@ -7438,16 +7438,44 @@ export default function ProjectConstructorPage() {
                         <div className="flex justify-center">
                           <div className="grid grid-cols-3 gap-4 w-full">
                             {['bank-transfer', 'p2p', 'crypto'].map((method: string, index: number) => {
-                                // Логируем данные для отладки
-                                if (lastHoveredStep === 4) {
-                                  console.log('🔍 [DEBUG] Step 4 Check:', {
-                                    method,
-                                    manualData4: manualData[4],
-                                    methods: manualData[4]?.methods,
-                                    includes: manualData[4]?.methods?.includes(method)
-                                  })
+                                // Проверяем, есть ли данные поставщика для этого метода
+                                let hasSupplierData = false;
+
+                                if (lastHoveredStep === 4 && manualData[4]) {
+                                  // Проверяем по методам из manualData[4] (из каталога)
+                                  if (manualData[4].methods && manualData[4].methods.includes(method)) {
+                                    hasSupplierData = true;
+                                  }
+                                  // Проверяем по доступным данным поставщика
+                                  else if (manualData[4].supplier_data) {
+                                    const supplier = manualData[4].supplier_data;
+                                    if (method === 'bank-transfer' && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer'))) {
+                                      hasSupplierData = true;
+                                    } else if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p'))) {
+                                      hasSupplierData = true;
+                                    } else if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) {
+                                      hasSupplierData = true;
+                                    }
+                                  }
                                 }
-                                const hasSupplierData = lastHoveredStep === 4 && manualData[4]?.methods?.includes(method) || false;
+
+                                // Альтернативная проверка через selectedSupplierData
+                                if (!hasSupplierData && selectedSupplierData && lastHoveredStep === 4) {
+                                  if (method === 'bank-transfer' && (selectedSupplierData.bank_accounts?.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
+                                    hasSupplierData = true;
+                                  } else if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
+                                    hasSupplierData = true;
+                                  } else if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
+                                    hasSupplierData = true;
+                                  }
+                                }
+
+                                console.log('🔍 [DEBUG] Method Check:', {
+                                  method,
+                                  hasSupplierData,
+                                  manualData4: manualData[4],
+                                  selectedSupplierData: selectedSupplierData?.name
+                                });
                                 return <div 
                                   key={index}
                                   className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
