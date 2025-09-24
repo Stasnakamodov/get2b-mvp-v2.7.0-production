@@ -38,6 +38,7 @@ import {
   ChevronLeft,
   CreditCard,
   Banknote,
+  Coins,
   Download,
   CheckCircle2,
   Clock,
@@ -7656,6 +7657,125 @@ export default function ProjectConstructorPage() {
                     </div>
                   ) : (
                     <div>
+                      {/* Для шага 5: показываем кубики выбора типа реквизитов */}
+                      {lastHoveredStep === 5 && !manualData[5] && (
+                        <div className="mb-6">
+                          <h4 className="text-base font-semibold text-gray-800 mb-4">Выберите тип реквизитов:</h4>
+                          <div className="grid grid-cols-3 gap-4 w-full">
+                            {/* Банковский перевод */}
+                            <div
+                              className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-orange-300 hover:scale-105"
+                              onClick={() => {
+                                console.log('🏦 Выбран банковский перевод');
+                                // Устанавливаем данные для банковского перевода
+                                setManualData(prev => ({
+                                  ...prev,
+                                  5: {
+                                    type: 'bank',
+                                    bankName: '',
+                                    accountNumber: '',
+                                    swift: '',
+                                    recipientName: '',
+                                    user_choice: true
+                                  }
+                                }));
+                                setStepConfigs(prev => ({ ...prev, 5: 'manual' }));
+                                setLastHoveredStep(0);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                                  <Banknote className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">Банковский перевод</div>
+                                  <div className="text-xs text-gray-500">Банковские реквизиты</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                Использовать банковские реквизиты
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">
+                                SWIFT, IBAN, счета
+                              </div>
+                            </div>
+
+                            {/* P2P переводы */}
+                            <div
+                              className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-blue-300 hover:scale-105"
+                              onClick={() => {
+                                console.log('💳 Выбраны P2P переводы');
+                                // Устанавливаем данные для P2P
+                                setManualData(prev => ({
+                                  ...prev,
+                                  5: {
+                                    type: 'p2p',
+                                    card_bank: '',
+                                    card_number: '',
+                                    card_holder: '',
+                                    user_choice: true
+                                  }
+                                }));
+                                setStepConfigs(prev => ({ ...prev, 5: 'manual' }));
+                                setLastHoveredStep(0);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                  <CreditCard className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">P2P переводы</div>
+                                  <div className="text-xs text-gray-500">Карта поставщика</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                Использовать P2P карты
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">
+                                Банковские карты
+                              </div>
+                            </div>
+
+                            {/* Криптовалюта */}
+                            <div
+                              className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-green-300 hover:scale-105"
+                              onClick={() => {
+                                console.log('🪙 Выбрана криптовалюта');
+                                // Устанавливаем данные для криптовалют
+                                setManualData(prev => ({
+                                  ...prev,
+                                  5: {
+                                    type: 'crypto',
+                                    crypto_network: '',
+                                    crypto_address: '',
+                                    user_choice: true
+                                  }
+                                }));
+                                setStepConfigs(prev => ({ ...prev, 5: 'manual' }));
+                                setLastHoveredStep(0);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                  <Coins className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">Криптовалюта</div>
+                                  <div className="text-xs text-gray-500">Криптокошелек</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                Использовать криптовалюты
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">
+                                BTC, ETH, USDT и др.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <h4 className="text-base font-semibold text-gray-800 mb-4">Доступные источники данных:</h4>
                       <div className="grid gap-4">
                         {constructorSteps.find(s => s.id === lastHoveredStep)?.sources.map((source) => {
