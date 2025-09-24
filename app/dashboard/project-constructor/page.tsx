@@ -7744,8 +7744,15 @@ export default function ProjectConstructorPage() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
+                                // Обновляем шаг 5 (реквизиты)
                                 setManualData(prev => ({
                                   ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'bank-transfer',
+                                    method: 'bank-transfer',
+                                    user_choice: true
+                                  },
                                   5: {
                                     type: 'bank',
                                     bankName: '',
@@ -7755,7 +7762,7 @@ export default function ProjectConstructorPage() {
                                     user_choice: true
                                   }
                                 }));
-                                setStepConfigs(prev => ({ ...prev, 5: 'manual' }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
                                 setLastHoveredStep(0);
                               }}
                             >
@@ -7784,8 +7791,15 @@ export default function ProjectConstructorPage() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
                                 setManualData(prev => ({
                                   ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'p2p',
+                                    method: 'p2p',
+                                    user_choice: true
+                                  },
                                   5: {
                                     type: 'p2p',
                                     card_bank: '',
@@ -7794,7 +7808,7 @@ export default function ProjectConstructorPage() {
                                     user_choice: true
                                   }
                                 }));
-                                setStepConfigs(prev => ({ ...prev, 5: 'manual' }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
                                 setLastHoveredStep(0);
                               }}
                             >
@@ -7823,8 +7837,15 @@ export default function ProjectConstructorPage() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
                                 setManualData(prev => ({
                                   ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'crypto',
+                                    method: 'crypto',
+                                    user_choice: true
+                                  },
                                   5: {
                                     type: 'crypto',
                                     crypto_wallet: '',
@@ -7832,7 +7853,7 @@ export default function ProjectConstructorPage() {
                                     user_choice: true
                                   }
                                 }));
-                                setStepConfigs(prev => ({ ...prev, 5: 'manual' }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
                                 setLastHoveredStep(0);
                               }}
                             >
@@ -7967,9 +7988,15 @@ export default function ProjectConstructorPage() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
-                                // Устанавливаем данные для банковского перевода
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
                                 setManualData(prev => ({
                                   ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'bank-transfer',
+                                    method: 'bank-transfer',
+                                    user_choice: true
+                                  },
                                   5: {
                                     type: 'bank',
                                     bankName: '',
@@ -7979,7 +8006,7 @@ export default function ProjectConstructorPage() {
                                     user_choice: true
                                   }
                                 }));
-                                setStepConfigs(prev => ({ ...prev, 5: 'manual' }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
                                 setLastHoveredStep(0);
                               }}
                             >
@@ -8008,9 +8035,15 @@ export default function ProjectConstructorPage() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
-                                // Устанавливаем данные для P2P
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
                                 setManualData(prev => ({
                                   ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'p2p',
+                                    method: 'p2p',
+                                    user_choice: true
+                                  },
                                   5: {
                                     type: 'p2p',
                                     card_bank: '',
@@ -8019,7 +8052,7 @@ export default function ProjectConstructorPage() {
                                     user_choice: true
                                   }
                                 }));
-                                setStepConfigs(prev => ({ ...prev, 5: 'manual' }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
                                 setLastHoveredStep(0);
                               }}
                             >
@@ -8048,9 +8081,15 @@ export default function ProjectConstructorPage() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
-                                // Устанавливаем данные для криптовалют
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
                                 setManualData(prev => ({
                                   ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'crypto',
+                                    method: 'crypto',
+                                    user_choice: true
+                                  },
                                   5: {
                                     type: 'crypto',
                                     crypto_network: '',
@@ -8058,7 +8097,7 @@ export default function ProjectConstructorPage() {
                                     user_choice: true
                                   }
                                 }));
-                                setStepConfigs(prev => ({ ...prev, 5: 'manual' }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
                                 setLastHoveredStep(0);
                               }}
                             >
