@@ -7445,9 +7445,11 @@ export default function ProjectConstructorPage() {
                                 if (selectedSupplierData) {
                                   if (method === 'bank-transfer' && (selectedSupplierData.bank_accounts?.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
                                     hasSupplierData = true;
-                                  } else if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
+                                  }
+                                  if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
                                     hasSupplierData = true;
-                                  } else if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
+                                  }
+                                  if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
                                     hasSupplierData = true;
                                   }
                                 }
@@ -7463,9 +7465,11 @@ export default function ProjectConstructorPage() {
                                     const supplier = manualData[4].supplier_data;
                                     if (method === 'bank-transfer' && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer'))) {
                                       hasSupplierData = true;
-                                    } else if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p'))) {
+                                    }
+                                    if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p'))) {
                                       hasSupplierData = true;
-                                    } else if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) {
+                                    }
+                                    if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) {
                                       hasSupplierData = true;
                                     }
                                   }
@@ -7687,7 +7691,7 @@ export default function ProjectConstructorPage() {
                   ) : (
                     <div>
                       {/* Для шага 5: показываем кубики выбора типа реквизитов */}
-                      {lastHoveredStep === 5 && !manualData[4]?.selectedMethod && (
+                      {lastHoveredStep === 5 && !manualData[5]?.type && (
                         <div className="mb-6">
                           <h4 className="text-base font-semibold text-gray-800 mb-4">Выберите тип реквизитов:</h4>
                           <div className="grid grid-cols-3 gap-4 w-full">
