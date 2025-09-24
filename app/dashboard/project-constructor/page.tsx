@@ -7686,7 +7686,7 @@ export default function ProjectConstructorPage() {
                   ) : (
                     <div>
                       {/* Для шага 5: показываем кубики выбора типа реквизитов */}
-                      {lastHoveredStep === 5 && !manualData[5] && (
+                      {lastHoveredStep === 5 && (!manualData[4]?.user_choice || !manualData[4]?.selectedMethod) && (
                         <div className="mb-6">
                           <h4 className="text-base font-semibold text-gray-800 mb-4">Выберите тип реквизитов:</h4>
                           <div className="grid grid-cols-3 gap-4 w-full">
