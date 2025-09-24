@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 // GET: Получение аккредитованных поставщиков Get2B (оранжевая комната)
 export async function GET(request: NextRequest) {
   try {
     console.log("🚀 [API] Получение аккредитованных поставщиков");
-    const supabase = await getSupabaseClient();
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -85,7 +84,6 @@ export async function GET(request: NextRequest) {
 // POST: Добавление нового аккредитованного поставщика (только для менеджеров Get2B)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await getSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -137,7 +135,6 @@ export async function POST(request: NextRequest) {
 // PATCH: Обновление аккредитованного поставщика (только для менеджеров)
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await getSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
