@@ -7441,13 +7441,25 @@ export default function ProjectConstructorPage() {
                                 // Проверяем, есть ли данные поставщика для этого метода
                                 let hasSupplierData = false;
 
-                                if (lastHoveredStep === 4 && manualData[4]) {
+                                // Приоритет 1: Проверяем selectedSupplierData (самый актуальный источник)
+                                if (selectedSupplierData) {
+                                  if (method === 'bank-transfer' && (selectedSupplierData.bank_accounts?.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
+                                    hasSupplierData = true;
+                                  } else if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
+                                    hasSupplierData = true;
+                                  } else if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
+                                    hasSupplierData = true;
+                                  }
+                                }
+
+                                // Приоритет 2: Проверяем через manualData[4] (если selectedSupplierData недоступен)
+                                if (!hasSupplierData && manualData[4]) {
                                   // Проверяем по методам из manualData[4] (из каталога)
                                   if (manualData[4].methods && manualData[4].methods.includes(method)) {
                                     hasSupplierData = true;
                                   }
-                                  // Проверяем по доступным данным поставщика
-                                  else if (manualData[4].supplier_data) {
+                                  // Проверяем по доступным данным поставщика в manualData[4]
+                                  if (!hasSupplierData && manualData[4].supplier_data) {
                                     const supplier = manualData[4].supplier_data;
                                     if (method === 'bank-transfer' && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer'))) {
                                       hasSupplierData = true;
@@ -7456,17 +7468,6 @@ export default function ProjectConstructorPage() {
                                     } else if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) {
                                       hasSupplierData = true;
                                     }
-                                  }
-                                }
-
-                                // Альтернативная проверка через selectedSupplierData
-                                if (!hasSupplierData && selectedSupplierData && lastHoveredStep === 4) {
-                                  if (method === 'bank-transfer' && (selectedSupplierData.bank_accounts?.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
-                                    hasSupplierData = true;
-                                  } else if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
-                                    hasSupplierData = true;
-                                  } else if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
-                                    hasSupplierData = true;
                                   }
                                 }
 
@@ -7686,7 +7687,7 @@ export default function ProjectConstructorPage() {
                   ) : (
                     <div>
                       {/* Для шага 5: показываем кубики выбора типа реквизитов */}
-                      {lastHoveredStep === 5 && (!manualData[4]?.user_choice || !manualData[4]?.selectedMethod) && (
+                      {lastHoveredStep === 5 && !manualData[4]?.selectedMethod && (
                         <div className="mb-6">
                           <h4 className="text-base font-semibold text-gray-800 mb-4">Выберите тип реквизитов:</h4>
                           <div className="grid grid-cols-3 gap-4 w-full">
