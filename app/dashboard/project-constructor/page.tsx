@@ -1,6 +1,18 @@
 "use client"
 
 import * as React from "react"
+import type {
+  ManualData,
+  PartialStepConfigs,
+  User as UserType,
+  ProjectDetails,
+  SupplierData,
+  StepDataToView,
+  OcrDebugData,
+  StepNumber,
+  FormProps,
+  validateStepData,
+} from '@/types/project-constructor.types'
 
 // CSS стили для фантомных данных
 const phantomDataStyles = `
@@ -62,6 +74,10 @@ import {
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useProjectTemplates } from "../create-project/hooks/useSaveTemplate"
+import CompanyForm from '@/components/project-constructor/forms/CompanyForm'
+import ContactsForm from '@/components/project-constructor/forms/ContactsForm'
+import BankForm from '@/components/project-constructor/forms/BankForm'
+import SpecificationForm from '@/components/project-constructor/forms/SpecificationForm'
 import { useClientProfiles } from "@/hooks/useClientProfiles"
 import { useSupplierProfiles } from "@/hooks/useSupplierProfiles"
 import { supabase } from "@/lib/supabaseClient"
@@ -104,551 +120,9 @@ const stepIcons = [
   CheckCircle2Icon,
 ]
 
-// Компонент формы для данных компании (Шаг I)
-const CompanyForm = ({ onSave, onCancel, initialData }: { onSave: (data: any) => void, onCancel: () => void, initialData?: any }) => {
-  console.log("🔍 CompanyForm получил initialData:", initialData);
-  const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    legalName: initialData?.legalName || '',
-    inn: initialData?.inn || '',
-    kpp: initialData?.kpp || '',
-    ogrn: initialData?.ogrn || '',
-    address: initialData?.address || '',
-    // Банковские реквизиты
-    bankName: initialData?.bankName || '',
-    bankAccount: initialData?.bankAccount || '',
-    bik: initialData?.bik || '',
-    correspondentAccount: initialData?.correspondentAccount || '',
-    // Контактные данные
-    email: initialData?.email || '',
-    phone: initialData?.phone || '',
-    website: initialData?.website || '',
-    director: initialData?.director || ''
-  })
+// CompanyForm, ContactsForm, BankForm и SpecificationForm теперь импортируются из отдельных файлов
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave(formData)
-  }
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-      {/* Основные данные компании */}
-      <div className="space-y-2">
-        <Label htmlFor="name" className="text-sm font-semibold text-gray-700">
-          Название компании <span className="text-red-500 font-bold">*</span>
-        </Label>
-        <Input
-          id="name"
-          value={formData.name}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-          required
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-          placeholder="Введите название компании"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="legalName" className="text-sm font-semibold text-gray-700">
-          Юридическое название <span className="text-red-500 font-bold">*</span>
-        </Label>
-        <Input
-          id="legalName"
-          value={formData.legalName}
-          onChange={(e) => setFormData(prev => ({ ...prev, legalName: e.target.value }))}
-          required
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-          placeholder="Введите юридическое название"
-        />
-      </div>
-      
-      {/* ИНН, КПП, ОГРН */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="inn" className="text-sm font-semibold text-gray-700">
-            ИНН <span className="text-red-500 font-bold">*</span>
-          </Label>
-          <Input
-            id="inn"
-            value={formData.inn}
-            onChange={(e) => setFormData(prev => ({ ...prev, inn: e.target.value }))}
-            required
-            className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-            placeholder="1234567890"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="kpp" className="text-sm font-semibold text-gray-700">
-            КПП <span className="text-red-500 font-bold">*</span>
-          </Label>
-          <Input
-            id="kpp"
-            value={formData.kpp}
-            onChange={(e) => setFormData(prev => ({ ...prev, kpp: e.target.value }))}
-            required
-            className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-            placeholder="123456789"
-          />
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="ogrn" className="text-sm font-semibold text-gray-700">
-          ОГРН <span className="text-red-500 font-bold">*</span>
-        </Label>
-        <Input
-          id="ogrn"
-          value={formData.ogrn}
-          onChange={(e) => setFormData(prev => ({ ...prev, ogrn: e.target.value }))}
-          required
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-          placeholder="1234567890123"
-        />
-      </div>
-      
-      {/* Адрес */}
-      <div className="space-y-2">
-        <Label htmlFor="address" className="text-sm font-semibold text-gray-700">
-          Юридический адрес <span className="text-red-500 font-bold">*</span>
-        </Label>
-        <Input
-          id="address"
-          value={formData.address}
-          onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-          required
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-          placeholder="г. Москва, ул. Примерная, д. 1, оф. 100"
-        />
-      </div>
-      
-      {/* Банковские реквизиты */}
-      <div className="space-y-4 pt-4 border-t border-gray-300">
-        <h3 className="text-lg font-semibold text-gray-800">Банковские реквизиты</h3>
-        
-        <div className="space-y-2">
-          <Label htmlFor="bankName" className="text-sm font-semibold text-gray-700">
-            Название банка <span className="text-red-500 font-bold">*</span>
-          </Label>
-          <Input
-            id="bankName"
-            value={formData.bankName}
-            onChange={(e) => setFormData(prev => ({ ...prev, bankName: e.target.value }))}
-            required
-            className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-            placeholder="Сбербанк России"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="bankAccount" className="text-sm font-semibold text-gray-700">
-            Расчетный счет <span className="text-red-500 font-bold">*</span>
-          </Label>
-          <Input
-            id="bankAccount"
-            value={formData.bankAccount}
-            onChange={(e) => setFormData(prev => ({ ...prev, bankAccount: e.target.value }))}
-            required
-            className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-            placeholder="40702810123456789012"
-          />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="bik" className="text-sm font-semibold text-gray-700">
-              БИК <span className="text-red-500 font-bold">*</span>
-            </Label>
-            <Input
-              id="bik"
-              value={formData.bik}
-              onChange={(e) => setFormData(prev => ({ ...prev, bik: e.target.value }))}
-              required
-              className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-              placeholder="044525225"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="correspondentAccount" className="text-sm font-semibold text-gray-700">
-              Корр. счет <span className="text-red-500 font-bold">*</span>
-            </Label>
-            <Input
-              id="correspondentAccount"
-              value={formData.correspondentAccount}
-              onChange={(e) => setFormData(prev => ({ ...prev, correspondentAccount: e.target.value }))}
-              required
-              className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-              placeholder="30101810123456789012"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Контактные данные */}
-      <div className="space-y-4 pt-4 border-t border-gray-300">
-        <h3 className="text-lg font-semibold text-gray-800">Контактные данные</h3>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
-              Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-              placeholder="info@company.ru"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="text-sm font-semibold text-gray-700">
-              Телефон <span className="text-red-500 font-bold">*</span>
-            </Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-              required
-              className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-              placeholder="+7 (495) 123-45-67"
-            />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="website" className="text-sm font-semibold text-gray-700">
-              Веб-сайт
-            </Label>
-            <Input
-              id="website"
-              value={formData.website}
-              onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-              className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-              placeholder="https://www.company.ru"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="director" className="text-sm font-semibold text-gray-700">
-              Директор
-            </Label>
-            <Input
-              id="director"
-              value={formData.director}
-              onChange={(e) => setFormData(prev => ({ ...prev, director: e.target.value }))}
-              className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-              placeholder="Иванов И.И."
-            />
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 text-base font-medium">
-          <X className="h-4 w-4 mr-2" />
-          Отмена
-        </Button>
-        <Button type="submit" className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700">
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
-        </Button>
-      </div>
-    </form>
-  )
-}
-
-// Компонент формы для контактных данных
-const ContactsForm = ({ onSave, onCancel, initialData }: { onSave: (data: any) => void, onCancel: () => void, initialData?: any }) => {
-  const [formData, setFormData] = useState({
-    email: initialData?.email || '',
-    phone: initialData?.phone || '',
-    website: initialData?.website || ''
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave(formData)
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-      <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
-          Email
-        </Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-          placeholder="info@company.ru"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="phone" className="text-sm font-semibold text-gray-700">
-          Телефон <span className="text-red-500 font-bold">*</span>
-        </Label>
-        <Input
-          id="phone"
-          value={formData.phone}
-          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-          required
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-          placeholder="+7 (495) 123-45-67"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="website" className="text-sm font-semibold text-gray-700">
-          Веб-сайт
-        </Label>
-        <Input
-          id="website"
-          value={formData.website}
-          onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-          placeholder="https://www.company.ru"
-        />
-      </div>
-      
-
-      
-      <div className="flex gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 text-base font-medium">
-          <X className="h-4 w-4 mr-2" />
-          Отмена
-        </Button>
-        <Button type="submit" className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700">
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
-        </Button>
-      </div>
-    </form>
-  )
-}
-
-// Компонент формы для банковских данных
-const BankForm = ({ onSave, onCancel, initialData }: { onSave: (data: any) => void, onCancel: () => void, initialData?: any }) => {
-  const [formData, setFormData] = useState({
-    bankName: initialData?.bankName || '',
-    bankAccount: initialData?.bankAccount || '',
-    bankCorrAccount: initialData?.bankCorrAccount || '',
-    bankBik: initialData?.bankBik || ''
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave(formData)
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-      <div className="space-y-2">
-        <Label htmlFor="bankName" className="text-sm font-semibold text-gray-700">
-          Название банка <span className="text-red-500 font-bold">*</span>
-        </Label>
-        <Input
-          id="bankName"
-          value={formData.bankName}
-          onChange={(e) => setFormData(prev => ({ ...prev, bankName: e.target.value }))}
-          required
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-          placeholder="Сбербанк России"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="bankAccount" className="text-sm font-semibold text-gray-700">
-          Расчетный счет <span className="text-red-500 font-bold">*</span>
-        </Label>
-        <Input
-          id="bankAccount"
-          value={formData.bankAccount}
-          onChange={(e) => setFormData(prev => ({ ...prev, bankAccount: e.target.value }))}
-          required
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-          placeholder="40702810123456789012"
-        />
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="bankCorrAccount" className="text-sm font-semibold text-gray-700">
-            Корр. счет <span className="text-red-500 font-bold">*</span>
-          </Label>
-          <Input
-            id="bankCorrAccount"
-            value={formData.bankCorrAccount}
-            onChange={(e) => setFormData(prev => ({ ...prev, bankCorrAccount: e.target.value }))}
-            required
-            className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-            placeholder="30101810123456789012"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="bankBik" className="text-sm font-semibold text-gray-700">
-            БИК <span className="text-red-500 font-bold">*</span>
-          </Label>
-          <Input
-            id="bankBik"
-            value={formData.bankBik}
-            onChange={(e) => setFormData(prev => ({ ...prev, bankBik: e.target.value }))}
-            required
-            className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-            placeholder="044525225"
-          />
-        </div>
-      </div>
-      
-
-      
-      <div className="flex gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 text-base font-medium">
-          <X className="h-4 w-4 mr-2" />
-          Отмена
-        </Button>
-        <Button type="submit" className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700">
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
-        </Button>
-      </div>
-    </form>
-  )
-}
-
-// Компонент формы для спецификации (Шаг II)
-// Тип для элемента спецификации
-interface SpecificationItem {
-  name: string;
-  quantity: number;
-  price: number;
-  code?: string;
-  unit?: string;
-  total?: number;
-  description?: string;
-}
-
-const SpecificationForm = ({ onSave, onCancel, initialData }: { onSave: (data: any) => void, onCancel: () => void, initialData?: any }) => {
-  console.log("🔍 SpecificationForm получил initialData:", initialData);
-  const [formData, setFormData] = useState({
-    supplier: initialData?.supplier || '',
-    currency: initialData?.currency || 'RUB',
-    items: (initialData?.items || [{ name: '', quantity: 1, price: 0 }]) as SpecificationItem[]
-  })
-
-  // Обновляем форму при изменении initialData
-  useEffect(() => {
-    console.log("🔄 SpecificationForm useEffect - initialData изменился:", initialData);
-    console.log("📊 Тип initialData:", typeof initialData);
-    console.log("📊 Ключи в initialData:", initialData ? Object.keys(initialData) : 'null');
-    if (initialData) {
-      const newFormData = {
-        supplier: initialData.supplier || '',
-        currency: initialData.currency || 'RUB',
-        items: initialData.items || [{ name: '', quantity: 1, price: 0 }]
-      };
-      console.log("📝 SpecificationForm устанавливает новые данные:", newFormData);
-      console.log("📊 Количество товаров:", newFormData.items.length);
-      console.log("📊 Товары:", newFormData.items);
-      setFormData(newFormData);
-    }
-  }, [initialData]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave(formData)
-  }
-
-  const addItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, { name: '', quantity: 1, price: 0 } as SpecificationItem]
-    }))
-  }
-
-  const updateItem = (index: number, field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.map((item: SpecificationItem, i: number) => 
-        i === index ? { ...item, [field]: value } : item
-      )
-    }))
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="supplier">Поставщик *</Label>
-          <Input
-            id="supplier"
-            value={formData.supplier}
-            onChange={(e) => setFormData(prev => ({ ...prev, supplier: e.target.value }))}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="currency">Валюта</Label>
-          <select
-            id="currency"
-            value={formData.currency}
-            onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="RUB">RUB</option>
-          </select>
-        </div>
-      </div>
-      
-      <div>
-        <Label>Товары</Label>
-        <div className="space-y-2">
-          {formData.items.map((item: SpecificationItem, index: number) => (
-            <div key={index} className="grid grid-cols-3 gap-2">
-              <Input
-                placeholder="Название товара"
-                value={item.name}
-                onChange={(e) => updateItem(index, 'name', e.target.value)}
-              />
-              <Input
-                type="number"
-                placeholder="Количество"
-                value={item.quantity}
-                onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
-              />
-              <Input
-                type="number"
-                placeholder="Цена"
-                value={item.price}
-                onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-          ))}
-        </div>
-        <Button type="button" variant="outline" onClick={addItem} className="mt-2">
-          <Plus className="h-4 w-4 mr-2" />
-          Добавить товар
-        </Button>
-      </div>
-      
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          <X className="h-4 w-4 mr-2" />
-          Отмена
-        </Button>
-        <Button type="submit">
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
-        </Button>
-      </div>
-    </form>
-  )
-}
 
 // Компонент загрузки файла (Шаг III)
 const FileUploadForm = ({ onSave, onCancel }: { onSave: (data: any) => void, onCancel: () => void }) => {
@@ -709,7 +183,7 @@ const FileUploadForm = ({ onSave, onCancel }: { onSave: (data: any) => void, onC
 }
 
 // Компонент формы метода оплаты (Шаг IV)
-const PaymentMethodForm = ({ onSave, onCancel, initialData, getStepData }: { onSave: (data: any) => void, onCancel: () => void, initialData?: any, getStepData?: (stepId: number) => any }) => {
+const PaymentMethodForm = ({ onSave, onCancel, initialData, getStepData }: FormProps<import('@/types/project-constructor.types').PaymentMethodsData> & { getStepData?: (stepId: number) => any }) => {
   const [method, setMethod] = useState(initialData?.method || '')
   const [supplier, setSupplier] = useState(initialData?.supplier || '')
 
@@ -823,7 +297,7 @@ const PaymentMethodForm = ({ onSave, onCancel, initialData, getStepData }: { onS
 }
 
 // Компонент формы реквизитов (Шаг V)
-const RequisitesForm = ({ onSave, onCancel, initialData }: { onSave: (data: any) => void, onCancel: () => void, initialData?: any }) => {
+const RequisitesForm = ({ onSave, onCancel, initialData }: FormProps<import('@/types/project-constructor.types').RequisitesData>) => {
   const [formData, setFormData] = useState({
     bankName: initialData?.bankName || '',
     accountNumber: initialData?.accountNumber || '',
@@ -996,10 +470,10 @@ export default function ProjectConstructorPage() {
   }, [])
   
   // Состояния для управления конструктором
-  const [stepConfigs, setStepConfigs] = useState<Record<number, string>>({})
+  const [stepConfigs, setStepConfigs] = useState<PartialStepConfigs>({})
   const [hoveredStep, setHoveredStep] = useState<number | null>(null)
   const [lastHoveredStep, setLastHoveredStep] = useState<number | null>(null)
-  const [manualData, setManualData] = useState<Record<number, any>>({})
+  const [manualData, setManualData] = useState<ManualData>({})
   const [uploadedFiles, setUploadedFiles] = useState<Record<number, string>>({})
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [templateStepSelection, setTemplateStepSelection] = useState<{templateId: string, availableSteps: number[]} | null>(null)
@@ -1007,13 +481,13 @@ export default function ProjectConstructorPage() {
   const [showBankAccountSelector, setShowBankAccountSelector] = useState<boolean>(false)
   const [bankAccountSourceType, setBankAccountSourceType] = useState<'profile' | 'template'>('profile')
   const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false)
-  const [previewData, setPreviewData] = useState<any>(null)
+  const [previewData, setPreviewData] = useState<StepDataToView | null>(null)
   const [previewType, setPreviewType] = useState<string>('')
   const [editingType, setEditingType] = useState<string>('')
   const [currentItemIndex, setCurrentItemIndex] = useState(0)
   const [touchStart, setTouchStart] = useState(0)
   const [touchEnd, setTouchEnd] = useState(0)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<UserType | null>(null)
   const [autoFillNotification, setAutoFillNotification] = useState<{
     show: boolean;
     message: string;
@@ -1024,9 +498,9 @@ export default function ProjectConstructorPage() {
   // Состояния для OCR анализа
   const [ocrAnalyzing, setOcrAnalyzing] = useState<Record<number, boolean>>({})
   const [ocrError, setOcrError] = useState<Record<number, string>>({})
-  const [ocrDebugData, setOcrDebugData] = useState<Record<number, any>>({})
+  const [ocrDebugData, setOcrDebugData] = useState<OcrDebugData>({})
   const [showStepDataModal, setShowStepDataModal] = useState<boolean>(false)
-  const [stepDataToView, setStepDataToView] = useState<{stepId: number, data: any} | null>(null)
+  const [stepDataToView, setStepDataToView] = useState<StepDataToView | null>(null)
   const [currentProductIndex, setCurrentProductIndex] = useState<number>(0)
   const [productsPerView] = useState<number>(3)
   
@@ -1098,14 +572,14 @@ export default function ProjectConstructorPage() {
 
   // Состояние для модального окна выбора поставщика из синей комнаты
   const [showBlueRoomSupplierModal, setShowBlueRoomSupplierModal] = useState<boolean>(false)
-  const [blueRoomSuppliers, setBlueRoomSuppliers] = useState<any[]>([])
+  const [blueRoomSuppliers, setBlueRoomSuppliers] = useState<SupplierData[]>([])
   const [blueRoomLoading, setBlueRoomLoading] = useState<boolean>(false)
 
   // Состояние для модального окна выбора поставщика из оранжевой комнаты
   const [showOrangeRoomSupplierModal, setShowOrangeRoomSupplierModal] = useState<boolean>(false)
-  const [orangeRoomSuppliers, setOrangeRoomSuppliers] = useState<any[]>([])
+  const [orangeRoomSuppliers, setOrangeRoomSuppliers] = useState<SupplierData[]>([])
   const [orangeRoomLoading, setOrangeRoomLoading] = useState<boolean>(false)
-  const [selectedSupplierData, setSelectedSupplierData] = useState<any>(null)
+  const [selectedSupplierData, setSelectedSupplierData] = useState<SupplierData | null>(null)
 
   // Состояния для анимации сделки
   const [dealAnimationStep, setDealAnimationStep] = useState<number>(0) // 0-3: шаги анимации
@@ -1138,7 +612,7 @@ export default function ProjectConstructorPage() {
   const [isUploadingClientReceipt, setIsUploadingClientReceipt] = useState(false)
   const [clientReceiptUploadError, setClientReceiptUploadError] = useState<string | null>(null)
   const [projectDetailsDialogOpen, setProjectDetailsDialogOpen] = useState(false)
-  const [projectDetails, setProjectDetails] = useState<any>(null)
+  const [projectDetails, setProjectDetails] = useState<ProjectDetails | null>(null)
 
   // useEffect для автоматической установки stepConfigs[5] = 'catalog' когда есть данные автозаполнения
   useEffect(() => {
@@ -3042,7 +2516,7 @@ export default function ProjectConstructorPage() {
   const isStepFilledByUser = (stepId: number) => {
     // Шаг 1: проверяем что пользователь выбрал источник данных И есть данные
     if (stepId === 1) {
-      const hasSource = stepConfigs[1] && stepConfigs[1] !== ''
+      const hasSource = Boolean(stepConfigs[1]) && stepConfigs[1] !== ''
       const hasData = manualData[1] && Object.keys(manualData[1]).length > 0
       const result = hasSource && hasData
       
@@ -3055,7 +2529,7 @@ export default function ProjectConstructorPage() {
     
     // Шаг 2: проверяем что пользователь выбрал источник данных И есть товары
     if (stepId === 2) {
-      const hasSource = stepConfigs[2] && stepConfigs[2] !== ''
+      const hasSource = Boolean(stepConfigs[2]) && stepConfigs[2] !== ''
       const hasItems = manualData[2] && manualData[2].items && manualData[2].items.length > 0
       const result = hasSource && hasItems
       
@@ -3418,7 +2892,15 @@ export default function ProjectConstructorPage() {
   }
 
   // Обработчик сохранения данных формы
-  const handleManualDataSave = (stepId: number, data: any) => {
+  const handleManualDataSave = (stepId: StepNumber, data: any) => {
+    // Валидация данных перед сохранением
+    const validation = validateStepData(stepId, data)
+    if (!validation.success) {
+      console.error(`Ошибка валидации шага ${stepId}:`, validation.errors)
+      // Показываем пользователю первую ошибку
+      alert(`Ошибка валидации: ${validation.errors[0]}`)
+      return
+    }
     console.log('=== СОХРАНЕНИЕ ДАННЫХ ===')
     console.log('stepId:', stepId)
     console.log('data для сохранения:', data)
@@ -3653,6 +3135,9 @@ export default function ProjectConstructorPage() {
           console.log("📊 Проверяем контактные данные:");
           console.log("📊 companyData.phone:", companyData.phone);
           console.log("📊 companyData.email:", companyData.email);
+
+          // ✅ ЗАКРЫВАЕМ МОДАЛ ТОЛЬКО ПРИ УСПЕШНОМ OCR
+          setSelectedSource(null);
         } else {
           console.log("⚠️ Данные извлечены, но все поля пустые");
           setOcrError(prev => ({ ...prev, [stepId]: 'Не удалось извлечь данные из документа' }));
@@ -3763,6 +3248,9 @@ export default function ProjectConstructorPage() {
           });
           console.log("✅ Спецификация автозаполнена:", specificationData);
           console.log(`✅ Добавлено ${specificationItems.length} позиций на сумму ${specificationData.totalAmount} руб.`);
+
+          // ✅ ЗАКРЫВАЕМ МОДАЛ ТОЛЬКО ПРИ УСПЕШНОМ OCR
+          setSelectedSource(null);
           
           // 🔥 НОВОЕ: Автоматически предлагаем способ оплаты и реквизиты
           if (bankRequisites.hasRequisites) {
@@ -3781,6 +3269,9 @@ export default function ProjectConstructorPage() {
             setManualData(prev => ({ ...prev, [stepId]: specificationData }));
             console.log("✅ Поставщик сохранен:", specificationData);
             setOcrError(prev => ({ ...prev, [stepId]: 'Найдена информация об инвойсе, но товары не извлечены. Добавьте позиции вручную.' }));
+
+            // ✅ ЗАКРЫВАЕМ МОДАЛ ДАЖЕ ЕСЛИ НЕ ВСЕ ДАННЫЕ ИЗВЛЕЧЕНЫ (частичный успех)
+            setSelectedSource(null);
             
             // 🔥 НОВОЕ: Предлагаем реквизиты даже если нет товаров
             if (bankRequisites.hasRequisites) {
@@ -4688,15 +4179,25 @@ export default function ProjectConstructorPage() {
     // Используем правильную структуру данных поставщика
     const supplierData = supplier || selectedSupplierData
 
+    console.log('🔍 [SUPPLIER DEBUG] supplier:', supplier)
+    console.log('🔍 [SUPPLIER DEBUG] selectedSupplierData:', selectedSupplierData)
+    console.log('🔍 [SUPPLIER DEBUG] final supplierData:', supplierData)
+    console.log('🔍 [SUPPLIER DEBUG] crypto_wallets:', supplierData?.crypto_wallets)
+
     if (method === 'crypto' && supplierData?.crypto_wallets?.length > 0) {
       const wallet = supplierData.crypto_wallets[0]
+      console.log('🔍 [CRYPTO DEBUG] wallet data:', wallet)
+      console.log('🔍 [CRYPTO DEBUG] wallet.network:', wallet.network)
+
       requisitesData = {
         ...requisitesData,
         type: 'crypto',
-        crypto_name: wallet.network || 'ETH',
+        crypto_name: wallet.currency || wallet.network || 'USDT',
         crypto_address: wallet.address,
-        crypto_network: wallet.network || 'ETH'
+        crypto_network: wallet.network || 'USDT TRC20'
       }
+
+      console.log('🔍 [CRYPTO DEBUG] final requisitesData:', requisitesData)
     } else if (method === 'p2p' && supplierData?.p2p_cards?.length > 0) {
       const card = supplierData.p2p_cards[0]
       requisitesData = {
@@ -7752,8 +7253,20 @@ export default function ProjectConstructorPage() {
                         </div>
                       )}
 
-                      {/* СПЕЦИАЛЬНО для шага 5: показываем кубики выбора когда есть stepConfigs[5] = 'catalog' но пользователь еще не выбрал тип */}
-                      {lastHoveredStep === 5 && stepConfigs[5] === 'catalog' && (!manualData[5] || !manualData[5].user_choice || !manualData[5].type) && (() => {
+                      {/* СПЕЦИАЛЬНО для шага 5: показываем кубики выбора когда есть stepConfigs[5] = 'catalog' - позволяем пользователю менять тип реквизитов даже после автозаполнения */}
+                      {lastHoveredStep === 5 && (() => {
+                        console.log('🔍 [DEBUG Step 5] Наведение на шаг 5:');
+                        console.log('  - lastHoveredStep:', lastHoveredStep);
+                        console.log('  - stepConfigs[5]:', stepConfigs[5]);
+                        console.log('  - stepConfigs:', stepConfigs);
+                        console.log('  - manualData[5]:', manualData[5]);
+                        console.log('  - selectedSupplierData:', selectedSupplierData);
+
+                        const shouldShowCubes = stepConfigs[5] === 'catalog' || (manualData[5] && Object.keys(manualData[5]).length > 0);
+                        console.log('  - shouldShowCubes (stepConfigs[5] === "catalog" OR has manualData[5]):', shouldShowCubes);
+
+                        return shouldShowCubes;
+                      })() && (() => {
                         // Проверяем доступные методы поставщика
                         const checkMethodAvailability = (method: string) => {
                           // Приоритет 1: selectedSupplierData
@@ -8651,7 +8164,10 @@ export default function ProjectConstructorPage() {
                       <div>
                         <Label className="text-sm font-medium text-gray-600">Сеть</Label>
                         <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                          {previewData.crypto_network && previewData.crypto_network.trim() !== '' ? previewData.crypto_network : 'Не указана'}
+                          {(previewData.crypto_network && previewData.crypto_network.trim() !== '') ?
+                            previewData.crypto_network :
+                            (previewData.crypto_name && previewData.crypto_name.trim() !== '') ?
+                              previewData.crypto_name : 'Не указана'}
                         </div>
                       </div>
                       <div>
