@@ -14,13 +14,7 @@ import type {
   validateStepData,
 } from '@/types/project-constructor.types'
 
-// CSS стили для фантомных данных
-const phantomDataStyles = `
-  .phantom-data-step {
-    border-style: solid !important;
-    border-width: 2px !important;
-  }
-`
+// CSS стили извлечены в отдельный файл
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -77,9 +71,23 @@ import { useProjectTemplates } from "../create-project/hooks/useSaveTemplate"
 import CompanyForm from '@/components/project-constructor/forms/CompanyForm'
 import ContactsForm from '@/components/project-constructor/forms/ContactsForm'
 import BankForm from '@/components/project-constructor/forms/BankForm'
+import { WaitingApprovalLoader, WaitingManagerReceiptLoader, RejectionMessage } from '@/components/project-constructor/status/StatusLoaders'
+import FileUploadForm from '@/components/project-constructor/forms/FileUploadForm'
+import PaymentMethodForm from '@/components/project-constructor/forms/PaymentMethodForm'
+import { constructorSteps, dataSources, stepIcons } from '@/components/project-constructor/config/ConstructorConfig'
+import { getSourceDisplayName } from '@/components/project-constructor/utils/SourceUtils'
+import { getProgress, getPreviewType, getActiveScenario } from '@/components/project-constructor/utils/ProgressUtils'
+import { bucketMap, closeEchoDataTooltip } from '@/components/project-constructor/utils/UploadUtils'
+import { phantomDataStyles } from '@/components/project-constructor/styles/PhantomStyles'
 import SpecificationForm from '@/components/project-constructor/forms/SpecificationForm'
 import { useClientProfiles } from "@/hooks/useClientProfiles"
 import { useSupplierProfiles } from "@/hooks/useSupplierProfiles"
+import { useModalHandlers } from "@/hooks/useModalHandlers"
+import { useStageHandlers } from "@/hooks/useStageHandlers"
+import { useCatalogHandlers } from "@/hooks/useCatalogHandlers"
+import { cleanProjectRequestId } from "@/utils/IdUtils"
+import { generateFileDate, formatDate } from "@/utils/DateUtils"
+import { cleanFileName } from "@/utils/FileUtils"
 import { supabase } from "@/lib/supabaseClient"
 import { useToast } from "@/components/ui/use-toast"
 import CatalogModal from "../create-project/components/CatalogModal"
@@ -87,214 +95,16 @@ import { ManagerBotService } from "@/lib/telegram/ManagerBotService"
 import { sendTelegramDocumentClient } from "@/lib/telegram-client"
 import { sendClientReceiptApprovalRequest } from "@/lib/telegram"
 
-// Структура шагов конструктора
-const constructorSteps = [
-  { id: 1, name: "Данные клиента", description: "Данные компании", sources: ["profile", "template", "manual", "upload"] },
-  { id: 2, name: "Спецификация", description: "Спецификация товаров", sources: ["profile", "template", "catalog", "manual", "upload"] },
-  { id: 3, name: "Пополнение агента", description: "Загрузка чека", sources: ["manual"] },
-  { id: 4, name: "Метод", description: "Способ оплаты", sources: ["profile", "template", "catalog", "manual"] },
-  { id: 5, name: "Реквизиты", description: "Банковские реквизиты", sources: ["profile", "template", "catalog", "manual"] },
-  { id: 6, name: "Получение", description: "Получение средств", sources: ["automatic"] },
-  { id: 7, name: "Подтверждение", description: "Завершение", sources: ["automatic"] }
-]
-
-// Источники данных
-const dataSources = {
-  profile: { name: "Профиль", icon: Users, color: "bg-blue-500" },
-  template: { name: "Шаблон", icon: FileText, color: "bg-green-500" },
-  catalog: { name: "Каталог", icon: Store, color: "bg-purple-500" },
-  manual: { name: "Вручную", icon: Plus, color: "bg-gray-500" },
-  upload: { name: "Загрузить (Yandex Vision OCR)", icon: Eye, color: "bg-orange-500" },
-  automatic: { name: "Автоматически", icon: CheckCircle, color: "bg-emerald-500" }
-}
-
-// Иконки для шагов
-const stepIcons = [
-  null,
-  Building,
-  FileText,
-  Clock,
-  CreditCard,
-  Banknote,
-  DownloadIcon,
-  CheckCircle2Icon,
-]
+// Константы конфигурации извлечены в отдельный файл
 
 // CompanyForm, ContactsForm, BankForm и SpecificationForm теперь импортируются из отдельных файлов
 
 
 
-// Компонент загрузки файла (Шаг III)
-const FileUploadForm = ({ onSave, onCancel }: { onSave: (data: any) => void, onCancel: () => void }) => {
-  const [file, setFile] = useState<File | null>(null)
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (selectedFile) {
-      setFile(selectedFile)
-    }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (file) {
-      onSave({ file })
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
-        <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-        <p className="text-gray-600 mb-4">Загрузите чек пополнения счета</p>
-        <input
-          type="file"
-          onChange={handleFileChange}
-          accept=".pdf,.jpg,.jpeg,.png"
-          className="hidden"
-          id="file-upload"
-        />
-        <label htmlFor="file-upload" className="cursor-pointer">
-          <Button type="button" variant="outline">
-            Выбрать файл
-          </Button>
-        </label>
-      </div>
-      
-      {file && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-          <FileText className="h-4 w-4 text-blue-600 inline mr-2" />
-          <span>Выбран файл: {file.name}</span>
-        </div>
-      )}
-      
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          <X className="h-4 w-4 mr-2" />
-          Отмена
-        </Button>
-        <Button type="submit" disabled={!file}>
-          <Save className="h-4 w-4 mr-2" />
-          Загрузить
-        </Button>
-      </div>
-    </form>
-  )
-}
+// FileUploadForm извлечен в отдельный компонент
 
 // Компонент формы метода оплаты (Шаг IV)
-const PaymentMethodForm = ({ onSave, onCancel, initialData, getStepData }: FormProps<import('@/types/project-constructor.types').PaymentMethodsData> & { getStepData?: (stepId: number) => any }) => {
-  const [method, setMethod] = useState(initialData?.method || '')
-  const [supplier, setSupplier] = useState(initialData?.supplier || '')
-
-  // 🔥 НОВОЕ: Автоматически получаем поставщика из шага 2, если его нет в initialData
-  React.useEffect(() => {
-    if (!supplier && !initialData?.supplier && getStepData) {
-      const step2Data = getStepData(2);
-      console.log("🔍 Проверяем данные шага 2:", step2Data);
-      if (step2Data?.supplier) {
-        setSupplier(step2Data.supplier);
-        console.log("🏢 Автоматически получен поставщик из шага 2:", step2Data.supplier);
-      }
-    }
-  }, [supplier, initialData?.supplier, getStepData]);
-
-  // 🔥 ДОПОЛНИТЕЛЬНО: Обновляем поставщика при изменении данных шага 2
-  React.useEffect(() => {
-    if (getStepData) {
-      const step2Data = getStepData(2);
-      console.log("🔄 Проверяем обновление поставщика из шага 2:", step2Data);
-      if (step2Data?.supplier && step2Data.supplier !== supplier) {
-        setSupplier(step2Data.supplier);
-        console.log("🔄 Обновлен поставщик из шага 2:", step2Data.supplier);
-      }
-    }
-  }, [getStepData, supplier]);
-
-  // 🔥 ПРИНУДИТЕЛЬНО: Обновляем поставщика при каждом рендере, если он пустой
-  React.useEffect(() => {
-    if (getStepData && !supplier) {
-      const step2Data = getStepData(2);
-      if (step2Data?.supplier) {
-        setSupplier(step2Data.supplier);
-        console.log("🚀 Принудительно установлен поставщик из шага 2:", step2Data.supplier);
-      }
-    }
-  });
-
-  // Если есть предложение из OCR, показываем его
-  const hasSuggestion = initialData?.suggested && initialData?.source === 'ocr_invoice';
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (method) {
-      onSave({ method, supplier, suggested: false, source: 'manual' })
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Показываем предложение из OCR */}
-      {hasSuggestion && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Eye className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-800">Предложение из инвойса</span>
-          </div>
-          <p className="text-sm text-blue-700 mb-3">
-            На основе банковских реквизитов в инвойсе предлагаем:
-          </p>
-          <div className="bg-white border border-blue-300 rounded p-3">
-            <span className="text-sm font-medium">Банковский перевод</span>
-            <p className="text-xs text-gray-600 mt-1">
-              Рекомендуется для международных платежей
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-      <div>
-        <Label htmlFor="method">Способ оплаты *</Label>
-        <select
-          id="method"
-          value={method}
-          onChange={(e) => setMethod(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        >
-          <option value="">Выберите способ оплаты</option>
-          <option value="bank-transfer">Банковский перевод</option>
-          <option value="p2p">P2P платеж</option>
-          <option value="crypto">Криптовалюта</option>
-        </select>
-        </div>
-        
-        <div>
-          <Label htmlFor="supplier">Поставщик</Label>
-          <Input
-            id="supplier"
-            value={supplier}
-            onChange={(e) => setSupplier(e.target.value)}
-            placeholder="Введите название поставщика"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-      
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          <X className="h-4 w-4 mr-2" />
-          Отмена
-        </Button>
-        <Button type="submit" disabled={!method}>
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
-        </Button>
-      </div>
-    </form>
-  )
-}
+// PaymentMethodForm извлечен в отдельный компонент
 
 // Компонент формы реквизитов (Шаг V)
 const RequisitesForm = ({ onSave, onCancel, initialData }: FormProps<import('@/types/project-constructor.types').RequisitesData>) => {
@@ -614,6 +424,26 @@ export default function ProjectConstructorPage() {
   const [projectDetailsDialogOpen, setProjectDetailsDialogOpen] = useState(false)
   const [projectDetails, setProjectDetails] = useState<ProjectDetails | null>(null)
 
+  // Модальные обработчики
+  const { openStageTransitionModal, handleCancelSource } = useModalHandlers(
+    setShowStageTransitionModal,
+    setStageTransitionShown,
+    setSelectedSource,
+    setEditingType
+  )
+
+  // Обработчики этапов реквизитов
+  const { confirmRequisites, editRequisites } = useStageHandlers(
+    setShowRequisitesConfirmationModal,
+    setShowStage2SummaryModal,
+    setCurrentStage
+  )
+
+  // Обработчики каталога
+  const { handleAddProductsFromCatalog } = useCatalogHandlers(
+    setShowCatalogModal
+  )
+
   // useEffect для автоматической установки stepConfigs[5] = 'catalog' когда есть данные автозаполнения
   useEffect(() => {
     // Проверяем есть ли у выбранного поставщика данные для автозаполнения 5-го шага
@@ -845,7 +675,7 @@ export default function ProjectConstructorPage() {
     const checkManagerStatus = async () => {
       try {
         console.log('🔍 Проверяем статус для projectRequestId:', projectRequestId)
-        const cleanRequestId = projectRequestId.replace(/[^a-zA-Z0-9]/g, '')
+        const cleanRequestId = cleanProjectRequestId(projectRequestId)
         console.log('🧹 Очищенный requestId для поиска:', cleanRequestId)
         
         const { data: projects, error } = await supabase
@@ -894,7 +724,7 @@ export default function ProjectConstructorPage() {
     const checkReceiptStatus = async () => {
       try {
         console.log('🔍 Проверяем статус чека для projectRequestId:', projectRequestId)
-        const cleanRequestId = projectRequestId.replace(/[^a-zA-Z0-9]/g, '')
+        const cleanRequestId = cleanProjectRequestId(projectRequestId)
         console.log('🧹 Очищенный requestId для поиска чека:', cleanRequestId)
         
         const { data: projects, error } = await supabase
@@ -976,7 +806,7 @@ export default function ProjectConstructorPage() {
         const { data: project, error } = await supabase
           .from('projects')
           .select('status, receipts')
-          .ilike('atomic_request_id', `%${projectRequestId.replace(/[^a-zA-Z0-9]/g, '')}%`)
+          .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
           .single()
         
         if (error || !project) {
@@ -1018,7 +848,7 @@ export default function ProjectConstructorPage() {
                 status: 'in_work',
                 updated_at: new Date().toISOString()
               })
-              .ilike('atomic_request_id', `%${projectRequestId.replace(/[^a-zA-Z0-9]/g, '')}%`)
+              .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
             console.log('✅ Статус изменен на in_work')
           }
         } else if (!managerReceiptUrl && hasManagerReceipt) {
@@ -1070,7 +900,7 @@ export default function ProjectConstructorPage() {
 
       // Генерируем уникальное имя файла
       const fileExtension = file.name.split('.').pop() || 'jpg'
-      const fileName = `client-receipt-${projectRequestId.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now()}.${fileExtension}`
+      const fileName = `client-receipt-${cleanProjectRequestId(projectRequestId)}-${Date.now()}.${fileExtension}`
       const filePath = `${userId}/${fileName}`
 
       console.log("📤 Загружаем чек клиента:", {
@@ -1108,7 +938,7 @@ export default function ProjectConstructorPage() {
           client_confirmation_url: fileUrl,
           updated_at: new Date().toISOString()
         })
-        .ilike('atomic_request_id', `%${projectRequestId.replace(/[^a-zA-Z0-9]/g, '')}%`)
+        .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
 
       if (updateError) {
         console.error("❌ Ошибка обновления проекта:", updateError)
@@ -1201,7 +1031,7 @@ export default function ProjectConstructorPage() {
           client_confirmation_url: null,
           updated_at: new Date().toISOString()
         })
-        .ilike('atomic_request_id', `%${projectRequestId.replace(/[^a-zA-Z0-9]/g, '')}%`)
+        .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
 
       if (updateError) {
         console.error("❌ Ошибка обновления проекта:", updateError)
@@ -1238,7 +1068,7 @@ export default function ProjectConstructorPage() {
       const { data: projects, error } = await supabase
         .from("projects")
         .select("*")
-        .ilike('atomic_request_id', `%${projectRequestId.replace(/[^a-zA-Z0-9]/g, '')}%`)
+        .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
         .order("created_at", { ascending: false })
         .limit(1)
 
@@ -1257,7 +1087,7 @@ export default function ProjectConstructorPage() {
         manualData,
         stepConfigs,
         currentStage: getCurrentStage(),
-        activeScenario: getActiveScenario()
+        activeScenario: getActiveScenario(isStepFilledByUser)
       })
       setProjectDetailsDialogOpen(true)
 
@@ -1287,7 +1117,7 @@ export default function ProjectConstructorPage() {
       const { data: project, error } = await supabase
         .from('projects')
         .select('*')
-        .ilike('atomic_request_id', `%${projectRequestId.replace(/[^a-zA-Z0-9]/g, '')}%`)
+        .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
         .single()
       
       if (error || !project) {
@@ -2494,23 +2324,7 @@ export default function ProjectConstructorPage() {
     }
   }
 
-  // Определение активного сценария
-  const getActiveScenario = () => {
-    // Используем ту же логику, что и в isStepFilledByUser
-    if (isStepFilledByUser(1)) {
-      return 'A'
-    }
-    
-    if (isStepFilledByUser(2)) {
-      return 'B1'
-    }
-    
-    if (isStepFilledByUser(4) || isStepFilledByUser(5)) {
-      return 'B2'
-    }
-    
-    return 'none' // Сценарий еще не определен
-  }
+  // getActiveScenario извлечена в ProgressUtils
 
   // Проверка, заполнен ли шаг пользователем (не эхо данными)
   const isStepFilledByUser = (stepId: number) => {
@@ -2666,10 +2480,6 @@ export default function ProjectConstructorPage() {
     }
   }
 
-  const openStageTransitionModal = () => {
-    setShowStageTransitionModal(true)
-    setStageTransitionShown(true)
-  }
 
   // Функция для возврата к редактированию на первом этапе
   const returnToStage1Editing = () => {
@@ -2739,20 +2549,6 @@ export default function ProjectConstructorPage() {
     }, 4500)
   }
 
-  // Функция для подтверждения реквизитов
-  const confirmRequisites = () => {
-    console.log('✅ Реквизиты подтверждены - показываем сводку этапа 2')
-    setShowRequisitesConfirmationModal(false)
-    setShowStage2SummaryModal(true)
-  }
-
-  // Функция для редактирования реквизитов
-  const editRequisites = () => {
-    console.log('✏️ Редактирование реквизитов')
-    setShowRequisitesConfirmationModal(false)
-    // Возвращаемся к редактированию шага 5 (реквизиты)
-    setCurrentStage(1) // Возвращаемся к первому этапу для редактирования
-  }
 
   // Функция для перехода к третьему этапу
   const proceedToStage3 = () => {
@@ -2762,31 +2558,7 @@ export default function ProjectConstructorPage() {
     startDealAnimation()
   }
 
-  // Функция для получения читаемого названия источника данных
-  const getSourceDisplayName = (source: string) => {
-    switch (source) {
-      case 'profile':
-        return 'Профиль пользователя'
-      case 'template':
-        return 'Шаблон проекта'
-      case 'catalog':
-        return 'Каталог поставщиков'
-      case 'blue_room':
-        return 'Синяя комната'
-      case 'orange_room':
-        return 'Оранжевая комната'
-      case 'echo_cards':
-        return 'Эхо карточки'
-      case 'manual':
-        return 'Ручной ввод'
-      case 'upload':
-        return 'Загрузить (Yandex Vision OCR)'
-      case 'automatic':
-        return 'Автоматически'
-      default:
-        return source || 'Ручной ввод'
-    }
-  }
+  // getSourceDisplayName извлечена в отдельный утиль
 
   // Проверка доступности шага
   const isStepEnabled = (stepId: number) => {
@@ -2819,11 +2591,7 @@ export default function ProjectConstructorPage() {
   }
 
   // Получение прогресса
-  const getProgress = () => {
-    // Считаем только шаги, заполненные пользователем (не эхо данными)
-    const filledSteps = [1, 2, 3, 4, 5, 6, 7].filter(stepId => isStepFilledByUser(stepId)).length
-    return Math.round((filledSteps / 7) * 100)
-  }
+  // getProgress извлечена в ProgressUtils
 
   // Получение сводки настроенных шагов
     const getConfiguredStepsSummary = () => {
@@ -2984,24 +2752,15 @@ export default function ProjectConstructorPage() {
       }
 
       // Определяем bucket для загрузки в зависимости от шага
-      const bucketMap = {
-        1: 'step-a1-ready-company',    // Карточки компаний
-        2: 'step2-ready-invoices',     // Спецификации и инвойсы (как в обычном конструкторе)
-        3: 'step3-supplier-receipts',  // Чеки поставщиков
-        4: 'project-files',            // Документы по оплате
-        5: 'project-files',            // Реквизиты
-        6: 'step6-client-receipts',    // Чеки клиентов
-        7: 'step7-client-confirmations' // Подтверждения
-      };
 
       const bucket = bucketMap[stepId as keyof typeof bucketMap] || 'project-files';
       console.log(`📦 Используем bucket: ${bucket}`)
       
       // Генерируем уникальное имя файла (как в обычном конструкторе)
       const sender = 'atomic-constructor';
-      const date = new Date().toISOString().slice(0,10).replace(/-/g, '');
+      const date = generateFileDate();
       const timestamp = Date.now();
-      const cleanName = file.name.replace(/[^\w.-]+/g, '_').substring(0, 50);
+      const cleanName = cleanFileName(file.name);
       const fileName = `invoices/atomic/${date}_${timestamp}_${sender}_${cleanName}`;
       
       console.log(`📁 Путь файла: ${fileName}`)
@@ -3485,10 +3244,6 @@ export default function ProjectConstructorPage() {
   };
 
   // Обработчик отмены выбора источника
-  const handleCancelSource = () => {
-    setSelectedSource(null)
-    setEditingType('')
-  }
 
   // Функция для открытия модального окна с данными шага
   const handleViewStepData = (stepId: number) => {
@@ -3574,10 +3329,6 @@ export default function ProjectConstructorPage() {
 
   // Функция удалена - счетчики теперь управляются в CatalogModal
 
-  const handleAddProductsFromCatalog = () => {
-    console.log('🛒 Открытие полного каталога')
-    setShowCatalogModal(true)
-  }
   
   // Обработчик добавления товаров из каталога
   const handleCatalogProductsAdd = (products: any[]) => {
@@ -4019,24 +3770,8 @@ export default function ProjectConstructorPage() {
     handlePreviewData(getPreviewType(item.stepId), item.data)
   }
 
-  // Функция для определения типа предварительного просмотра
-  const getPreviewType = (stepId: number) => {
-    switch (stepId) {
-      case 1: return 'company'
-      case 2: return 'product'
-      case 4: return 'payment'
-      case 5: return 'requisites'
-      default: return 'company'
-    }
-  }
+  // getPreviewType извлечена в ProgressUtils
 
-  // Функция для закрытия всплывающей подсказки эхо данных
-  const closeEchoDataTooltip = (stepId: number) => {
-    setEchoDataTooltips(prev => ({
-      ...prev,
-      [stepId]: false
-    }))
-  }
 
   // Функции для обработки источников каталога
   const handleBlueRoomSource = async () => {
@@ -4716,155 +4451,6 @@ export default function ProjectConstructorPage() {
   }
 
   // Функция отправки данных менеджеру
-  // Компонент лоадера ожидания апрува менеджера
-  const WaitingApprovalLoader = () => (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6">
-        <div className="text-center">
-          <div className="relative mb-6">
-            <div className="w-20 h-20 border-4 border-orange-100 rounded-full flex items-center justify-center">
-              <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            </div>
-          </div>
-          
-          <h3 className="text-xl font-semibold text-gray-800 mb-3">
-            Ожидание подтверждения менеджера
-          </h3>
-          
-          <p className="text-gray-600 mb-6 leading-relaxed">
-            Ваши данные отправлены на проверку менеджеру. 
-            Мы уведомим вас, как только получим подтверждение.
-          </p>
-          
-          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-xl p-4">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                <span className="text-orange-700 font-medium">На рассмотрении</span>
-              </div>
-              <div className="text-orange-600 font-mono text-xs">
-                ID: {projectRequestId?.slice(-8)}
-              </div>
-            </div>
-            <div className="mt-2 text-xs text-orange-600">
-              Статус: <span className="font-medium">waiting_approval</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Информационная панель */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">Ожидание ответа</p>
-              <p className="text-xs text-gray-500">Менеджер проверяет данные</p>
-            </div>
-          </div>
-          <div className="text-xs text-gray-400">
-            Обновление каждые 4 секунды...
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Компонент лоадера ожидания чека от менеджера
-  const WaitingManagerReceiptLoader = () => (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6">
-        <div className="text-center">
-          <div className="relative mb-6">
-            <div className="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center">
-              <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            </div>
-          </div>
-          
-          <h3 className="text-xl font-semibold text-gray-800 mb-3">
-            Ожидание чека от менеджера
-          </h3>
-          
-          <p className="text-gray-600 mb-6 leading-relaxed">
-            Агент выполняет перевод поставщику и отправит чек. 
-            Мы уведомим вас, как только получим подтверждение.
-          </p>
-          
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-green-700 font-medium">В процессе</span>
-              </div>
-              <div className="text-green-600 font-mono text-xs">
-                ID: {projectRequestId?.slice(-8)}
-              </div>
-            </div>
-            <div className="mt-2 text-xs text-green-600">
-              Статус: <span className="font-medium">waiting_manager_receipt</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Информационная панель */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">Выполняется перевод</p>
-              <p className="text-xs text-gray-500">Агент переводит средства поставщику</p>
-            </div>
-          </div>
-          <div className="text-xs text-gray-400">
-            Обновление каждые 5 секунд...
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Компонент сообщения об отклонении
-  const RejectionMessage = () => (
-    <div className="flex flex-col items-center justify-center space-y-4 p-8 bg-white rounded-lg shadow-lg">
-      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-        <X className="h-8 w-8 text-red-500" />
-      </div>
-      <div className="text-center">
-        <h3 className="text-xl font-semibold text-red-700 mb-2">
-          Запрос отклонен
-        </h3>
-        <p className="text-sm text-gray-600 mb-4">
-          {managerApprovalMessage || 'Менеджер отклонил ваш запрос. Проверьте данные и попробуйте снова.'}
-        </p>
-        <Button 
-          onClick={() => {
-            setManagerApprovalStatus(null)
-            setCurrentStage(1)
-          }}
-          className="bg-red-500 hover:bg-red-600"
-        >
-          Вернуться к редактированию
-        </Button>
-      </div>
-    </div>
-  );
 
   // Компонент для шага 3 - Платёжка (использует ту же логику, что и обычный стартап проектов)
   const PaymentForm = () => {
@@ -4895,7 +4481,7 @@ export default function ProjectConstructorPage() {
           const { data, error } = await supabase
             .from('projects')
             .select('status, atomic_moderation_status')
-            .ilike('atomic_request_id', `%${projectRequestId.replace(/[^a-zA-Z0-9]/g, '')}%`)
+            .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
             .single()
 
           if (error) {
@@ -4942,8 +4528,8 @@ export default function ProjectConstructorPage() {
       
       try {
         // Используем тот же bucket, что и в обычном стартапе проектов
-        const date = new Date().toISOString().slice(0,10).replace(/-/g, '')
-        const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_')
+        const date = generateFileDate()
+        const cleanName = cleanFileName(file.name)
         const filePath = `step3-supplier-receipts/${projectRequestId}/${date}_${cleanName}`
         
         const { data, error } = await supabase.storage
@@ -4970,7 +4556,7 @@ export default function ProjectConstructorPage() {
                 status: 'waiting_receipt',
                 updated_at: new Date().toISOString()
               })
-              .ilike('atomic_request_id', `%${projectRequestId.replace(/[^a-zA-Z0-9]/g, '')}%`)
+              .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
             
             if (updateError) {
               console.warn('⚠️ Не удалось обновить статус проекта:', updateError)
@@ -5240,7 +4826,7 @@ export default function ProjectConstructorPage() {
         manualData,
         uploadedFiles,
         currentStage: getCurrentStage(),
-        activeScenario: getActiveScenario()
+        activeScenario: getActiveScenario(isStepFilledByUser)
       })
 
       const response = await fetch('/api/atomic-constructor/send-to-manager', {
@@ -5255,7 +4841,7 @@ export default function ProjectConstructorPage() {
           uploadedFiles,
           user,
           currentStage: getCurrentStage(),
-          activeScenario: getActiveScenario()
+          activeScenario: getActiveScenario(isStepFilledByUser)
         })
       })
 
@@ -5346,9 +4932,9 @@ export default function ProjectConstructorPage() {
               <div className="text-sm">
                 <span className="font-medium">Сценарий: </span>
                 <span className="text-gray-600">
-                  {getActiveScenario() === 'A' ? 'А (Клиент-покупатель)' :
-                   getActiveScenario() === 'B1' ? 'Б1 (Поставщик-товары)' :
-                   getActiveScenario() === 'B2' ? 'Б2 (Поставщик-реквизиты)' : 'Не определен'}
+                  {getActiveScenario(isStepFilledByUser) === 'A' ? 'А (Клиент-покупатель)' :
+                   getActiveScenario(isStepFilledByUser) === 'B1' ? 'Б1 (Поставщик-товары)' :
+                   getActiveScenario(isStepFilledByUser) === 'B2' ? 'Б2 (Поставщик-реквизиты)' : 'Не определен'}
                 </span>
               </div>
             </div>
@@ -5568,9 +5154,9 @@ export default function ProjectConstructorPage() {
               <div className="text-sm text-gray-600 mb-4">
                 Статус менеджера: {managerApprovalStatus || 'null'}
               </div>
-              {managerApprovalStatus === 'pending' && <WaitingApprovalLoader />}
+              {managerApprovalStatus === 'pending' && <WaitingApprovalLoader projectRequestId={projectRequestId} />}
               {managerApprovalStatus === 'approved' && <PaymentForm />}
-              {managerApprovalStatus === 'rejected' && <RejectionMessage />}
+              {managerApprovalStatus === 'rejected' && <RejectionMessage managerApprovalMessage={managerApprovalMessage} onRejectionReset={() => { setManagerApprovalStatus(null); setCurrentStage(1); }} />}
               {!managerApprovalStatus && (
                 <div className="text-red-500">
                   Ошибка: статус менеджера не установлен
@@ -5732,7 +5318,7 @@ export default function ProjectConstructorPage() {
                     {isRequestSent ? (
                       <div className="space-y-4">
                         {showFullLoader ? (
-                          <WaitingManagerReceiptLoader />
+                          <WaitingManagerReceiptLoader projectRequestId={projectRequestId} />
                         ) : (
                           <div className="bg-blue-100 border border-blue-300 rounded-lg p-4">
                             <div className="flex items-center gap-2 mb-2">
@@ -7852,12 +7438,12 @@ export default function ProjectConstructorPage() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Прогресс настройки</span>
-              <span className="text-sm text-gray-500">{getProgress()}%</span>
+              <span className="text-sm text-gray-500">{getProgress(isStepFilledByUser)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${getProgress()}%` }}
+                style={{ width: `${getProgress(isStepFilledByUser)}%` }}
               />
             </div>
             
