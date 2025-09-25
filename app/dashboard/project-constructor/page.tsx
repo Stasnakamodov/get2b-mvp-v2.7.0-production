@@ -16,6 +16,7 @@ import type {
 
 // CSS стили извлечены в отдельный файл
 import { useState, useEffect, useRef } from "react"
+import { uploadFileToStorage, sendTelegramMessage, fetchFromApi, fetchCatalogData } from '@/utils/ApiUtils'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -74,6 +75,7 @@ import BankForm from '@/components/project-constructor/forms/BankForm'
 import { WaitingApprovalLoader, WaitingManagerReceiptLoader, RejectionMessage } from '@/components/project-constructor/status/StatusLoaders'
 import FileUploadForm from '@/components/project-constructor/forms/FileUploadForm'
 import PaymentMethodForm from '@/components/project-constructor/forms/PaymentMethodForm'
+import RequisitesForm from '@/components/project-constructor/forms/RequisitesForm'
 import { constructorSteps, dataSources, stepIcons } from '@/components/project-constructor/config/ConstructorConfig'
 import { getSourceDisplayName } from '@/components/project-constructor/utils/SourceUtils'
 import { getProgress, getPreviewType, getActiveScenario } from '@/components/project-constructor/utils/ProgressUtils'
@@ -106,166 +108,7 @@ import { sendClientReceiptApprovalRequest } from "@/lib/telegram"
 // Компонент формы метода оплаты (Шаг IV)
 // PaymentMethodForm извлечен в отдельный компонент
 
-// Компонент формы реквизитов (Шаг V)
-const RequisitesForm = ({ onSave, onCancel, initialData }: FormProps<import('@/types/project-constructor.types').RequisitesData>) => {
-  const [formData, setFormData] = useState({
-    bankName: initialData?.bankName || '',
-    accountNumber: initialData?.accountNumber || '',
-    swift: initialData?.swift || '',
-    recipientName: initialData?.recipientName || '',
-    recipientAddress: initialData?.recipientAddress || '',
-    transferCurrency: initialData?.transferCurrency || 'USD',
-    supplier: initialData?.supplier || initialData?.recipientName || ''
-  })
-
-  // 🔥 НОВОЕ: Автоматически заполняем поставщика из получателя
-  React.useEffect(() => {
-    if (formData.recipientName && !formData.supplier) {
-      setFormData(prev => ({ ...prev, supplier: formData.recipientName }));
-    }
-  }, [formData.recipientName, formData.supplier]);
-
-  // Если есть предложение из OCR, показываем его
-  const hasSuggestion = initialData?.suggested && initialData?.source === 'ocr_invoice';
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave({ ...formData, suggested: false, source: 'manual' })
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Показываем предложение из OCR */}
-      {hasSuggestion && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Eye className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-800">Предложение из инвойса</span>
-          </div>
-          <p className="text-sm text-blue-700 mb-3">
-            На основе банковских реквизитов в инвойсе предлагаем:
-          </p>
-          <div className="bg-white border border-blue-300 rounded p-3 space-y-2">
-            {initialData.accountNumber && (
-              <div>
-                <span className="text-xs text-gray-600">Номер счета:</span>
-                <p className="text-sm font-medium">{initialData.accountNumber}</p>
-              </div>
-            )}
-            {initialData.swift && (
-              <div>
-                <span className="text-xs text-gray-600">SWIFT код:</span>
-                <p className="text-sm font-medium">{initialData.swift}</p>
-              </div>
-            )}
-            {initialData.recipientName && (
-              <div>
-                <span className="text-xs text-gray-600">Получатель:</span>
-                <p className="text-sm font-medium">{initialData.recipientName}</p>
-              </div>
-            )}
-            {initialData.transferCurrency && (
-              <div>
-                <span className="text-xs text-gray-600">Валюта:</span>
-                <p className="text-sm font-medium">{initialData.transferCurrency}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="bankName">Название банка</Label>
-          <Input
-            id="bankName"
-            value={formData.bankName}
-            onChange={(e) => setFormData(prev => ({ ...prev, bankName: e.target.value }))}
-            placeholder="Введите название банка"
-          />
-        </div>
-        <div>
-          <Label htmlFor="accountNumber">Номер счета *</Label>
-          <Input
-            id="accountNumber"
-            value={formData.accountNumber}
-            onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
-            required
-            placeholder="Введите номер счета"
-          />
-        </div>
-      </div>
-      
-      <div>
-        <Label htmlFor="swift">SWIFT/BIC код</Label>
-        <Input
-          id="swift"
-          value={formData.swift}
-          onChange={(e) => setFormData(prev => ({ ...prev, swift: e.target.value }))}
-          placeholder="Введите SWIFT/BIC код"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="recipientName">Полное наименование получателя</Label>
-          <Input
-            id="recipientName"
-            value={formData.recipientName}
-            onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))}
-            placeholder="Введите название получателя"
-          />
-        </div>
-        <div>
-          <Label htmlFor="supplier">Поставщик</Label>
-          <Input
-            id="supplier"
-            value={formData.supplier}
-            onChange={(e) => setFormData(prev => ({ ...prev, supplier: e.target.value }))}
-            placeholder="Введите название поставщика"
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="recipientAddress">Юридический адрес получателя</Label>
-        <Textarea
-          id="recipientAddress"
-          value={formData.recipientAddress}
-          onChange={(e) => setFormData(prev => ({ ...prev, recipientAddress: e.target.value }))}
-          placeholder="Введите адрес получателя"
-          rows={3}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="transferCurrency">Валюта перевода</Label>
-        <select
-          id="transferCurrency"
-          value={formData.transferCurrency}
-          onChange={(e) => setFormData(prev => ({ ...prev, transferCurrency: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="USD">USD - Доллар США</option>
-          <option value="EUR">EUR - Евро</option>
-          <option value="RUB">RUB - Российский рубль</option>
-          <option value="CNY">CNY - Китайский юань</option>
-        </select>
-      </div>
-      
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          <X className="h-4 w-4 mr-2" />
-          Отмена
-        </Button>
-        <Button type="submit">
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
-        </Button>
-      </div>
-    </form>
-  )
-}
+// RequisitesForm извлечен в отдельный компонент
 
 export default function ProjectConstructorPage() {
   // Добавляем CSS стили для фантомных данных
@@ -969,17 +812,14 @@ export default function ProjectConstructorPage() {
         })
         
         // Отправляем файл менеджеру в Telegram через API endpoint
-        const response = await fetch('/api/telegram/send-client-receipt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const telegramResult = await sendTelegramMessage({
+          endpoint: 'telegram/send-client-receipt',
+          payload: {
             documentUrl: fileUrl,
             caption: telegramCaption,
             projectRequestId
-          })
+          }
         })
-        
-        const telegramResult = await response.json()
         
         if (telegramResult.success) {
           console.log("✅ Чек с кнопками одобрения отправлен менеджеру в Telegram:", telegramResult)
@@ -1152,10 +992,9 @@ export default function ProjectConstructorPage() {
       }
       
       // Отправляем запрос в Telegram
-      const response = await fetch('/api/telegram/send-supplier-receipt-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const response = await sendTelegramMessage({
+        endpoint: 'telegram/send-supplier-receipt-request',
+        payload: {
           projectId: project.id,
           email: project.email || 'email@example.com',
           companyName: project.company_data?.name || 'Проект',
@@ -1163,12 +1002,8 @@ export default function ProjectConstructorPage() {
           currency: project.currency || 'USD',
           paymentMethod: project.payment_method || 'bank-transfer',
           requisites: requisiteText
-        })
+        }
       })
-      
-      if (!response.ok) {
-        throw new Error('Ошибка отправки запроса')
-      }
       
       console.log('✅ Запрос менеджеру отправлен успешно')
       
@@ -2757,37 +2592,16 @@ export default function ProjectConstructorPage() {
       console.log(`📦 Используем bucket: ${bucket}`)
       
       // Генерируем уникальное имя файла (как в обычном конструкторе)
-      const sender = 'atomic-constructor';
       const date = generateFileDate();
       const timestamp = Date.now();
       const cleanName = cleanFileName(file.name);
-      const fileName = `invoices/atomic/${date}_${timestamp}_${sender}_${cleanName}`;
-      
-      console.log(`📁 Путь файла: ${fileName}`)
-      
-      // Загружаем файл в Supabase Storage
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, {
-          upsert: true // Перезаписываем файл, если он уже существует
-        });
 
-      if (error) {
-        console.error("❌ Ошибка загрузки в Supabase Storage:", error);
-        throw new Error(`Ошибка загрузки файла: ${error.message}`);
-      }
-
-      console.log("✅ Файл успешно загружен в Storage:", data);
-
-      // Получаем публичную ссылку
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
-
-      const fileUrl = urlData?.publicUrl;
-      if (!fileUrl) {
-        throw new Error('Не удалось получить ссылку на файл');
-      }
+      const { url: fileUrl } = await uploadFileToStorage(file, {
+        bucket,
+        folder: `invoices/atomic`,
+        projectRequestId: `${date}_${timestamp}_atomic-constructor`,
+        date: ''
+      })
 
       console.log(`🔗 Публичный URL: ${fileUrl}`);
       
@@ -3393,8 +3207,7 @@ export default function ProjectConstructorPage() {
         console.log('🎯 [ATOMIC] Товары добавлены из каталога - приоритет данных каталога над эхо данными')
 
         // Сначала загружаем АКТУАЛЬНЫЕ данные каталога
-        fetch(`/api/catalog/verified-suppliers?search=${encodeURIComponent(firstProduct.supplier_name)}`)
-          .then(response => response.json())
+        fetchCatalogData('verified-suppliers', { search: firstProduct.supplier_name })
           .then(data => {
             console.log('🔍 [ATOMIC] Ответ API verified-suppliers:', data)
             const supplier = data.suppliers?.find((s: any) =>
@@ -3796,16 +3609,7 @@ export default function ProjectConstructorPage() {
       console.log('🔍 [DEBUG] Токен доступа:', session.access_token ? 'Есть' : 'Нет');
       console.log('🔍 [DEBUG] User ID:', session.user?.id);
 
-      const response = await fetch('/api/catalog/user-suppliers', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      
-      console.log('🔍 [DEBUG] Статус ответа:', response.status);
-      console.log('🔍 [DEBUG] Заголовки ответа:', Object.fromEntries(response.headers.entries()));
-      
-      const data = await response.json();
+      const data = await fetchCatalogData('user-suppliers', {}, session);
       console.log('🔍 [DEBUG] Данные ответа:', data);
       
       if (data.suppliers && data.suppliers.length > 0) {
@@ -3839,12 +3643,7 @@ export default function ProjectConstructorPage() {
         return;
       }
 
-      const response = await fetch('/api/catalog/verified-suppliers', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      const data = await response.json();
+      const data = await fetchCatalogData('verified-suppliers', {}, session);
       
       if (data.suppliers && data.suppliers.length > 0) {
         console.log('✅ Найдены поставщики в оранжевой комнате:', data.suppliers.length)
@@ -3868,8 +3667,7 @@ export default function ProjectConstructorPage() {
     console.log('🔄 Загружаем данные из эхо карточек для шага:', catalogSourceStep)
     
     try {
-      const response = await fetch('/api/catalog/echo-cards')
-      const data = await response.json()
+      const data = await fetchCatalogData('echo-cards')
       
       if (data.echoCards && data.echoCards.length > 0) {
         // Показываем выбор эхо карточки
@@ -4127,8 +3925,7 @@ export default function ProjectConstructorPage() {
       console.log('🔍 Поиск поставщика по реквизитам:', requisites)
       
       // Получаем всех поставщиков из каталога
-      const response = await fetch('/api/catalog/user-suppliers')
-      const suppliers = await response.json()
+      const suppliers = await fetchCatalogData('user-suppliers')
       
       if (!suppliers || suppliers.length === 0) {
         console.log('❌ Нет поставщиков в каталоге')
@@ -4264,8 +4061,7 @@ export default function ProjectConstructorPage() {
       console.log('🔍 === СИСТЕМА 1: Поиск по имени ===')
       console.log('🔍 Ищем поставщика по имени:', supplierName)
       
-      const response = await fetch(`/api/catalog/user-suppliers?search=${encodeURIComponent(supplierName)}`)
-      const suppliers = await response.json()
+      const suppliers = await fetchCatalogData('user-suppliers', { search: supplierName })
       
       if (suppliers.length > 0) {
         const supplier = suppliers[0]
@@ -4317,8 +4113,7 @@ export default function ProjectConstructorPage() {
         console.log('✅ Найден поставщик по реквизитам:', supplier.name)
         
         // Получаем товары поставщика
-        const productsResponse = await fetch(`/api/catalog/user-suppliers/${supplier.id}/products`)
-        const productsData = await productsResponse.json()
+        const productsData = await fetchFromApi(`/api/catalog/user-suppliers/${supplier.id}/products`)
         const products = productsData.products || []
         
         return {
@@ -4563,19 +4358,14 @@ export default function ProjectConstructorPage() {
             }
             
             // Отправляем чек менеджеру через Telegram
-            const response = await fetch('/api/telegram/send-receipt', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
+            await sendTelegramMessage({
+              endpoint: 'telegram/send-receipt',
+              payload: {
                 projectRequestId,
                 receiptUrl: urlData?.publicUrl,
                 fileName: file.name
-              })
+              }
             })
-            
-            if (!response.ok) {
-              console.warn('⚠️ Не удалось отправить чек в Telegram')
-            }
           } catch (error) {
             console.warn('⚠️ Ошибка обработки чека:', error)
           }
@@ -4829,10 +4619,9 @@ export default function ProjectConstructorPage() {
         activeScenario: getActiveScenario(isStepFilledByUser)
       })
 
-      const response = await fetch('/api/atomic-constructor/send-to-manager', {
+      const response = await fetchFromApi('/api/atomic-constructor/send-to-manager', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
         },
         body: JSON.stringify({
