@@ -5,28 +5,27 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X, Save } from 'lucide-react'
-import type { FormProps, CompanyData } from '@/types/project-constructor.types'
+import type { FormProps, CompanyData, ExtendedCompanyData } from '@/types/project-constructor.types'
 import { CompanyDataSchema } from '@/types/project-constructor.types'
 
-interface CompanyFormProps extends FormProps<CompanyData> {
+interface CompanyFormProps extends FormProps<ExtendedCompanyData> {
   isInlineView?: boolean
 }
 
 const CompanyForm = ({ onSave, onCancel, initialData, isInlineView = false }: CompanyFormProps) => {
-  console.log("🔍 CompanyForm получил initialData:", initialData);
 
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
-    legalName: initialData?.legal_name || '',
+    legalName: initialData?.legal_name || (initialData as any)?.legalName || '',
     inn: initialData?.inn || '',
     kpp: initialData?.kpp || '',
     ogrn: initialData?.ogrn || '',
-    address: initialData?.legal_address || '',
-    // Банковские реквизиты - автозаполнение из профиля
-    bankName: initialData?.bank_name || '',
-    bankAccount: initialData?.bank_account || '',
-    bik: initialData?.bik || '',
-    correspondentAccount: initialData?.corr_account || '',
+    address: initialData?.legal_address || (initialData as any)?.address || '',
+    // Банковские реквизиты - автозаполнение из профиля и шаблонов
+    bankName: initialData?.bank_name || (initialData as any)?.bankName || '',
+    bankAccount: initialData?.bank_account || (initialData as any)?.bankAccount || '',
+    bik: initialData?.bik || (initialData as any)?.bankBik || '',
+    correspondentAccount: initialData?.corr_account || (initialData as any)?.bankCorrAccount || '',
     // Контактные данные
     email: initialData?.email || '',
     phone: initialData?.phone || '',
@@ -101,7 +100,7 @@ const CompanyForm = ({ onSave, onCancel, initialData, isInlineView = false }: Co
         <Input
           id="legalName"
           value={formData.legalName}
-          onChange={(e) => setFormData(prev => ({ ...prev, legalName: e.target.value }))}
+          onChange={(e) => handleFieldChange('legalName', e.target.value)}
           required
           className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
           placeholder="Введите юридическое название"
@@ -160,7 +159,7 @@ const CompanyForm = ({ onSave, onCancel, initialData, isInlineView = false }: Co
         <Input
           id="address"
           value={formData.address}
-          onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+          onChange={(e) => handleFieldChange('address', e.target.value)}
           required
           className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
           placeholder="г. Москва, ул. Примерная, д. 1, оф. 100"

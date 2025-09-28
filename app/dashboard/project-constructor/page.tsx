@@ -1757,7 +1757,7 @@ export default function ProjectConstructorPage() {
               data: {
           1: {
             name: template.company_name || '',
-            legalName: template.company_legal_name || '',
+            legalName: template.company_legal || '',
             inn: template.company_inn || '',
             kpp: template.company_kpp || '',
             ogrn: template.company_ogrn || '',
@@ -7352,7 +7352,7 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Юридическое название</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.legal_name && previewData.legal_name.trim() !== '' ? previewData.legal_name : 'Не указано'}
+                      {(previewData.legal_name || previewData.legalName) && (previewData.legal_name || previewData.legalName).trim() !== '' ? (previewData.legal_name || previewData.legalName) : 'Не указано'}
                     </div>
                   </div>
                   <div>
@@ -7376,7 +7376,7 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Юридический адрес</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.legal_address && previewData.legal_address.trim() !== '' ? previewData.legal_address : 'Не указано'}
+                      {(previewData.legal_address || previewData.address) && (previewData.legal_address || previewData.address).trim() !== '' ? (previewData.legal_address || previewData.address) : 'Не указано'}
                     </div>
                   </div>
                 </div>
@@ -7389,25 +7389,25 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Название банка</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.bank_name && previewData.bank_name.trim() !== '' ? previewData.bank_name : 'Не указано'}
+                      {(previewData.bank_name || previewData.bankName) && (previewData.bank_name || previewData.bankName).trim() !== '' ? (previewData.bank_name || previewData.bankName) : 'Не указано'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Расчетный счет</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.bank_account && previewData.bank_account.trim() !== '' ? `${previewData.bank_account}` : 'Не указано'}
+                      {(previewData.bank_account || previewData.bankAccount) && (previewData.bank_account || previewData.bankAccount).trim() !== '' ? `${previewData.bank_account || previewData.bankAccount}` : 'Не указано'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Корр. счет</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.corr_account && previewData.corr_account.trim() !== '' ? previewData.corr_account : 'Не указано'}
+                      {(previewData.corr_account || previewData.bankCorrAccount) && (previewData.corr_account || previewData.bankCorrAccount).trim() !== '' ? (previewData.corr_account || previewData.bankCorrAccount) : 'Не указано'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">БИК</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.bik && previewData.bik.trim() !== '' ? previewData.bik : 'Не указано'}
+                      {(previewData.bik || previewData.bankBik) && (previewData.bik || previewData.bankBik).trim() !== '' ? (previewData.bik || previewData.bankBik) : 'Не указано'}
                     </div>
                   </div>
                 </div>
