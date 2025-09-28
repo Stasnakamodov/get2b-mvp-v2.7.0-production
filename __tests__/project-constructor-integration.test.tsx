@@ -132,7 +132,9 @@ describe('Project Constructor Integration Tests', () => {
 
       const result = validateStepData(1, invalidData)
       expect(result.success).toBe(false)
-      expect(result.errors).toHaveLength(2) // name required + invalid email
+      if (!result.success) {
+        expect(result.errors).toHaveLength(2) // name required + invalid email
+      }
     })
 
     test('validateStepData function works for Step 2', () => {

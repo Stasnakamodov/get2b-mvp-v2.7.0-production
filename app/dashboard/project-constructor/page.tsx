@@ -6259,7 +6259,7 @@ export default function ProjectConstructorPage() {
                                         <div 
                                           key={itemIndex}
                                 className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-blue-400 hover:scale-105"
-                                          onClick={() => handlePreviewData('product', item)}
+                                          onClick={() => handlePreviewData('product', manualData[lastHoveredStep])}
                               >
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">

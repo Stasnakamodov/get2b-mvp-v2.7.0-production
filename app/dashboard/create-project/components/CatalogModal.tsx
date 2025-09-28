@@ -581,7 +581,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       
       if (data.suppliers) {
         console.log('✅ [CATALOG MODAL] Загружено аккредитованных поставщиков Get2B:', data.suppliers.length)
-        console.log('📊 [CATALOG MODAL] Данные поставщиков:', data.suppliers.slice(0, 2).map(s => s.name))
+        console.log('📊 [CATALOG MODAL] Данные поставщиков:', data.suppliers.slice(0, 2).map((s: any) => s.name))
         setVerifiedSuppliers(data.suppliers)
         console.log('🔄 [CATALOG MODAL] Состояние verifiedSuppliers обновлено, длина:', data.suppliers.length)
       } else {
