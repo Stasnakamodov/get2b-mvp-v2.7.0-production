@@ -4,7 +4,9 @@ import { Dispatch, SetStateAction } from 'react'
 export const useStageHandlers = (
   setShowRequisitesConfirmationModal: Dispatch<SetStateAction<boolean>>,
   setShowStage2SummaryModal: Dispatch<SetStateAction<boolean>>,
-  setCurrentStage: Dispatch<SetStateAction<number>>
+  setCurrentStage: Dispatch<SetStateAction<number>>,
+  setSelectedSource?: Dispatch<SetStateAction<string>>,
+  setEditingType?: Dispatch<SetStateAction<string>>
 ) => {
   // Функция для подтверждения реквизитов
   const confirmRequisites = () => {
@@ -15,9 +17,13 @@ export const useStageHandlers = (
 
   // Функция для редактирования реквизитов
   const editRequisites = () => {
-    console.log('✏️ Редактирование реквизитов')
+    console.log('✏️ Редактирование реквизитов - открываем полную форму компании')
     setShowRequisitesConfirmationModal(false)
-    // Возвращаемся к редактированию шага 5 (реквизиты)
+    // Открываем форму редактирования компании (полную форму)
+    if (setSelectedSource && setEditingType) {
+      setSelectedSource("manual")
+      setEditingType('company')
+    }
     setCurrentStage(1) // Возвращаемся к первому этапу для редактирования
   }
 

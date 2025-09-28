@@ -11,8 +11,8 @@ import type {
   OcrDebugData,
   StepNumber,
   FormProps,
-  validateStepData,
 } from '@/types/project-constructor.types'
+import { validateStepData } from '@/types/project-constructor.types'
 
 // CSS стили извлечены в отдельный файл
 import { useState, useEffect, useRef } from "react"
@@ -279,7 +279,9 @@ export default function ProjectConstructorPage() {
   const { confirmRequisites, editRequisites } = useStageHandlers(
     setShowRequisitesConfirmationModal,
     setShowStage2SummaryModal,
-    setCurrentStage
+    setCurrentStage,
+    setSelectedSource,
+    setEditingType
   )
 
   // Обработчики каталога
@@ -295,9 +297,9 @@ export default function ProjectConstructorPage() {
 
       // Проверяем selectedSupplierData (высший приоритет)
       if (selectedSupplierData) {
-        if (selectedSupplierData.bank_accounts?.length > 0 ||
-            selectedSupplierData.p2p_cards?.length > 0 ||
-            selectedSupplierData.crypto_wallets?.length > 0 ||
+        if (selectedSupplierData.bank_accounts?.length && selectedSupplierData.bank_accounts.length > 0 ||
+            selectedSupplierData.p2p_cards?.length && selectedSupplierData.p2p_cards.length > 0 ||
+            selectedSupplierData.crypto_wallets?.length && selectedSupplierData.crypto_wallets.length > 0 ||
             selectedSupplierData.payment_methods?.some((method: string) =>
               ['bank-transfer', 'p2p', 'crypto'].includes(method))) {
           hasStep5AutofillData = true;
@@ -306,7 +308,7 @@ export default function ProjectConstructorPage() {
 
       // Проверяем manualData[4] если selectedSupplierData не дал результата
       if (!hasStep5AutofillData && manualData[4]) {
-        if (manualData[4].methods?.length > 0) {
+        if (manualData[4] && 'methods' in manualData[4] && manualData[4].methods?.length && manualData[4].methods.length > 0) {
           hasStep5AutofillData = true;
         }
         if (!hasStep5AutofillData && manualData[4].supplier_data) {
@@ -1640,22 +1642,31 @@ export default function ProjectConstructorPage() {
       }
       
       console.log('✅ Найден профиль клиента:', targetProfile.name)
-      
-      return {
-        name: targetProfile.name,
-        legalName: targetProfile.legal_name || '',
+      console.log('🏦 Банковские данные профиля:', {
+        bank_name: targetProfile.bank_name,
+        bank_account: targetProfile.bank_account,
+        corr_account: targetProfile.corr_account,
+        bik: targetProfile.bik
+      })
+
+      const result = {
+        name: targetProfile.name || '',
+        legal_name: targetProfile.legal_name || '',  // Исправлено: было legalName
         inn: targetProfile.inn || '',
         kpp: targetProfile.kpp || '',
         ogrn: targetProfile.ogrn || '',
-        address: targetProfile.legal_address || '',
-        bankName: targetProfile.bank_name || '',
-        bankAccount: targetProfile.bank_account || '',
-        bankCorrAccount: targetProfile.corr_account || '',
-        bankBik: targetProfile.bik || '',
+        legal_address: targetProfile.legal_address || '',  // Исправлено: было address
+        bank_name: targetProfile.bank_name || '',     // Исправлено: было bankName
+        bank_account: targetProfile.bank_account || '',  // Исправлено: было bankAccount
+        corr_account: targetProfile.corr_account || '',  // Исправлено: было bankCorrAccount
+        bik: targetProfile.bik || '',                 // Исправлено: было bankBik
         email: targetProfile.email || '',
         phone: targetProfile.phone || '',
         website: targetProfile.website || ''
       }
+
+      console.log('🎯 Возвращаемые данные getProfileData:', result)
+      return result
     }
     
     // Для шагов 2, 4, 5 используем профили поставщиков
@@ -2022,6 +2033,7 @@ export default function ProjectConstructorPage() {
         console.log('🔍 Применяем данные профиля для шага:', lastHoveredStep)
         getProfileData(lastHoveredStep).then(profileData => {
         if (profileData) {
+          console.log('📝 Применяемые данные профиля:', profileData)
           setManualData(prev => ({
             ...prev,
             [lastHoveredStep]: profileData
@@ -2165,7 +2177,7 @@ export default function ProjectConstructorPage() {
   const isStepFilledByUser = (stepId: number) => {
     // Шаг 1: проверяем что пользователь выбрал источник данных И есть данные
     if (stepId === 1) {
-      const hasSource = Boolean(stepConfigs[1]) && stepConfigs[1] !== ''
+      const hasSource = Boolean(stepConfigs[1]) && stepConfigs[1] !== undefined
       const hasData = manualData[1] && Object.keys(manualData[1]).length > 0
       const result = hasSource && hasData
       
@@ -2178,7 +2190,7 @@ export default function ProjectConstructorPage() {
     
     // Шаг 2: проверяем что пользователь выбрал источник данных И есть товары
     if (stepId === 2) {
-      const hasSource = Boolean(stepConfigs[2]) && stepConfigs[2] !== ''
+      const hasSource = Boolean(stepConfigs[2]) && stepConfigs[2] !== undefined
       const hasItems = manualData[2] && manualData[2].items && manualData[2].items.length > 0
       const result = hasSource && hasItems
       
@@ -3059,14 +3071,7 @@ export default function ProjectConstructorPage() {
 
   // Обработчик отмены выбора источника
 
-  // Функция для открытия модального окна с данными шага
-  const handleViewStepData = (stepId: number) => {
-    const stepData = manualData[stepId]
-    if (stepData) {
-      setStepDataToView({ stepId, data: stepData })
-      setShowStepDataModal(true)
-    }
-  }
+  // Удалено: функция handleViewStepData больше не нужна - используем инлайн-формы
 
   const handleRemoveSource = (stepId: number) => {
     // Удаляем источник данных для конкретного шага
@@ -3131,14 +3136,8 @@ export default function ProjectConstructorPage() {
   const handleEditData = (type: string) => {
     setSelectedSource("manual")
     setShowPreviewModal(false)
-    // Сохраняем тип редактируемых данных для передачи в форму
-    if (type === 'bank') {
-      setEditingType('bank')
-    } else if (type === 'contacts') {
-      setEditingType('contacts')
-    } else {
-      setEditingType('company')
-    }
+    // ВСЕ типы редактирования теперь открывают полную форму компании
+    setEditingType('company')
   }
 
   // Функция удалена - счетчики теперь управляются в CatalogModal
@@ -3223,9 +3222,9 @@ export default function ProjectConstructorPage() {
 
               // Фильтруем методы оплаты, исключая cash (наличные) и убираем дубликаты
               const normalizedMethods = (supplier.payment_methods || ['bank_transfer'])
-                .map(method => method === 'bank_transfer' ? 'bank-transfer' : method) // Нормализуем формат
-                .filter(method => method !== 'cash') // Исключаем наличные
-                .filter((value, index, self) => self.indexOf(value) === index) // Убираем дубликаты
+                .map((method: string) => method === 'bank_transfer' ? 'bank-transfer' : method) // Нормализуем формат
+                .filter((method: string) => method !== 'cash') // Исключаем наличные
+                .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index) // Убираем дубликаты
               const availableMethods = normalizedMethods.length > 0 ? normalizedMethods : ['bank-transfer']
 
               const step4Data = {
@@ -3303,7 +3302,7 @@ export default function ProjectConstructorPage() {
               ...prev,
               4: {
                 type: 'multiple',
-                methods: echoData.payment_method?.available_methods || [echoData.payment_method?.method] || ['bank_transfer'],
+                methods: (echoData.payment_method as any)?.available_methods || [echoData.payment_method?.method] || ['bank_transfer'],
                 payment_method: echoData.payment_method?.method || 'bank_transfer',
                 auto_filled: true,
                 supplier_name: firstProduct.supplier_name,
@@ -3460,11 +3459,11 @@ export default function ProjectConstructorPage() {
     
     // Применяем данные для шагов 4 и 5
     // Фильтруем методы оплаты, исключая cash (наличные) и убираем дубликаты
-    const rawMethods = echoData.payment_method?.available_methods || [echoData.payment_method?.method] || ['bank_transfer']
+    const rawMethods = (echoData.payment_method as any)?.available_methods || [echoData.payment_method?.method] || ['bank_transfer']
     const normalizedEchoMethods = rawMethods
-      .map(method => method === 'bank_transfer' ? 'bank-transfer' : method) // Нормализуем формат
-      .filter(method => method !== 'cash') // Исключаем наличные
-      .filter((value, index, self) => self.indexOf(value) === index) // Убираем дубликаты
+      .map((method: string) => method === 'bank_transfer' ? 'bank-transfer' : method) // Нормализуем формат
+      .filter((method: string) => method !== 'cash') // Исключаем наличные
+      .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index) // Убираем дубликаты
     const availableEchoMethods = normalizedEchoMethods.length > 0 ? normalizedEchoMethods : ['bank-transfer']
 
     const step4Data = {
@@ -3728,7 +3727,7 @@ export default function ProjectConstructorPage() {
         crypto_name: wallet.currency || wallet.network || 'USDT',
         crypto_address: wallet.address,
         crypto_network: wallet.network || 'USDT TRC20'
-      }
+      } as any
 
       console.log('🔍 [CRYPTO DEBUG] final requisitesData:', requisitesData)
     } else if (method === 'p2p' && supplierData?.p2p_cards?.length > 0) {
@@ -3740,7 +3739,7 @@ export default function ProjectConstructorPage() {
         card_number: card.number,
         card_holder: card.holder,
         card_expiry: card.expiry || ''
-      }
+      } as any
     } else if ((method === 'bank-transfer' || method === 'bank') && supplierData?.bank_accounts?.length > 0) {
       const bank = supplierData.bank_accounts[0]
       requisitesData = {
@@ -3752,7 +3751,7 @@ export default function ProjectConstructorPage() {
         swift: bank.swift_code,
         iban: bank.iban || '',
         transferCurrency: bank.currency || 'RUB'
-      }
+      } as any
     }
     
     // Сохраняем реквизиты в шаге 5
@@ -4399,9 +4398,9 @@ export default function ProjectConstructorPage() {
             <div className="grid grid-cols-1 gap-y-1 text-sm">
               <div><span className="text-gray-500">Компания:</span> <span className="font-medium">{companyData.name || 'Не указано'}</span></div>
               <div><span className="text-gray-500">ИНН:</span> {companyData.inn || 'Не указано'}</div>
-              <div><span className="text-gray-500">Банк:</span> {companyData.bankName || 'Не указано'}</div>
-              <div><span className="text-gray-500">Счёт:</span> {companyData.bankAccount || 'Не указано'}</div>
-              <div><span className="text-gray-500">БИК:</span> {companyData.bik || 'Не указано'}</div>
+              <div><span className="text-gray-500">Банк:</span> {(companyData as any).bank_name || 'Не указано'}</div>
+              <div><span className="text-gray-500">Счёт:</span> {(companyData as any).bank_account || 'Не указано'}</div>
+              <div><span className="text-gray-500">БИК:</span> {(companyData as any).bik || 'Не указано'}</div>
             </div>
           </div>
           {/* Получатель */}
@@ -5545,7 +5544,7 @@ export default function ProjectConstructorPage() {
                         <CompanyForm 
                           onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep]}
+                          initialData={manualData[lastHoveredStep] as any}
                         />
                       )}
                       
@@ -5553,7 +5552,7 @@ export default function ProjectConstructorPage() {
                         <ContactsForm 
                           onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep]}
+                          initialData={manualData[lastHoveredStep] as any}
                         />
                       )}
                       
@@ -5561,7 +5560,7 @@ export default function ProjectConstructorPage() {
                         <BankForm 
                           onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep]}
+                          initialData={manualData[lastHoveredStep] as any}
                         />
                       )}
                       
@@ -5569,7 +5568,7 @@ export default function ProjectConstructorPage() {
                         <CompanyForm 
                           onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep]}
+                          initialData={manualData[lastHoveredStep] as any}
                         />
                       )}
                       
@@ -5577,7 +5576,7 @@ export default function ProjectConstructorPage() {
                         <SpecificationForm 
                           onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep]}
+                          initialData={manualData[lastHoveredStep] as any}
                         />
                       )}
                       
@@ -5597,7 +5596,7 @@ export default function ProjectConstructorPage() {
                         <PaymentMethodForm 
                           onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep]}
+                          initialData={manualData[lastHoveredStep] as any}
                           getStepData={(stepId) => manualData[stepId]}
                         />
                       )}
@@ -5606,7 +5605,7 @@ export default function ProjectConstructorPage() {
                         <RequisitesForm 
                           onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep]}
+                          initialData={manualData[lastHoveredStep] as any}
                         />
                       )}
                     </div>
@@ -5928,19 +5927,7 @@ export default function ProjectConstructorPage() {
                         </div>
                       )}
                       
-                      {/* Кнопка просмотра всех данных шага */}
-                      {lastHoveredStep === 1 && manualData[lastHoveredStep] && (
-                        <div className="mt-6 flex justify-center">
-                          <Button
-                            onClick={() => handleViewStepData(lastHoveredStep)}
-                            variant="outline"
-                            className="flex items-center gap-2"
-                          >
-                            <Eye className="h-4 w-4" />
-                            Просмотреть все данные шага
-                          </Button>
-                        </div>
-                      )}
+                      {/* Полная форма данных шага */}
                       
 
                       
@@ -6242,9 +6229,9 @@ export default function ProjectConstructorPage() {
                                   )}
                                   
                                   {/* Кнопка "Вперед" */}
-                                  {currentProductIndex + productsPerView < manualData[lastHoveredStep].items.length && (
+                                  {currentProductIndex + productsPerView < (manualData[lastHoveredStep]?.items?.length || 0) && (
                                     <button
-                                      onClick={() => setCurrentProductIndex(prev => Math.min(manualData[lastHoveredStep].items.length - productsPerView, prev + productsPerView))}
+                                      onClick={() => setCurrentProductIndex(prev => Math.min((manualData[lastHoveredStep]?.items?.length || 0) - productsPerView, prev + productsPerView))}
                                       className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full p-2 shadow-md hover:bg-gray-50 transition-all duration-200"
                                     >
                                       <ChevronRight className="h-5 w-5 text-gray-600" />
@@ -6255,7 +6242,7 @@ export default function ProjectConstructorPage() {
                                   <div className="grid grid-cols-3 gap-4 mx-12">
                                     {Array.from({ length: productsPerView }, (_, i) => {
                                       const itemIndex = currentProductIndex + i;
-                                      const item = manualData[lastHoveredStep].items[itemIndex];
+                                      const item = manualData[lastHoveredStep]?.items?.[itemIndex];
                                       
                                       if (!item) return null;
                                       
@@ -6287,7 +6274,7 @@ export default function ProjectConstructorPage() {
                                           <div className="flex items-center gap-2">
                                             <span className="text-gray-400">🏷️</span>
                                               <span className="text-gray-800 text-sm">
-                                                {item.item_code || 'Без артикула'}
+                                                {(item as any).item_code || 'Без артикула'}
                                             </span>
                                           </div>
                                           <div className="flex items-center gap-2">
@@ -6373,7 +6360,26 @@ export default function ProjectConstructorPage() {
                           </div>
                         </div>
                       )}
-                      
+
+                      {/* Полная форма контактов для шага 2 */}
+                      {lastHoveredStep === 2 && manualData[lastHoveredStep] && (
+                        <div className="mt-6">
+                          <div className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
+                            <Eye className="h-4 w-4" />
+                            Форма контактов
+                          </div>
+                          <ContactsForm
+                            onSave={(data) => {
+                              setManualData(prev => ({ ...prev, 2: data }))
+                              console.log('Contacts data updated from inline form:', data)
+                            }}
+                            onCancel={() => {}}
+                            initialData={manualData[lastHoveredStep] as any}
+                            isInlineView={true}
+                          />
+                        </div>
+                      )}
+
                                             {/* Шаг 4: Методы оплаты - показываем кубики для каждого метода */}
                       {lastHoveredStep === 4 && manualData[lastHoveredStep] && (
                         <div className="flex justify-center">
@@ -6389,13 +6395,13 @@ export default function ProjectConstructorPage() {
 
                                 // Приоритет 1: Проверяем selectedSupplierData (самый актуальный источник)
                                 if (selectedSupplierData) {
-                                  if (method === 'bank-transfer' && (selectedSupplierData.bank_accounts?.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
+                                  if ((method === 'bank-transfer' || method === 'bank') && (selectedSupplierData.bank_accounts?.length && selectedSupplierData.bank_accounts.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer' as any))) {
                                     hasSupplierData = true;
                                   }
-                                  if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
+                                  if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length && selectedSupplierData.p2p_cards.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
                                     hasSupplierData = true;
                                   }
-                                  if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
+                                  if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length && selectedSupplierData.crypto_wallets.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
                                     hasSupplierData = true;
                                   }
                                 }
@@ -6409,7 +6415,7 @@ export default function ProjectConstructorPage() {
                                   // Проверяем по доступным данным поставщика в manualData[4]
                                   if (!hasSupplierData && manualData[4].supplier_data) {
                                     const supplier = manualData[4].supplier_data;
-                                    if (method === 'bank-transfer' && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer'))) {
+                                    if ((method === 'bank-transfer' || method === 'bank') && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer' as any))) {
                                       hasSupplierData = true;
                                     }
                                     if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p'))) {
@@ -6577,16 +6583,16 @@ export default function ProjectConstructorPage() {
                               // Показываем один кубик для одиночного типа
                               <div
                                 className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${
-                                  manualData[5].type === 'crypto' ? 'border-green-500 bg-green-100 hover:border-green-600 ring-green-400' :
-                                  manualData[5].type === 'p2p' ? 'border-blue-500 bg-blue-100 hover:border-blue-600 ring-blue-400' :
+                                  manualData[5]?.type === 'crypto' ? 'border-green-500 bg-green-100 hover:border-green-600 ring-green-400' :
+                                  manualData[5]?.type === 'p2p' ? 'border-blue-500 bg-blue-100 hover:border-blue-600 ring-blue-400' :
                                   'border-orange-500 bg-orange-100 hover:border-orange-600 ring-orange-400'
                                 }`}
                                 onClick={() => handlePreviewData('requisites', manualData[5])}
                               >
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-2 ${
-                                    manualData[5].type === 'crypto' ? 'bg-green-600 ring-green-300' :
-                                    manualData[5].type === 'p2p' ? 'bg-blue-600 ring-blue-300' :
+                                    manualData[5]?.type === 'crypto' ? 'bg-green-600 ring-green-300' :
+                                    manualData[5]?.type === 'p2p' ? 'bg-blue-600 ring-blue-300' :
                                     'bg-orange-600 ring-orange-300'
                                   }`}>
                                     <CheckCircle2 className="h-4 w-4 text-white" />
@@ -6615,8 +6621,8 @@ export default function ProjectConstructorPage() {
                                    `${manualData[lastHoveredStep].accountNumber || 'Не указано'}`}
                                 </div>
                                 <div className={`text-xs mt-2 flex items-center gap-1 font-bold ${
-                                  manualData[5].type === 'crypto' ? 'text-green-600' :
-                                  manualData[5].type === 'p2p' ? 'text-blue-600' :
+                                  manualData[5]?.type === 'crypto' ? 'text-green-600' :
+                                  manualData[5]?.type === 'p2p' ? 'text-blue-600' :
                                   'text-orange-600'
                                 }`}>
                                   <span>ЗАПОЛНЕНО</span>
@@ -6646,13 +6652,13 @@ export default function ProjectConstructorPage() {
                         const checkMethodAvailability = (method: string) => {
                           // Приоритет 1: selectedSupplierData
                           if (selectedSupplierData) {
-                            if (method === 'bank-transfer' && (selectedSupplierData.bank_accounts?.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
+                            if (method === 'bank-transfer' && ((selectedSupplierData.bank_accounts?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
                               return true;
                             }
-                            if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
+                            if (method === 'p2p' && ((selectedSupplierData.p2p_cards?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
                               return true;
                             }
-                            if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
+                            if (method === 'crypto' && ((selectedSupplierData.crypto_wallets?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
                               return true;
                             }
                           }
@@ -6889,13 +6895,13 @@ export default function ProjectConstructorPage() {
                         const checkMethodAvailability = (method: string) => {
                           // Приоритет 1: selectedSupplierData
                           if (selectedSupplierData) {
-                            if (method === 'bank-transfer' && (selectedSupplierData.bank_accounts?.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
+                            if (method === 'bank-transfer' && ((selectedSupplierData.bank_accounts?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
                               return true;
                             }
-                            if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
+                            if (method === 'p2p' && ((selectedSupplierData.p2p_cards?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
                               return true;
                             }
-                            if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
+                            if (method === 'crypto' && ((selectedSupplierData.crypto_wallets?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
                               return true;
                             }
                           }
@@ -7346,7 +7352,7 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Юридическое название</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.legalName && previewData.legalName.trim() !== '' ? previewData.legalName : 'Не указано'}
+                      {previewData.legal_name && previewData.legal_name.trim() !== '' ? previewData.legal_name : 'Не указано'}
                     </div>
                   </div>
                   <div>
@@ -7370,7 +7376,7 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Юридический адрес</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.address && previewData.address.trim() !== '' ? previewData.address : 'Не указано'}
+                      {previewData.legal_address && previewData.legal_address.trim() !== '' ? previewData.legal_address : 'Не указано'}
                     </div>
                   </div>
                 </div>
@@ -7383,25 +7389,25 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Название банка</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.bankName && previewData.bankName.trim() !== '' ? previewData.bankName : 'Не указано'}
+                      {previewData.bank_name && previewData.bank_name.trim() !== '' ? previewData.bank_name : 'Не указано'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Расчетный счет</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.bankAccount && previewData.bankAccount.trim() !== '' ? `${previewData.bankAccount}` : 'Не указано'}
+                      {previewData.bank_account && previewData.bank_account.trim() !== '' ? `${previewData.bank_account}` : 'Не указано'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Корр. счет</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.bankCorrAccount && previewData.bankCorrAccount.trim() !== '' ? previewData.bankCorrAccount : 'Не указано'}
+                      {previewData.corr_account && previewData.corr_account.trim() !== '' ? previewData.corr_account : 'Не указано'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">БИК</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.bankBik && previewData.bankBik.trim() !== '' ? previewData.bankBik : 'Не указано'}
+                      {previewData.bik && previewData.bik.trim() !== '' ? previewData.bik : 'Не указано'}
                     </div>
                   </div>
                 </div>
@@ -7578,7 +7584,7 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Название банка</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {previewData.bankName && previewData.bankName.trim() !== '' ? previewData.bankName : 'Не указано'}
+                      {previewData.bank_name && previewData.bank_name.trim() !== '' ? previewData.bank_name : 'Не указано'}
                     </div>
                   </div>
                   <div>
@@ -7917,7 +7923,7 @@ export default function ProjectConstructorPage() {
                   </h4>
                   <div className="flex items-center gap-2">
                     <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                      Источник: {getSourceDisplayName(stepConfigs[1])}
+                      Источник: {getSourceDisplayName(stepConfigs[1] || 'manual')}
                     </span>
                   </div>
                 </div>
@@ -7931,7 +7937,7 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Юридическое название</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {manualData[1].legalName || 'Не указано'}
+                      {manualData[1].legal_name || 'Не указано'}
                     </div>
                   </div>
                   <div>
@@ -7955,7 +7961,7 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Адрес</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {manualData[1].address || 'Не указано'}
+                      {manualData[1].legal_address || 'Не указано'}
                     </div>
                   </div>
                 </div>
@@ -7972,7 +7978,7 @@ export default function ProjectConstructorPage() {
                   </h4>
                   <div className="flex items-center gap-2">
                     <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">
-                      Источник: {getSourceDisplayName(stepConfigs[2])}
+                      Источник: {getSourceDisplayName(stepConfigs[2] || 'manual')}
                     </span>
                   </div>
                 </div>
@@ -8001,7 +8007,7 @@ export default function ProjectConstructorPage() {
                             <span className="text-sm text-gray-600">{item.quantity || 0} шт.</span>
                           </div>
                           <div className="text-sm text-gray-600">
-                            Цена: {item.price || 0} {manualData[2].currency || 'RUB'}
+                            Цена: {item.price || 0} {manualData[2]?.currency || 'RUB'}
                           </div>
                         </div>
                       ))}
@@ -8021,7 +8027,7 @@ export default function ProjectConstructorPage() {
                   </h4>
                   <div className="flex items-center gap-2">
                     <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
-                      Источник: {getSourceDisplayName(stepConfigs[4])}
+                      Источник: {getSourceDisplayName(stepConfigs[4] || 'manual')}
                     </span>
                   </div>
                 </div>
@@ -8046,7 +8052,7 @@ export default function ProjectConstructorPage() {
                   </h4>
                   <div className="flex items-center gap-2">
                     <span className="text-xs px-2 py-1 bg-orange-100 text-orange-800 rounded">
-                      Источник: {getSourceDisplayName(stepConfigs[5])}
+                      Источник: {getSourceDisplayName(stepConfigs[5] || 'manual')}
                     </span>
                   </div>
                 </div>
@@ -8489,7 +8495,7 @@ export default function ProjectConstructorPage() {
                     <h3 className="text-sm font-semibold text-blue-800 mb-3">Основная информация</h3>
                     <div className="space-y-2 text-sm">
                       <div><span className="font-medium">Название:</span> {stepDataToView.data.name || 'Не указано'}</div>
-                      <div><span className="font-medium">Юридическое название:</span> {stepDataToView.data.legalName || 'Не указано'}</div>
+                      <div><span className="font-medium">Юридическое название:</span> {stepDataToView.data.legal_name || 'Не указано'}</div>
                       <div><span className="font-medium">ИНН:</span> {stepDataToView.data.inn || 'Не указано'}</div>
                       <div><span className="font-medium">КПП:</span> {stepDataToView.data.kpp || 'Не указано'}</div>
                       <div><span className="font-medium">ОГРН:</span> {stepDataToView.data.ogrn || 'Не указано'}</div>
@@ -8499,10 +8505,10 @@ export default function ProjectConstructorPage() {
                   <div className="bg-green-50 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-green-800 mb-3">Банковские реквизиты</h3>
                     <div className="space-y-2 text-sm">
-                      <div><span className="font-medium">Банк:</span> {stepDataToView.data.bankName || 'Не указано'}</div>
-                      <div><span className="font-medium">Расчетный счет:</span> {stepDataToView.data.bankAccount || 'Не указано'}</div>
+                      <div><span className="font-medium">Банк:</span> {stepDataToView.data.bank_name || 'Не указано'}</div>
+                      <div><span className="font-medium">Расчетный счет:</span> {stepDataToView.data.bank_account || 'Не указано'}</div>
                       <div><span className="font-medium">БИК:</span> {stepDataToView.data.bik || 'Не указано'}</div>
-                      <div><span className="font-medium">Корр. счет:</span> {stepDataToView.data.correspondentAccount || 'Не указано'}</div>
+                      <div><span className="font-medium">Корр. счет:</span> {stepDataToView.data.corr_account || 'Не указано'}</div>
                     </div>
                   </div>
 
@@ -8519,7 +8525,7 @@ export default function ProjectConstructorPage() {
                   <div className="bg-orange-50 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-orange-800 mb-3">Адрес</h3>
                     <div className="space-y-2 text-sm">
-                      <div><span className="font-medium">Адрес:</span> {stepDataToView.data.address || 'Не указано'}</div>
+                      <div><span className="font-medium">Адрес:</span> {stepDataToView.data.legal_address || 'Не указано'}</div>
                     </div>
                   </div>
                 </div>

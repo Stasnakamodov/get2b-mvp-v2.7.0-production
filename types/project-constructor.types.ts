@@ -4,7 +4,7 @@ import { z } from 'zod'
 // БАЗОВЫЕ ТИПЫ ДАННЫХ
 // ========================================
 
-export type StepConfig = 'catalog' | 'manual'
+export type StepConfig = 'catalog' | 'manual' | 'profile' | 'template' | 'upload' | 'automatic' | 'echo' | 'echoData' | 'blue_room' | 'orange_room' | 'ocr_suggestion'
 export type StepNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 // ========================================
@@ -25,6 +25,28 @@ export const CompanyDataSchema = z.object({
 
 export type CompanyData = z.infer<typeof CompanyDataSchema>
 
+// Legacy compatibility fields for CompanyData
+export interface ExtendedCompanyData extends CompanyData {
+  legalName?: string
+  address?: string
+  bankName?: string
+  bankAccount?: string
+  bankCorrAccount?: string
+  bankBik?: string
+  director?: string
+  correspondentAccount?: string
+  bank_name?: string
+  bank_account?: string
+  corr_account?: string
+  bik?: string
+  supplier?: string
+  supplier_name?: string
+  currency?: string
+  items?: ExtendedSpecificationItem[]
+  method?: string
+  recipientName?: string
+}
+
 // ========================================
 // ШАГ 2: КОНТАКТНАЯ ИНФОРМАЦИЯ
 // ========================================
@@ -39,6 +61,31 @@ export const ContactsDataSchema = z.object({
 })
 
 export type ContactsData = z.infer<typeof ContactsDataSchema>
+
+// Legacy compatibility fields for ContactsData (also used for specification)
+export interface ExtendedContactsData extends ContactsData {
+  supplier?: string
+  supplier_name?: string
+  currency?: string
+  items?: ExtendedSpecificationItem[]
+  totalAmount?: number
+  total_amount?: number
+  auto_filled?: boolean
+  legal_address?: string
+  name?: string
+  legal_name?: string
+  inn?: string
+  kpp?: string
+  ogrn?: string
+  bank_name?: string
+  bank_account?: string
+  bik?: string
+  corr_account?: string
+  website?: string
+  director?: string
+  method?: string
+  recipientName?: string
+}
 
 // ========================================
 // ШАГ 3: БАНКОВСКИЕ РЕКВИЗИТЫ
@@ -55,11 +102,30 @@ export const BankDataSchema = z.object({
 
 export type BankData = z.infer<typeof BankDataSchema>
 
+// Extended BankData with legacy fields
+export interface ExtendedBankData extends BankData {
+  auto_filled?: boolean
+  method?: string
+  supplier?: string
+  supplier_name?: string
+  recipientName?: string
+  items?: ExtendedSpecificationItem[]
+  name?: string
+  legal_name?: string
+  legal_address?: string
+  ogrn?: string
+  email?: string
+  phone?: string
+  website?: string
+  director?: string
+  currency?: string
+}
+
 // ========================================
 // ШАГ 4: СПОСОБЫ ОПЛАТЫ
 // ========================================
 
-export const PaymentMethodSchema = z.enum(['bank', 'p2p', 'crypto'])
+export const PaymentMethodSchema = z.enum(['bank', 'p2p', 'crypto', 'bank-transfer'])
 export type PaymentMethod = z.infer<typeof PaymentMethodSchema>
 
 export const PaymentMethodsDataSchema = z.object({
@@ -94,6 +160,41 @@ export const PaymentMethodsDataSchema = z.object({
 
 export type PaymentMethodsData = z.infer<typeof PaymentMethodsDataSchema>
 
+// Legacy compatibility fields for PaymentMethodsData
+export interface ExtendedPaymentMethodsData extends PaymentMethodsData {
+  method?: string
+  selectedMethod?: string
+  defaultMethod?: string
+  methods?: string[]
+  type?: string
+  payment_method?: string
+  auto_filled?: boolean
+  supplier_name?: string
+  supplier?: string
+  echo_source?: any
+  user_choice?: boolean
+  echo_data?: any
+  available_methods?: string[]
+  catalog_source?: string
+  name?: string
+  legal_name?: string
+  inn?: string
+  kpp?: string
+  ogrn?: string
+  legal_address?: string
+  bank_name?: string
+  bank_account?: string
+  bik?: string
+  corr_account?: string
+  email?: string
+  phone?: string
+  website?: string
+  director?: string
+  currency?: string
+  items?: ExtendedSpecificationItem[]
+  recipientName?: string
+}
+
 // ========================================
 // ШАГ 5: СПЕЦИФИКАЦИЯ
 // ========================================
@@ -109,6 +210,13 @@ export const SpecificationItemSchema = z.object({
   notes: z.string().optional(),
 })
 
+// Extended SpecificationItem with legacy fields - making required fields optional for flexibility
+export interface ExtendedSpecificationItem extends Partial<SpecificationItem> {
+  supplier?: string
+  name?: string
+  supplier_id?: any
+}
+
 export const SpecificationDataSchema = z.object({
   items: z.array(SpecificationItemSchema).min(1, 'Добавьте хотя бы один товар'),
   total_amount: z.number().min(0, 'Общая сумма не может быть отрицательной'),
@@ -118,6 +226,49 @@ export const SpecificationDataSchema = z.object({
 
 export type SpecificationItem = z.infer<typeof SpecificationItemSchema>
 export type SpecificationData = z.infer<typeof SpecificationDataSchema>
+
+// Legacy compatibility fields for SpecificationData
+export interface ExtendedSpecificationData extends Omit<SpecificationData, 'items'> {
+  supplier?: string
+  supplier_name?: string
+  requisites?: any
+  auto_filled?: boolean
+  echo_source?: any
+  echo_data?: any
+  user_choice?: boolean
+  type?: string
+  bankName?: string
+  accountNumber?: string
+  swift?: string
+  recipientName?: string
+  recipientAddress?: string
+  transferCurrency?: string
+  project_info?: any
+  crypto_network?: string
+  crypto_name?: string
+  crypto_address?: string
+  card_bank?: string
+  card_number?: string
+  card_holder?: string
+  iban?: string
+  paymentPurpose?: string
+  method?: string
+  items?: ExtendedSpecificationItem[]
+  name?: string
+  legal_name?: string
+  inn?: string
+  kpp?: string
+  ogrn?: string
+  legal_address?: string
+  bank_name?: string
+  bank_account?: string
+  bik?: string
+  corr_account?: string
+  email?: string
+  phone?: string
+  website?: string
+  director?: string
+}
 
 // ========================================
 // ШАГ 6: ФАЙЛЫ И ДОКУМЕНТЫ
@@ -137,6 +288,30 @@ export const FileUploadDataSchema = z.object({
 
 export type FileUploadData = z.infer<typeof FileUploadDataSchema>
 
+// Extended FileUploadData with legacy fields
+export interface ExtendedFileUploadData extends FileUploadData {
+  method?: string
+  supplier?: string
+  supplier_name?: string
+  recipientName?: string
+  name?: string
+  legal_name?: string
+  inn?: string
+  kpp?: string
+  ogrn?: string
+  legal_address?: string
+  bank_name?: string
+  bank_account?: string
+  bik?: string
+  corr_account?: string
+  email?: string
+  phone?: string
+  website?: string
+  director?: string
+  currency?: string
+  items?: ExtendedSpecificationItem[]
+}
+
 // ========================================
 // ШАГ 7: РЕКВИЗИТЫ ПОЛУЧАТЕЛЯ
 // ========================================
@@ -154,24 +329,48 @@ export const RequisitesDataSchema = z.object({
 
 export type RequisitesData = z.infer<typeof RequisitesDataSchema>
 
+// Extended RequisitesData with legacy fields
+export interface ExtendedRequisitesData extends RequisitesData {
+  method?: string
+  supplier?: string
+  supplier_name?: string
+  name?: string
+  legal_name?: string
+  inn?: string
+  kpp?: string
+  ogrn?: string
+  legal_address?: string
+  bank_name?: string
+  bank_account?: string
+  bik?: string
+  corr_account?: string
+  email?: string
+  phone?: string
+  website?: string
+  director?: string
+  currency?: string
+  items?: ExtendedSpecificationItem[]
+  recipientName?: string
+}
+
 // ========================================
 // ОБЪЕДИНЕННЫЕ ТИПЫ ВСЕХ ШАГОВ
 // ========================================
 
 export type StepData = {
-  1: CompanyData
-  2: ContactsData
-  3: BankData
-  4: PaymentMethodsData
-  5: SpecificationData
-  6: FileUploadData
-  7: RequisitesData
+  1: ExtendedCompanyData
+  2: ExtendedContactsData
+  3: ExtendedBankData
+  4: ExtendedPaymentMethodsData
+  5: ExtendedSpecificationData
+  6: ExtendedFileUploadData
+  7: ExtendedRequisitesData
 }
 
-// Тип для manualData состояния
+// Тип для manualData состояния with flexible typing for partial data
 export type ManualData = {
-  [K in StepNumber]?: StepData[K]
-}
+  [K in StepNumber]?: Partial<StepData[K]>
+} & { [index: number]: any }
 
 // Тип для stepConfigs состояния
 export type StepConfigs = {
@@ -181,7 +380,7 @@ export type StepConfigs = {
 // Тип для частичных stepConfigs (для инициализации)
 export type PartialStepConfigs = {
   [K in StepNumber]?: StepConfig
-}
+} & { [index: number]: string | undefined }
 
 // ========================================
 // СОСТОЯНИЯ КОМПОНЕНТА
@@ -189,7 +388,7 @@ export type PartialStepConfigs = {
 
 export interface User {
   id: string
-  email: string
+  email?: string
   name?: string
   role?: string
 }
@@ -201,6 +400,10 @@ export interface ProjectDetails {
   created_at: string
   updated_at: string
   user_id: string
+  currentStage?: number
+  activeScenario?: string
+  manualData?: ManualData
+  stepConfigs?: StepConfigs
 }
 
 export interface SupplierData {
@@ -214,11 +417,71 @@ export interface SupplierData {
   crypto_wallets?: any[]
   is_featured?: boolean
   public_rating?: number
+  contact_email?: string
+  contact_phone?: string
+  city?: string
+  created_at?: string
 }
 
 export interface StepDataToView {
   stepId: StepNumber
   data: StepData[StepNumber]
+  type?: string
+  name?: string
+  legalName?: string
+  legal_name?: string
+  inn?: string
+  kpp?: string
+  ogrn?: string
+  address?: string
+  legal_address?: string
+  bankName?: string
+  bank_name?: string
+  bankAccount?: string
+  bank_account?: string
+  bankCorrAccount?: string
+  corr_account?: string
+  bankBik?: string
+  bik?: string
+  email?: string
+  phone?: string
+  website?: string
+  supplier?: string
+  supplier_name?: string
+  currency?: string
+  items?: SpecificationItem[]
+  totalAmount?: number
+  method?: string
+  recipientName?: string
+  project_info?: any
+  crypto_network?: string
+  crypto_name?: string
+  crypto_address?: string
+  card_bank?: string
+  card_number?: string
+  card_holder?: string
+  accountNumber?: string
+  swift?: string
+}
+
+// Legacy payment method data type
+export interface LegacyPaymentMethodData {
+  method: string
+  supplier: string
+  suggested?: boolean
+  source?: string
+}
+
+// Legacy requisites data type
+export interface LegacyRequisitesData {
+  bankName: string
+  accountNumber: string
+  swift: string
+  recipientName: string
+  recipientAddress: string
+  transferCurrency: string
+  suggested?: boolean
+  source?: string
 }
 
 // ========================================

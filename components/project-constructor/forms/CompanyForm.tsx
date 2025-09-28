@@ -8,7 +8,11 @@ import { X, Save } from 'lucide-react'
 import type { FormProps, CompanyData } from '@/types/project-constructor.types'
 import { CompanyDataSchema } from '@/types/project-constructor.types'
 
-const CompanyForm = ({ onSave, onCancel, initialData }: FormProps<CompanyData>) => {
+interface CompanyFormProps extends FormProps<CompanyData> {
+  isInlineView?: boolean
+}
+
+const CompanyForm = ({ onSave, onCancel, initialData, isInlineView = false }: CompanyFormProps) => {
   console.log("🔍 CompanyForm получил initialData:", initialData);
 
   const [formData, setFormData] = useState({
@@ -18,21 +22,24 @@ const CompanyForm = ({ onSave, onCancel, initialData }: FormProps<CompanyData>) 
     kpp: initialData?.kpp || '',
     ogrn: initialData?.ogrn || '',
     address: initialData?.legal_address || '',
-    // Банковские реквизиты (пока оставляем для совместимости)
-    bankName: '',
-    bankAccount: '',
-    bik: '',
-    correspondentAccount: '',
+    // Банковские реквизиты - автозаполнение из профиля
+    bankName: initialData?.bank_name || '',
+    bankAccount: initialData?.bank_account || '',
+    bik: initialData?.bik || '',
+    correspondentAccount: initialData?.corr_account || '',
     // Контактные данные
     email: initialData?.email || '',
     phone: initialData?.phone || '',
     website: initialData?.website || '',
-    director: '' // Этого поля нет в типе CompanyData
+    director: initialData?.director || '' // Автозаполнение директора
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    saveFormData()
+  }
 
+  const saveFormData = () => {
     // Валидация через Zod схему
     try {
       const validatedData = CompanyDataSchema.parse({
@@ -49,16 +56,29 @@ const CompanyForm = ({ onSave, onCancel, initialData }: FormProps<CompanyData>) 
       onSave(validatedData)
     } catch (error: any) {
       console.error('Ошибка валидации формы компании:', error)
-      if (error.errors) {
-        alert(`Ошибка заполнения: ${error.errors[0].message}`)
-      } else {
-        alert('Заполните все обязательные поля')
+      if (!isInlineView) {
+        if (error.errors) {
+          alert(`Ошибка заполнения: ${error.errors[0].message}`)
+        } else {
+          alert('Заполните все обязательные поля')
+        }
       }
     }
   }
 
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+
+    // Автосохранение для инлайн-режима
+    if (isInlineView) {
+      setTimeout(() => {
+        saveFormData()
+      }, 500) // Дебаунс 500мс
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+    <form onSubmit={handleSubmit} className={`space-y-6 ${isInlineView ? 'p-3 bg-white rounded-md border border-gray-100' : 'p-4 bg-gray-50 rounded-lg border border-gray-200'}`}>
       {/* Основные данные компании */}
       <div className="space-y-2">
         <Label htmlFor="name" className="text-sm font-semibold text-gray-700">
@@ -67,9 +87,9 @@ const CompanyForm = ({ onSave, onCancel, initialData }: FormProps<CompanyData>) 
         <Input
           id="name"
           value={formData.name}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          onChange={(e) => handleFieldChange('name', e.target.value)}
           required
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+          className={`${isInlineView ? 'h-9 px-3 text-sm' : 'h-12 px-4 text-base'} border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200`}
           placeholder="Введите название компании"
         />
       </div>
@@ -270,16 +290,26 @@ const CompanyForm = ({ onSave, onCancel, initialData }: FormProps<CompanyData>) 
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 text-base font-medium">
-          <X className="h-4 w-4 mr-2" />
-          Отмена
-        </Button>
-        <Button type="submit" className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700">
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
-        </Button>
-      </div>
+      {!isInlineView && (
+        <div className="flex gap-3 pt-4">
+          <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 text-base font-medium">
+            <X className="h-4 w-4 mr-2" />
+            Отмена
+          </Button>
+          <Button type="submit" className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700">
+            <Save className="h-4 w-4 mr-2" />
+            Сохранить
+          </Button>
+        </div>
+      )}
+      {isInlineView && (
+        <div className="flex justify-end pt-2">
+          <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Save className="h-3 w-3 mr-1" />
+            Сохранить изменения
+          </Button>
+        </div>
+      )}
     </form>
   )
 }

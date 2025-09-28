@@ -9,7 +9,11 @@ import { X, Save } from 'lucide-react'
 import type { FormProps, ContactsData } from '@/types/project-constructor.types'
 import { ContactsDataSchema } from '@/types/project-constructor.types'
 
-const ContactsForm = ({ onSave, onCancel, initialData }: FormProps<ContactsData>) => {
+interface ContactsFormProps extends FormProps<ContactsData> {
+  isInlineView?: boolean
+}
+
+const ContactsForm = ({ onSave, onCancel, initialData, isInlineView = false }: ContactsFormProps) => {
   console.log("🔍 ContactsForm получил initialData:", initialData);
 
   const [formData, setFormData] = useState({
@@ -23,23 +27,39 @@ const ContactsForm = ({ onSave, onCancel, initialData }: FormProps<ContactsData>
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    saveFormData()
+  }
 
+  const saveFormData = () => {
     // Валидация через Zod схему
     try {
       const validatedData = ContactsDataSchema.parse(formData)
       onSave(validatedData)
     } catch (error: any) {
       console.error('Ошибка валидации формы контактов:', error)
-      if (error.errors) {
-        alert(`Ошибка заполнения: ${error.errors[0].message}`)
-      } else {
-        alert('Заполните все обязательные поля')
+      if (!isInlineView) {
+        if (error.errors) {
+          alert(`Ошибка заполнения: ${error.errors[0].message}`)
+        } else {
+          alert('Заполните все обязательные поля')
+        }
       }
     }
   }
 
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+
+    // Автосохранение для инлайн-режима
+    if (isInlineView) {
+      setTimeout(() => {
+        saveFormData()
+      }, 500) // Дебаунс 500мс
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+    <form onSubmit={handleSubmit} className={`space-y-6 ${isInlineView ? 'p-3 bg-white rounded-md border border-gray-100' : 'p-4 bg-gray-50 rounded-lg border border-gray-200'}`}>
       {/* Контактное лицо */}
       <div className="space-y-2">
         <Label htmlFor="contact_person" className="text-sm font-semibold text-gray-700">
@@ -48,9 +68,9 @@ const ContactsForm = ({ onSave, onCancel, initialData }: FormProps<ContactsData>
         <Input
           id="contact_person"
           value={formData.contact_person}
-          onChange={(e) => setFormData(prev => ({ ...prev, contact_person: e.target.value }))}
+          onChange={(e) => handleFieldChange('contact_person', e.target.value)}
           required
-          className="h-12 px-4 text-base border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+          className={`${isInlineView ? 'h-9 px-3 text-sm' : 'h-12 px-4 text-base'} border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200`}
           placeholder="Иванов Иван Иванович"
         />
       </div>
@@ -130,16 +150,26 @@ const ContactsForm = ({ onSave, onCancel, initialData }: FormProps<ContactsData>
         />
       </div>
 
-      <div className="flex gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 text-base font-medium">
-          <X className="h-4 w-4 mr-2" />
-          Отмена
-        </Button>
-        <Button type="submit" className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700">
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
-        </Button>
-      </div>
+      {!isInlineView && (
+        <div className="flex gap-3 pt-4">
+          <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 text-base font-medium">
+            <X className="h-4 w-4 mr-2" />
+            Отмена
+          </Button>
+          <Button type="submit" className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700">
+            <Save className="h-4 w-4 mr-2" />
+            Сохранить
+          </Button>
+        </div>
+      )}
+      {isInlineView && (
+        <div className="flex justify-end pt-2">
+          <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Save className="h-3 w-3 mr-1" />
+            Сохранить изменения
+          </Button>
+        </div>
+      )}
     </form>
   )
 }
