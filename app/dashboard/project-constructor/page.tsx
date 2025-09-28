@@ -280,7 +280,7 @@ export default function ProjectConstructorPage() {
     setShowRequisitesConfirmationModal,
     setShowStage2SummaryModal,
     setCurrentStage,
-    setSelectedSource,
+    setSelectedSource as React.Dispatch<React.SetStateAction<string>>,
     setEditingType
   )
 
@@ -6222,11 +6222,7 @@ export default function ProjectConstructorPage() {
                                   <h3 className="text-lg font-semibold text-gray-800">
                                     Товары ({manualData[lastHoveredStep].items.length})
                                   </h3>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-500">
-                                      {Math.floor(currentProductIndex / productsPerView) + 1} из {Math.ceil(manualData[lastHoveredStep].items.length / productsPerView)}
-                                    </span>
-                            </div>
+                                  {/* Пагинация удалена - используются точки-индикаторы внизу */}
                           </div>
                           
                                 {/* Контейнер слайдера */}
@@ -6374,26 +6370,7 @@ export default function ProjectConstructorPage() {
                         </div>
                       )}
 
-                      {/* Полная форма контактов для шага 2 */}
-                      {lastHoveredStep === 2 && manualData[lastHoveredStep] && (
-                        <div className="mt-6">
-                          <div className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
-                            <Eye className="h-4 w-4" />
-                            Форма контактов
-                          </div>
-                          <ContactsForm
-                            onSave={(data) => {
-                              setManualData(prev => ({ ...prev, 2: data }))
-                              console.log('Contacts data updated from inline form:', data)
-                            }}
-                            onCancel={() => {}}
-                            initialData={manualData[lastHoveredStep] as any}
-                            isInlineView={true}
-                          />
-                        </div>
-                      )}
-
-                                            {/* Шаг 4: Методы оплаты - показываем кубики для каждого метода */}
+                      {/* Шаг 4: Методы оплаты - показываем кубики для каждого метода */}
                       {lastHoveredStep === 4 && manualData[lastHoveredStep] && (
                         <div className="flex justify-center">
                           <div className="grid grid-cols-3 gap-4 w-full">
@@ -7365,7 +7342,7 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Юридическое название</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {(previewData.legal_name || previewData.legalName) && (previewData.legal_name || previewData.legalName).trim() !== '' ? (previewData.legal_name || previewData.legalName) : 'Не указано'}
+                      {(previewData.legal_name || previewData.legalName) && (previewData.legal_name || previewData.legalName)?.trim() !== '' ? (previewData.legal_name || previewData.legalName) : 'Не указано'}
                     </div>
                   </div>
                   <div>
@@ -7389,7 +7366,7 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Юридический адрес</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {(previewData.legal_address || previewData.address) && (previewData.legal_address || previewData.address).trim() !== '' ? (previewData.legal_address || previewData.address) : 'Не указано'}
+                      {(previewData.legal_address || previewData.address) && (previewData.legal_address || previewData.address)?.trim() !== '' ? (previewData.legal_address || previewData.address) : 'Не указано'}
                     </div>
                   </div>
                 </div>
@@ -7402,25 +7379,25 @@ export default function ProjectConstructorPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Название банка</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {(previewData.bank_name || previewData.bankName) && (previewData.bank_name || previewData.bankName).trim() !== '' ? (previewData.bank_name || previewData.bankName) : 'Не указано'}
+                      {(previewData.bank_name || previewData.bankName) && (previewData.bank_name || previewData.bankName)?.trim() !== '' ? (previewData.bank_name || previewData.bankName) : 'Не указано'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Расчетный счет</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {(previewData.bank_account || previewData.bankAccount) && (previewData.bank_account || previewData.bankAccount).trim() !== '' ? `${previewData.bank_account || previewData.bankAccount}` : 'Не указано'}
+                      {(previewData.bank_account || previewData.bankAccount) && (previewData.bank_account || previewData.bankAccount)?.trim() !== '' ? `${previewData.bank_account || previewData.bankAccount}` : 'Не указано'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Корр. счет</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {(previewData.corr_account || previewData.bankCorrAccount) && (previewData.corr_account || previewData.bankCorrAccount).trim() !== '' ? (previewData.corr_account || previewData.bankCorrAccount) : 'Не указано'}
+                      {(previewData.corr_account || previewData.bankCorrAccount) && (previewData.corr_account || previewData.bankCorrAccount)?.trim() !== '' ? (previewData.corr_account || previewData.bankCorrAccount) : 'Не указано'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">БИК</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      {(previewData.bik || previewData.bankBik) && (previewData.bik || previewData.bankBik).trim() !== '' ? (previewData.bik || previewData.bankBik) : 'Не указано'}
+                      {(previewData.bik || previewData.bankBik) && (previewData.bik || previewData.bankBik)?.trim() !== '' ? (previewData.bik || previewData.bankBik) : 'Не указано'}
                     </div>
                   </div>
                 </div>
