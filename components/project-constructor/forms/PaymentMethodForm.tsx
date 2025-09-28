@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Save, Eye } from 'lucide-react'
+import { ArrowLeft, Eraser, Eye } from 'lucide-react'
 import type { FormProps } from '@/types/project-constructor.types'
 
 // Старый интерфейс для PaymentMethodForm (до рефакторинга типов)
@@ -120,12 +120,15 @@ const PaymentMethodForm = ({ onSave, onCancel, initialData, getStepData }: Payme
 
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          <X className="h-4 w-4 mr-2" />
-          Отмена
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Вернуться
         </Button>
-        <Button type="submit" disabled={!method}>
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
+        <Button type="button" onClick={() => {
+          setMethod('')
+          setSupplier('')
+        }}>
+          <Eraser className="h-4 w-4 mr-2" />
+          Очистить форму
         </Button>
       </div>
     </form>

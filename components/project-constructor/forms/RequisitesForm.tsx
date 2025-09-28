@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { X, Save, Eye } from 'lucide-react'
+import { ArrowLeft, Eraser, Eye } from 'lucide-react'
 import type { FormProps } from '@/types/project-constructor.types'
 
 // Старый интерфейс для RequisitesForm (до рефакторинга типов)
@@ -171,12 +171,22 @@ const RequisitesForm = ({ onSave, onCancel, initialData }: RequisitesFormProps) 
 
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          <X className="h-4 w-4 mr-2" />
-          Отмена
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Вернуться
         </Button>
-        <Button type="submit">
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
+        <Button type="button" onClick={() => {
+          setFormData({
+            bankName: '',
+            accountNumber: '',
+            swift: '',
+            recipientName: '',
+            recipientAddress: '',
+            transferCurrency: '',
+            supplier: ''
+          })
+        }}>
+          <Eraser className="h-4 w-4 mr-2" />
+          Очистить форму
         </Button>
       </div>
     </form>

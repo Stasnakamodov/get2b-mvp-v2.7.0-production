@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Save, Plus, Minus } from 'lucide-react'
+import { ArrowLeft, Eraser, Plus, Minus } from 'lucide-react'
 import type { FormProps, SpecificationData, SpecificationItem } from '@/types/project-constructor.types'
 import { SpecificationDataSchema } from '@/types/project-constructor.types'
 
@@ -289,12 +289,28 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
 
       <div className="flex gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 text-base font-medium">
-          <X className="h-4 w-4 mr-2" />
-          Отмена
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Вернуться
         </Button>
-        <Button type="submit" className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700">
-          <Save className="h-4 w-4 mr-2" />
-          Сохранить
+        <Button type="button" onClick={() => {
+          setFormData({
+            items: [{
+              item_name: '',
+              quantity: 1,
+              unit: 'шт',
+              price: 0,
+              total: 0,
+              supplier_name: '',
+              supplier_id: '',
+              notes: ''
+            }],
+            total_amount: 0,
+            currency: 'RUB',
+            notes: ''
+          })
+        }} className="flex-1 h-12 text-base font-medium bg-red-600 hover:bg-red-700">
+          <Eraser className="h-4 w-4 mr-2" />
+          Очистить форму
         </Button>
       </div>
     </form>

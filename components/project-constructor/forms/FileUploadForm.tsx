@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Upload, Save, X, FileText } from 'lucide-react'
+import { Upload, Eraser, ArrowLeft, FileText } from 'lucide-react'
 
 interface FileUploadFormProps {
   onSave: (data: any) => void
@@ -54,12 +54,12 @@ const FileUploadForm = ({ onSave, onCancel }: FileUploadFormProps) => {
 
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          <X className="h-4 w-4 mr-2" />
-          Отмена
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Вернуться
         </Button>
-        <Button type="submit" disabled={!file}>
-          <Save className="h-4 w-4 mr-2" />
-          Загрузить
+        <Button type="button" onClick={() => setFile(null)}>
+          <Eraser className="h-4 w-4 mr-2" />
+          Очистить форму
         </Button>
       </div>
     </form>

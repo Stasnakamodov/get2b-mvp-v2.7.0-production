@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { X, Save } from 'lucide-react'
+import { ArrowLeft, Eraser } from 'lucide-react'
 import type { FormProps, ContactsData } from '@/types/project-constructor.types'
 import { ContactsDataSchema } from '@/types/project-constructor.types'
 
@@ -153,20 +153,29 @@ const ContactsForm = ({ onSave, onCancel, initialData, isInlineView = false }: C
       {!isInlineView && (
         <div className="flex gap-3 pt-4">
           <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 text-base font-medium">
-            <X className="h-4 w-4 mr-2" />
-            Отмена
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Вернуться
           </Button>
-          <Button type="submit" className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700">
-            <Save className="h-4 w-4 mr-2" />
-            Сохранить
+          <Button type="button" onClick={() => {
+            setFormData({
+              contact_person: '',
+              position: '',
+              phone: '',
+              email: '',
+              telegram: '',
+              additional_info: ''
+            })
+          }} className="flex-1 h-12 text-base font-medium bg-red-600 hover:bg-red-700">
+            <Eraser className="h-4 w-4 mr-2" />
+            Очистить форму
           </Button>
         </div>
       )}
       {isInlineView && (
         <div className="flex justify-end pt-2">
           <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-700">
-            <Save className="h-3 w-3 mr-1" />
-            Сохранить изменения
+            <Eraser className="h-3 w-3 mr-1" />
+            Очистить форму
           </Button>
         </div>
       )}
