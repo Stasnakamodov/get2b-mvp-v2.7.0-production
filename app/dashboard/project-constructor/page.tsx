@@ -5308,9 +5308,22 @@ export default function ProjectConstructorPage() {
                     <span className="font-medium">Удалить данные</span>
                   </div>
                 </Button>
-                
 
-                
+                {/* Кнопка просмотра всех данных */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditData('company')}
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                      <FileText className="h-3 w-3 text-blue-600" />
+                    </div>
+                    <span className="font-medium">Посмотреть все данные</span>
+                  </div>
+                </Button>
+
                 {/* Кнопка добавления товаров из каталога (только для шага 2) */}
                 {lastHoveredStep === 2 && (
                   <Button 
