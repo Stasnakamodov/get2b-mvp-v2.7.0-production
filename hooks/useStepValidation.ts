@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { validateStepData } from '@/types/project-constructor.types'
+import { validateStepData, StepNumber } from '@/types/project-constructor.types'
 
 interface StepValidationResult {
   isValid: boolean
@@ -140,7 +140,7 @@ export const useStepValidation = ({
     const isFilled = checkStepFilled(stepNumber, data)
 
     // Используем встроенную валидацию через Zod схемы
-    const validationResult = validateStepData(stepNumber, data)
+    const validationResult = validateStepData(stepNumber as StepNumber, data)
 
     // Проверяем, заполнен ли шаг пользователем
     const isUserFilled = checkUserChoice(data)
@@ -199,7 +199,7 @@ export const useProjectValidation = (stepsData: Record<number, any>) => {
 
     // Проверяем шаги 1-7
     for (let step = 1; step <= 7; step++) {
-      const result = validateStepData(step, stepsData[step])
+      const result = validateStepData(step as StepNumber, stepsData[step])
 
       if (!result.success) {
         allValid = false

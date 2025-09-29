@@ -123,6 +123,7 @@ const PaymentStep4Manager: React.FC<PaymentStep4ManagerProps> = ({
 
     // Обновляем данные
     const updatedData: ExtendedPaymentMethodsData = {
+      payment_methods: newMethods,
       methods: newMethods,
       primary_method: newMethods[0] || null,
       bank_details: supplierData?.bank_accounts?.[0] || null,
@@ -139,6 +140,7 @@ const PaymentStep4Manager: React.FC<PaymentStep4ManagerProps> = ({
   // Обработка сохранения данных из формы
   const handleFormSave = useCallback((formData: any) => {
     const updatedData: ExtendedPaymentMethodsData = {
+      payment_methods: [formData.method],
       methods: [formData.method],
       primary_method: formData.method,
       bank_details: null,

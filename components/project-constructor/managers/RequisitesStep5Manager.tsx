@@ -155,9 +155,22 @@ const RequisitesStep5Manager: React.FC<RequisitesStep5ManagerProps> = ({
 
   // Обновление данных реквизитов
   const handleRequisitesUpdate = useCallback((requisites: any[]) => {
+    const primaryRequisite = requisites.find(r => r.primary) || requisites[0] || null
+
     const updatedData: ExtendedRequisitesData = {
+      // Обязательные поля из RequisitesDataSchema
+      recipient_name: primaryRequisite?.name || '',
+      recipient_inn: primaryRequisite?.inn || '',
+      recipient_kpp: primaryRequisite?.kpp || '',
+      recipient_address: primaryRequisite?.address || '',
+      recipient_bank_name: primaryRequisite?.bank_name || '',
+      recipient_account: primaryRequisite?.account || '',
+      recipient_bik: primaryRequisite?.bik || '',
+      payment_purpose: 'Оплата по договору',
+
+      // Дополнительные поля
       requisites: requisites,
-      primary_requisite: requisites.find(r => r.primary) || requisites[0] || null,
+      primary_requisite: primaryRequisite,
       bank_details: requisites.find(r => r.type === 'bank_account')?.details || null,
       p2p_details: requisites.find(r => r.type === 'p2p_card')?.details || null,
       crypto_details: requisites.find(r => r.type === 'crypto_wallet')?.details || null,

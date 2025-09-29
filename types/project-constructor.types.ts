@@ -125,7 +125,7 @@ export interface ExtendedBankData extends BankData {
 // ШАГ 4: СПОСОБЫ ОПЛАТЫ
 // ========================================
 
-export const PaymentMethodSchema = z.enum(['bank', 'p2p', 'crypto', 'bank-transfer'])
+export const PaymentMethodSchema = z.enum(['bank', 'p2p', 'crypto', 'bank-transfer', 'bank_transfer', 'card', 'cash', 'wire', 'other'])
 export type PaymentMethod = z.infer<typeof PaymentMethodSchema>
 
 export const PaymentMethodsDataSchema = z.object({
@@ -166,6 +166,10 @@ export interface ExtendedPaymentMethodsData extends PaymentMethodsData {
   selectedMethod?: string
   defaultMethod?: string
   methods?: string[]
+  primary_method?: string | null
+  bank_details?: any
+  card_details?: any
+  crypto_details?: any
   type?: string
   payment_method?: string
   auto_filled?: boolean
@@ -351,6 +355,13 @@ export interface ExtendedRequisitesData extends RequisitesData {
   currency?: string
   items?: ExtendedSpecificationItem[]
   recipientName?: string
+  requisites?: any[]
+  primary_requisite?: any
+  bank_details?: any
+  p2p_details?: any
+  crypto_details?: any
+  user_choice?: boolean
+  auto_filled?: boolean
 }
 
 // ========================================

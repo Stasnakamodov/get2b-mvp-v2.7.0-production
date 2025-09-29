@@ -10,7 +10,6 @@ import type {
   StepDataToView,
   OcrDebugData,
   StepNumber,
-  FormProps,
 } from '@/types/project-constructor.types'
 import { validateStepData } from '@/types/project-constructor.types'
 
@@ -20,9 +19,7 @@ import { uploadFileToStorage, sendTelegramMessage, fetchFromApi, fetchCatalogDat
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -49,21 +46,14 @@ import {
   Download,
   CheckCircle2,
   Clock,
-  DollarSign,
   Send,
-  MousePointerClick,
-  Download as DownloadIcon,
-  CheckCircle2 as CheckCircle2Icon,
   Upload,
-  Save,
   Package,
   Mail,
   Edit,
   Lock,
-  ChevronDown,
   Check,
   Loader,
-  BarChart3,
   Eye,
   User,
 } from "lucide-react"
@@ -77,9 +67,10 @@ import FileUploadForm from '@/components/project-constructor/forms/FileUploadFor
 import PaymentMethodForm from '@/components/project-constructor/forms/PaymentMethodForm'
 import RequisitesForm from '@/components/project-constructor/forms/RequisitesForm'
 import { constructorSteps, dataSources, stepIcons } from '@/components/project-constructor/config/ConstructorConfig'
+import { STAGE_CONFIG, PRODUCT_DISPLAY_CONFIG } from '@/components/project-constructor/config/ConstructorConstants'
 import { getSourceDisplayName } from '@/components/project-constructor/utils/SourceUtils'
-import { getProgress, getPreviewType, getActiveScenario } from '@/components/project-constructor/utils/ProgressUtils'
-import { bucketMap, closeEchoDataTooltip } from '@/components/project-constructor/utils/UploadUtils'
+import { getProgress, getPreviewType, getActiveScenario, getProgressWithContext, getActiveScenarioWithContext } from '@/components/project-constructor/utils/ProgressUtils'
+import { bucketMap } from '@/components/project-constructor/utils/UploadUtils'
 import { phantomDataStyles } from '@/components/project-constructor/styles/PhantomStyles'
 import SpecificationForm from '@/components/project-constructor/forms/SpecificationForm'
 import { useClientProfiles } from "@/hooks/useClientProfiles"
@@ -87,15 +78,21 @@ import { useSupplierProfiles } from "@/hooks/useSupplierProfiles"
 import { useModalHandlers } from "@/hooks/useModalHandlers"
 import { useStageHandlers } from "@/hooks/useStageHandlers"
 import { useCatalogHandlers } from "@/hooks/useCatalogHandlers"
+import { useTouchHandlers } from "@/hooks/useTouchHandlers"
 import { cleanProjectRequestId } from "@/utils/IdUtils"
-import { generateFileDate, formatDate } from "@/utils/DateUtils"
+import { generateFileDate } from "@/utils/DateUtils"
 import { cleanFileName } from "@/utils/FileUtils"
+import {
+  isStepFilledByUser,
+  checkSummaryReadiness as checkSummaryReadinessUtil,
+  getConfiguredStepsSummary as getConfiguredStepsSummaryUtil,
+  type StepValidationContext
+} from "@/components/project-constructor/utils/StepValidationUtils"
 import { supabase } from "@/lib/supabaseClient"
 import { useToast } from "@/components/ui/use-toast"
 import CatalogModal from "../create-project/components/CatalogModal"
-import { ManagerBotService } from "@/lib/telegram/ManagerBotService"
-import { sendTelegramDocumentClient } from "@/lib/telegram-client"
-import { sendClientReceiptApprovalRequest } from "@/lib/telegram"
+import { AutoFillNotification } from "@/components/project-constructor/notifications/AutoFillNotification"
+import { POLLING_INTERVALS, TIMEOUTS } from "@/components/project-constructor/config/PollingConstants"
 
 // Константы конфигурации извлечены в отдельный файл
 
@@ -131,15 +128,11 @@ export default function ProjectConstructorPage() {
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [templateStepSelection, setTemplateStepSelection] = useState<{templateId: string, availableSteps: number[]} | null>(null)
   const [templateSelection, setTemplateSelection] = useState<boolean>(false)
-  const [showBankAccountSelector, setShowBankAccountSelector] = useState<boolean>(false)
-  const [bankAccountSourceType, setBankAccountSourceType] = useState<'profile' | 'template'>('profile')
   const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false)
   const [previewData, setPreviewData] = useState<StepDataToView | null>(null)
   const [previewType, setPreviewType] = useState<string>('')
   const [editingType, setEditingType] = useState<string>('')
   const [currentItemIndex, setCurrentItemIndex] = useState(0)
-  const [touchStart, setTouchStart] = useState(0)
-  const [touchEnd, setTouchEnd] = useState(0)
   const [user, setUser] = useState<UserType | null>(null)
   const [autoFillNotification, setAutoFillNotification] = useState<{
     show: boolean;
@@ -153,9 +146,9 @@ export default function ProjectConstructorPage() {
   const [ocrError, setOcrError] = useState<Record<number, string>>({})
   const [ocrDebugData, setOcrDebugData] = useState<OcrDebugData>({})
   const [showStepDataModal, setShowStepDataModal] = useState<boolean>(false)
-  const [stepDataToView, setStepDataToView] = useState<StepDataToView | null>(null)
+  const [stepDataToView] = useState<StepDataToView | null>(null)
   const [currentProductIndex, setCurrentProductIndex] = useState<number>(0)
-  const [productsPerView] = useState<number>(3)
+  const productsPerView = PRODUCT_DISPLAY_CONFIG.PRODUCTS_PER_VIEW
   
   // Состояние для модального окна эхо данных
   const [echoDataModal, setEchoDataModal] = useState<{
@@ -164,18 +157,18 @@ export default function ProjectConstructorPage() {
     echoData: any;
     projectInfo: any;
   } | null>(null)
-  
+
   const [showPhantomOptions, setShowPhantomOptions] = useState<boolean>(false)
-  
+
   // Состояние для отслеживания доступности эхо данных
   const [echoDataAvailable, setEchoDataAvailable] = useState<{ [key: number]: boolean }>({})
-  
+
   // Состояние для отслеживания загрузки эхо данных
   const [echoDataLoading, setEchoDataLoading] = useState<boolean>(false)
-  
+
   // Состояние для управления всплывающими подсказками эхо данных
   const [echoDataTooltips, setEchoDataTooltips] = useState<{ [key: number]: boolean }>({})
-  
+
   // Состояние для лоадера эхо данных шагов 1 и 2
   const [echoDataLoadingSteps1_2, setEchoDataLoadingSteps1_2] = useState<boolean>(false)
 
@@ -289,6 +282,13 @@ export default function ProjectConstructorPage() {
     setShowCatalogModal
   )
 
+  // Обработчики touch событий
+  const { handleTouchStart, handleTouchMove, handleTouchEnd } = useTouchHandlers({
+    lastHoveredStep,
+    manualData,
+    onItemIndexChange: setCurrentItemIndex
+  })
+
   // useEffect для автоматической установки stepConfigs[5] = 'catalog' когда есть данные автозаполнения
   useEffect(() => {
     // Проверяем есть ли у выбранного поставщика данные для автозаполнения 5-го шага
@@ -333,6 +333,20 @@ export default function ProjectConstructorPage() {
       }
     }
   }, [selectedSupplierData, manualData[4], stepConfigs[5]]);
+
+  // Helper функция для создания контекста валидации шагов
+  const createValidationContext = (): StepValidationContext => ({
+    stepConfigs,
+    manualData,
+    receiptApprovalStatus,
+    hasManagerReceipt,
+    clientReceiptUrl
+  })
+
+  // Wrapper для isStepFilledByUser с контекстом
+  const isStepFilledByUserWithContext = (stepId: number) => {
+    return isStepFilledByUser(stepId, createValidationContext())
+  }
 
   // Функция для поиска supplier в любом из заполненных шагов
   const findSupplierInAnyStep = () => {
@@ -415,13 +429,13 @@ export default function ProjectConstructorPage() {
   // Функция для проверки доступности эхо данных
   const checkEchoDataAvailability = async () => {
     console.log('🔍 Проверяем доступность эхо данных...')
-    
+
     // Показываем лоадер
     setEchoDataLoading(true)
-    
+
     // Ищем supplier в любом из заполненных шагов
     const supplierName = findSupplierInAnyStep()
-    
+
     if (!supplierName) {
       console.log('❌ Не найден supplier ни в одном шаге')
       setEchoDataAvailable({})
@@ -430,7 +444,7 @@ export default function ProjectConstructorPage() {
     }
 
     console.log('🔍 Проверяем эхо данные для поставщика:', supplierName)
-    
+
     try {
       const echoData = await getEchoSupplierData(supplierName)
       if (echoData) {
@@ -444,7 +458,7 @@ export default function ProjectConstructorPage() {
           4: true,
           5: true
         })
-        
+
         // Автоматически скрываем подсказки через 10 секунд
         setTimeout(() => {
           setEchoDataTooltips(prev => ({
@@ -452,7 +466,7 @@ export default function ProjectConstructorPage() {
             4: false,
             5: false
           }))
-        }, 10000)
+        }, TIMEOUTS.AUTO_HIDE_NOTIFICATION)
       } else {
         console.log('❌ Эхо данные недоступны')
         setEchoDataAvailable({})
@@ -467,7 +481,7 @@ export default function ProjectConstructorPage() {
       setEchoDataLoading(false)
     }
   }
-  
+
   // Закрытие выпадающего списка при клике вне его области
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -554,7 +568,7 @@ export default function ProjectConstructorPage() {
     }
 
     // Проверяем статус каждые 4 секунды
-    const interval = setInterval(checkManagerStatus, 4000)
+    const interval = setInterval(checkManagerStatus, POLLING_INTERVALS.MANAGER_STATUS_CHECK)
     
     // Первая проверка сразу
     checkManagerStatus()
@@ -626,7 +640,7 @@ export default function ProjectConstructorPage() {
     }
 
     // Проверяем статус каждые 4 секунды
-    const interval = setInterval(checkReceiptStatus, 4000)
+    const interval = setInterval(checkReceiptStatus, POLLING_INTERVALS.RECEIPT_STATUS_CHECK)
     
     // Первая проверка сразу
     checkReceiptStatus()
@@ -715,7 +729,7 @@ export default function ProjectConstructorPage() {
     }
     
     // Проверяем каждые 5 секунд
-    const interval = setInterval(checkManagerReceipt, 5000)
+    const interval = setInterval(checkManagerReceipt, POLLING_INTERVALS.MANAGER_RECEIPT_CHECK)
     
     // Первая проверка сразу
     checkManagerReceipt()
@@ -929,7 +943,7 @@ export default function ProjectConstructorPage() {
         manualData,
         stepConfigs,
         currentStage: getCurrentStage(),
-        activeScenario: getActiveScenario(isStepFilledByUser)
+        activeScenario: getActiveScenarioWithContext(createValidationContext())
       })
       setProjectDetailsDialogOpen(true)
 
@@ -2146,10 +2160,11 @@ export default function ProjectConstructorPage() {
   // Определение текущего этапа
   const getCurrentStage = () => {
     // Проверяем, заполнены ли все основные шаги этапа 1
-    const step1Filled = isStepFilledByUser(1)
-    const step2Filled = isStepFilledByUser(2)
-    const step4Filled = isStepFilledByUser(4)
-    const step5Filled = isStepFilledByUser(5)
+    const context = createValidationContext()
+    const step1Filled = isStepFilledByUser(1, context)
+    const step2Filled = isStepFilledByUser(2, context)
+    const step4Filled = isStepFilledByUser(4, context)
+    const step5Filled = isStepFilledByUser(5, context)
     
     console.log('🔍 Проверка этапа:', { step1Filled, step2Filled, step4Filled, step5Filled })
     
@@ -2173,88 +2188,6 @@ export default function ProjectConstructorPage() {
 
   // getActiveScenario извлечена в ProgressUtils
 
-  // Проверка, заполнен ли шаг пользователем (не эхо данными)
-  const isStepFilledByUser = (stepId: number) => {
-    // Шаг 1: проверяем что пользователь выбрал источник данных И есть данные
-    if (stepId === 1) {
-      const hasSource = Boolean(stepConfigs[1]) && stepConfigs[1] !== undefined
-      const hasData = manualData[1] && Object.keys(manualData[1]).length > 0
-      const result = hasSource && hasData
-      
-      console.log(`🔍 Шаг 1: hasSource=${hasSource}, hasData=${hasData}, результат=${result}`)
-      console.log(`🔍 stepConfigs[1]:`, stepConfigs[1])
-      console.log(`🔍 manualData[1]:`, manualData[1])
-      
-      return result
-    }
-    
-    // Шаг 2: проверяем что пользователь выбрал источник данных И есть товары
-    if (stepId === 2) {
-      const hasSource = Boolean(stepConfigs[2]) && stepConfigs[2] !== undefined
-      const hasItems = manualData[2] && manualData[2].items && manualData[2].items.length > 0
-      const result = hasSource && hasItems
-      
-      console.log(`🔍 Шаг 2: hasSource=${hasSource}, hasItems=${hasItems}, результат=${result}`)
-      console.log(`🔍 stepConfigs[2]:`, stepConfigs[2])
-      console.log(`🔍 manualData[2]:`, manualData[2])
-      
-      return result
-    }
-    
-    // Шаг 3: считаем заполненным если чек одобрен менеджером
-    if (stepId === 3) {
-      // Проверяем receiptApprovalStatus (локальное состояние)
-      const result = receiptApprovalStatus === 'approved' || receiptApprovalStatus === 'waiting'
-      
-      console.log(`🔍 Шаг 3: receiptApprovalStatus=${receiptApprovalStatus}, результат=${result}`)
-      
-      return result
-    }
-    
-    // Шаг 6: считаем заполненным если есть чек от менеджера
-    if (stepId === 6) {
-      const result = hasManagerReceipt
-      
-      console.log(`🔍 Шаг 6: hasManagerReceipt=${hasManagerReceipt}, managerReceiptUrl=${managerReceiptUrl}, результат=${result}`)
-      console.log(`🔍 Шаг 6: projectRequestId=${projectRequestId}, currentStage=${currentStage}`)
-      
-      return result
-    }
-    
-    // Шаг 7: считаем заполненным если клиент загрузил чек о получении средств
-    if (stepId === 7) {
-      const result = !!clientReceiptUrl
-      
-      console.log(`🔍 Шаг 7: clientReceiptUrl=${clientReceiptUrl}, результат=${result}`)
-      
-      return result
-    }
-    
-    // Шаги 4, 5: считаем заполненными если пользователь явно выбрал (включая эхо данные)
-    if (stepId === 4 || stepId === 5) {
-      // Проверяем, есть ли выбор пользователя (включая примененные эхо данные)
-      const hasUserChoice = manualData[stepId] && manualData[stepId].user_choice
-      
-      // Проверяем источник данных
-      const source = stepConfigs[stepId]
-      
-      // Проверяем наличие данных
-      const hasData = manualData[stepId] && Object.keys(manualData[stepId]).length > 0
-      
-      // Считаем заполненным если:
-      // 1. Пользователь явно выбрал (user_choice: true)
-      // 2. ИЛИ есть источник данных (включая echoData)
-      // 3. ИЛИ есть данные в manualData
-      const result = hasUserChoice || source || hasData
-      
-      console.log(`🔍 Шаг ${stepId}: user_choice=${hasUserChoice}, source=${source}, hasData=${hasData}, результат=${result}`)
-      console.log(`🔍 manualData[${stepId}]:`, manualData[stepId])
-      return result
-    }
-    
-    // Остальные шаги
-    return stepConfigs[stepId] || manualData[stepId]
-  }
 
   // Функция для перехода к следующему этапу
   const goToNextStage = async () => {
@@ -2371,30 +2304,6 @@ export default function ProjectConstructorPage() {
     }, 5000)
   }
 
-  // Функция для запуска степера инфраструктуры
-  const startInfrastructureStepper = () => {
-    console.log('🏗️ Запускаем степер инфраструктуры...')
-    setInfrastructureStepperStep(0)
-    setInfrastructureStepperStatus('Начинаем настройку инфраструктуры...')
-    
-    // Шаг 1: Документы
-    setTimeout(() => {
-      setInfrastructureStepperStep(1)
-      setInfrastructureStepperStatus('Настройка документов...')
-    }, 1500)
-    
-    // Шаг 2: Получение средств
-    setTimeout(() => {
-      setInfrastructureStepperStep(2)
-      setInfrastructureStepperStatus('Настройка получения средств...')
-    }, 3000)
-    
-    // Шаг 3: Подтверждение
-    setTimeout(() => {
-      setInfrastructureStepperStep(3)
-      setInfrastructureStepperStatus('Инфраструктура готова!')
-    }, 4500)
-  }
 
 
   // Функция для перехода к третьему этапу
@@ -2440,39 +2349,12 @@ export default function ProjectConstructorPage() {
   // Получение прогресса
   // getProgress извлечена в ProgressUtils
 
-  // Получение сводки настроенных шагов
-    const getConfiguredStepsSummary = () => {
-    const summary = []
-
-    // Проверяем все шаги
-    for (let stepId = 1; stepId <= 7; stepId++) {
-      const isFilled = isStepFilledByUser(stepId)
-
-      if (isFilled) {
-        const step = constructorSteps.find(s => s.id === stepId)
-        const source = stepConfigs[stepId]
-
-        const sourceInfo = source ? dataSources[source as keyof typeof dataSources] : null
-
-        const item = {
-          stepId: stepId,
-          stepName: step?.name,
-          sourceName: sourceInfo?.name || 'Вручную',
-          source: source,
-          data: manualData[stepId]
-        }
-
-        summary.push(item)
-      }
-    }
-
-    return summary.sort((a, b) => a.stepId - b.stepId)
-  }
 
   // Функция проверки готовности к показу сводки
   const checkSummaryReadiness = () => {
-    const requiredSteps = [1, 2, 4, 5]
-    const filledSteps = requiredSteps.filter(stepId => isStepFilledByUser(stepId))
+    const requiredSteps = STAGE_CONFIG.STAGE_1_REQUIRED_STEPS
+    const context = createValidationContext()
+    const filledSteps = requiredSteps.filter(stepId => isStepFilledByUser(stepId, context))
     
     console.log('🔍 Проверка готовности к сводке:')
     console.log('  - Текущий этап:', currentStage)
@@ -2494,7 +2376,7 @@ export default function ProjectConstructorPage() {
     }
     
     requiredSteps.forEach(stepId => {
-      const isFilled = isStepFilledByUser(stepId)
+      const isFilled = isStepFilledByUser(stepId, context)
       console.log(`  - Шаг ${stepId}: ${isFilled ? '✅ Заполнен' : '❌ Не заполнен'}`)
     })
     
@@ -3384,71 +3266,7 @@ export default function ProjectConstructorPage() {
     }
   }
 
-  // Функции для обработки свайпа
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX)
-  }
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd || !lastHoveredStep) return
-    
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > 50
-    const isRightSwipe = distance < -50
-    const items = manualData[lastHoveredStep]?.items
-
-    if (isLeftSwipe && items && items.length > 3) {
-      // Свайп влево - следующий набор
-      setCurrentItemIndex(prev => 
-        prev < Math.max(0, items.length - 3) ? prev + 1 : prev
-      )
-    }
-    
-    if (isRightSwipe && items && items.length > 3) {
-      // Свайп вправо - предыдущий набор
-      setCurrentItemIndex(prev => prev > 0 ? prev - 1 : prev)
-    }
-
-    // Сброс значений
-    setTouchStart(0)
-    setTouchEnd(0)
-  }
-
-  // Функция для тестирования эхо данных
-  const testEchoData = async () => {
-    console.log('🧪 Тестирование эхо данных...')
-    
-    try {
-      // Попробуем получить реальные эхо данные для тестирования
-      const supplierName = 'Тестовый поставщик'
-      const echoData = await getEchoSupplierData(supplierName)
-      
-      if (echoData) {
-        console.log('✅ Найдены реальные эхо данные для тестирования')
-        
-        // Показываем модальное окно с реальными данными
-        setEchoDataModal({
-          show: true,
-          supplierName: supplierName,
-          echoData: echoData,
-          projectInfo: echoData.project_info
-        })
-        
-        console.log('📋 Модальное окно должно открыться с реальными данными')
-      } else {
-        console.log('❌ Реальные эхо данные не найдены для тестирования')
-        alert('Реальные эхо данные не найдены. Создайте проект с поставщиком для тестирования.')
-      }
-      
-    } catch (error) {
-      console.error('❌ Ошибка тестирования:', error)
-      alert('Ошибка при поиске эхо данных: ' + (error as Error).message)
-    }
-  }
 
   // Функция для применения эхо данных (вызывается из модального окна)
   const applyEchoData = (echoData: any) => {
@@ -4305,7 +4123,7 @@ export default function ProjectConstructorPage() {
         }
       }
 
-      pollingRef.current = setInterval(checkStatus, 4000)
+      pollingRef.current = setInterval(checkStatus, POLLING_INTERVALS.PROJECT_STATUS_CHECK)
       return () => {
         if (pollingRef.current) clearInterval(pollingRef.current)
       }
@@ -4615,7 +4433,7 @@ export default function ProjectConstructorPage() {
         manualData,
         uploadedFiles,
         currentStage: getCurrentStage(),
-        activeScenario: getActiveScenario(isStepFilledByUser)
+        activeScenario: getActiveScenarioWithContext(createValidationContext())
       })
 
       const response = await fetchFromApi('/api/atomic-constructor/send-to-manager', {
@@ -4629,7 +4447,7 @@ export default function ProjectConstructorPage() {
           uploadedFiles,
           user,
           currentStage: getCurrentStage(),
-          activeScenario: getActiveScenario(isStepFilledByUser)
+          activeScenario: getActiveScenarioWithContext(createValidationContext())
         })
       })
 
@@ -4720,9 +4538,9 @@ export default function ProjectConstructorPage() {
               <div className="text-sm">
                 <span className="font-medium">Сценарий: </span>
                 <span className="text-gray-600">
-                  {getActiveScenario(isStepFilledByUser) === 'A' ? 'А (Клиент-покупатель)' :
-                   getActiveScenario(isStepFilledByUser) === 'B1' ? 'Б1 (Поставщик-товары)' :
-                   getActiveScenario(isStepFilledByUser) === 'B2' ? 'Б2 (Поставщик-реквизиты)' : 'Не определен'}
+                  {getActiveScenarioWithContext(createValidationContext()) === 'A' ? 'А (Клиент-покупатель)' :
+                   getActiveScenarioWithContext(createValidationContext()) === 'B1' ? 'Б1 (Поставщик-товары)' :
+                   getActiveScenarioWithContext(createValidationContext()) === 'B2' ? 'Б2 (Поставщик-реквизиты)' : 'Не определен'}
                 </span>
               </div>
             </div>
@@ -4911,28 +4729,14 @@ export default function ProjectConstructorPage() {
           )}
           
           {/* Уведомление об автоматическом заполнении */}
-          {autoFillNotification && currentStage !== 3 && (
-            <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-lg">
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                <div>
-                  <p className="text-green-700 font-medium">{autoFillNotification.message}</p>
-                  <p className="text-green-600 text-sm">
-                    Поставщик: {autoFillNotification.supplierName} | 
-                    Заполнены шаги: {autoFillNotification.filledSteps.map(step => 
-                      step === 4 ? 'IV' : step === 5 ? 'V' : step
-                    ).join(', ')}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setAutoFillNotification(null)}
-                  className="ml-auto text-green-400 hover:text-green-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
+          <AutoFillNotification
+            show={autoFillNotification?.show || false}
+            message={autoFillNotification?.message || ''}
+            supplierName={autoFillNotification?.supplierName || ''}
+            filledSteps={autoFillNotification?.filledSteps || []}
+            currentStage={currentStage}
+            onDismiss={() => setAutoFillNotification(null)}
+          />
 
           {/* Этап 2: Ожидание апрува менеджера или платежка */}
           {currentStage === 2 ? (
@@ -7223,12 +7027,12 @@ export default function ProjectConstructorPage() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Прогресс настройки</span>
-              <span className="text-sm text-gray-500">{getProgress(isStepFilledByUser)}%</span>
+              <span className="text-sm text-gray-500">{getProgressWithContext(createValidationContext())}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${getProgress(isStepFilledByUser)}%` }}
+                style={{ width: `${getProgressWithContext(createValidationContext())}%` }}
               />
             </div>
             
@@ -7252,9 +7056,9 @@ export default function ProjectConstructorPage() {
                     {/* Сводка настроенных шагов */}
           <div className="mb-6">
             <h3 className="text-lg font-medium mb-3">Настроенные шаги:</h3>
-            {getConfiguredStepsSummary().length > 0 ? (
+            {getConfiguredStepsSummaryUtil(constructorSteps, dataSources, createValidationContext()).length > 0 ? (
               <div className="space-y-2">
-                {getConfiguredStepsSummary().map((item) => (
+                {getConfiguredStepsSummaryUtil(constructorSteps, dataSources, createValidationContext()).map((item) => (
                   <div 
                     key={item.stepId} 
                     className={`flex items-center gap-3 p-3 rounded-lg hover:shadow-md cursor-pointer transition-all duration-200 border-2 relative z-10 ${
@@ -7298,7 +7102,7 @@ export default function ProjectConstructorPage() {
           <div className="flex justify-end">
             <Button 
               className="gap-2"
-              disabled={getConfiguredStepsSummary().length === 0}
+              disabled={getConfiguredStepsSummaryUtil(constructorSteps, dataSources, createValidationContext()).length === 0}
             >
               Запустить атомарную сделку
               <ArrowRight className="w-4 h-4" />
