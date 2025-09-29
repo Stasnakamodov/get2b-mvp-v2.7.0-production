@@ -1065,104 +1065,120 @@ export default function ProjectConstructorPage() {
   }
 
   // Функция для получения данных поставщика из каталога
-  const getSupplierDataFromCatalog = (supplierId: string) => {
-    // Здесь будет реальный запрос к базе данных
-    // Пока возвращаем моковые данные для тестирования
-    console.log('Запрос данных поставщика:', supplierId)
-    
-    // Моковые данные поставщика из синей комнаты
-    const mockSupplierData = {
-      "supplier-1": {
-        bank_name: "Сбербанк России",
-        account_number: "40702810123456789012",
-        swift: "SABRRUMM",
-        payment_method: "bank-transfer",
-        name: "ООО ТехноСнаб",
-        contact_email: "info@technosnab.ru",
-        contact_phone: "+7 (495) 123-45-67"
-      },
-      "supplier-2": {
-        bank_name: "Тинькофф Банк",
-        account_number: "40702810987654321098",
-        swift: "TICSRUMM",
-        payment_method: "bank-transfer",
-        name: "ООО Электроимпорт",
-        contact_email: "sales@electroimport.ru",
-        contact_phone: "+7 (812) 987-65-43"
-      },
-      "echo-supplier-1": {
-        bank_name: "Эхо Банк",
-        account_number: "40702810111111111111",
-        swift: "ECHORUMM",
-        payment_method: "bank-transfer",
-        name: "ООО Эхо Поставщик",
-        contact_email: "echo@supplier.ru",
-        contact_phone: "+7 (495) 111-11-11"
+  const getSupplierDataFromCatalog = async (supplierId: string) => {
+    try {
+      console.log('🔍 Запрос данных поставщика:', supplierId)
+
+      const { data: supplier, error } = await supabase
+        .from('catalog_verified_suppliers')
+        .select(`
+          id,
+          name,
+          company_name,
+          category,
+          contact_email,
+          contact_phone,
+          payment_methods,
+          bank_accounts,
+          p2p_cards,
+          crypto_wallets
+        `)
+        .eq('id', supplierId)
+        .eq('is_active', true)
+        .single()
+
+      if (error) {
+        console.error('❌ Ошибка получения данных поставщика:', error)
+        return null
       }
+
+      if (!supplier) {
+        console.warn('⚠️ Поставщик не найден:', supplierId)
+        return null
+      }
+
+      console.log('✅ Данные поставщика получены:', supplier.name)
+
+      // Преобразуем данные в нужный формат
+      const supplierData = {
+        id: supplier.id,
+        name: supplier.name,
+        company_name: supplier.company_name,
+        category: supplier.category,
+        contact_email: supplier.contact_email,
+        contact_phone: supplier.contact_phone,
+        payment_methods: supplier.payment_methods || [],
+        bank_accounts: supplier.bank_accounts || [],
+        p2p_cards: supplier.p2p_cards || [],
+        crypto_wallets: supplier.crypto_wallets || []
+      }
+
+      return supplierData
+
+    } catch (error) {
+      console.error('💥 Критическая ошибка запроса поставщика:', error)
+      return null
     }
-    
-    return mockSupplierData[supplierId as keyof typeof mockSupplierData] || null
   }
 
   // Функция для получения товаров поставщика из каталога
-  const getSupplierProducts = (supplierId: string) => {
-    // Здесь будет реальный запрос к базе данных
-    // Пока возвращаем моковые данные для тестирования
-    console.log('Запрос товаров поставщика:', supplierId)
-    
-    // Моковые товары поставщиков
-    const mockSupplierProducts = {
-      "supplier-1": [
-        {
-          name: "Электронные компоненты",
-          quantity: 100,
-          price: 150,
-          unit: "шт",
-          supplier_id: "supplier-1"
-        },
-        {
-          name: "Микросхемы",
-          quantity: 50,
-          price: 300,
-          unit: "шт", 
-          supplier_id: "supplier-1"
-        }
-      ],
-      "supplier-2": [
-        {
-          name: "Проводники",
-          quantity: 200,
-          price: 25,
-          unit: "м",
-          supplier_id: "supplier-2"
-        },
-        {
-          name: "Коннекторы",
-          quantity: 75,
-          price: 80,
-          unit: "шт",
-          supplier_id: "supplier-2"
-        }
-      ],
-      "echo-supplier-1": [
-        {
-          name: "Эхо товар 1",
-          quantity: 10,
-          price: 1000,
-          unit: "шт",
-          supplier_id: "echo-supplier-1"
-        },
-        {
-          name: "Эхо товар 2",
-          quantity: 5,
-          price: 2000,
-          unit: "шт",
-          supplier_id: "echo-supplier-1"
-        }
-      ]
+  const getSupplierProducts = async (supplierId: string) => {
+    try {
+      console.log('🔍 Запрос товаров поставщика:', supplierId)
+
+      const { data: products, error } = await supabase
+        .from('catalog_verified_products')
+        .select(`
+          id,
+          name,
+          description,
+          price,
+          currency,
+          category,
+          sku,
+          min_order,
+          specifications
+        `)
+        .eq('supplier_id', supplierId)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (error) {
+        console.error('❌ Ошибка получения товаров поставщика:', error)
+        return []
+      }
+
+      if (!products || products.length === 0) {
+        console.warn('⚠️ Товары поставщика не найдены:', supplierId)
+        return []
+      }
+
+      console.log(`✅ Получено ${products.length} товаров поставщика`)
+
+      // Преобразуем данные в формат для спецификации
+      const productsForSpec = products.map(product => ({
+        item_name: product.name,
+        quantity: 1, // Количество по умолчанию
+        price: Number(product.price || 0),
+        unit: 'шт', // Единица по умолчанию
+        total: Number(product.price || 0),
+        supplier_id: supplierId,
+        supplier_name: '', // Будет заполнено из данных поставщика
+        notes: product.description || '',
+        sku: product.sku,
+        category: product.category,
+        currency: product.currency || 'USD',
+        min_order: product.min_order,
+        specifications: product.specifications
+      }))
+
+      return productsForSpec
+
+    } catch (error) {
+      console.error('💥 Критическая ошибка запроса товаров:', error)
+      return []
     }
-    
-    return mockSupplierProducts[supplierId as keyof typeof mockSupplierProducts] || []
   }
 
   // Функция автоматического заполнения шагов IV и V на основе данных шага II
@@ -1212,48 +1228,50 @@ export default function ProjectConstructorPage() {
   }
 
   // Функция автоматического заполнения шага II на основе данных шагов IV или V
-  const autoFillStepFromRequisites = (stepData: any, stepId: number) => {
+  const autoFillStepFromRequisites = async (stepData: any, stepId: number) => {
     console.log(`=== АВТОМАТИЧЕСКОЕ ЗАПОЛНЕНИЕ ШАГА II НА ОСНОВЕ ШАГА ${stepId} ===`)
     console.log('Данные для проверки:', stepData)
-    
+
     // Проверяем, есть ли supplier_id в данных
     let supplierId = stepData.supplier_id
     if (!supplierId) {
       console.log('supplier_id не найден в данных шага', stepId)
       return false
     }
-    
+
     console.log('Найден supplier_id:', supplierId)
-    
-    // Получаем данные поставщика
-    const supplierData = getSupplierDataFromCatalog(supplierId)
-    
-    if (supplierData) {
-      console.log('Данные поставщика найдены:', supplierData)
-      
-      // Получаем товары поставщика (в реальности это будет запрос к каталогу)
-      const supplierProducts = getSupplierProducts(supplierId)
-      
-      if (supplierProducts && supplierProducts.length > 0) {
-        // Автоматически заполняем шаг II (спецификация товаров)
-        setManualData(prev => ({
-          ...prev,
-          2: {
-            supplier: supplierData.name,
-            currency: 'RUB',
-            items: supplierProducts.map(product => ({
-              ...product,
-              supplier_id: supplierId
-            })),
-            auto_filled: true
-          }
-        }))
-        
-        // Устанавливаем источник данных для шага II
-        setStepConfigs(prev => ({
-          ...prev,
-          2: "catalog"
-        }))
+
+    try {
+      // Получаем данные поставщика
+      const supplierData = await getSupplierDataFromCatalog(supplierId)
+
+      if (supplierData) {
+        console.log('Данные поставщика найдены:', supplierData.name)
+
+        // Получаем товары поставщика
+        const supplierProducts = await getSupplierProducts(supplierId)
+
+        if (supplierProducts && supplierProducts.length > 0) {
+          // Автоматически заполняем шаг II (спецификация товаров)
+          setManualData(prev => ({
+            ...prev,
+            2: {
+              supplier: supplierData.name,
+              currency: 'RUB',
+              items: supplierProducts.map(product => ({
+                ...product,
+                supplier_id: supplierId,
+                supplier_name: supplierData.name
+              })),
+              auto_filled: true
+            }
+          }))
+
+          // Устанавливаем источник данных для шага II
+          setStepConfigs(prev => ({
+            ...prev,
+            2: "catalog"
+          }))
         
         // Показываем уведомление об автоматическом заполнении
         setAutoFillNotification({
@@ -1323,6 +1341,12 @@ export default function ProjectConstructorPage() {
     } else {
       console.log('❌ Данные поставщика не найдены для ID:', supplierId)
     }
+
+    } catch (error) {
+      console.error('💥 Критическая ошибка автозаполнения шага II:', error)
+      return false
+    }
+
     return false
   }
 
@@ -1822,7 +1846,9 @@ export default function ProjectConstructorPage() {
       
       // Проверяем, нужно ли автоматическое заполнение (если это шаги IV или V)
       if (stepId === 4 || stepId === 5) {
-        autoFillStepFromRequisites(stepData, stepId)
+        autoFillStepFromRequisites(stepData, stepId).catch(error => {
+          console.error('Ошибка автозаполнения из шага', stepId, ':', error)
+        })
       }
     } else {
       console.log(`❌ Нет данных шаблона для шага ${stepId}`)
@@ -1891,7 +1917,9 @@ export default function ProjectConstructorPage() {
           if (stepId === 4 || stepId === 5) {
             // Используем setTimeout, чтобы дать время для обновления состояния
             setTimeout(() => {
-              autoFillStepFromRequisites(stepData, stepId)
+              autoFillStepFromRequisites(stepData, stepId).catch(error => {
+                console.error('Ошибка отложенного автозаполнения из шага', stepId, ':', error)
+              })
             }, 100)
           }
         }
@@ -2431,7 +2459,9 @@ export default function ProjectConstructorPage() {
       
       // Автоматическое заполнение шага II после заполнения шагов IV или V
       if (stepId === 4 || stepId === 5) {
-        autoFillStepFromRequisites(data, stepId)
+        autoFillStepFromRequisites(data, stepId).catch(error => {
+          console.error('Ошибка автозаполнения при сохранении шага', stepId, ':', error)
+        })
       }
       
       // Проверяем готовность к сводке после обновления данных (только если не на этапе 2+)
@@ -3075,7 +3105,9 @@ export default function ProjectConstructorPage() {
       // Используем setTimeout для правильной последовательности обновлений состояния
       setTimeout(() => {
         if (catalogItems[0]?.supplier_id) {
-          autoFillStepFromRequisites(step2Data, 2)
+          autoFillStepFromRequisites(step2Data, 2).catch(error => {
+            console.error('Ошибка автозаполнения из каталога:', error)
+          })
         }
       }, 100)
 
