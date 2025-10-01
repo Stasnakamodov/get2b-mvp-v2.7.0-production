@@ -93,6 +93,8 @@ import { useToast } from "@/components/ui/use-toast"
 import CatalogModal from "../create-project/components/CatalogModal"
 import { AutoFillNotification } from "@/components/project-constructor/notifications/AutoFillNotification"
 import { POLLING_INTERVALS, TIMEOUTS } from "@/components/project-constructor/config/PollingConstants"
+import { ModalProvider, useModals } from "./components/modals/ModalContext"
+import ModalManager from "./components/modals/ModalManager"
 
 // Константы конфигурации извлечены в отдельный файл
 
@@ -107,18 +109,21 @@ import { POLLING_INTERVALS, TIMEOUTS } from "@/components/project-constructor/co
 
 // RequisitesForm извлечен в отдельный компонент
 
-export default function ProjectConstructorPage() {
+function ProjectConstructorContent() {
   // Добавляем CSS стили для фантомных данных
   React.useEffect(() => {
     const style = document.createElement('style')
     style.textContent = phantomDataStyles
     document.head.appendChild(style)
-    
+
     return () => {
       document.head.removeChild(style)
     }
   }, [])
-  
+
+  // Модальная система
+  const { modals, openModal, closeModal } = useModals()
+
   // Состояния для управления конструктором
   const [stepConfigs, setStepConfigs] = useState<PartialStepConfigs>({})
   const [hoveredStep, setHoveredStep] = useState<number | null>(null)
@@ -128,7 +133,6 @@ export default function ProjectConstructorPage() {
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [templateStepSelection, setTemplateStepSelection] = useState<{templateId: string, availableSteps: number[]} | null>(null)
   const [templateSelection, setTemplateSelection] = useState<boolean>(false)
-  const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false)
   const [previewData, setPreviewData] = useState<StepDataToView | null>(null)
   const [previewType, setPreviewType] = useState<string>('')
   const [editingType, setEditingType] = useState<string>('')
@@ -145,8 +149,6 @@ export default function ProjectConstructorPage() {
   const [ocrAnalyzing, setOcrAnalyzing] = useState<Record<number, boolean>>({})
   const [ocrError, setOcrError] = useState<Record<number, string>>({})
   const [ocrDebugData, setOcrDebugData] = useState<OcrDebugData>({})
-  const [showStepDataModal, setShowStepDataModal] = useState<boolean>(false)
-  const [stepDataToView] = useState<StepDataToView | null>(null)
   const [currentProductIndex, setCurrentProductIndex] = useState<number>(0)
   const productsPerView = PRODUCT_DISPLAY_CONFIG.PRODUCTS_PER_VIEW
   
@@ -182,15 +184,10 @@ export default function ProjectConstructorPage() {
   const { toast } = useToast()
 
   // Состояние для выбора профиля клиента
-  const [showProfileSelector, setShowProfileSelector] = useState<boolean>(false)
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
 
   // Состояние для выбора профиля поставщика
-  const [showSupplierProfileSelector, setShowSupplierProfileSelector] = useState<boolean>(false)
   const [selectedSupplierProfileId, setSelectedSupplierProfileId] = useState<string | null>(null)
-
-  // Состояние для модального окна предварительной сводки
-  const [showSummaryModal, setShowSummaryModal] = useState<boolean>(false)
 
   // Состояние для обработки ошибок загрузки шаблонов
   const [templateError, setTemplateError] = useState<string | null>(null)
@@ -201,10 +198,8 @@ export default function ProjectConstructorPage() {
 
   // Временно добавлено для совместимости со старым кодом (будет удалено)
   const [catalogSourceStep, setCatalogSourceStep] = useState<number | null>(null)
-  const [showCatalogSourceModal, setShowCatalogSourceModal] = useState<boolean>(false)
 
   // Состояние для модального окна перехода на следующий этап
-  const [showStageTransitionModal, setShowStageTransitionModal] = useState<boolean>(false)
   const [dontShowStageTransition, setDontShowStageTransition] = useState<boolean>(false)
   const [stageTransitionShown, setStageTransitionShown] = useState<boolean>(false)
   
@@ -217,12 +212,10 @@ export default function ProjectConstructorPage() {
   } | null>(null)
 
   // Состояние для модального окна выбора поставщика из синей комнаты
-  const [showBlueRoomSupplierModal, setShowBlueRoomSupplierModal] = useState<boolean>(false)
   const [blueRoomSuppliers, setBlueRoomSuppliers] = useState<SupplierData[]>([])
   const [blueRoomLoading, setBlueRoomLoading] = useState<boolean>(false)
 
   // Состояние для модального окна выбора поставщика из оранжевой комнаты
-  const [showOrangeRoomSupplierModal, setShowOrangeRoomSupplierModal] = useState<boolean>(false)
   const [orangeRoomSuppliers, setOrangeRoomSuppliers] = useState<SupplierData[]>([])
   const [orangeRoomLoading, setOrangeRoomLoading] = useState<boolean>(false)
   const [selectedSupplierData, setSelectedSupplierData] = useState<SupplierData | null>(null)
@@ -242,8 +235,6 @@ export default function ProjectConstructorPage() {
   const [projectRequestId, setProjectRequestId] = useState<string>('')
 
   // Состояния для модальных окон после одобрения чека
-  const [showRequisitesConfirmationModal, setShowRequisitesConfirmationModal] = useState<boolean>(false)
-  const [showStage2SummaryModal, setShowStage2SummaryModal] = useState<boolean>(false)
   const [receiptApprovalStatus, setReceiptApprovalStatus] = useState<'pending' | 'approved' | 'rejected' | 'waiting' | null>(null)
   const [managerReceiptUrl, setManagerReceiptUrl] = useState<string | null>(null)
   
@@ -262,7 +253,7 @@ export default function ProjectConstructorPage() {
 
   // Модальные обработчики
   const { openStageTransitionModal, handleCancelSource } = useModalHandlers(
-    setShowStageTransitionModal,
+    () => openModal('stageTransition'),
     setStageTransitionShown,
     setSelectedSource,
     setEditingType
@@ -270,8 +261,8 @@ export default function ProjectConstructorPage() {
 
   // Обработчики этапов реквизитов
   const { confirmRequisites, editRequisites } = useStageHandlers(
-    setShowRequisitesConfirmationModal,
-    setShowStage2SummaryModal,
+    () => openModal('requisitesConfirmation'),
+    () => openModal('stage2Summary'),
     setCurrentStage,
     setSelectedSource as React.Dispatch<React.SetStateAction<string>>,
     setEditingType
@@ -1614,7 +1605,7 @@ export default function ProjectConstructorPage() {
       // Если несколько профилей и не выбран конкретный - показываем выбор
       if (clientProfiles.length > 1 && !selectedProfileId) {
         console.log('🔍 Несколько профилей - показываем выбор')
-        setShowProfileSelector(true)
+        openModal('profileSelector')
         return null
       }
       
@@ -2063,19 +2054,19 @@ export default function ProjectConstructorPage() {
     console.log('  - Текущий этап:', currentStage)
     console.log('  - stageTransitionShown:', stageTransitionShown)
     console.log('  - dontShowStageTransition:', dontShowStageTransition)
-    
+
     // Проверяем, находимся ли мы в модальном окне предварительного просмотра
-    if (showSummaryModal) {
+    if (modals.summary.isOpen) {
       console.log('📋 Мы в модальном окне предварительного просмотра')
-      
+
       // Закрываем модальное окно предварительного просмотра
-      setShowSummaryModal(false)
+      closeModal('summary')
       console.log('✅ Модальное окно предварительного просмотра закрыто')
-      
+
       // Показываем модальное окно перехода к этапу 2 только один раз
       if (!stageTransitionShown && !dontShowStageTransition) {
         console.log('📋 Показываем модальное окно перехода')
-        setShowStageTransitionModal(true)
+        openModal('stageTransition')
         setStageTransitionShown(true)
       } else {
         // Если уже показывали или отключено - сразу переходим к этапу 2
@@ -2097,10 +2088,10 @@ export default function ProjectConstructorPage() {
   // Функция для перехода к этапу 2 (после подтверждения модального окна)
   const proceedToStage2 = async () => {
     console.log('✅ Переход к этапу 2: Подготовка инфраструктуры')
-    
+
     // Закрываем модальное окно перехода
-    setShowStageTransitionModal(false)
-    
+    closeModal('stageTransition')
+
     // Переходим к этапу 2
     setCurrentStage(2)
     console.log('✅ Этап изменен на 2')
@@ -2133,11 +2124,11 @@ export default function ProjectConstructorPage() {
   const returnToStage1Editing = () => {
     console.log('🔄 Возврат к редактированию на первом этапе')
     console.log('  - Текущий этап до возврата:', currentStage)
-    console.log('  - showSummaryModal до возврата:', showSummaryModal)
-    console.log('  - showStageTransitionModal до возврата:', showStageTransitionModal)
-    
-    setShowSummaryModal(false)
-    setShowStageTransitionModal(false)
+    console.log('  - showSummaryModal до возврата:', modals.summary.isOpen)
+    console.log('  - showStageTransitionModal до возврата:', modals.stageTransition.isOpen)
+
+    closeModal('summary')
+    closeModal('stageTransition')
     setCurrentStage(1)
     // Сбрасываем состояние показа модального окна перехода
     setStageTransitionShown(false)
@@ -2177,7 +2168,7 @@ export default function ProjectConstructorPage() {
   // Функция для перехода к третьему этапу
   const proceedToStage3 = () => {
     console.log('🎬 Переход к этапу 3: Анимация сделки')
-    setShowStage2SummaryModal(false)
+    closeModal('stage2Summary')
     setCurrentStage(3)
     startDealAnimation()
   }
@@ -2236,9 +2227,9 @@ export default function ProjectConstructorPage() {
       console.log('⏭️ Пропускаем показ модального окна предварительного просмотра - уже на этапе 2+')
       return
     }
-    
+
     // НЕ показываем модальное окно предварительного просмотра, если уже есть активные модальные окна
-    if (showSummaryModal || showStageTransitionModal) {
+    if (modals.summary.isOpen || modals.stageTransition.isOpen) {
       console.log('⏭️ Пропускаем показ модального окна предварительного просмотра - уже есть активные модальные окна')
       return
     }
@@ -2247,10 +2238,10 @@ export default function ProjectConstructorPage() {
       const isFilled = isStepFilledByUser(stepId, context)
       console.log(`  - Шаг ${stepId}: ${isFilled ? '✅ Заполнен' : '❌ Не заполнен'}`)
     })
-    
+
     if (filledSteps.length === requiredSteps.length) {
       console.log('✅ Все основные шаги заполнены - показываем сводку')
-      setShowSummaryModal(true)
+      openModal('summary')
     } else {
       console.log(`❌ Не все шаги заполнены: ${filledSteps.length}/${requiredSteps.length}`)
     }
@@ -2881,13 +2872,13 @@ export default function ProjectConstructorPage() {
     
     setPreviewType(type)
     setPreviewData(data)
-    setShowPreviewModal(true)
+    openModal('preview', { previewType: type, previewData: data })
   }
 
   // Функция для открытия формы редактирования
   const handleEditData = (type: string) => {
     setSelectedSource("manual")
-    setShowPreviewModal(false)
+    closeModal('preview')
     // ВСЕ типы редактирования теперь открывают полную форму компании
     setEditingType('company')
   }
@@ -3249,7 +3240,7 @@ export default function ProjectConstructorPage() {
       if (data.suppliers && data.suppliers.length > 0) {
         console.log('✅ Найдены поставщики в синей комнате:', data.suppliers.length)
         setBlueRoomSuppliers(data.suppliers)
-        setShowBlueRoomSupplierModal(true)
+        openModal('blueRoomSupplier')
       } else {
         console.log('❌ Нет поставщиков в синей комнате')
         console.log('🔍 [DEBUG] Полный ответ API:', data);
@@ -3282,7 +3273,7 @@ export default function ProjectConstructorPage() {
       if (data.suppliers && data.suppliers.length > 0) {
         console.log('✅ Найдены поставщики в оранжевой комнате:', data.suppliers.length)
         setOrangeRoomSuppliers(data.suppliers)
-        setShowOrangeRoomSupplierModal(true)
+        openModal('orangeRoomSupplier')
       } else {
         console.log('❌ Нет поставщиков в оранжевой комнате')
         alert('В оранжевой комнате нет поставщиков.')
@@ -3539,8 +3530,8 @@ export default function ProjectConstructorPage() {
       console.error('❌ Ошибка при выборе поставщика:', error)
       alert('Ошибка при выборе поставщика')
     }
-    
-    setShowBlueRoomSupplierModal(false)
+
+    closeModal('blueRoomSupplier')
   }
 
   // Функция поиска поставщика в каталоге по реквизитам
@@ -8346,7 +8337,44 @@ export default function ProjectConstructorPage() {
         onAddProducts={handleCatalogProductsAdd}
       />
 
+      {/* Централизованный менеджер модальных окон */}
+      <ModalManager
+        handleEditData={handleEditData}
+        clientProfiles={clientProfiles}
+        selectedProfileId={selectedProfileId}
+        onSelectProfile={setSelectedProfileId}
+        onApplyProfile={applyClientProfile}
+        manualData={manualData}
+        stepConfigs={stepConfigs}
+        getSourceDisplayName={getSourceDisplayName}
+        returnToStage1Editing={returnToStage1Editing}
+        goToNextStage={goToNextStage}
+        currentStage={currentStage}
+        nextStage={currentStage + 1}
+        dontShowStageTransition={dontShowStageTransition}
+        setDontShowStageTransition={setDontShowStageTransition}
+        proceedToNextStage={proceedToStage2}
+        blueRoomSuppliers={blueRoomSuppliers}
+        blueRoomLoading={blueRoomLoading}
+        catalogSourceStep={catalogSourceStep || 0}
+        handleSelectBlueRoomSupplier={handleSelectBlueRoomSupplier}
+        orangeRoomSuppliers={orangeRoomSuppliers}
+        orangeRoomLoading={orangeRoomLoading}
+        handleSelectOrangeRoomSupplier={handleSelectOrangeRoomSupplier}
+        editRequisites={editRequisites}
+        confirmRequisites={confirmRequisites}
+        proceedToStage3={proceedToStage3}
+      />
+
     </div>
+  )
+}
+
+export default function ProjectConstructorPage() {
+  return (
+    <ModalProvider>
+      <ProjectConstructorContent />
+    </ModalProvider>
   )
 }
 
