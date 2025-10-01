@@ -151,28 +151,8 @@ function ProjectConstructorContent() {
   const [ocrDebugData, setOcrDebugData] = useState<OcrDebugData>({})
   const [currentProductIndex, setCurrentProductIndex] = useState<number>(0)
   const productsPerView = PRODUCT_DISPLAY_CONFIG.PRODUCTS_PER_VIEW
-  
-  // Состояние для модального окна эхо данных
-  const [echoDataModal, setEchoDataModal] = useState<{
-    show: boolean;
-    supplierName: string;
-    echoData: any;
-    projectInfo: any;
-  } | null>(null)
 
   const [showPhantomOptions, setShowPhantomOptions] = useState<boolean>(false)
-
-  // Состояние для отслеживания доступности эхо данных
-  const [echoDataAvailable, setEchoDataAvailable] = useState<{ [key: number]: boolean }>({})
-
-  // Состояние для отслеживания загрузки эхо данных
-  const [echoDataLoading, setEchoDataLoading] = useState<boolean>(false)
-
-  // Состояние для управления всплывающими подсказками эхо данных
-  const [echoDataTooltips, setEchoDataTooltips] = useState<{ [key: number]: boolean }>({})
-
-  // Состояние для лоадера эхо данных шагов 1 и 2
-  const [echoDataLoadingSteps1_2, setEchoDataLoadingSteps1_2] = useState<boolean>(false)
 
   // Хук для работы с профилями клиентов
   const { profiles: clientProfiles, loading: clientProfilesLoading, fetchProfiles: fetchClientProfiles } = useClientProfiles(user?.id || null)
@@ -420,62 +400,6 @@ function ProjectConstructorContent() {
       }
     })
     return null
-  }
-
-  // Функция для проверки доступности эхо данных
-  const checkEchoDataAvailability = async () => {
-    console.log('🔍 Проверяем доступность эхо данных...')
-
-    // Показываем лоадер
-    setEchoDataLoading(true)
-
-    // Ищем supplier в любом из заполненных шагов
-    const supplierName = findSupplierInAnyStep()
-
-    if (!supplierName) {
-      console.log('❌ Не найден supplier ни в одном шаге')
-      setEchoDataAvailable({})
-      setEchoDataLoading(false)
-      return
-    }
-
-    console.log('🔍 Проверяем эхо данные для поставщика:', supplierName)
-
-    try {
-      const echoData = await getEchoSupplierData(supplierName)
-      if (echoData) {
-        console.log('✅ Эхо данные доступны для шагов 4 и 5')
-        setEchoDataAvailable({
-          4: true,
-          5: true
-        })
-        // Показываем всплывающие подсказки
-        setEchoDataTooltips({
-          4: true,
-          5: true
-        })
-
-        // Автоматически скрываем подсказки через 10 секунд
-        setTimeout(() => {
-          setEchoDataTooltips(prev => ({
-            ...prev,
-            4: false,
-            5: false
-          }))
-        }, TIMEOUTS.AUTO_HIDE_NOTIFICATION)
-      } else {
-        console.log('❌ Эхо данные недоступны')
-        setEchoDataAvailable({})
-        setEchoDataTooltips({})
-      }
-    } catch (error) {
-      console.error('❌ Ошибка проверки эхо данных:', error)
-      setEchoDataAvailable({})
-      setEchoDataTooltips({})
-    } finally {
-      // Скрываем лоадер
-      setEchoDataLoading(false)
-    }
   }
 
   // Закрытие выпадающего списка при клике вне его области
@@ -1346,245 +1270,6 @@ function ProjectConstructorContent() {
   }
 
 
-
-  // Функция для получения эхо данных поставщика из прошлых проектов
-  const getEchoSupplierData = async (supplierName: string) => {
-    console.log('🔍 Поиск эхо данных для поставщика:', supplierName)
-    
-    try {
-      // Получаем ID пользователя из сессии
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        console.log('❌ Пользователь не авторизован')
-        return null
-      }
-      
-      // 1. Находим проекты с указанным поставщиком в спецификациях
-      const { data: specifications, error: specsError } = await supabase
-        .from("project_specifications")
-        .select(`project_id, supplier_name, created_at`)
-        .eq("user_id", user.id)
-        .ilike("supplier_name", `%${supplierName}%`)
-        .order("created_at", { ascending: false })
-      
-      if (specsError) {
-        console.error('❌ Ошибка получения спецификаций:', specsError)
-        return null
-      }
-      
-      if (!specifications || specifications.length === 0) {
-        console.log('❌ Спецификации с поставщиком не найдены')
-        return null
-      }
-      
-      console.log('✅ Найдены спецификации:', specifications.length)
-      
-      // 2. Получаем ID проектов
-      const projectIds = specifications.map(s => s.project_id)
-      
-      // 3. Получаем реквизиты для этих проектов
-      const { data: projectRequisites, error: requisitesError } = await supabase
-        .from("project_requisites")
-        .select(`project_id, type, data, created_at`)
-        .in("project_id", projectIds)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-      
-      if (requisitesError) {
-        console.error('❌ Ошибка получения реквизитов:', requisitesError)
-        return null
-      }
-      
-      if (!projectRequisites || projectRequisites.length === 0) {
-        console.log('❌ Реквизиты для проектов не найдены')
-        return null
-      }
-      
-      // 4. Получаем детали проектов
-      const { data: projects, error: projectsError } = await supabase
-        .from("projects")
-        .select(`id, name, payment_method, status, amount, currency, created_at, updated_at`)
-        .in("id", projectIds)
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false })
-      
-      if (projectsError) {
-        console.error('❌ Ошибка получения проектов:', projectsError)
-        return null
-      }
-      
-      // 5. Находим самый релевантный проект с правильными реквизитами
-      console.log('🔍 Анализ проектов и реквизитов:')
-      
-      // Создаем карту проектов для быстрого поиска
-      const projectsMap = new Map(projects.map(p => [p.id, p]))
-      
-      // Ищем проект с наиболее полными и согласованными данными
-      let bestProject = null
-      let bestRequisite = null
-      let bestScore = 0
-      
-      for (const requisite of projectRequisites) {
-        const project = projectsMap.get(requisite.project_id)
-        if (!project) continue
-        
-        // Проверяем соответствие способа оплаты и типа реквизитов
-        const paymentMethodMap: { [key: string]: string } = {
-          'bank-transfer': 'bank',
-          'p2p': 'p2p',
-          'crypto': 'crypto'
-        }
-        
-        const expectedRequisiteType = paymentMethodMap[project.payment_method] || 'bank'
-        const actualRequisiteType = requisite.type
-        
-        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Пропускаем проекты с несоответствующими реквизитами
-        if (expectedRequisiteType !== actualRequisiteType) {
-          console.log(`❌ ПРОПУСКАЕМ проект "${project.name}": НЕСООТВЕТСТВИЕ payment_method="${project.payment_method}" vs тип реквизитов="${actualRequisiteType}"`)
-          continue // Пропускаем этот проект полностью
-        }
-        
-        // Вычисляем "релевантность" проекта
-        let score = 0
-        
-        // Базовый балл за наличие данных
-        score += 10
-        
-        // Бонус за соответствие типа реквизитов и способа оплаты (теперь всегда +50)
-        score += 50
-        console.log(`✅ Проект "${project.name}": payment_method="${project.payment_method}" соответствует типу реквизитов="${actualRequisiteType}"`)
-        
-        // Бонус за более новый проект
-        const daysSinceUpdate = (Date.now() - new Date(project.updated_at).getTime()) / (1000 * 60 * 60 * 24)
-        if (daysSinceUpdate < 30) score += 20
-        else if (daysSinceUpdate < 90) score += 10
-        
-        // Бонус за завершенные проекты
-        if (project.status === 'completed') score += 15
-        
-        // Бонус за проекты с суммой
-        if (project.amount && project.amount > 0) score += 5
-        
-        console.log(`📊 Проект "${project.name}": релевантность = ${score}`)
-        
-        if (score > bestScore) {
-          bestScore = score
-          bestProject = project
-          bestRequisite = requisite
-        }
-      }
-      
-      if (!bestProject || !bestRequisite) {
-        console.log('❌ Подходящий проект не найден')
-        return null
-      }
-      
-      // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убеждаемся, что выбранный проект имеет правильные реквизиты
-      const finalPaymentMethodMap: { [key: string]: string } = {
-        'bank-transfer': 'bank',
-        'p2p': 'p2p',
-        'crypto': 'crypto'
-      }
-      
-      const finalExpectedType = finalPaymentMethodMap[bestProject.payment_method] || 'bank'
-      const finalActualType = bestRequisite.type
-      
-      if (finalExpectedType !== finalActualType) {
-        console.error(`🚨 КРИТИЧЕСКАЯ ОШИБКА: Выбранный проект "${bestProject.name}" имеет несоответствие!`)
-        console.error(`   Способ оплаты: ${bestProject.payment_method} (ожидается тип: ${finalExpectedType})`)
-        console.error(`   Тип реквизитов: ${finalActualType}`)
-        console.error(`   НЕ ВОЗВРАЩАЕМ НЕСООТВЕТСТВУЮЩИЕ ДАННЫЕ!`)
-        return null
-      }
-      
-      const requisiteData = bestRequisite.data
-      
-      console.log('✅ Выбран лучший проект:', bestProject.name)
-      console.log('📋 Данные реквизита:', requisiteData)
-      console.log('📋 Данные проекта:', bestProject)
-      console.log('🔍 Тип реквизита:', bestRequisite.type)
-      console.log('🔍 Способ оплаты проекта:', bestProject.payment_method)
-      console.log('🏆 Релевантность:', bestScore)
-      
-      // Проверяем соответствие способа оплаты и типа реквизитов
-      const paymentMethodMap: { [key: string]: string } = {
-        'bank-transfer': 'bank',
-        'p2p': 'p2p',
-        'crypto': 'crypto'
-      }
-      
-      const expectedRequisiteType = paymentMethodMap[bestProject.payment_method] || 'bank'
-      const actualRequisiteType = bestRequisite.type
-      
-      if (expectedRequisiteType !== actualRequisiteType) {
-        console.warn(`⚠️ НЕСООТВЕТСТВИЕ: Проект имеет payment_method="${bestProject.payment_method}" (ожидается тип="${expectedRequisiteType}"), но реквизит имеет тип="${actualRequisiteType}"`)
-      }
-      
-      // Формируем реквизиты в зависимости от типа
-      let requisites: any = {}
-      
-      if (actualRequisiteType === 'bank') {
-        requisites = {
-          bankName: requisiteData.bankName || requisiteData.details?.bankName || 'Банк поставщика',
-          accountNumber: requisiteData.accountNumber || requisiteData.details?.accountNumber || '****0000',
-          swift: requisiteData.swift || requisiteData.details?.swift || 'PHANTOM',
-          recipientName: requisiteData.recipientName || requisiteData.details?.recipientName || 'Поставщик',
-          supplier_id: `phantom-${bestProject.id}`
-        }
-      } else if (actualRequisiteType === 'p2p') {
-        requisites = {
-          card_bank: requisiteData.bank || requisiteData.details?.bank || 'Банк карты',
-          card_number: requisiteData.card_number || requisiteData.details?.card_number || '****0000',
-          card_holder: requisiteData.holder_name || requisiteData.details?.holder_name || 'Поставщик',
-          supplier_id: `phantom-${bestProject.id}`
-        }
-      } else if (actualRequisiteType === 'crypto') {
-        requisites = {
-          crypto_network: requisiteData.network || requisiteData.details?.network || 'BTC',
-          crypto_address: requisiteData.address || requisiteData.details?.address || 'Адрес кошелька',
-          supplier_id: `phantom-${bestProject.id}`
-        }
-      }
-      
-      const result = {
-        // Шаг IV: Способ оплаты
-        payment_method: {
-          method: bestProject.payment_method || 'bank-transfer',
-          supplier_id: `phantom-${bestProject.id}`
-        },
-        
-        // Шаг V: Реквизиты (правильные в зависимости от типа)
-        requisites: {
-          ...requisites,
-          type: actualRequisiteType // Явно добавляем тип реквизитов
-        },
-        
-        // Дополнительная информация
-        project_info: {
-          project_name: bestProject.name,
-          project_date: bestProject.updated_at,
-          amount: bestProject.amount,
-          currency: bestProject.currency,
-          status: bestProject.status
-        }
-      }
-      
-      console.log('🎯 ФИНАЛЬНЫЙ РЕЗУЛЬТАТ getEchoSupplierData:')
-      console.log('  - Способ оплаты:', result.payment_method)
-      console.log('  - Тип реквизитов:', result.requisites.type)
-      console.log('  - Реквизиты:', result.requisites)
-      console.log('  - Проверка соответствия:', result.payment_method.method === 'crypto' && result.requisites.type === 'crypto' ? '✅ КРИПТО' : 
-                                                      result.payment_method.method === 'p2p' && result.requisites.type === 'p2p' ? '✅ P2P' :
-                                                      result.payment_method.method === 'bank-transfer' && result.requisites.type === 'bank' ? '✅ БАНК' : '❌ НЕСООТВЕТСТВИЕ')
-      
-      return result
-      
-    } catch (error) {
-      console.error('❌ Ошибка получения фантомных данных:', error)
-      return null
-    }
-  }
 
   // Функция для получения данных профиля клиента
   const getProfileData = async (stepId: number) => {
@@ -3097,112 +2782,6 @@ function ProjectConstructorContent() {
 
 
 
-  // Функция для применения эхо данных (вызывается из модального окна)
-  const applyEchoData = (echoData: any) => {
-    console.log('✅ Применяем эхо данные:', echoData)
-    console.log('🔍 Способ оплаты:', echoData.payment_method)
-    console.log('🔍 Реквизиты:', echoData.requisites)
-    console.log('🔍 Тип реквизитов:', echoData.requisites?.type)
-    
-    // Применяем данные для шагов 4 и 5
-    // Фильтруем методы оплаты, исключая cash (наличные) и убираем дубликаты
-    const rawMethods = (echoData.payment_method as any)?.available_methods || [echoData.payment_method?.method] || ['bank_transfer']
-    const normalizedEchoMethods = rawMethods
-      .map((method: string) => method === 'bank_transfer' ? 'bank-transfer' : method) // Нормализуем формат
-      .filter((method: string) => method !== 'cash') // Исключаем наличные
-      .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index) // Убираем дубликаты
-    const availableEchoMethods = normalizedEchoMethods.length > 0 ? normalizedEchoMethods : ['bank-transfer']
-
-    const step4Data = {
-      ...echoData.payment_method,
-      type: 'multiple',
-      methods: availableEchoMethods,
-      user_choice: true,
-      source: 'echoData',
-      supplier_name: echoData.supplier_name,
-      project_info: echoData.project_info
-    }
-    
-    const step5Data = {
-      ...echoData.requisites,
-      user_choice: true,
-      source: 'echoData',
-      supplier_name: echoData.supplier_name,
-      project_info: echoData.project_info,
-      // Явно сохраняем тип реквизитов
-      type: echoData.requisites?.type || 
-            (echoData.payment_method?.method === 'crypto' ? 'crypto' : 
-             echoData.payment_method?.method === 'p2p' ? 'p2p' : 'bank')
-    }
-    
-    console.log('🔍 Тип реквизитов в step5Data:', step5Data.type)
-    console.log('🔍 Способ оплаты:', echoData.payment_method?.method)
-    
-    console.log('📋 Step 4 Data:', step4Data)
-    console.log('📋 Step 5 Data:', step5Data)
-    
-    setManualData(prev => {
-      const newData = {
-      ...prev,
-      4: step4Data,
-      5: step5Data
-      }
-      console.log('🔄 Новые manualData:', newData)
-      return newData
-    })
-    
-    // Устанавливаем источник данных
-    setStepConfigs(prev => ({
-      ...prev,
-      4: 'echoData',
-      5: 'echoData'
-    }))
-    
-    // Очищаем доступность эхо данных (звездочки исчезнут)
-    setEchoDataAvailable(prev => ({
-      ...prev,
-      4: false,
-      5: false
-    }))
-    
-    // Скрываем всплывающие подсказки
-    setEchoDataTooltips(prev => ({
-      ...prev,
-      4: false,
-      5: false
-    }))
-    
-    // Закрываем модальное окно
-    setEchoDataModal(null)
-    
-    // Показываем уведомление
-    alert('Эхо данные успешно применены!')
-  }
-
-  // Функция для отклонения эхо данных
-  const rejectEchoData = () => {
-    console.log('❌ Пользователь отклонил эхо данные')
-
-    // Очищаем доступность эхо данных (звездочки исчезнут)
-    setEchoDataAvailable(prev => ({
-      ...prev,
-      4: false,
-      5: false
-    }))
-
-    // Скрываем всплывающие подсказки
-    setEchoDataTooltips(prev => ({
-      ...prev,
-      4: false,
-      5: false
-    }))
-
-    // ВАЖНО: НЕ сбрасываем stepConfigs[5] = 'catalog'
-    // Он уже установлен в autoFillStepsFromSupplier для показа рекомендаций из каталога
-    console.log('✅ stepConfigs[5] остаётся = catalog для показа рекомендаций из каталога')
-
-    setEchoDataModal(null)
-  }
 
   // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Автоматическая проверка доступности эхо данных отключена
   // Больше не показываем звёздочки (⭐) на кубиках шагов при наличии эхо данных
@@ -3310,28 +2889,6 @@ function ProjectConstructorContent() {
     setShowCatalogSourceModal(false)
   }
 
-  const handleEchoCardsSource = async () => {
-    if (!catalogSourceStep) return
-    
-    console.log('🔄 Загружаем данные из эхо карточек для шага:', catalogSourceStep)
-    
-    try {
-      const data = await fetchCatalogData('echo-cards')
-      
-      if (data.echoCards && data.echoCards.length > 0) {
-        // Показываем выбор эхо карточки
-        console.log('✅ Найдены эхо карточки:', data.echoCards.length)
-        // TODO: Показать модальное окно выбора эхо карточки
-      } else {
-        console.log('❌ Нет эхо карточек')
-        // TODO: Показать сообщение об отсутствии эхо карточек
-      }
-    } catch (error) {
-      console.error('❌ Ошибка загрузки эхо карточек:', error)
-    }
-    
-    setShowCatalogSourceModal(false)
-  }
 
   // Функция выбора поставщика из синей комнаты
   // Функция выбора метода оплаты и автоматического заполнения реквизитов
@@ -3811,195 +3368,6 @@ function ProjectConstructorContent() {
     }
   }
 
-  // СИСТЕМА 1: Поиск эхо данных по имени поставщика (текущая)
-  const suggestEchoDataByName = async (supplierName: string) => {
-    try {
-      console.log('🔍 === СИСТЕМА 1: Поиск по имени ===')
-      console.log('🔍 Ищем поставщика по имени:', supplierName)
-      
-      const suppliers = await fetchCatalogData('user-suppliers', { search: supplierName })
-      
-      if (suppliers.length > 0) {
-        const supplier = suppliers[0]
-        console.log('✅ Найден поставщик по имени:', supplier.name)
-        
-        return {
-          step1: {
-            clients: [{
-              name: supplier.contact_person || supplier.name,
-              company_name: supplier.company_name,
-              inn: supplier.inn,
-              address: supplier.address,
-              email: supplier.contact_email,
-              phone: supplier.contact_phone
-            }],
-            source: 'nameSearch',
-            description: `Данные поставщика по имени: ${supplier.name}`
-          }
-        }
-      }
-      
-      console.log('❌ Поставщик по имени не найден')
-      return null
-      
-    } catch (error) {
-      console.error('❌ Ошибка поиска по имени:', error)
-      return null
-    }
-  }
-
-  // СИСТЕМА 2: Поиск эхо данных по реквизитам
-  const suggestEchoDataByRequisites = async () => {
-    try {
-      console.log('🔍 === СИСТЕМА 2: Поиск по реквизитам ===')
-      
-      // Получаем реквизиты из шага 5
-      const step5Data = manualData[5]
-      if (!step5Data || !step5Data.requisites) {
-        console.log('❌ Нет реквизитов в шаге 5')
-        return null
-      }
-      
-      console.log('🔍 Реквизиты из шага 5:', step5Data.requisites)
-      
-      // Ищем поставщика по реквизитам
-      const supplier = await findSupplierByRequisites(step5Data.requisites[0]) // Берем первый выбранный
-      
-      if (supplier) {
-        console.log('✅ Найден поставщик по реквизитам:', supplier.name)
-        
-        // Получаем товары поставщика
-        const productsData = await fetchFromApi(`/api/catalog/user-suppliers/${supplier.id}/products`)
-        const products = productsData.products || []
-        
-        return {
-          step2: {
-            products: products,
-            source: 'requisitesSearch',
-            description: `Товары поставщика по реквизитам: ${supplier.name}`
-          }
-        }
-      }
-      
-      console.log('❌ Поставщик по реквизитам не найден')
-      return null
-      
-    } catch (error) {
-      console.error('❌ Ошибка поиска по реквизитам:', error)
-      return null
-    }
-  }
-
-  // СИСТЕМА 3: Поиск эхо данных по историческим проектам
-  const suggestEchoDataByHistory = async () => {
-    try {
-      console.log('🔍 === СИСТЕМА 3: Поиск по истории ===')
-      
-      // Получаем реквизиты из шага 5
-      const step5Data = manualData[5]
-      if (!step5Data || !step5Data.requisites) {
-        console.log('❌ Нет реквизитов в шаге 5')
-        return null
-      }
-      
-      // Ищем исторические проекты с такими реквизитами
-      const historicalProjects = await findHistoricalProjectsByRequisites(step5Data.requisites[0])
-      
-      if (historicalProjects.length > 0) {
-        const bestProject = historicalProjects[0] // Берем самый релевантный
-        console.log('✅ Найден исторический проект:', bestProject.project_name)
-        
-        return {
-          step1: {
-            clients: bestProject.client_profiles ? [bestProject.client_profiles] : [],
-            source: 'historySearch',
-            description: `Данные клиента из истории: ${bestProject.project_name}`
-          },
-          step2: {
-            products: bestProject.project_specifications?.[0]?.items || [],
-            source: 'historySearch',
-            description: `Товары из истории: ${bestProject.project_name}`
-          }
-        }
-      }
-      
-      console.log('❌ Исторические проекты не найдены')
-      return null
-      
-    } catch (error) {
-      console.error('❌ Ошибка поиска по истории:', error)
-      return null
-    }
-  }
-
-  // ГЛАВНАЯ ФУНКЦИЯ: Объединяет все системы поиска
-  const suggestEchoDataForSteps = async (supplierData?: any) => {
-    try {
-      console.log('🎯 === НАЧАЛО suggestEchoDataForSteps ===')
-      console.log('🎯 supplierData:', supplierData)
-      console.log('🎯 Текущий manualData:', manualData)
-      console.log('🎯 Текущий stepConfigs:', stepConfigs)
-      
-      // Показываем лоадер
-      setEchoDataLoadingSteps1_2(true)
-      
-      // Собираем результаты от всех систем
-      const allResults = {}
-      
-      // СИСТЕМА 1: Поиск по имени (если есть supplierData)
-      if (supplierData) {
-        const supplierName = supplierData.name || supplierData.company_name
-        console.log('🎯 Запускаем СИСТЕМУ 1 (по имени):', supplierName)
-        
-        const result1 = await suggestEchoDataByName(supplierName)
-        if (result1) {
-          Object.assign(allResults, result1)
-          console.log('✅ СИСТЕМА 1 дала результат:', result1)
-        }
-      }
-      
-      // СИСТЕМА 2: Поиск по реквизитам (если заполнен шаг 5)
-      if (manualData[5] && manualData[5].requisites) {
-        console.log('🎯 Запускаем СИСТЕМУ 2 (по реквизитам)')
-        
-        const result2 = await suggestEchoDataByRequisites()
-        if (result2) {
-          Object.assign(allResults, result2)
-          console.log('✅ СИСТЕМА 2 дала результат:', result2)
-        }
-      }
-      
-      // СИСТЕМА 3: Поиск по истории (если заполнен шаг 5)
-      if (manualData[5] && manualData[5].requisites) {
-        console.log('🎯 Запускаем СИСТЕМУ 3 (по истории)')
-        
-        const result3 = await suggestEchoDataByHistory()
-        if (result3) {
-          Object.assign(allResults, result3)
-          console.log('✅ СИСТЕМА 3 дала результат:', result3)
-        }
-      }
-      
-      // Сохраняем все найденные эхо данные
-      if (Object.keys(allResults).length > 0) {
-        setManualData(prev => ({
-          ...prev,
-          echoSuggestions: allResults
-        }))
-        
-        console.log('✅ Все эхо данные сохранены:', allResults)
-      } else {
-        console.log('❌ Ни одна система не нашла эхо данных')
-      }
-      
-      // Скрываем лоадер
-      setEchoDataLoadingSteps1_2(false)
-      
-    } catch (error) {
-      console.error('❌ Ошибка в suggestEchoDataForSteps:', error)
-      setEchoDataLoadingSteps1_2(false)
-    }
-  }
 
   // Функция отправки данных менеджеру
 
@@ -4502,9 +3870,7 @@ function ProjectConstructorContent() {
                     (step.id === 6 && hasManagerReceipt) ||
                     (step.id === 7 && clientReceiptUrl)
                                           ? 'border-blue-500 border-dashed bg-blue-50'
-                                          : (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5) && ((manualData as any).echoSuggestions?.step1 || (manualData as any).echoSuggestions?.step2) && isEnabled
-                                            ? 'border-purple-400 bg-purple-50 hover:border-purple-500'
-                                            : isEnabled
+                                          : isEnabled
                                               ? 'border-gray-300 hover:border-blue-400'
                                               : 'border-gray-200 bg-gray-50'
                                         }
@@ -4545,23 +3911,6 @@ function ProjectConstructorContent() {
                     
                     
                                         
-                                        {/* Индикатор эхо данных для шагов 1 и 2 */}
-                                        {(step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5) && ((manualData as any).echoSuggestions?.step1 || (manualData as any).echoSuggestions?.step2) && (
-                      <div className="absolute top-2 left-2">
-                                            <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
-                                              <span className="text-white text-xs">📊</span>
-                                            </div>
-                                          </div>
-                                        )}
-                                        
-                                        {/* Лоадер эхо данных для шагов 1 и 2 */}
-                                        {(step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5) && echoDataLoadingSteps1_2 && (
-                      <div className="absolute top-2 left-2">
-                                            <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
-                                              <Loader className="w-3 h-3 text-white animate-spin" />
-                                            </div>
-                                          </div>
-                                        )}
                     
                   {/* Римская цифра в правом верхнем углу */}
                   <div className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -4573,9 +3922,7 @@ function ProjectConstructorContent() {
                            (step.id === 6 && hasManagerReceipt) ||
                            (step.id === 7 && clientReceiptUrl)
                           ? 'bg-blue-500 text-white'
-                          : (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5) && ((manualData as any).echoSuggestions?.step1 || (manualData as any).echoSuggestions?.step2)
-                            ? 'bg-purple-500 text-white'
-                            : 'bg-gray-400 text-white'
+                          : 'bg-gray-400 text-white'
                         : 'bg-gray-300 text-gray-500'
                     }`}>
                     {step.id === 1 ? 'I' : step.id === 2 ? 'II' : step.id === 3 ? 'III' : 
@@ -4592,9 +3939,7 @@ function ProjectConstructorContent() {
                                (manualData[step.id] && Object.keys(manualData[step.id]).length > 0 && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||
                                (step.id === 3 && receiptApprovalStatus === 'approved')
                               ? 'text-blue-600'
-                              : (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5) && ((manualData as any).echoSuggestions?.step1 || (manualData as any).echoSuggestions?.step2)
-                                ? 'text-purple-600'
-                                : 'text-gray-600'
+                              : 'text-gray-600'
                             : 'text-gray-400'
                         }` 
                     })}
@@ -4607,10 +3952,8 @@ function ProjectConstructorContent() {
                            (stepConfigs[step.id] && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) || 
                            (manualData[step.id] && Object.keys(manualData[step.id]).length > 0 && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||
                            (step.id === 3 && receiptApprovalStatus === 'approved')
-                          ? 'text-gray-800' 
-                          : (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5) && ((manualData as any).echoSuggestions?.step1 || (manualData as any).echoSuggestions?.step2)
-                            ? 'text-purple-800'
-                            : 'text-gray-600'
+                          ? 'text-gray-800'
+                          : 'text-gray-600'
                         : 'text-gray-500'
                     }`}>
                       {step.name}
@@ -4621,10 +3964,8 @@ function ProjectConstructorContent() {
                            (stepConfigs[step.id] && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) || 
                            (manualData[step.id] && Object.keys(manualData[step.id]).length > 0 && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||
                            (step.id === 3 && receiptApprovalStatus === 'approved')
-                          ? 'text-gray-500' 
-                          : (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5) && ((manualData as any).echoSuggestions?.step1 || (manualData as any).echoSuggestions?.step2)
-                            ? 'text-purple-600'
-                            : 'text-gray-400'
+                          ? 'text-gray-500'
+                          : 'text-gray-400'
                         : 'text-gray-400'
                     }`}>
                       {step.description}
@@ -5677,179 +5018,6 @@ function ProjectConstructorContent() {
                       
 
                       
-                      {/* Эхо предложения для шага 2 */}
-                      {lastHoveredStep === 2 && (manualData as any).echoSuggestions?.step2 && (
-                        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center">
-                              <span className="text-white text-xs">📊</span>
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-gray-800">Эхо данные найдены!</div>
-                              <div className="text-xs text-gray-600">{(manualData as any).echoSuggestions.step2.description}</div>
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-700 mb-3">
-                            Найдено {(manualData as any).echoSuggestions.step2.products.length} товаров поставщика
-                          </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={() => {
-                                // Применяем товары из эхо данных
-                                const products = (manualData as any).echoSuggestions.step2.products
-                                if (products && products.length > 0) {
-                                  setManualData(prev => ({
-                                    ...prev,
-                                    2: {
-                                      supplier: products[0].supplier || products[0].supplier_name,
-                                      currency: products[0].currency || 'USD',
-                                      items: products.map((product: any) => ({
-                                        item_name: product.name,
-                                        item_code: product.name,
-                                        quantity: 1,
-                                        price: product.price || 0,
-                                        unit: 'шт'
-                                      }))
-                                    }
-                                  }))
-                                  setStepConfigs(prev => ({ ...prev, 2: 'echo' }))
-                                  alert('Товары поставщика из эхо данных применены!')
-
-                                  // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Автозаполнение шагов 4-5 из эхо данных отключено
-                                }
-                              }}
-                            >
-                              Применить товары поставщика
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              onClick={() => {
-                                setManualData(prev => {
-                                  const { echoSuggestions, ...rest } = prev as any
-                                  return rest
-                                })
-                              }}
-                            >
-                              Отклонить
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Глобальные эхо предложения - показываются независимо от lastHoveredStep */}
-                      {((manualData as any).echoSuggestions?.step1 || (manualData as any).echoSuggestions?.step2) && (
-                        <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
-                              <span className="text-white text-xs">📊</span>
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-gray-800">Найдены эхо данные!</div>
-                              <div className="text-xs text-gray-600">
-                                {(manualData as any).echoSuggestions?.step1 && 'Данные клиента • '}
-                                {(manualData as any).echoSuggestions?.step2 && 'Товары поставщика'}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-3">
-                            {/* Эхо данные для шага 1 */}
-                            {(manualData as any).echoSuggestions?.step1 && (
-                              <div className="p-3 bg-white rounded border">
-                                <div className="text-sm font-medium text-gray-800 mb-2">
-                                  👤 Данные клиента: {(manualData as any).echoSuggestions.step1.description}
-                                </div>
-                                <div className="text-xs text-gray-600 mb-2">
-                                  Найдено {(manualData as any).echoSuggestions.step1.clients.length} клиентов
-                                </div>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  onClick={() => {
-                                    const firstClient = (manualData as any).echoSuggestions.step1.clients[0]
-                                    if (firstClient) {
-                                      setManualData(prev => ({
-                                        ...prev,
-                                        1: {
-                                          name: firstClient.name || firstClient.company_name,
-                                          legalName: firstClient.company_name || '',
-                                          inn: firstClient.inn || '',
-                                          address: firstClient.address || '',
-                                          email: firstClient.email || '',
-                                          phone: firstClient.phone || ''
-                                        }
-                                      }))
-                                      setStepConfigs(prev => ({ ...prev, 1: 'echo' }))
-                                      alert('Данные клиента из эхо истории применены!')
-                                    }
-                                  }}
-                                >
-                                  Применить данные клиента
-                                </Button>
-                              </div>
-                            )}
-                            
-                            {/* Эхо данные для шага 2 */}
-                            {(manualData as any).echoSuggestions?.step2 && (
-                              <div className="p-3 bg-white rounded border">
-                                <div className="text-sm font-medium text-gray-800 mb-2">
-                                  📦 Товары поставщика: {(manualData as any).echoSuggestions.step2.description}
-                                </div>
-                                <div className="text-xs text-gray-600 mb-2">
-                                  Найдено {(manualData as any).echoSuggestions.step2.products.length} товаров
-                                </div>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  onClick={() => {
-                                    const products = (manualData as any).echoSuggestions.step2.products
-                                    if (products && products.length > 0) {
-                                      setManualData(prev => ({
-                                        ...prev,
-                                        2: {
-                                          supplier: products[0].supplier || products[0].supplier_name,
-                                          currency: products[0].currency || 'USD',
-                                          items: products.map((product: any) => ({
-                                            item_name: product.name,
-                                            item_code: product.name,
-                                            quantity: 1,
-                                            price: product.price || 0,
-                                            unit: 'шт'
-                                          }))
-                                        }
-                                      }))
-                                      setStepConfigs(prev => ({ ...prev, 2: 'echo' }))
-                                      alert('Товары поставщика из эхо данных применены!')
-
-                                      // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Автозаполнение шагов 4-5 из эхо данных отключено
-                                    }
-                                  }}
-                                >
-                                  Применить товары поставщика
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="mt-3 pt-3 border-t border-purple-200">
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              onClick={() => {
-                                setManualData(prev => {
-                                  const { echoSuggestions, ...rest } = prev as any
-                                  return rest
-                                })
-                              }}
-                            >
-                              Отклонить все эхо данные
-                            </Button>
-                          </div>
-                        </div>
-                      )}
                       
                       {/* Шаг 2: Горизонтальный слайдер товаров */}
                       {lastHoveredStep === 2 && manualData[lastHoveredStep] && (
