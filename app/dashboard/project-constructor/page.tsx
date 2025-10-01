@@ -1283,52 +1283,8 @@ export default function ProjectConstructorPage() {
           setAutoFillNotification(null)
         }, 5000)
         
-        // 🔄 Автозаполнение шагов 4-5 после заполнения товаров из каталога
-        console.log('🔍 [AUTO-FILL FROM CATALOG] Пытаемся загрузить данные поставщика:', supplierData.name)
-        console.log('🚨 [AUTO-FILL FROM CATALOG] Этот лог должен появиться ВСЕГДА!')
-        alert(`🚨 [AUTO-FILL] Пытаемся загрузить данные для: ${supplierData.name}`)
-        getEchoSupplierData(supplierData.name).then(echoData => {
-          if (echoData) {
-            console.log('✅ [AUTO-FILL FROM CATALOG] Найдены данные поставщика для автозаполнения:', echoData)
-            
-            // Заполняем Step IV (Способ оплаты)
-            setManualData(prev => ({
-              ...prev,
-              4: {
-                payment_method: echoData.payment_method?.method || 'bank_transfer',
-                auto_filled: true,
-                supplier_name: supplierData.name,
-                echo_source: echoData.project_info?.project_name,
-                user_choice: true
-              }
-            }))
-            
-            // Заполняем Step V (Реквизиты поставщика)  
-            setManualData(prev => ({
-              ...prev,
-              5: {
-                supplier_name: supplierData.name,
-                requisites: echoData.requisites || {},
-                auto_filled: true,
-                echo_source: echoData.project_info?.project_name,
-                user_choice: true
-              }
-            }))
-            
-            // Обновляем конфигурацию шагов как завершенные
-            setStepConfigs(prev => ({
-              ...prev,
-              4: 'echoData',
-              5: 'echoData'
-            }))
-            
-            console.log('✅ [AUTO-FILL FROM CATALOG] Шаги 4-5 автоматически заполнены из каталога')
-          } else {
-            console.log('❌ [AUTO-FILL FROM CATALOG] Данные поставщика не найдены:', supplierData.name)
-          }
-        }).catch(error => {
-          console.error('❌ [AUTO-FILL FROM CATALOG] Ошибка при загрузке данных поставщика:', error)
-        })
+        // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Автозаполнение шагов 4-5 из эхо данных отключено
+        // Пользователь увидит рекомендации из каталога (оранжевые кубики)
         
         console.log('✅ Шаг II автоматически заполнен товарами поставщика')
         return true
@@ -1954,82 +1910,9 @@ export default function ProjectConstructorPage() {
         return
       }
       
-      // Проверяем, есть ли эхо данные
-      if (manualData[stepId]?.echo_data) {
-        console.log('📋 Показываем модальное окно с эхо данными')
-        setEchoDataModal({
-          show: true,
-          supplierName: manualData[stepId]?.supplier_name || 'Поставщик',
-          echoData: manualData[stepId]?.echo_data,
-          projectInfo: manualData[stepId]?.echo_data?.project_info
-        })
-        return
-      }
-      
-      // Если нет эхо данных, предлагаем поиск
-      console.log('📋 Предлагаем поиск эхо данных')
-      
-      // Подробное логирование данных шага 2
-      console.log('🔍 Проверяем данные шага 2:')
-      console.log('manualData[2]:', manualData[2])
-      console.log('stepConfigs[2]:', stepConfigs[2])
-      
-      // Попробуем найти эхо данные для поставщика из шага 2
-      const step2Data = manualData[2]
-      console.log('🔍 step2Data:', step2Data)
-      
-      // Проверяем различные возможные места, где может быть supplier
-      let supplierName = null
-      if (step2Data) {
-        if (step2Data.supplier) {
-          supplierName = step2Data.supplier
-          console.log('✅ Найден supplier в step2Data.supplier:', supplierName)
-        } else if (step2Data.items && step2Data.items.length > 0) {
-          // Проверяем первого товара
-          const firstItem = step2Data.items[0]
-          console.log('🔍 Первый товар:', firstItem)
-          if (firstItem.supplier_name) {
-            supplierName = firstItem.supplier_name
-            console.log('✅ Найден supplier в первом товаре:', supplierName)
-          } else if (firstItem.supplier) {
-            supplierName = firstItem.supplier
-            console.log('✅ Найден supplier в первом товаре (supplier):', supplierName)
-          }
-        }
-      }
-      
-      if (supplierName) {
-        console.log('🔍 Ищем эхо данные для поставщика:', supplierName)
-        
-        // Показываем лоадер
-        setEchoDataLoading(true)
-
-        getEchoSupplierData(supplierName).then(echoData => {
-          if (echoData) {
-            console.log('✅ Найдены эхо данные, показываем модальное окно')
-            setEchoDataModal({
-              show: true,
-              supplierName: supplierName,
-              echoData: echoData,
-              projectInfo: echoData.project_info
-            })
-          } else {
-            console.log('❌ Эхо данные для поставщика не найдены, показываем сообщение')
-            alert(`Эхо данные для поставщика "${supplierName}" не найдены. Создайте проект с этим поставщиком для получения эхо данных.`)
-          }
-        }).catch(error => {
-          console.error('❌ Ошибка поиска эхо данных:', error)
-          alert('Ошибка при поиске эхо данных: ' + (error as Error).message)
-        }).finally(() => {
-          // Скрываем лоадер
-          setEchoDataLoading(false)
-        })
-      } else {
-        console.log('❌ Нет данных поставщика в шаге 2')
-        console.log('Доступные поля в step2Data:', step2Data ? Object.keys(step2Data) : 'step2Data is null')
-        alert('Сначала заполните шаг 2 (спецификация) с поставщиком, чтобы найти эхо данные.')
-      }
-      
+      // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Клик по кубикам 4 и 5 больше не показывает модалку с эхо данными
+      // Пользователь может заполнить вручную или выбрать из рекомендаций (оранжевые кубики)
+      console.log('❌ Эхо данные отключены. Заполните вручную или используйте рекомендации.')
       return
     }
     
@@ -2130,47 +2013,8 @@ export default function ProjectConstructorPage() {
               [lastHoveredStep]: templateData
             }))
             console.log(`✅ Применены данные шаблона для шага ${lastHoveredStep}`)
-            
-            // Если это шаг II (спецификация), ищем фантомные данные поставщика
-            if (lastHoveredStep === 2 && templateData.supplier) {
-              console.log('🔍 Ищем фантомные данные для поставщика:', templateData.supplier)
-              
-                      getEchoSupplierData(templateData.supplier).then(echoData => {
-          if (echoData) {
-            console.log('✅ Найдены эхо данные:', echoData)
-                  
-                  // Автоматически заполняем шаги IV и V эхо данными
-                  setManualData(prev => ({
-                    ...prev,
-                    4: echoData.payment_method,
-                    5: echoData.requisites
-                  }))
-                  
-                  // Устанавливаем источники данных
-                  setStepConfigs(prev => ({
-                    ...prev,
-                    4: "echoData",
-                    5: "echoData"
-                  }))
-                  
-                  // Показываем уведомление
-                  setAutoFillNotification({
-                    show: true,
-                    message: `Найдены эхо данные поставщика из проекта "${echoData.project_info.project_name}" (${echoData.project_info.status})`,
-                    supplierName: templateData.supplier,
-                    filledSteps: [4, 5]
-                  })
-                  
-                  setTimeout(() => {
-                    setAutoFillNotification(null)
-                  }, 5000)
-                } else {
-                  console.log('❌ Фантомные данные не найдены')
-                }
-              }).catch(error => {
-                console.error('❌ Ошибка получения эхо данных:', error)
-              })
-            }
+
+            // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Шаблоны НЕ заполняют шаги 4 и 5 автоматически
           } else {
             setTemplateError(`Шаблон не содержит данных для шага ${lastHoveredStep}`)
           }
@@ -3198,88 +3042,30 @@ export default function ProjectConstructorPage() {
                 setAutoFillNotification(null)
               }, 7000)
             } else {
-              console.log('❌ [ATOMIC] Поставщик не найден в каталоге, используем эхо данные как fallback')
+              console.log('❌ [ATOMIC] Поставщик не найден в каталоге')
 
-              // FALLBACK: Пытаемся получить фантомные данные поставщика
-              getEchoSupplierData(firstProduct.supplier_name).then(echoData => {
-                if (echoData) {
-            console.log('✅ [ATOMIC] Найдены фантомные данные для поставщика:', echoData)
+              // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Fallback с эхо данными отключен
+              // Пользователь увидит рекомендации из каталога или заполнит вручную
+              console.log('❌ [ATOMIC] Нет данных поставщика, пользователь заполнит вручную')
 
-            // Автоматически заполняем Steps IV и V напрямую
-            console.log('🎯 [ATOMIC] Прямое заполнение шагов 4 и 5 с эхо данными')
-
-            // Заполняем Step IV (Способ оплаты)
-            setManualData(prev => ({
-              ...prev,
-              4: {
-                type: 'multiple',
-                methods: (echoData.payment_method as any)?.available_methods || [echoData.payment_method?.method] || ['bank_transfer'],
-                payment_method: echoData.payment_method?.method || 'bank_transfer',
-                auto_filled: true,
-                supplier_name: firstProduct.supplier_name,
-                echo_source: echoData.project_info?.project_name,
-                user_choice: true
-              }
-            }))
-
-            // Заполняем Step V (Реквизиты поставщика)
-            setManualData(prev => ({
-              ...prev,
-              5: {
-                supplier_name: firstProduct.supplier_name,
-                requisites: echoData.requisites || {},
-                auto_filled: true,
-                echo_source: echoData.project_info?.project_name,
-                user_choice: true
-              }
-            }))
-
-            // Обновляем конфигурацию шагов как завершенные
-            setStepConfigs(prev => ({
-              ...prev,
-              4: 'echoData',
-              5: 'echoData'
-            }))
-
-            console.log('✅ [ATOMIC] Шаги 4 и 5 автоматически заполнены эхо данными')
-
-            // Показываем уведомление
-            setAutoFillNotification({
-              show: true,
-              message: `Данные поставщика из проекта "${echoData.project_info.project_name}" автоматически применены`,
-              supplierName: firstProduct.supplier_name,
-              filledSteps: [4, 5]
-            })
-
-            // Скрываем уведомление через 5 секунд
-            setTimeout(() => {
-              setAutoFillNotification(null)
-            }, 5000)
-                } else {
-                  console.log('❌ [ATOMIC] Нет эхо данных, используем базовые данные')
-
-                  // Fallback с базовыми данными
-                  setManualData(prev => ({
-                    ...prev,
-                    4: {
-                      type: 'multiple',
-                      methods: ['bank_transfer'],
-                      payment_method: 'bank_transfer',
-                      auto_filled: true,
-                      supplier_name: firstProduct.supplier_name,
-                      catalog_source: 'unknown_supplier',
-                      user_choice: true
-                    }
-                  }))
-
-                  setStepConfigs(prev => ({
-                    ...prev,
-                    4: 'catalog'
-                  }))
+              // Fallback с базовыми данными
+              setManualData(prev => ({
+                ...prev,
+                4: {
+                  type: 'multiple',
+                  methods: ['bank_transfer'],
+                  payment_method: 'bank_transfer',
+                  auto_filled: true,
+                  supplier_name: firstProduct.supplier_name,
+                  catalog_source: 'unknown_supplier',
+                  user_choice: true
                 }
-              }).catch(error => {
-                console.error('❌ [ATOMIC] Ошибка загрузки эхо данных:', error)
-              })
+              }))
+
+              setStepConfigs(prev => ({
+                ...prev,
+                4: 'catalog'
+              }))
             }
           }).catch(error => {
             console.error('❌ [ATOMIC] Ошибка загрузки данных каталога:', error)
@@ -3404,17 +3190,18 @@ export default function ProjectConstructorPage() {
     setEchoDataModal(null)
   }
 
-  // Автоматически проверяем доступность эхо данных при изменении данных любого шага
-  useEffect(() => {
-    // Проверяем, есть ли данные в любом из шагов 2, 4, 5
-    const hasAnyStepData = manualData[2] || manualData[4] || manualData[5] || selectedSupplierData
-    
-    if (hasAnyStepData) {
-      checkEchoDataAvailability()
-    } else {
-      setEchoDataAvailable({})
-    }
-  }, [manualData[2], manualData[4], manualData[5], selectedSupplierData])
+  // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Автоматическая проверка доступности эхо данных отключена
+  // Больше не показываем звёздочки (⭐) на кубиках шагов при наличии эхо данных
+  // useEffect(() => {
+  //   // Проверяем, есть ли данные в любом из шагов 2, 4, 5
+  //   const hasAnyStepData = manualData[2] || manualData[4] || manualData[5] || selectedSupplierData
+  //
+  //   if (hasAnyStepData) {
+  //     checkEchoDataAvailability()
+  //   } else {
+  //     setEchoDataAvailable({})
+  //   }
+  // }, [manualData[2], manualData[4], manualData[5], selectedSupplierData])
   
   // ЭХО ДАННЫЕ в атомарном конструкторе ОТКЛЮЧЕНЫ для упрощения работы
   // Автоматический поиск эхо данных для шагов 1 и 2 временно отключён
@@ -5808,54 +5595,8 @@ export default function ProjectConstructorPage() {
                                   }))
                                   setStepConfigs(prev => ({ ...prev, 2: 'echo' }))
                                   alert('Товары поставщика из эхо данных применены!')
-                                  
-                                  // 🔄 Автозаполнение шагов 4-5 после применения товаров из эха
-                                  const supplierName = products[0].supplier || products[0].supplier_name
-                                  if (supplierName) {
-                                    console.log('🔍 [ECHO AUTO-FILL] Загружаем данные поставщика:', supplierName)
-                                    getEchoSupplierData(supplierName).then(echoData => {
-                                      if (echoData) {
-                                        console.log('✅ [ECHO AUTO-FILL] Найдены данные поставщика для автозаполнения:', echoData)
-                                        
-                                        // Заполняем Step IV (Способ оплаты)
-                                        setManualData(prev => ({
-                                          ...prev,
-                                          4: {
-                                            payment_method: echoData.payment_method?.method || 'bank_transfer',
-                                            auto_filled: true,
-                                            supplier_name: supplierName,
-                                            echo_source: echoData.project_info?.project_name,
-                                            user_choice: true
-                                          }
-                                        }))
-                                        
-                                        // Заполняем Step V (Реквизиты поставщика)  
-                                        setManualData(prev => ({
-                                          ...prev,
-                                          5: {
-                                            supplier_name: supplierName,
-                                            requisites: echoData.requisites || {},
-                                            auto_filled: true,
-                                            echo_source: echoData.project_info?.project_name,
-                                            user_choice: true
-                                          }
-                                        }))
-                                        
-                                        // Обновляем конфигурацию шагов как завершенные
-                                        setStepConfigs(prev => ({
-                                          ...prev,
-                                          4: 'echoData',
-                                          5: 'echoData'
-                                        }))
-                                        
-                                        console.log('✅ [ECHO AUTO-FILL] Шаги 4-5 автоматически заполнены')
-                                      } else {
-                                        console.log('❌ [ECHO AUTO-FILL] Данные поставщика не найдены:', supplierName)
-                                      }
-                                    }).catch(error => {
-                                      console.error('❌ [ECHO AUTO-FILL] Ошибка при загрузке данных поставщика:', error)
-                                    })
-                                  }
+
+                                  // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Автозаполнение шагов 4-5 из эхо данных отключено
                                 }
                               }}
                             >
@@ -5961,54 +5702,8 @@ export default function ProjectConstructorPage() {
                                       }))
                                       setStepConfigs(prev => ({ ...prev, 2: 'echo' }))
                                       alert('Товары поставщика из эхо данных применены!')
-                                      
-                                      // 🔄 Автозаполнение шагов 4-5 после применения товаров из эха
-                                      const supplierName = products[0].supplier || products[0].supplier_name
-                                      if (supplierName) {
-                                        console.log('🔍 [ECHO AUTO-FILL] Загружаем данные поставщика:', supplierName)
-                                        getEchoSupplierData(supplierName).then(echoData => {
-                                          if (echoData) {
-                                            console.log('✅ [ECHO AUTO-FILL] Найдены данные поставщика для автозаполнения:', echoData)
-                                            
-                                            // Заполняем Step IV (Способ оплаты)
-                                            setManualData(prev => ({
-                                              ...prev,
-                                              4: {
-                                                payment_method: echoData.payment_method?.method || 'bank_transfer',
-                                                auto_filled: true,
-                                                supplier_name: supplierName,
-                                                echo_source: echoData.project_info?.project_name,
-                                                user_choice: true
-                                              }
-                                            }))
-                                            
-                                            // Заполняем Step V (Реквизиты поставщика)  
-                                            setManualData(prev => ({
-                                              ...prev,
-                                              5: {
-                                                supplier_name: supplierName,
-                                                requisites: echoData.requisites || {},
-                                                auto_filled: true,
-                                                echo_source: echoData.project_info?.project_name,
-                                                user_choice: true
-                                              }
-                                            }))
-                                            
-                                            // Обновляем конфигурацию шагов как завершенные
-                                            setStepConfigs(prev => ({
-                                              ...prev,
-                                              4: 'echoData',
-                                              5: 'echoData'
-                                            }))
-                                            
-                                            console.log('✅ [ECHO AUTO-FILL] Шаги 4-5 автоматически заполнены')
-                                          } else {
-                                            console.log('❌ [ECHO AUTO-FILL] Данные поставщика не найдены:', supplierName)
-                                          }
-                                        }).catch(error => {
-                                          console.error('❌ [ECHO AUTO-FILL] Ошибка при загрузке данных поставщика:', error)
-                                        })
-                                      }
+
+                                      // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Автозаполнение шагов 4-5 из эхо данных отключено
                                     }
                                   }}
                                 >
