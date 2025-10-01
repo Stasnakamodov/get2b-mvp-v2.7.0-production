@@ -1649,7 +1649,7 @@ function ProjectConstructorContent() {
       console.log('🎯 Возвращаемые данные getProfileData:', result)
       return result
     }
-    
+
     // Для шагов 2, 4, 5 используем профили поставщиков
     if ([2, 4, 5].includes(stepId)) {
       if (supplierProfilesLoading) {
@@ -1713,6 +1713,30 @@ function ProjectConstructorContent() {
     // Для остальных шагов пока возвращаем null
     console.log('⚠️ Данные профиля для шага', stepId, 'пока не реализованы')
     return null
+  }
+
+  // Функция для применения выбранного профиля клиента к шагу 1
+  const applyClientProfile = async () => {
+    console.log('🔄 Применяем профиль клиента к шагу 1')
+
+    if (!selectedProfileId) {
+      console.error('❌ Не выбран профиль клиента')
+      return
+    }
+
+    const profileData = await getProfileData(1)
+    if (profileData) {
+      setManualData(prev => ({
+        ...prev,
+        1: profileData
+      }))
+      setStepConfigs(prev => ({
+        ...prev,
+        1: 'profile'
+      }))
+      closeModal('profileSelector')
+      console.log('✅ Профиль клиента применен к шагу 1')
+    }
   }
 
   // Функция для получения данных шаблона (симуляция)
