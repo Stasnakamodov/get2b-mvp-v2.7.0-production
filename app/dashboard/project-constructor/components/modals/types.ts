@@ -1,4 +1,6 @@
 // Modal Types for Project Constructor
+import type { PartialStepConfigs } from '@/types/project-constructor.types'
+
 export type ModalType =
   | 'preview'
   | 'echoData'
@@ -51,7 +53,7 @@ export interface SupplierProfileSelectorModalData {
 }
 
 export interface SummaryModalData {
-  stepConfigs: Record<number, string>;
+  stepConfigs: PartialStepConfigs;
   manualData: Record<number, any>;
   uploadedFiles: Record<number, string>;
 }
@@ -85,7 +87,7 @@ export interface RequisitesConfirmationModalData {
 }
 
 export interface Stage2SummaryModalData {
-  stepConfigs: Record<number, string>;
+  stepConfigs: PartialStepConfigs;
   manualData: Record<number, any>;
   onConfirm: () => void;
 }

@@ -11,6 +11,7 @@ import OrangeRoomSupplierModal from './OrangeRoomSupplierModal';
 import StepDataModal from './StepDataModal';
 import RequisitesConfirmationModal from './RequisitesConfirmationModal';
 import Stage2SummaryModal from './Stage2SummaryModal';
+import type { PartialStepConfigs } from '@/types/project-constructor.types';
 
 interface ModalManagerProps {
   // PreviewModal props
@@ -24,7 +25,7 @@ interface ModalManagerProps {
 
   // SummaryModal props
   manualData: Record<number, any>;
-  stepConfigs: Record<number, string>;
+  stepConfigs: PartialStepConfigs;
   getSourceDisplayName: (source: string) => string;
   returnToStage1Editing: () => void;
   goToNextStage: () => void;

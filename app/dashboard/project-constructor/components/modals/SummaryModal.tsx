@@ -11,12 +11,13 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import type { PartialStepConfigs } from '@/types/project-constructor.types';
 
 interface SummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
   manualData: Record<number, any>;
-  stepConfigs: Record<number, string>;
+  stepConfigs: PartialStepConfigs;
   getSourceDisplayName: (source: string) => string;
   returnToStage1Editing: () => void;
   goToNextStage: () => void;
