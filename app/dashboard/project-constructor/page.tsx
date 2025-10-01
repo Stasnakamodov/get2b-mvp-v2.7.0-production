@@ -69,7 +69,7 @@ import RequisitesForm from '@/components/project-constructor/forms/RequisitesFor
 import { constructorSteps, dataSources, stepIcons } from '@/components/project-constructor/config/ConstructorConfig'
 import { STAGE_CONFIG, PRODUCT_DISPLAY_CONFIG } from '@/components/project-constructor/config/ConstructorConstants'
 import { getSourceDisplayName } from '@/components/project-constructor/utils/SourceUtils'
-import { getProgress, getPreviewType, getActiveScenario, getProgressWithContext, getActiveScenarioWithContext } from '@/components/project-constructor/utils/ProgressUtils'
+import { getProgress, getPreviewType, getProgressWithContext } from '@/components/project-constructor/utils/ProgressUtils'
 import { bucketMap } from '@/components/project-constructor/utils/UploadUtils'
 import { phantomDataStyles } from '@/components/project-constructor/styles/PhantomStyles'
 import SpecificationForm from '@/components/project-constructor/forms/SpecificationForm'
@@ -947,8 +947,7 @@ export default function ProjectConstructorPage() {
         ...project,
         manualData,
         stepConfigs,
-        currentStage: getCurrentStage(),
-        activeScenario: getActiveScenarioWithContext(createValidationContext())
+        currentStage: getCurrentStage()
       })
       setProjectDetailsDialogOpen(true)
 
@@ -4240,8 +4239,7 @@ export default function ProjectConstructorPage() {
         stepConfigs,
         manualData,
         uploadedFiles,
-        currentStage: getCurrentStage(),
-        activeScenario: getActiveScenarioWithContext(createValidationContext())
+        currentStage: getCurrentStage()
       })
 
       const response = await fetchFromApi('/api/atomic-constructor/send-to-manager', {
@@ -4254,8 +4252,7 @@ export default function ProjectConstructorPage() {
           manualData,
           uploadedFiles,
           user,
-          currentStage: getCurrentStage(),
-          activeScenario: getActiveScenarioWithContext(createValidationContext())
+          currentStage: getCurrentStage()
         })
       })
 
@@ -4341,14 +4338,6 @@ export default function ProjectConstructorPage() {
                   {currentStage === 1 ? 'Подготовка данных' : 
                    currentStage === 2 ? 'Подготовка инфраструктуры' : 
                    'Анимация сделки'}
-                </span>
-              </div>
-              <div className="text-sm">
-                <span className="font-medium">Сценарий: </span>
-                <span className="text-gray-600">
-                  {getActiveScenarioWithContext(createValidationContext()) === 'A' ? 'А (Клиент-покупатель)' :
-                   getActiveScenarioWithContext(createValidationContext()) === 'B1' ? 'Б1 (Поставщик-товары)' :
-                   getActiveScenarioWithContext(createValidationContext()) === 'B2' ? 'Б2 (Поставщик-реквизиты)' : 'Не определен'}
                 </span>
               </div>
             </div>
@@ -6646,10 +6635,6 @@ export default function ProjectConstructorPage() {
                     <div>
                       <p className="text-sm text-gray-600">Текущий этап</p>
                       <p className="font-medium">{projectDetails.currentStage}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Сценарий</p>
-                      <p className="font-medium">{projectDetails.activeScenario}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Создан</p>

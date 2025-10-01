@@ -4,18 +4,16 @@ import { ManagerBotService } from '@/lib/telegram/ManagerBotService'
 
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      stepConfigs, 
-      manualData, 
-      uploadedFiles, 
-      user, 
-      currentStage,
-      activeScenario 
+    const {
+      stepConfigs,
+      manualData,
+      uploadedFiles,
+      user,
+      currentStage
     } = await request.json()
 
     console.log('🚀 [Atomic Constructor] Отправка данных менеджеру:', {
       currentStage,
-      activeScenario,
       stepsWithData: Object.keys(manualData).length,
       user: user?.email
     })
@@ -35,7 +33,6 @@ export async function POST(request: NextRequest) {
       uploadedFiles,
       user,
       currentStage,
-      activeScenario,
       requestId
     })
 
@@ -46,8 +43,7 @@ export async function POST(request: NextRequest) {
       requestId,
       userEmail: user.email,
       userName: user.user_metadata?.full_name || user.email,
-      currentStage,
-      activeScenario
+      currentStage
     })
 
     // Сохраняем запрос в базе данных
@@ -58,8 +54,7 @@ export async function POST(request: NextRequest) {
       stepConfigs,
       manualData,
       uploadedFiles,
-      currentStage,
-      activeScenario
+      currentStage
     })
 
     return NextResponse.json({ 
@@ -83,7 +78,6 @@ function formatAtomicConstructorMessage({
   uploadedFiles,
   user,
   currentStage,
-  activeScenario,
   requestId
 }: {
   stepConfigs: Record<number, string>
@@ -91,7 +85,6 @@ function formatAtomicConstructorMessage({
   uploadedFiles: Record<number, string>
   user: any
   currentStage: number
-  activeScenario: string
   requestId: string
 }) {
   const stageNames = {
@@ -100,18 +93,10 @@ function formatAtomicConstructorMessage({
     3: 'Анимация сделки'
   }
 
-  const scenarioNames = {
-    'A': 'А (Клиент-покупатель)',
-    'B1': 'Б1 (Поставщик-товары)',
-    'B2': 'Б2 (Поставщик-реквизиты)',
-    'none': 'Не определен'
-  }
-
   let message = `🚀 **НОВЫЙ АТОМАРНЫЙ КОНСТРУКТОР**\n\n`
   message += `📋 **ID запроса:** \`${requestId}\`\n`
   message += `👤 **Пользователь:** ${user.email}\n`
-  message += `📊 **Этап:** ${stageNames[currentStage as keyof typeof stageNames]}\n`
-  message += `🎭 **Сценарий:** ${scenarioNames[activeScenario as keyof typeof scenarioNames]}\n\n`
+  message += `📊 **Этап:** ${stageNames[currentStage as keyof typeof stageNames]}\n\n`
 
   // Шаг 1: Данные компании
   if (manualData[1]) {
@@ -203,8 +188,7 @@ async function saveAtomicConstructorRequest({
   stepConfigs,
   manualData,
   uploadedFiles,
-  currentStage,
-  activeScenario
+  currentStage
 }: {
   requestId: string
   userId: string
@@ -213,10 +197,9 @@ async function saveAtomicConstructorRequest({
   manualData: Record<number, any>
   uploadedFiles: Record<number, string>
   currentStage: number
-  activeScenario: string
 }) {
-  // Определяем роль инициатора и способ старта на основе сценария
-  const initiatorRole = activeScenario === 'A' ? 'client' : 'supplier'
+  // Фиксированные значения для атомарного конструктора
+  const initiatorRole = 'client' // По умолчанию клиент для атомарного конструктора
   const startMethod = 'upload' // для атомарного конструктора всегда upload
 
   // Извлекаем данные Step1 (компания) и Step2 (спецификация) из manualData
@@ -241,7 +224,7 @@ async function saveAtomicConstructorRequest({
       max_step_reached: 1,
       constructor_type: 'atomic',
       atomic_stage: currentStage,
-      atomic_scenario: activeScenario,
+      atomic_scenario: 'none', // Сценарии удалены, используем 'none'
       atomic_step_configs: stepConfigs,
       atomic_manual_data: manualData,
       atomic_uploaded_files: uploadedFiles,

@@ -24,39 +24,3 @@ export const getPreviewType = (stepId: number) => {
     default: return 'company'
   }
 }
-
-// Определение активного сценария
-export const getActiveScenario = (isStepFilledByUserFn: (stepId: number) => boolean) => {
-  // Используем ту же логику, что и в isStepFilledByUser
-  if (isStepFilledByUserFn(1)) {
-    return 'A'
-  }
-
-  if (isStepFilledByUserFn(2)) {
-    return 'B1'
-  }
-
-  if (isStepFilledByUserFn(4) || isStepFilledByUserFn(5)) {
-    return 'B2'
-  }
-
-  return 'none' // Сценарий еще не определен
-}
-
-// Определение активного сценария с контекстом
-export const getActiveScenarioWithContext = (context: StepValidationContext) => {
-  // Используем ту же логику, что и в isStepFilledByUser
-  if (isStepFilledByUser(1, context)) {
-    return 'A'
-  }
-
-  if (isStepFilledByUser(2, context)) {
-    return 'B1'
-  }
-
-  if (isStepFilledByUser(4, context) || isStepFilledByUser(5, context)) {
-    return 'B2'
-  }
-
-  return 'none' // Сценарий еще не определен
-}
