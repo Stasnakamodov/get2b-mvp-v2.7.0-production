@@ -5444,7 +5444,7 @@ function ProjectConstructorContent() {
                         console.log('  - manualData[5]:', manualData[5]);
                         console.log('  - selectedSupplierData:', selectedSupplierData);
 
-                        const shouldShowCubes = ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5]) || (manualData[5] && Object.keys(manualData[5]).length > 0);
+                        const shouldShowCubes = (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) || (manualData[5] && Object.keys(manualData[5]).length > 0);
                         console.log('  - shouldShowCubes (stepConfigs[5] in ["catalog", "blue_room", "orange_room"] OR has manualData[5]):', shouldShowCubes);
 
                         return shouldShowCubes;
