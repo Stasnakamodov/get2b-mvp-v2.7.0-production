@@ -3558,6 +3558,123 @@ function ProjectConstructorContent() {
     closeModal('blueRoomSupplier')
   }
 
+  // Обработчик выбора поставщика из оранжевой комнаты (аккредитованные поставщики)
+  const handleSelectOrangeRoomSupplier = async (supplier: any) => {
+    console.log('🟠 === НАЧАЛО handleSelectOrangeRoomSupplier ===')
+    console.log('🟠 supplier:', supplier)
+    console.log('🟠 catalogSourceStep:', catalogSourceStep)
+
+    if (!catalogSourceStep) {
+      console.log('❌ catalogSourceStep не установлен, выходим')
+      return
+    }
+
+    try {
+      // Используем данные аккредитованного поставщика
+      const fullSupplier = supplier
+
+      // Сохраняем данные поставщика для использования в других шагах
+      setSelectedSupplierData(fullSupplier)
+
+      console.log('🟠 Автоматически заполняем связанные шаги для аккредитованного поставщика:', fullSupplier.name)
+
+      // Шаг 2: Товары поставщика
+      const specificationData = {
+        supplier: fullSupplier.name,
+        currency: fullSupplier.currency || 'USD',
+        items: fullSupplier.catalog_verified_products?.map((product: any) => ({
+          name: product.name,
+          description: product.description || '',
+          quantity: 1,
+          price: product.price || 0,
+          unit: product.unit || 'шт'
+        })) || [],
+        user_choice: true
+      }
+
+      // Шаг 4: Методы оплаты
+      const paymentMethods = fullSupplier.payment_methods || []
+      const paymentData = {
+        type: 'multiple',
+        methods: paymentMethods,
+        defaultMethod: paymentMethods[0] || 'bank',
+        supplier: fullSupplier.name,
+        user_choice: true
+      }
+
+      // Шаг 5: Реквизиты
+      const allRequisites = []
+      if (fullSupplier.bank_accounts?.length > 0) {
+        fullSupplier.bank_accounts.forEach((account: any) => {
+          allRequisites.push({
+            type: 'bank',
+            bankName: account.bank_name,
+            accountNumber: account.account_number,
+            bik: account.bik,
+            correspondentAccount: account.correspondent_account,
+            supplier: fullSupplier.name
+          })
+        })
+      }
+      if (fullSupplier.p2p_cards?.length > 0) {
+        fullSupplier.p2p_cards.forEach((card: any) => {
+          allRequisites.push({
+            type: 'p2p',
+            card_number: card.card_number,
+            card_bank: card.bank_name,
+            card_holder: card.card_holder,
+            supplier: fullSupplier.name
+          })
+        })
+      }
+      if (fullSupplier.crypto_wallets?.length > 0) {
+        fullSupplier.crypto_wallets.forEach((wallet: any) => {
+          allRequisites.push({
+            type: 'crypto',
+            crypto_address: wallet.wallet_address,
+            crypto_network: wallet.network,
+            supplier: fullSupplier.name
+          })
+        })
+      }
+
+      const requisitesData = {
+        type: 'multiple',
+        requisites: allRequisites,
+        defaultRequisite: allRequisites[0] || null,
+        supplier: fullSupplier.name,
+        user_choice: true
+      }
+
+      // Сохраняем данные для шагов 2, 4, 5
+      setManualData(prev => ({
+        ...prev,
+        2: specificationData,
+        4: paymentData,
+        5: requisitesData
+      }))
+
+      // Устанавливаем источники для шагов 2, 4, 5
+      setStepConfigs(prev => ({
+        ...prev,
+        2: 'orange_room',
+        4: 'orange_room',
+        5: 'orange_room'
+      }))
+
+      console.log('✅ Автоматически заполнены связанные шаги для аккредитованного поставщика:')
+      console.log('  - Шаг 2 (товары):', specificationData.items.length, 'товаров')
+      console.log('  - Шаг 4 (оплата):', paymentMethods.length, 'методов')
+      console.log('  - Шаг 5 (реквизиты):', allRequisites.length, 'реквизитов')
+
+    } catch (error) {
+      console.error('❌ Ошибка при выборе аккредитованного поставщика:', error)
+      alert('Ошибка при выборе поставщика')
+    }
+
+    closeModal('orangeRoomSupplier')
+  }
+
   // Функция поиска поставщика в каталоге по реквизитам
   const findSupplierByRequisites = async (requisites: any) => {
     try {
