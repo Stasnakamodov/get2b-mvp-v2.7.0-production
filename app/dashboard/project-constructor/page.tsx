@@ -3162,7 +3162,7 @@ function ProjectConstructorContent() {
       }
 
       // Шаг 5: Реквизиты
-      const allRequisites = []
+      const allRequisites: any[] = []
       if (fullSupplier.bank_accounts?.length > 0) {
         fullSupplier.bank_accounts.forEach((account: any) => {
           allRequisites.push({
