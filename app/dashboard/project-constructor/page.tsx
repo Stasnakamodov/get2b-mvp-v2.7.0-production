@@ -153,6 +153,8 @@ function ProjectConstructorContent() {
   const productsPerView = PRODUCT_DISPLAY_CONFIG.PRODUCTS_PER_VIEW
 
   const [showPhantomOptions, setShowPhantomOptions] = useState<boolean>(false)
+  const [showSupplierProfileSelector, setShowSupplierProfileSelector] = useState<boolean>(false)
+  const [showCatalogSourceModal, setShowCatalogSourceModal] = useState<boolean>(false)
 
   // Хук для работы с профилями клиентов
   const { profiles: clientProfiles, loading: clientProfilesLoading, fetchProfiles: fetchClientProfiles } = useClientProfiles(user?.id || null)
