@@ -14,7 +14,7 @@ import type {
 import { validateStepData } from '@/types/project-constructor.types'
 
 // CSS стили извлечены в отдельный файл
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { uploadFileToStorage, sendTelegramMessage, fetchFromApi, fetchCatalogData } from '@/utils/ApiUtils'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -342,6 +342,11 @@ export default function ProjectConstructorPage() {
     hasManagerReceipt,
     clientReceiptUrl
   })
+
+  // Мемоизированная сводка настроенных шагов (вызывается 3 раза в рендере)
+  const configuredStepsSummary = useMemo(() => {
+    return getConfiguredStepsSummaryUtil(constructorSteps, dataSources, createValidationContext())
+  }, [stepConfigs, manualData, receiptApprovalStatus, hasManagerReceipt, clientReceiptUrl])
 
   // Wrapper для isStepFilledByUser с контекстом
   const isStepFilledByUserWithContext = (stepId: number) => {
@@ -735,7 +740,7 @@ export default function ProjectConstructorPage() {
     checkManagerReceipt()
     
     return () => clearInterval(interval)
-  }, [projectRequestId, currentStage, hasManagerReceipt])
+  }, [projectRequestId, currentStage, hasManagerReceipt, isRequestSent])
 
   // Функция для загрузки чека клиента о получении средств
   const handleClientReceiptUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1185,38 +1190,30 @@ export default function ProjectConstructorPage() {
   const autoFillStepsFromSupplier = async (stepData: any) => {
     console.log('=== АВТОМАТИЧЕСКОЕ ЗАПОЛНЕНИЕ ШАГОВ IV и V ===')
     console.log('Данные для проверки:', stepData)
-    
+
     // Проверяем, есть ли товары в данных
     if (stepData && stepData.items && stepData.items.length > 0) {
       console.log('Найдены товары:', stepData.items)
-      
+
       // Получаем данные поставщика из первого товара
       const firstItem = stepData.items[0]
-      
-      // Ищем эхо данные по supplier
-      if (stepData.supplier) {
-        console.log('🔍 Ищем эхо данные для поставщика:', stepData.supplier)
-        
-        const echoData = await getEchoSupplierData(stepData.supplier)
-        
-        if (echoData) {
-          console.log('🎭 Найдены эхо данные:', echoData)
-          
-          // Показываем модальное окно с предложением эхо данных
-          setEchoDataModal({
-            show: true,
-            supplierName: stepData.supplier,
-            echoData: echoData,
-            projectInfo: echoData.project_info
-          })
-          
-          console.log('📋 Показано модальное окно с эхо данными')
-          return true
-        } else {
-          console.log('❌ Эхо данные не найдены для поставщика:', stepData.supplier)
-          console.log('ℹ️ Пользователь может найти эхо данные вручную при клике на шаги 4 и 5')
-          return false
-        }
+
+      // Если есть supplier_id или supplier name, устанавливаем stepConfigs[5] = 'catalog'
+      // для показа рекомендаций из каталога
+      // ЭХО ДАННЫЕ в атомарном конструкторе ОТКЛЮЧЕНЫ для упрощения работы
+      if (firstItem?.supplier_id || stepData.supplier) {
+        console.log('✅ Данные поставщика найдены, устанавливаем stepConfigs[5] = catalog')
+        console.log('   supplier_id:', firstItem?.supplier_id)
+        console.log('   supplier:', stepData.supplier)
+
+        // Устанавливаем stepConfigs[5] = 'catalog' для показа рекомендаций из каталога
+        setStepConfigs(prev => ({
+          ...prev,
+          5: 'catalog'
+        }))
+
+        console.log('✅ stepConfigs[5] = catalog установлен для показа рекомендаций из каталога')
+        return true
       } else {
         console.log('❌ supplier не найден в данных')
         return false
@@ -3385,21 +3382,25 @@ export default function ProjectConstructorPage() {
   // Функция для отклонения эхо данных
   const rejectEchoData = () => {
     console.log('❌ Пользователь отклонил эхо данные')
-    
+
     // Очищаем доступность эхо данных (звездочки исчезнут)
     setEchoDataAvailable(prev => ({
       ...prev,
       4: false,
       5: false
     }))
-    
+
     // Скрываем всплывающие подсказки
     setEchoDataTooltips(prev => ({
       ...prev,
       4: false,
       5: false
     }))
-    
+
+    // ВАЖНО: НЕ сбрасываем stepConfigs[5] = 'catalog'
+    // Он уже установлен в autoFillStepsFromSupplier для показа рекомендаций из каталога
+    console.log('✅ stepConfigs[5] остаётся = catalog для показа рекомендаций из каталога')
+
     setEchoDataModal(null)
   }
 
@@ -3415,16 +3416,14 @@ export default function ProjectConstructorPage() {
     }
   }, [manualData[2], manualData[4], manualData[5], selectedSupplierData])
   
-  // Автоматически ищем эхо данные для шагов 1 и 2 при изменении данных любого шага
-  useEffect(() => {
-    // Проверяем, есть ли данные в любом из шагов 2, 4, 5
-    const hasAnyStepData = manualData[2] || manualData[4] || manualData[5] || selectedSupplierData
-    
-    if (hasAnyStepData && !(manualData as any).echoSuggestions?.step1) {
-      // Ищем эхо данные для шагов 1 и 2
-      suggestEchoDataForSteps()
-    }
-  }, [manualData[2], manualData[4], manualData[5], selectedSupplierData])
+  // ЭХО ДАННЫЕ в атомарном конструкторе ОТКЛЮЧЕНЫ для упрощения работы
+  // Автоматический поиск эхо данных для шагов 1 и 2 временно отключён
+  // useEffect(() => {
+  //   const hasAnyStepData = manualData[2] || manualData[4] || manualData[5] || selectedSupplierData
+  //   if (hasAnyStepData && !(manualData as any).echoSuggestions?.step1) {
+  //     suggestEchoDataForSteps()
+  //   }
+  // }, [manualData[2], manualData[4], manualData[5], selectedSupplierData])
 
   // Обработчик клика по карточке шага в блоке 2
   const handleStepCardClick = (item: any) => {
@@ -3746,20 +3745,10 @@ export default function ProjectConstructorPage() {
       
       // Показываем уведомление об успешном заполнении
       console.log(`✅ Данные поставщика "${fullSupplier.name}" успешно применены ко ВСЕМ шагам!`)
-      
-      console.log('🎯 Начинаем поиск эхо данных для поставщика:', fullSupplier.name)
-      console.log('🎯 Вызываем suggestEchoDataForSteps с данными:', fullSupplier)
-      
-      // Предлагаем эхо данные для шагов 1 и 2
-      try {
-        await suggestEchoDataForSteps(fullSupplier)
-        console.log('🎯 suggestEchoDataForSteps завершился успешно')
-      } catch (error) {
-        console.error('❌ Ошибка в suggestEchoDataForSteps:', error)
-      }
-      
-      console.log('🎯 Поиск эхо данных завершен')
-      
+
+      // ЭХО ДАННЫЕ в атомарном конструкторе ОТКЛЮЧЕНЫ для упрощения работы
+      // Рекомендации из каталога показываются через stepConfigs[5] = 'catalog'
+
     } catch (error) {
       console.error('❌ Ошибка при выборе поставщика:', error)
       alert('Ошибка при выборе поставщика')
@@ -6469,8 +6458,8 @@ export default function ProjectConstructorPage() {
                         console.log('  - manualData[5]:', manualData[5]);
                         console.log('  - selectedSupplierData:', selectedSupplierData);
 
-                        const shouldShowCubes = stepConfigs[5] === 'catalog' || (manualData[5] && Object.keys(manualData[5]).length > 0);
-                        console.log('  - shouldShowCubes (stepConfigs[5] === "catalog" OR has manualData[5]):', shouldShowCubes);
+                        const shouldShowCubes = ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5]) || (manualData[5] && Object.keys(manualData[5]).length > 0);
+                        console.log('  - shouldShowCubes (stepConfigs[5] in ["catalog", "blue_room", "orange_room"] OR has manualData[5]):', shouldShowCubes);
 
                         return shouldShowCubes;
                       })() && (() => {
@@ -7088,9 +7077,9 @@ export default function ProjectConstructorPage() {
                     {/* Сводка настроенных шагов */}
           <div className="mb-6">
             <h3 className="text-lg font-medium mb-3">Настроенные шаги:</h3>
-            {getConfiguredStepsSummaryUtil(constructorSteps, dataSources, createValidationContext()).length > 0 ? (
+            {configuredStepsSummary.length > 0 ? (
               <div className="space-y-2">
-                {getConfiguredStepsSummaryUtil(constructorSteps, dataSources, createValidationContext()).map((item) => (
+                {configuredStepsSummary.map((item) => (
                   <div 
                     key={item.stepId} 
                     className={`flex items-center gap-3 p-3 rounded-lg hover:shadow-md cursor-pointer transition-all duration-200 border-2 relative z-10 ${
@@ -7134,7 +7123,7 @@ export default function ProjectConstructorPage() {
           <div className="flex justify-end">
             <Button 
               className="gap-2"
-              disabled={getConfiguredStepsSummaryUtil(constructorSteps, dataSources, createValidationContext()).length === 0}
+              disabled={configuredStepsSummary.length === 0}
             >
               Запустить атомарную сделку
               <ArrowRight className="w-4 h-4" />
@@ -7475,7 +7464,11 @@ export default function ProjectConstructorPage() {
       </Dialog>
 
       {/* Модальное окно эхо данных */}
-      <Dialog open={echoDataModal?.show || false} onOpenChange={() => setEchoDataModal(null)}>
+      <Dialog open={echoDataModal?.show || false} onOpenChange={(open) => {
+        if (!open) {
+          rejectEchoData()
+        }
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
