@@ -101,6 +101,7 @@ import { supabase } from "@/lib/supabaseClient"
 import { useToast } from "@/components/ui/use-toast"
 import CatalogModal from "../create-project/components/CatalogModal"
 import { AutoFillNotification } from "@/components/project-constructor/notifications/AutoFillNotification"
+import { useTemplateSystem } from "@/hooks/project-constructor/useTemplateSystem"
 import { POLLING_INTERVALS, TIMEOUTS } from "@/components/project-constructor/config/PollingConstants"
 import { ModalProvider, useModals } from "./components/modals/ModalContext"
 import ModalManager from "./components/modals/ModalManager"
@@ -140,8 +141,9 @@ function ProjectConstructorContent() {
   const [manualData, setManualData] = useState<ManualData>({})
   const [uploadedFiles, setUploadedFiles] = useState<Record<number, string>>({})
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
-  const [templateStepSelection, setTemplateStepSelection] = useState<{templateId: string, availableSteps: number[]} | null>(null)
-  const [templateSelection, setTemplateSelection] = useState<boolean>(false)
+  // ===== СТАРЫЙ КОД (закомментирован, т.к. переехал в useTemplateSystem хук) =====
+  // const [templateStepSelection, setTemplateStepSelection] = useState<{templateId: string, availableSteps: number[]} | null>(null)
+  // const [templateSelection, setTemplateSelection] = useState<boolean>(false)
   const [previewData, setPreviewData] = useState<StepDataToView | null>(null)
   const [previewType, setPreviewType] = useState<string>('')
   const [editingType, setEditingType] = useState<string>('')
@@ -955,6 +957,17 @@ function ProjectConstructorContent() {
     return false
   }
 
+  // ===== НОВЫЙ ХУК: Template System =====
+  // Извлекаем логику работы с шаблонами в отдельный хук
+  const templateSystem = useTemplateSystem({
+    templates,
+    setStepConfigs,
+    setManualData,
+    setSelectedSource,
+    autoFillStepsFromSupplier,
+    autoFillStepFromRequisites
+  })
+
   // Функция для получения данных из шаблонов для конкретного шага
   const getTemplateDataForStep = async (stepId: number) => {
     console.log('Запрос данных из шаблонов для шага:', stepId)
@@ -1035,164 +1048,15 @@ function ProjectConstructorContent() {
     }
   }
 
+  // ===== СТАРЫЙ КОД (закомментирован, т.к. переехал в useTemplateSystem хук) =====
+  /*
   // Функция для получения данных шаблона (симуляция)
-  const getTemplateData = (templateId: string) => {
-    // Находим реальный шаблон в базе данных
-    const template = templates?.find(t => t.id === templateId)
-    
-    if (!template) {
-      console.error('Шаблон не найден:', templateId)
-      return null
-    }
-    
-    console.log('=== ДАННЫЕ ШАБЛОНА ДЛЯ СПЕЦИФИКАЦИИ ===')
-    console.log('template:', template)
-    console.log('template.items:', template.items)
-    console.log('template.specification:', template.specification)
-    console.log('template.data?.specification:', template.data?.specification)
-    
-    return {
-      id: template.id,
-      name: template.name || 'Без названия',
-      availableSteps: [1, 2], // По умолчанию шаблоны содержат шаги 1 и 2
-              data: {
-          1: {
-            name: template.company_name || '',
-            legalName: template.company_legal || '',
-            inn: template.company_inn || '',
-            kpp: template.company_kpp || '',
-            ogrn: template.company_ogrn || '',
-            address: template.company_address || '',
-            bankName: template.company_bank || '',
-            bankAccount: template.company_account || '',
-            bankCorrAccount: template.company_corr_account || template.company_corr || '',
-            bankBik: template.company_bik || '',
-            email: template.company_email || '',
-            phone: template.company_phone || '',
-            website: template.company_website || ''
-          },
-        2: {
-          supplier: template.supplier_name || template.data?.supplier_name || template.data?.supplier || '',
-          currency: template.currency || 'RUB',
-          items: template.items || template.specification || template.data?.specification || []
-        }
-      }
-    }
-  }
-
-  // Функция для применения данных шаблона к конкретному шагу
-  const applyTemplateStep = (stepId: number, templateData: any) => {
-    console.log(`=== ПРИМЕНЕНИЕ ШАБЛОНА ДЛЯ ШАГА ${stepId} ===`)
-    console.log('templateData:', templateData)
-    console.log('templateData.data:', templateData.data)
-    console.log(`templateData.data[${stepId}]:`, templateData.data[stepId as keyof typeof templateData.data])
-    
-    if (templateData.data[stepId as keyof typeof templateData.data]) {
-      // Применяем данные шаблона
-      setStepConfigs(prev => ({
-        ...prev,
-        [stepId]: "template"
-      }))
-      const stepData = templateData.data[stepId as keyof typeof templateData.data]
-      setManualData(prev => ({
-        ...prev,
-        [stepId]: stepData
-      }))
-      setSelectedSource(null)
-      setTemplateStepSelection(null)
-      console.log(`✅ Применены данные шаблона для шага ${stepId}:`, stepData)
-      
-      // Проверяем, нужно ли автоматическое заполнение (если это шаг II)
-      if (stepId === 2) {
-        autoFillStepsFromSupplier(stepData)
-      }
-      
-      // Проверяем, нужно ли автоматическое заполнение (если это шаги IV или V)
-      if (stepId === 4 || stepId === 5) {
-        autoFillStepFromRequisites(stepData, stepId).catch(error => {
-          console.error('Ошибка автозаполнения из шага', stepId, ':', error)
-        })
-      }
-    } else {
-      console.log(`❌ Нет данных шаблона для шага ${stepId}`)
-    }
-  }
-
-  // Обработчик выбора шаблона
-  const handleTemplateSelect = (templateId: string) => {
-    const templateData = getTemplateData(templateId)
-    if (!templateData) return
-    
-    const availableSteps = templateData.availableSteps
-    
-    // Если шаблон содержит несколько шагов, показываем выбор
-    if (availableSteps.length > 1) {
-      setTemplateStepSelection({
-        templateId: templateId,
-        availableSteps: availableSteps
-      })
-      setTemplateSelection(false)
-    } else if (availableSteps.length === 1) {
-      // Если только один шаг, применяем его автоматически
-      applyTemplateStep(availableSteps[0], templateData)
-      setTemplateSelection(false)
-    }
-  }
-
-  // Обработчик выбора шага в шаблоне
-  const handleTemplateStepSelect = (stepId: number) => {
-    if (templateStepSelection) {
-      const templateData = getTemplateData(templateStepSelection.templateId)
-      if (templateData) {
-        applyTemplateStep(stepId, templateData)
-      }
-    }
-  }
-
-  // Обработчик заполнения всех шагов из шаблона
-  const handleFillAllTemplateSteps = () => {
-    if (templateStepSelection) {
-      const templateData = getTemplateData(templateStepSelection.templateId)
-      if (!templateData) return
-      
-      // Применяем данные для всех доступных шагов
-      templateStepSelection.availableSteps.forEach(stepId => {
-        if (templateData.data[stepId as keyof typeof templateData.data]) {
-          const stepData = templateData.data[stepId as keyof typeof templateData.data]
-          setStepConfigs(prev => ({
-            ...prev,
-            [stepId]: "template"
-          }))
-          setManualData(prev => ({
-            ...prev,
-            [stepId]: stepData
-          }))
-          
-          // Проверяем, нужно ли автоматическое заполнение (если это шаг II)
-          if (stepId === 2) {
-            // Используем setTimeout, чтобы дать время для обновления состояния
-            setTimeout(async () => {
-              await autoFillStepsFromSupplier(stepData)
-            }, 100)
-          }
-          
-          // Проверяем, нужно ли автоматическое заполнение (если это шаги IV или V)
-          if (stepId === 4 || stepId === 5) {
-            // Используем setTimeout, чтобы дать время для обновления состояния
-            setTimeout(() => {
-              autoFillStepFromRequisites(stepData, stepId).catch(error => {
-                console.error('Ошибка отложенного автозаполнения из шага', stepId, ':', error)
-              })
-            }, 100)
-          }
-        }
-      })
-      
-      setSelectedSource(null)
-      setTemplateStepSelection(null)
-      console.log(`Применены данные шаблона для всех шагов: ${templateStepSelection.availableSteps.join(', ')}`)
-    }
-  }
+  const getTemplateData = (templateId: string) => { ... }
+  const applyTemplateStep = (stepId: number, templateData: any) => { ... }
+  const handleTemplateSelect = (templateId: string) => { ... }
+  const handleTemplateStepSelect = (stepId: number) => { ... }
+  const handleFillAllTemplateSteps = () => { ... }
+  */
 
   // Обработчик наведения на кубик
   const handleStepHover = (stepId: number) => {
@@ -1235,7 +1099,7 @@ function ProjectConstructorContent() {
     if (lastHoveredStep) {
       // Если выбран шаблон, показываем выбор шаблонов пользователя
       if (source === "template") {
-        setTemplateSelection(true)
+        templateSystem.setTemplateSelection(true)
         return
       }
       
@@ -3145,20 +3009,20 @@ function ProjectConstructorContent() {
                   </div>
 
                   {/* Показываем выбор шаблонов пользователя */}
-                  {templateSelection ? (
+                  {templateSystem.templateSelection ? (
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-base font-semibold text-gray-800">Выберите шаблон</h4>
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => fetchTemplates()}
                             disabled={templatesLoading}
                           >
                             {templatesLoading ? 'Загрузка...' : 'Обновить'}
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => setTemplateSelection(false)}>
+                          <Button variant="outline" size="sm" onClick={() => templateSystem.setTemplateSelection(false)}>
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
@@ -3250,7 +3114,7 @@ function ProjectConstructorContent() {
                             <div
                               key={template.id}
                               className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
-                              onClick={() => handleTemplateSelect(template.id)}
+                              onClick={() => templateSystem.handleTemplateSelect(template.id)}
                             >
                               <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
                                 <FileText className="h-6 w-6 text-white" />
@@ -3268,20 +3132,20 @@ function ProjectConstructorContent() {
                         )}
                       </div>
                     </div>
-                  ) : templateStepSelection ? (
+                  ) : templateSystem.templateStepSelection ? (
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-base font-semibold text-gray-800">Выберите шаг для заполнения из шаблона</h4>
-                        <Button variant="outline" size="sm" onClick={() => setTemplateStepSelection(null)}>
+                        <Button variant="outline" size="sm" onClick={() => templateSystem.setTemplateStepSelection(null)}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
-                      
+
                       {/* Кнопка "Заполнить все шаги" */}
-                      {templateStepSelection.availableSteps.length > 1 && (
+                      {templateSystem.templateStepSelection.availableSteps.length > 1 && (
                         <div className="mb-4">
-                          <Button 
-                            onClick={handleFillAllTemplateSteps}
+                          <Button
+                            onClick={templateSystem.handleFillAllTemplateSteps}
                             variant="outline"
                             className="w-full h-10 text-sm font-medium border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
                           >
@@ -3290,15 +3154,15 @@ function ProjectConstructorContent() {
                           </Button>
                         </div>
                       )}
-                      
+
                       <div className="grid gap-4">
-                        {templateStepSelection.availableSteps.map((stepId) => {
+                        {templateSystem.templateStepSelection.availableSteps.map((stepId) => {
                           const step = constructorSteps.find(s => s.id === stepId)
                           return (
                             <div
                               key={stepId}
                               className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
-                              onClick={() => handleTemplateStepSelect(stepId)}
+                              onClick={() => templateSystem.handleTemplateStepSelect(stepId)}
                             >
                               <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center shadow-sm">
                                 <span className="text-white font-bold text-lg">
