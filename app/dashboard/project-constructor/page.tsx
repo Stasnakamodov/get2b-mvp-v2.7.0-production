@@ -167,6 +167,9 @@ function ProjectConstructorContent() {
   // Хук для работы с профилями поставщиков
   const { profiles: supplierProfiles, loading: supplierProfilesLoading, fetchProfiles: fetchSupplierProfiles } = useSupplierProfiles(user?.id || null)
 
+  // Хук для работы с шаблонами проектов
+  const { templates, loading: templatesLoading, error: templatesError, fetchTemplates } = useProjectTemplates()
+
   // Хук для уведомлений
   const { toast } = useToast()
 
@@ -378,7 +381,7 @@ function ProjectConstructorContent() {
     supplierProfilesLoading,
     selectedProfileId,
     selectedSupplierProfileId,
-    openModal,
+    openModal: (modalName: string) => openModal(modalName as any),
     setShowSupplierProfileSelector
   })
 
@@ -569,10 +572,7 @@ function ProjectConstructorContent() {
     }
   }, [])
 
-  // Получаем реальные шаблоны из базы данных
-  const { templates, loading: templatesLoading, error: templatesError, fetchTemplates } = useProjectTemplates()
-
-  // Загружаем шаблоны при монтировании компонента
+  // Загружаем шаблоны при монтировании компонента (хук useProjectTemplates объявлен выше)
   React.useEffect(() => {
     // Проверяем аутентификацию перед загрузкой
     const checkAuthAndLoad = async () => {
