@@ -3055,7 +3055,9 @@ function ProjectConstructorContent() {
 
   // Получить доступные источники данных для текущего шага
   const availableSources: StepConfig[] = lastHoveredStep
-    ? (['profile', 'template', 'catalog', 'manual'] as StepConfig[])
+    ? (lastHoveredStep === 1 || lastHoveredStep === 2
+        ? (['profile', 'template', 'catalog', 'manual', 'upload'] as StepConfig[])
+        : (['profile', 'template', 'catalog', 'manual'] as StepConfig[]))
     : []
 
   // Получить информацию об источнике

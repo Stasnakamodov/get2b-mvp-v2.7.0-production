@@ -220,7 +220,7 @@ export const Stage1Container: React.FC<Stage1ContainerProps> = ({
               ) : (
                 <div>
                   {/* Источники данных */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {availableSources.map((source) => {
                       const sourceInfo = getSourceInfo(source)
                       const SourceIcon = getSourceIcon(source)
@@ -241,6 +241,7 @@ export const Stage1Container: React.FC<Stage1ContainerProps> = ({
                               {source === "template" && "Выбрать из сохраненных шаблонов"}
                               {source === "catalog" && "Из синей и оранжевой комнат каталога (включая эхо карточки)"}
                               {source === "manual" && "Заполнить самостоятельно"}
+                              {source === "upload" && "Загрузить файл (Yandex Vision OCR)"}
                               {source === "automatic" && "Автоматическая обработка"}
                             </div>
                           </div>
