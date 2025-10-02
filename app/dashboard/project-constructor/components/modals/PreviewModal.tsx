@@ -295,13 +295,13 @@ export default function PreviewModal({
                     <div>
                       <Label className="text-sm font-medium text-gray-600">Название банка</Label>
                       <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                        {previewData.bank_name && previewData.bank_name.trim() !== '' ? previewData.bank_name : 'Не указано'}
+                        {(previewData.bank_name || previewData.bankName) && (previewData.bank_name || previewData.bankName)?.trim() !== '' ? (previewData.bank_name || previewData.bankName) : 'Не указано'}
                       </div>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-600">Номер счета</Label>
                       <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                        {previewData.accountNumber && previewData.accountNumber.trim() !== '' ? `${previewData.accountNumber}` : 'Не указано'}
+                        {(previewData.accountNumber || previewData.account_number) && (previewData.accountNumber || previewData.account_number)?.trim() !== '' ? `${previewData.accountNumber || previewData.account_number}` : 'Не указано'}
                       </div>
                     </div>
                     <div>
@@ -313,7 +313,7 @@ export default function PreviewModal({
                     <div>
                       <Label className="text-sm font-medium text-gray-600">Получатель</Label>
                       <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                        {previewData.recipientName && previewData.recipientName.trim() !== '' ? previewData.recipientName : 'Не указано'}
+                        {(previewData.recipientName || previewData.recipient_name) && (previewData.recipientName || previewData.recipient_name)?.trim() !== '' ? (previewData.recipientName || previewData.recipient_name) : 'Не указано'}
                       </div>
                     </div>
                   </>
