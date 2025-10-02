@@ -197,13 +197,7 @@ function ProjectConstructorContent() {
   const [dontShowStageTransition, setDontShowStageTransition] = useState<boolean>(false)
   const [stageTransitionShown, setStageTransitionShown] = useState<boolean>(false)
   
-  // Состояние для отправки менеджеру
-  const [sendingToManager, setSendingToManager] = useState<boolean>(false)
-  const [managerNotification, setManagerNotification] = useState<{
-    show: boolean;
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null)
+  // sendingToManager и managerNotification перенесены в Stage2Container
 
   // Состояние для модального окна выбора поставщика из синей комнаты
   const [blueRoomSuppliers, setBlueRoomSuppliers] = useState<SupplierData[]>([])
@@ -1411,7 +1405,7 @@ function ProjectConstructorContent() {
     }
   }
 
-  // Функция для перехода к этапу 2 (после подтверждения модального окна)
+  // Функция для перехода к этапу 2 (упрощена после извлечения Stage2Container)
   const proceedToStage2 = async () => {
     console.log('✅ Переход к этапу 2: Подготовка инфраструктуры')
 
@@ -1421,28 +1415,15 @@ function ProjectConstructorContent() {
     // Переходим к этапу 2
     setCurrentStage(2)
     console.log('✅ Этап изменен на 2')
-    
+
     // Сбрасываем состояние показа модального окна перехода
     setStageTransitionShown(false)
-    
+
     // Устанавливаем статус ожидания апрува менеджера
     setManagerApprovalStatus('pending')
     console.log('✅ Статус менеджера установлен в pending')
-    
-    // Автоматически отправляем данные менеджеру (с обработкой ошибок)
-    console.log('📤 Автоматическая отправка данных менеджеру при переходе к этапу 2')
-    try {
-      await handleSendToManager()
-      console.log('✅ Данные успешно отправлены менеджеру')
-    } catch (error) {
-      console.error('❌ Ошибка отправки менеджеру:', error)
-      // Показываем уведомление об ошибке, но продолжаем
-      setManagerNotification({
-        show: true,
-        type: 'error',
-        message: 'Ошибка отправки в Telegram, но переход к этапу 2 выполнен'
-      })
-    }
+
+    // Отправка данных менеджеру теперь обрабатывается в Stage2Container
   }
 
 
@@ -2992,59 +2973,10 @@ function ProjectConstructorContent() {
     }
   }
 
-
-  // Функция отправки данных менеджеру
+  // Функция отправки данных менеджеру (перенесена в Stage2Container)
+  // Оставлена заглушка для обратной совместимости
   const handleSendToManager = async () => {
-    try {
-      setSendingToManager(true)
-      
-      console.log('🚀 Отправка данных менеджеру:', {
-        stepConfigs,
-        manualData,
-        uploadedFiles,
-        currentStage: getCurrentStage()
-      })
-
-      const response = await fetchFromApi('/api/atomic-constructor/send-to-manager', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        },
-        body: JSON.stringify({
-          stepConfigs,
-          manualData,
-          uploadedFiles,
-          user,
-          currentStage: getCurrentStage()
-        })
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        // Устанавливаем статус ожидания и ID запроса
-        setManagerApprovalStatus('pending')
-        setProjectRequestId(result.requestId || `atomic_${Date.now()}`)
-        
-        setManagerNotification({
-          show: true,
-          type: 'success',
-          message: `Данные отправлены менеджеру! ID запроса: ${result.requestId}`
-        })
-      } else {
-        throw new Error(result.error || 'Неизвестная ошибка')
-      }
-
-    } catch (error) {
-      console.error('❌ Ошибка отправки менеджеру:', error)
-      setManagerNotification({
-        show: true,
-        type: 'error',
-        message: `Ошибка отправки: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`
-      })
-    } finally {
-      setSendingToManager(false)
-    }
+    console.log('⚠️ handleSendToManager вызвана из монолита - используйте Stage2Container')
   }
 
   return (
@@ -3059,24 +2991,6 @@ function ProjectConstructorContent() {
           </div>
         </div>
         <div className="flex gap-4 justify-end">
-          <Button 
-            onClick={handleSendToManager}
-            disabled={sendingToManager}
-            className="gap-2"
-            variant="outline"
-          >
-            {sendingToManager ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                Отправка...
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4" />
-                Отправить менеджеру
-              </>
-            )}
-          </Button>
           <Button className="gap-2">
             Запустить проект
             <ArrowRight className="w-4 h-4" />
@@ -4840,32 +4754,7 @@ function ProjectConstructorContent() {
 
       {/* ✂️ Все модальные окна удалены - теперь управляются через ModalManager */}
 
-      {/* Уведомления о статусе отправки менеджеру */}
-      {managerNotification && (
-        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md ${
-          managerNotification.type === 'success' 
-            ? 'bg-green-500 text-white' 
-            : 'bg-red-500 text-white'
-        }`}>
-          <div className="flex items-center gap-2">
-            {managerNotification.type === 'success' ? (
-              <CheckCircle className="h-5 w-5" />
-            ) : (
-              <X className="h-5 w-5" />
-            )}
-            <span className="font-medium">
-              {managerNotification.type === 'success' ? 'Успешно!' : 'Ошибка!'}
-            </span>
-          </div>
-          <p className="mt-1 text-sm">{managerNotification.message}</p>
-          <button
-            onClick={() => setManagerNotification(null)}
-            className="absolute top-2 right-2 text-white hover:text-gray-200"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+      {/* managerNotification удалён - теперь обрабатывается в Stage2Container */}
 
 
       {/* 🛒 Модальное окно каталога товаров */}
