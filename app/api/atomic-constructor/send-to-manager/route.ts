@@ -72,34 +72,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Экранирует специальные символы Markdown для безопасной отправки в Telegram
- * Экранирует: _ * [ ] ( ) ~ ` > # + - = | { } . !
- */
-function escapeMarkdown(text: string | undefined | null): string {
-  if (!text) return ''
-  return String(text)
-    .replace(/\\/g, '\\\\')   // Backslash должен быть первым
-    .replace(/_/g, '\\_')      // Underscore (italic)
-    .replace(/\*/g, '\\*')     // Asterisk (bold)
-    .replace(/\[/g, '\\[')     // Left bracket (links)
-    .replace(/\]/g, '\\]')     // Right bracket (links)
-    .replace(/\(/g, '\\(')     // Left paren (links)
-    .replace(/\)/g, '\\)')     // Right paren (links)
-    .replace(/~/g, '\\~')      // Tilde (strikethrough)
-    .replace(/`/g, '\\`')      // Backtick (code)
-    .replace(/>/g, '\\>')      // Greater than (quote)
-    .replace(/#/g, '\\#')      // Hash (header)
-    .replace(/\+/g, '\\+')     // Plus (list)
-    .replace(/-/g, '\\-')      // Minus (list)
-    .replace(/=/g, '\\=')      // Equal (header)
-    .replace(/\|/g, '\\|')     // Pipe (table)
-    .replace(/\{/g, '\\{')     // Left brace
-    .replace(/\}/g, '\\}')     // Right brace
-    .replace(/\./g, '\\.')     // Dot (list)
-    .replace(/!/g, '\\!')      // Exclamation (image)
-}
-
 function formatAtomicConstructorMessage({
   stepConfigs,
   manualData,
@@ -121,68 +93,69 @@ function formatAtomicConstructorMessage({
     3: 'Анимация сделки'
   }
 
-  let message = `🚀 **НОВЫЙ АТОМАРНЫЙ КОНСТРУКТОР**\n\n`
-  message += `📋 **ID запроса:** \`${requestId}\`\n`
-  message += `👤 **Пользователь:** ${escapeMarkdown(user.email)}\n`
-  message += `📊 **Этап:** ${stageNames[currentStage as keyof typeof stageNames]}\n\n`
+  // Plain text без Markdown (** и ` удалены), эмодзи сохранены
+  let message = `🚀 НОВЫЙ АТОМАРНЫЙ КОНСТРУКТОР\n\n`
+  message += `📋 ID запроса: ${requestId}\n`
+  message += `👤 Пользователь: ${user.email}\n`
+  message += `📊 Этап: ${stageNames[currentStage as keyof typeof stageNames]}\n\n`
 
   // Шаг 1: Данные компании
   if (manualData[1]) {
-    message += `🏢 **ШАГ 1: ДАННЫЕ КОМПАНИИ**\n`
+    message += `🏢 ШАГ 1: ДАННЫЕ КОМПАНИИ\n`
     message += `📝 Источник: ${getSourceDisplayName(stepConfigs[1])}\n`
-    message += `🏛️ Название: ${escapeMarkdown(manualData[1].name) || 'Не указано'}\n`
-    message += `📄 ИНН: ${escapeMarkdown(manualData[1].inn) || 'Не указано'}\n`
-    message += `🏦 Банк: ${escapeMarkdown(manualData[1].bankName) || 'Не указано'}\n`
-    message += `💳 Счет: ${escapeMarkdown(manualData[1].bankAccount) || 'Не указано'}\n\n`
+    message += `🏛️ Название: ${manualData[1].name || 'Не указано'}\n`
+    message += `📄 ИНН: ${manualData[1].inn || 'Не указано'}\n`
+    message += `🏦 Банк: ${manualData[1].bankName || 'Не указано'}\n`
+    message += `💳 Счет: ${manualData[1].bankAccount || 'Не указано'}\n\n`
   }
 
   // Шаг 2: Спецификация товаров
   if (manualData[2]) {
-    message += `📦 **ШАГ 2: СПЕЦИФИКАЦИЯ ТОВАРОВ**\n`
+    message += `📦 ШАГ 2: СПЕЦИФИКАЦИЯ ТОВАРОВ\n`
     message += `📝 Источник: ${getSourceDisplayName(stepConfigs[2])}\n`
-    message += `🏢 Поставщик: ${escapeMarkdown(manualData[2].supplier) || 'Не указано'}\n`
-    message += `💰 Валюта: ${escapeMarkdown(manualData[2].currency) || 'Не указано'}\n`
+    message += `🏢 Поставщик: ${manualData[2].supplier || 'Не указано'}\n`
+    message += `💰 Валюта: ${manualData[2].currency || 'Не указано'}\n`
     message += `📊 Позиций: ${manualData[2].items?.length || 0}\n`
 
     if (manualData[2].items && manualData[2].items.length > 0) {
       const totalQuantity = manualData[2].items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0)
       const totalAmount = manualData[2].items.reduce((sum: number, item: any) => sum + (Number(item.total) || 0), 0)
       message += `📈 Общее количество: ${totalQuantity} шт\n`
-      message += `💵 Общая сумма: ${totalAmount} ${escapeMarkdown(manualData[2].currency) || 'RUB'}\n`
+      message += `💵 Общая сумма: ${totalAmount} ${manualData[2].currency || 'RUB'}\n`
     }
     message += `\n`
   }
 
   // Шаг 4: Способ оплаты
   if (manualData[4]) {
-    message += `💳 **ШАГ 4: СПОСОБ ОПЛАТЫ**\n`
+    message += `💳 ШАГ 4: СПОСОБ ОПЛАТЫ\n`
     message += `📝 Источник: ${getSourceDisplayName(stepConfigs[4])}\n`
-    message += `🏢 Поставщик: ${escapeMarkdown(manualData[4].supplier) || 'Не указано'}\n`
+    message += `🏢 Поставщик: ${manualData[4].supplier || 'Не указано'}\n`
     message += `💳 Метод: ${getPaymentMethodName(manualData[4].method)}\n\n`
   }
 
   // Шаг 5: Реквизиты
   if (manualData[5]) {
-    message += `🏦 **ШАГ 5: РЕКВИЗИТЫ**\n`
+    message += `🏦 ШАГ 5: РЕКВИЗИТЫ\n`
     message += `📝 Источник: ${getSourceDisplayName(stepConfigs[5])}\n`
-    message += `🏢 Получатель: ${escapeMarkdown(manualData[5].recipientName) || 'Не указано'}\n`
-    message += `🏦 Банк: ${escapeMarkdown(manualData[5].bankName) || 'Не указано'}\n`
-    message += `💳 Счет: ${escapeMarkdown(manualData[5].accountNumber) || 'Не указано'}\n`
-    message += `🌐 SWIFT: ${escapeMarkdown(manualData[5].swift) || 'Не указано'}\n\n`
+    message += `🏢 Получатель: ${manualData[5].recipientName || 'Не указано'}\n`
+    message += `🏦 Банк: ${manualData[5].bankName || 'Не указано'}\n`
+    message += `💳 Счет: ${manualData[5].accountNumber || 'Не указано'}\n`
+    message += `🌐 SWIFT: ${manualData[5].swift || 'Не указано'}\n\n`
   }
 
   // Загруженные файлы
   const filesList = Object.entries(uploadedFiles)
     .filter(([_, url]) => url)
-    .map(([stepId, url]) => `Шаг ${stepId}: ${escapeMarkdown(url)}`)
+    .map(([stepId, url]) => `Шаг ${stepId}: ${url}`)
     .join('\n')
 
   if (filesList) {
-    message += `📎 **ЗАГРУЖЕННЫЕ ФАЙЛЫ:**\n${filesList}\n\n`
+    message += `📎 ЗАГРУЖЕННЫЕ ФАЙЛЫ:\n${filesList}\n\n`
   }
 
-  message += `⏰ **Время отправки:** ${new Date().toLocaleString('ru-RU')}\n`
-  message += `🔗 **Ссылка на проект:** https://get2b.ru/dashboard/project-constructor`
+  message += `⏰ Время отправки: ${new Date().toLocaleString('ru-RU')}\n`
+  message += `🔗 Ссылка на проект: https://get2b.ru/dashboard/project-constructor`
 
   return message
 }

@@ -501,8 +501,9 @@ ${description || 'Не указано'}
     return await this.telegramService.sendMessage({
       chat_id: this.chatId,
       text,
-      reply_markup: replyMarkup,
-      parse_mode: 'Markdown'
+      reply_markup: replyMarkup
+      // parse_mode удалён - используем plain text для избежания ошибок парсинга
+      // Эмодзи и структура сообщения сохраняются без Markdown-форматирования
     });
   }
 
