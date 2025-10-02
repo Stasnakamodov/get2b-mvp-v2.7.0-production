@@ -70,7 +70,7 @@ export default function SummaryModal({
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Юридическое название</Label>
                   <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                    {manualData[1].legal_name || 'Не указано'}
+                    {manualData[1].legalName || manualData[1].legal_name || 'Не указано'}
                   </div>
                 </div>
                 <div>
@@ -92,9 +92,9 @@ export default function SummaryModal({
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">Адрес</Label>
+                  <Label className="text-sm font-medium text-gray-600">Юридический адрес</Label>
                   <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                    {manualData[1].legal_address || 'Не указано'}
+                    {manualData[1].address || manualData[1].legal_address || 'Не указано'}
                   </div>
                 </div>
               </div>
