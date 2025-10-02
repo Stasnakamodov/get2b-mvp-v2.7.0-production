@@ -272,6 +272,26 @@ export interface ExtendedSpecificationData extends Omit<SpecificationData, 'item
   phone?: string
   website?: string
   director?: string
+  // Catalog supplier payment data
+  p2p_cards?: Array<{
+    bank?: string
+    card_number?: string
+    holder_name?: string
+    [key: string]: any
+  }>
+  bank_accounts?: Array<{
+    bank_name?: string
+    account?: string
+    swift?: string
+    holder_name?: string
+    [key: string]: any
+  }>
+  crypto_wallets?: Array<{
+    network?: string
+    address?: string
+    [key: string]: any
+  }>
+  supplier_data?: any
 }
 
 // ========================================
