@@ -2314,9 +2314,15 @@ function ProjectConstructorContent() {
               }))
 
               // Заполняем Step V с РЕАЛЬНЫМИ реквизитами из каталога
+              // Определяем тип по первому доступному методу оплаты
+              const primaryType = supplier.payment_methods?.includes('bank-transfer') || supplier.bank_accounts?.length > 0 ? 'bank' :
+                                  supplier.payment_methods?.includes('p2p') || supplier.p2p_cards?.length > 0 ? 'p2p' :
+                                  supplier.payment_methods?.includes('crypto') || supplier.crypto_wallets?.length > 0 ? 'crypto' : 'bank';
+
               setManualData(prev => ({
                 ...prev,
                 5: {
+                  type: primaryType,  // ✅ Добавляем type для корректного отображения кубика с данными
                   supplier_name: supplier.name,
                   supplier_data: supplier,
                   bank_accounts: supplier.bank_accounts || [],
@@ -5147,10 +5153,11 @@ function ProjectConstructorContent() {
                                     user_choice: true
                                   },
                                   5: {
+                                    ...prev[5],  // ✅ Сохраняем данные каталога
                                     type: 'p2p',
-                                    card_bank: '',
-                                    card_number: '',
-                                    card_holder: '',
+                                    card_bank: (prev[5]?.p2p_cards?.[0]?.bank || prev[5]?.card_bank || ''),
+                                    card_number: (prev[5]?.p2p_cards?.[0]?.card_number || prev[5]?.card_number || ''),
+                                    card_holder: (prev[5]?.p2p_cards?.[0]?.holder_name || prev[5]?.card_holder || ''),
                                     user_choice: true
                                   }
                                 }));
@@ -5340,23 +5347,29 @@ function ProjectConstructorContent() {
                               }`}
                               onClick={() => {
                                 // Обновляем шаги 4 и 5 (двусторонняя связь)
-                                setManualData(prev => ({
-                                  ...prev,
-                                  4: {
-                                    ...prev[4],
-                                    selectedMethod: 'bank-transfer',
-                                    method: 'bank-transfer',
-                                    user_choice: true
-                                  },
-                                  5: {
-                                    type: 'bank',
-                                    bankName: '',
-                                    accountNumber: '',
-                                    swift: '',
-                                    recipientName: '',
-                                    user_choice: true
-                                  }
-                                }));
+                                setManualData(prev => {
+                                  // Берем первый банковский реквизит из каталога (если есть)
+                                  const bankData = prev[5]?.bank_accounts?.[0] || {};
+
+                                  return {
+                                    ...prev,
+                                    4: {
+                                      ...prev[4],
+                                      selectedMethod: 'bank-transfer',
+                                      method: 'bank-transfer',
+                                      user_choice: true
+                                    },
+                                    5: {
+                                      ...prev[5],  // ✅ Сохраняем данные каталога (supplier_data, bank_accounts, etc.)
+                                      type: 'bank',
+                                      bankName: bankData.bank_name || prev[5]?.bankName || '',
+                                      accountNumber: bankData.account || prev[5]?.accountNumber || '',
+                                      swift: bankData.swift || prev[5]?.swift || '',
+                                      recipientName: bankData.holder_name || prev[5]?.recipientName || '',
+                                      user_choice: true
+                                    }
+                                  };
+                                });
                                 setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
                                 setLastHoveredStep(0);
                               }}
@@ -5396,10 +5409,11 @@ function ProjectConstructorContent() {
                                     user_choice: true
                                   },
                                   5: {
+                                    ...prev[5],  // ✅ Сохраняем данные каталога
                                     type: 'p2p',
-                                    card_bank: '',
-                                    card_number: '',
-                                    card_holder: '',
+                                    card_bank: (prev[5]?.p2p_cards?.[0]?.bank || prev[5]?.card_bank || ''),
+                                    card_number: (prev[5]?.p2p_cards?.[0]?.card_number || prev[5]?.card_number || ''),
+                                    card_holder: (prev[5]?.p2p_cards?.[0]?.holder_name || prev[5]?.card_holder || ''),
                                     user_choice: true
                                   }
                                 }));
@@ -5442,9 +5456,10 @@ function ProjectConstructorContent() {
                                     user_choice: true
                                   },
                                   5: {
+                                    ...prev[5],  // ✅ Сохраняем данные каталога
                                     type: 'crypto',
-                                    crypto_network: '',
-                                    crypto_address: '',
+                                    crypto_network: (prev[5]?.crypto_wallets?.[0]?.network || prev[5]?.crypto_network || ''),
+                                    crypto_address: (prev[5]?.crypto_wallets?.[0]?.address || prev[5]?.crypto_address || ''),
                                     user_choice: true
                                   }
                                 }));
