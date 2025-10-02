@@ -5062,6 +5062,11 @@ function ProjectConstructorContent() {
                             }
                           }
 
+                          // Приоритет 3: Проверяем OCR данные в manualData[4] (после автозаполнения из инвойса)
+                          if (manualData[4]?.method === method) {
+                            return true;
+                          }
+
                           return false;
                         };
 
@@ -5303,6 +5308,11 @@ function ProjectConstructorContent() {
                                 return true;
                               }
                             }
+                          }
+
+                          // Приоритет 3: Проверяем OCR данные в manualData[4] (после автозаполнения из инвойса)
+                          if (manualData[4]?.method === method) {
+                            return true;
                           }
 
                           return false;
