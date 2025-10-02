@@ -81,6 +81,7 @@ import { useCatalogHandlers } from "@/hooks/useCatalogHandlers"
 import { useTouchHandlers } from "@/hooks/useTouchHandlers"
 import { useManagerCommunication } from "@/hooks/useManagerCommunication"
 import { useFileUpload } from "@/hooks/useFileUpload"
+import { useProjectPolling } from "@/hooks/useProjectPolling"
 import { cleanProjectRequestId } from "@/utils/IdUtils"
 import { generateFileDate } from "@/utils/DateUtils"
 import { cleanFileName } from "@/utils/FileUtils"
@@ -220,12 +221,10 @@ function ProjectConstructorContent() {
 
   // Состояния для модальных окон после одобрения чека
   const [receiptApprovalStatus, setReceiptApprovalStatus] = useState<'pending' | 'approved' | 'rejected' | 'waiting' | null>(null)
-  const [managerReceiptUrl, setManagerReceiptUrl] = useState<string | null>(null)
-  
+
   // Состояние для модального окна каталога товаров
   const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false)
   // Состояния каталога удалены - теперь управляются внутри CatalogModal
-  const [hasManagerReceipt, setHasManagerReceipt] = useState(false)
   const [isRequestSent, setIsRequestSent] = useState(false)
   const [showFullLoader, setShowFullLoader] = useState(false)
   const [clientReceiptFile, setClientReceiptFile] = useState<File | null>(null)
@@ -266,6 +265,99 @@ function ProjectConstructorContent() {
     uploadSupplierReceipt
   } = useFileUpload({
     projectRequestId
+  })
+
+  // Объявление sendManagerReceiptRequest для useProjectPolling
+  const sendManagerReceiptRequest = async () => {
+    if (!projectRequestId || isRequestSent) {
+      console.log('🔄 Запрос уже отправлен или нет projectRequestId')
+      return
+    }
+
+    try {
+      setIsRequestSent(true)
+      console.log('📤 Отправляем запрос менеджеру на загрузку чека')
+
+      // Получаем данные проекта
+      const { data: project, error } = await supabase
+        .from('projects')
+        .select('*')
+        .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
+        .single()
+
+      if (error || !project) {
+        throw new Error('Проект не найден')
+      }
+
+      // Получаем реквизиты
+      let requisiteText = ''
+      try {
+        const { data: requisiteData } = await supabase
+          .from('project_requisites')
+          .select('data')
+          .eq('project_id', project.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (requisiteData?.data) {
+          const req = requisiteData.data
+          const details = req.details || req
+
+          if (project.payment_method === 'bank-transfer') {
+            requisiteText = `\n\n📋 Реквизиты для оплаты:\n• Получатель: ${details.recipientName || '-'}\n• Банк: ${details.bankName || '-'}\n• Счет: ${details.accountNumber || '-'}\n• SWIFT/BIC: ${details.swift || details.cnapsCode || details.iban || '-'}\n• Валюта: ${details.transferCurrency || 'USD'}`
+          } else if (project.payment_method === 'p2p') {
+            requisiteText = `\n\n💳 Карта для P2P:\n• Банк: ${req.bank || '-'}\n• Номер карты: ${req.card_number || '-'}\n• Держатель: ${req.holder_name || '-'}`
+          } else if (project.payment_method === 'crypto') {
+            requisiteText = `\n\n🪙 Криптокошелек:\n• Адрес: ${req.address || '-'}\n• Сеть: ${req.network || '-'}`
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Не удалось получить реквизиты:', error)
+      }
+
+      // Отправляем запрос в Telegram
+      const response = await sendTelegramMessage({
+        endpoint: 'telegram/send-supplier-receipt-request',
+        payload: {
+          projectId: project.id,
+          email: project.email || 'email@example.com',
+          companyName: project.company_data?.name || 'Проект',
+          amount: project.amount || 0,
+          currency: project.currency || 'USD',
+          paymentMethod: project.payment_method || 'bank-transfer',
+          requisites: requisiteText
+        }
+      })
+
+      console.log('✅ Запрос менеджеру отправлен успешно')
+
+      // Обновляем статус проекта на waiting_manager_receipt
+      await supabase
+        .from('projects')
+        .update({
+          status: 'waiting_manager_receipt',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', project.id)
+
+    } catch (error) {
+      console.error('❌ Ошибка отправки запроса менеджеру:', error)
+      setIsRequestSent(false)
+    }
+  }
+
+  // Project Polling хук
+  const {
+    managerReceiptUrl,
+    hasManagerReceipt,
+    setManagerReceiptUrl,
+    setHasManagerReceipt
+  } = useProjectPolling({
+    projectRequestId,
+    currentStage,
+    isRequestSent,
+    sendManagerReceiptRequest
   })
 
   // Обработчики этапов реквизитов
@@ -597,94 +689,7 @@ function ProjectConstructorContent() {
     return () => clearInterval(interval)
   }, [projectRequestId, currentStage, managerApprovalStatus, receiptApprovalStatus])
 
-  // Polling чека от менеджера (шаг 6)
-  useEffect(() => {
-    if (!projectRequestId || currentStage !== 3) return
-    
-    // Автоматически отправляем запрос менеджеру при переходе на этап 3
-    if (!isRequestSent) {
-      console.log('🚀 Автоматически отправляем запрос менеджеру при переходе на этап 3')
-      sendManagerReceiptRequest()
-    }
-    
-    const checkManagerReceipt = async () => {
-      try {
-        console.log('🔍 Проверяем чек от менеджера для projectRequestId:', projectRequestId)
-        
-        const { data: project, error } = await supabase
-          .from('projects')
-          .select('status, receipts')
-          .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
-          .single()
-        
-        if (error || !project) {
-          console.log('📊 Проект не найден для проверки чека менеджера')
-          return
-        }
-        
-        console.log('📊 Статус проекта для чека менеджера:', project.status)
-        
-        // Проверяем наличие чека от менеджера
-        let managerReceiptUrl = null
-        
-        if (project.receipts) {
-          try {
-            // Пробуем парсить как JSON (новый формат)
-            const receiptsData = JSON.parse(project.receipts)
-            if (receiptsData.manager_receipt) {
-              managerReceiptUrl = receiptsData.manager_receipt
-            }
-          } catch {
-            // Если не JSON, проверяем статус (старый формат)
-            if (project.status === 'in_work') {
-              managerReceiptUrl = project.receipts
-            }
-          }
-        }
-        
-        if (managerReceiptUrl && !hasManagerReceipt) {
-          console.log('✅ Чек от менеджера найден:', managerReceiptUrl)
-          console.log('🔄 Устанавливаем hasManagerReceipt=true')
-          setManagerReceiptUrl(managerReceiptUrl)
-          setHasManagerReceipt(true)
-          
-          // Автоматически меняем статус если нужно
-          if (project.status === 'waiting_manager_receipt') {
-            await supabase
-              .from('projects')
-              .update({ 
-                status: 'in_work',
-                updated_at: new Date().toISOString()
-              })
-              .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
-            console.log('✅ Статус изменен на in_work')
-          }
-        } else if (!managerReceiptUrl && hasManagerReceipt) {
-          console.log('❌ Чек от менеджера удален')
-          console.log('🔄 Устанавливаем hasManagerReceipt=false')
-          setManagerReceiptUrl(null)
-          setHasManagerReceipt(false)
-        } else {
-          console.log('📊 Статус чека менеджера не изменился:', { 
-            hasManagerReceipt, 
-            managerReceiptUrl: !!managerReceiptUrl,
-            projectStatus: project.status 
-          })
-        }
-        
-      } catch (error) {
-        console.error('❌ Ошибка проверки чека от менеджера:', error)
-      }
-    }
-    
-    // Проверяем каждые 5 секунд
-    const interval = setInterval(checkManagerReceipt, POLLING_INTERVALS.MANAGER_RECEIPT_CHECK)
-    
-    // Первая проверка сразу
-    checkManagerReceipt()
-    
-    return () => clearInterval(interval)
-  }, [projectRequestId, currentStage, hasManagerReceipt, isRequestSent])
+  // Polling чека от менеджера - теперь обрабатывается хуком useProjectPolling
 
   // Функция для загрузки чека клиента о получении средств
   const handleClientReceiptUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -836,84 +841,7 @@ function ProjectConstructorContent() {
   }
 
   // Функция для отправки запроса менеджеру на загрузку чека (шаг 6)
-  const sendManagerReceiptRequest = async () => {
-    if (!projectRequestId || isRequestSent) {
-      console.log('🔄 Запрос уже отправлен или нет projectRequestId')
-      return
-    }
-    
-    try {
-      setIsRequestSent(true)
-      console.log('📤 Отправляем запрос менеджеру на загрузку чека')
-      
-      // Получаем данные проекта
-      const { data: project, error } = await supabase
-        .from('projects')
-        .select('*')
-        .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
-        .single()
-      
-      if (error || !project) {
-        throw new Error('Проект не найден')
-      }
-      
-      // Получаем реквизиты
-      let requisiteText = ''
-      try {
-        const { data: requisiteData } = await supabase
-          .from('project_requisites')
-          .select('data')
-          .eq('project_id', project.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-        
-        if (requisiteData?.data) {
-          const req = requisiteData.data
-          const details = req.details || req
-          
-          if (project.payment_method === 'bank-transfer') {
-            requisiteText = `\n\n📋 Реквизиты для оплаты:\n• Получатель: ${details.recipientName || '-'}\n• Банк: ${details.bankName || '-'}\n• Счет: ${details.accountNumber || '-'}\n• SWIFT/BIC: ${details.swift || details.cnapsCode || details.iban || '-'}\n• Валюта: ${details.transferCurrency || 'USD'}`
-          } else if (project.payment_method === 'p2p') {
-            requisiteText = `\n\n💳 Карта для P2P:\n• Банк: ${req.bank || '-'}\n• Номер карты: ${req.card_number || '-'}\n• Держатель: ${req.holder_name || '-'}`
-          } else if (project.payment_method === 'crypto') {
-            requisiteText = `\n\n🪙 Криптокошелек:\n• Адрес: ${req.address || '-'}\n• Сеть: ${req.network || '-'}`
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️ Не удалось получить реквизиты:', error)
-      }
-      
-      // Отправляем запрос в Telegram
-      const response = await sendTelegramMessage({
-        endpoint: 'telegram/send-supplier-receipt-request',
-        payload: {
-          projectId: project.id,
-          email: project.email || 'email@example.com',
-          companyName: project.company_data?.name || 'Проект',
-          amount: project.amount || 0,
-          currency: project.currency || 'USD',
-          paymentMethod: project.payment_method || 'bank-transfer',
-          requisites: requisiteText
-        }
-      })
-      
-      console.log('✅ Запрос менеджеру отправлен успешно')
-      
-      // Обновляем статус проекта на waiting_manager_receipt
-      await supabase
-        .from('projects')
-        .update({ 
-          status: 'waiting_manager_receipt',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', project.id)
-      
-    } catch (error) {
-      console.error('❌ Ошибка отправки запроса менеджеру:', error)
-      setIsRequestSent(false)
-    }
-  }
+  // sendManagerReceiptRequest перенесена выше для useProjectPolling хука
 
   // Функция для получения списка шаблонов пользователя из реальной базы данных
   const getUserTemplates = () => {
