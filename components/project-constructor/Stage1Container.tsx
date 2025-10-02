@@ -3,7 +3,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { X, FileText, Plus, Blocks } from 'lucide-react'
+import { X, FileText, Plus, Blocks, ArrowRight } from 'lucide-react'
 import { StepConfig, ManualData, SupplierData, ProjectDetails } from '@/types/project-constructor.types'
 
 // ========================================
@@ -197,16 +197,27 @@ export const Stage1Container: React.FC<Stage1ContainerProps> = ({
                       <p className="text-gray-600">Загрузка шаблонов...</p>
                     </div>
                   ) : templates.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+                    <div className="grid gap-4">
                       {templates.map((template) => (
                         <div
                           key={template.id}
                           onClick={() => handleTemplateSelect(template.id)}
-                          className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
+                          className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
                         >
-                          <div className="font-medium text-gray-800 mb-1">{template.name}</div>
-                          <div className="text-sm text-gray-600">
-                            Создан: {new Date(template.created_at).toLocaleDateString('ru-RU')}
+                          <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+                            <FileText className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-lg font-semibold text-gray-800 mb-1">{template.name}</div>
+                            <div className="text-sm text-gray-600 leading-relaxed">
+                              {(template as any).description || 'Шаблон проекта'}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Создан: {new Date(template.created_at).toLocaleDateString('ru-RU')}
+                            </div>
+                          </div>
+                          <div className="text-blue-500">
+                            <ArrowRight className="h-5 w-5" />
                           </div>
                         </div>
                       ))}
