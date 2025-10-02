@@ -79,6 +79,7 @@ import { useModalHandlers } from "@/hooks/useModalHandlers"
 import { useStageHandlers } from "@/hooks/useStageHandlers"
 import { useCatalogHandlers } from "@/hooks/useCatalogHandlers"
 import { useTouchHandlers } from "@/hooks/useTouchHandlers"
+import { useManagerCommunication } from "@/hooks/useManagerCommunication"
 import { cleanProjectRequestId } from "@/utils/IdUtils"
 import { generateFileDate } from "@/utils/DateUtils"
 import { cleanFileName } from "@/utils/FileUtils"
@@ -240,6 +241,20 @@ function ProjectConstructorContent() {
     setSelectedSource,
     setEditingType
   )
+
+  // Manager Communication хук
+  const {
+    error: managerCommError,
+    setError: setManagerCommError,
+    sendClientReceipt,
+    sendSupplierReceiptRequest,
+    sendSupplierReceipt
+  } = useManagerCommunication({
+    projectRequestId,
+    receiptApprovalStatus,
+    setReceiptApprovalStatus,
+    setCurrentStage
+  })
 
   // Обработчики этапов реквизитов
   const { confirmRequisites, editRequisites } = useStageHandlers(
