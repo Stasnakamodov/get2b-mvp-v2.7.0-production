@@ -83,6 +83,7 @@ import { useManagerCommunication } from "@/hooks/useManagerCommunication"
 import { useFileUpload } from "@/hooks/useFileUpload"
 import { useProjectPolling } from "@/hooks/useProjectPolling"
 import { useCatalogData } from "@/hooks/useCatalogData"
+import { useReceiptRemoval } from "@/hooks/useReceiptRemoval"
 import { cleanProjectRequestId } from "@/utils/IdUtils"
 import { generateFileDate } from "@/utils/DateUtils"
 import { cleanFileName } from "@/utils/FileUtils"
@@ -379,6 +380,15 @@ function ProjectConstructorContent() {
     selectedSupplierProfileId,
     openModal,
     setShowSupplierProfileSelector
+  })
+
+  // Receipt Removal хук
+  const { handleRemoveClientReceipt } = useReceiptRemoval({
+    projectRequestId,
+    clientReceiptUrl,
+    setClientReceiptFile,
+    setClientReceiptUrl,
+    toast
   })
 
   // Обработчики этапов реквизитов
@@ -779,43 +789,7 @@ function ProjectConstructorContent() {
     }
   }
 
-  // Функция для удаления загруженного чека клиента
-  const handleRemoveClientReceipt = async () => {
-    if (!projectRequestId || !clientReceiptUrl) return
-
-    try {
-      // Удаляем URL из базы данных
-      const { error: updateError } = await supabase
-        .from("projects")
-        .update({ 
-          client_confirmation_url: null,
-          updated_at: new Date().toISOString()
-        })
-        .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
-
-      if (updateError) {
-        console.error("❌ Ошибка обновления проекта:", updateError)
-        throw new Error("Не удалось удалить ссылку на файл")
-      }
-
-      setClientReceiptFile(null)
-      setClientReceiptUrl(null)
-
-      toast({
-        title: "Чек удален",
-        description: "Вы можете загрузить новый чек.",
-        variant: "default"
-      })
-
-    } catch (error) {
-      console.error("❌ Ошибка удаления чека:", error)
-      toast({
-        title: "Ошибка",
-        description: "Не удалось удалить чек.",
-        variant: "destructive"
-      })
-    }
-  }
+  // handleRemoveClientReceipt теперь в useReceiptRemoval хуке
 
   // Функция для показа деталей проекта
   const handleShowProjectDetails = async () => {
