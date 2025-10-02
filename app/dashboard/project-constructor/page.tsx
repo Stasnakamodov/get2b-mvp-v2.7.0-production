@@ -2091,6 +2091,7 @@ function ProjectConstructorContent() {
     
     // Подготавливаем реквизиты как предложения
     const requisitesData = {
+      type: 'bank',  // Устанавливаем тип для корректного отображения
       bankName: bankRequisites.bankName || '',
       accountNumber: bankRequisites.accountNumber || '',
       swift: bankRequisites.swift || '',
@@ -4891,7 +4892,8 @@ function ProjectConstructorContent() {
                         const step5HasData = !!manualData[5];
                         const step5HasUserChoice = manualData[5]?.user_choice;
                         const step5HasType = manualData[5]?.type;
-                        const shouldShowStep5Form = lastHoveredStep === 5 && step5HasData && step5HasUserChoice && step5HasType;
+                        // Показываем кубик если есть тип (либо от user_choice, либо от OCR/catalog)
+                        const shouldShowStep5Form = lastHoveredStep === 5 && step5HasData && step5HasType;
 
                         console.log('🔍 [Step 5 Debug]:', {
                           lastHoveredStep,
@@ -5023,8 +5025,10 @@ function ProjectConstructorContent() {
                         console.log('  - manualData[5]:', manualData[5]);
                         console.log('  - selectedSupplierData:', selectedSupplierData);
 
-                        const shouldShowCubes = (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) || (manualData[5] && Object.keys(manualData[5]).length > 0);
-                        console.log('  - shouldShowCubes (stepConfigs[5] in ["catalog", "blue_room", "orange_room"] OR has manualData[5]):', shouldShowCubes);
+                        // Показываем кубики выбора только если НЕТ type в manualData[5] (т.е. данные еще не заполнены)
+                        const shouldShowCubes = (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
+                                                (manualData[5] && Object.keys(manualData[5]).length > 0 && !manualData[5].type);
+                        console.log('  - shouldShowCubes (stepConfigs[5] in ["catalog", "blue_room", "orange_room"] OR has manualData[5] WITHOUT type):', shouldShowCubes);
 
                         return shouldShowCubes;
                       })() && (() => {
