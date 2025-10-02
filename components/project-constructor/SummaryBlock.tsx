@@ -20,7 +20,7 @@ interface ConstructorStep {
 
 interface SummaryBlockProps {
   constructorSteps: ConstructorStep[]
-  stepConfigs: Record<number, string>
+  stepConfigs: Record<number, string> | { [index: number]: string | undefined }
   configuredStepsSummary: ConfiguredStepSummary[]
   progress: number
   onStepCardClick: (item: ConfiguredStepSummary) => void

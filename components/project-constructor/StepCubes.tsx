@@ -15,7 +15,7 @@ interface ConstructorStep {
 interface StepCubesProps {
   constructorSteps: ConstructorStep[]
   currentStage: number
-  stepConfigs: Record<number, string>
+  stepConfigs: Record<number, string> | { [index: number]: string | undefined }
   manualData: any
   receiptApprovalStatus: string | null
   hasManagerReceipt: boolean
