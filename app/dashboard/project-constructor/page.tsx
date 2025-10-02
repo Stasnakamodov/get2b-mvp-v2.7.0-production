@@ -80,6 +80,7 @@ import { useStageHandlers } from "@/hooks/useStageHandlers"
 import { useCatalogHandlers } from "@/hooks/useCatalogHandlers"
 import { useTouchHandlers } from "@/hooks/useTouchHandlers"
 import { useManagerCommunication } from "@/hooks/useManagerCommunication"
+import { useFileUpload } from "@/hooks/useFileUpload"
 import { cleanProjectRequestId } from "@/utils/IdUtils"
 import { generateFileDate } from "@/utils/DateUtils"
 import { cleanFileName } from "@/utils/FileUtils"
@@ -254,6 +255,17 @@ function ProjectConstructorContent() {
     receiptApprovalStatus,
     setReceiptApprovalStatus,
     setCurrentStage
+  })
+
+  // File Upload хук
+  const {
+    isUploading,
+    uploadError,
+    setUploadError,
+    uploadClientReceipt,
+    uploadSupplierReceipt
+  } = useFileUpload({
+    projectRequestId
   })
 
   // Обработчики этапов реквизитов
@@ -679,67 +691,13 @@ function ProjectConstructorContent() {
     const file = event.target.files?.[0]
     if (!file || !projectRequestId) return
 
-    console.log("🚀 Начинаем загрузку чека клиента:", {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      projectRequestId
-    })
-
     setIsUploadingClientReceipt(true)
     setClientReceiptUploadError(null)
 
     try {
-      // Получаем ID пользователя для организации файлов
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData?.user?.id || 'unknown'
-
-      // Генерируем уникальное имя файла
-      const fileExtension = file.name.split('.').pop() || 'jpg'
-      const fileName = `client-receipt-${cleanProjectRequestId(projectRequestId)}-${Date.now()}.${fileExtension}`
-      const filePath = `${userId}/${fileName}`
-
-      console.log("📤 Загружаем чек клиента:", {
-        fileName,
-        size: file.size,
-        type: file.type,
-        projectRequestId
-      })
-
-      // Загружаем файл в Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("step7-client-confirmations")
-        .upload(filePath, file, {
-          contentType: file.type,
-          upsert: false
-        })
-
-      if (uploadError) {
-        console.error("❌ Ошибка загрузки в Storage:", uploadError)
-        throw new Error("Не удалось загрузить файл: " + uploadError.message)
-      }
-
-      // Получаем публичный URL файла
-      const { data: urlData } = supabase.storage
-        .from("step7-client-confirmations")
-        .getPublicUrl(filePath)
-
-      const fileUrl = urlData.publicUrl
-      console.log("✅ Файл загружен:", fileUrl)
-
-      // Сохраняем URL в проект
-      const { error: updateError } = await supabase
-        .from("projects")
-        .update({ 
-          client_confirmation_url: fileUrl,
-          updated_at: new Date().toISOString()
-        })
-        .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
-
-      if (updateError) {
-        console.error("❌ Ошибка обновления проекта:", updateError)
-        throw new Error("Не удалось сохранить ссылку на файл")
-      }
+      // Загружаем файл через хук
+      const fileUrl = await uploadClientReceipt(file)
+      if (!fileUrl) throw new Error("Не удалось получить URL файла")
 
       // Отправляем файл менеджеру в Telegram
       const telegramCaption = `📋 КЛИЕНТ ЗАГРУЗИЛ ЧЕК О ПОЛУЧЕНИИ СРЕДСТВ!\n\n` +
@@ -751,19 +709,7 @@ function ProjectConstructorContent() {
         `📄 Клиент подтвердил получение средств от поставщика чеком.\n` +
         `⚠️ Проверьте документ и завершите проект если все корректно.`
 
-      console.log("📤 Отправляем в Telegram:", {
-        fileUrl,
-        telegramCaption,
-        projectRequestId
-      })
-
       try {
-        console.log("🔧 Отправляем чек клиента через API с параметрами:", {
-          fileUrl: fileUrl?.substring(0, 100) + "...",
-          captionLength: telegramCaption?.length,
-          projectRequestId
-        })
-        
         // Отправляем файл менеджеру в Telegram через API endpoint
         const telegramResult = await sendTelegramMessage({
           endpoint: 'telegram/send-client-receipt',
@@ -773,19 +719,14 @@ function ProjectConstructorContent() {
             projectRequestId
           }
         })
-        
+
         if (telegramResult.success) {
           console.log("✅ Чек с кнопками одобрения отправлен менеджеру в Telegram:", telegramResult)
         } else {
           console.error("❌ Ошибка API при отправке чека:", telegramResult.error)
-          throw new Error(telegramResult.error || 'Неизвестная ошибка API')
         }
       } catch (telegramError) {
         console.error("⚠️ Ошибка отправки в Telegram:", telegramError)
-        console.error("⚠️ Детали ошибки:", {
-          message: telegramError instanceof Error ? telegramError.message : 'Неизвестная ошибка',
-          stack: telegramError instanceof Error ? telegramError.stack : undefined
-        })
         // Продолжаем выполнение даже если Telegram недоступен
       }
 
@@ -801,7 +742,7 @@ function ProjectConstructorContent() {
     } catch (error) {
       console.error("❌ Ошибка загрузки чека:", error)
       setClientReceiptUploadError(error instanceof Error ? error.message : "Неизвестная ошибка")
-      
+
       toast({
         title: "Ошибка загрузки",
         description: "Не удалось загрузить чек. Попробуйте еще раз.",
@@ -3457,61 +3398,29 @@ function ProjectConstructorContent() {
     const handleReceiptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
-      
+
       setIsUploading(true)
       setError(null)
       setReceiptFile(file)
-      
+
       try {
-        // Используем тот же bucket, что и в обычном стартапе проектов
-        const date = generateFileDate()
-        const cleanName = cleanFileName(file.name)
-        const filePath = `step3-supplier-receipts/${projectRequestId}/${date}_${cleanName}`
-        
-        const { data, error } = await supabase.storage
-          .from("step3-supplier-receipts")
-          .upload(filePath, file)
-        
-        if (error) {
-          throw new Error(error.message)
-        }
-        
-        const { data: urlData } = supabase.storage
-          .from("step3-supplier-receipts")
-          .getPublicUrl(filePath)
-        
-        setReceiptUrl(urlData?.publicUrl || "")
+        // Загружаем файл через хук
+        const fileUrl = await uploadSupplierReceipt(file)
+        if (!fileUrl) throw new Error("Не удалось получить URL файла")
+
+        setReceiptUrl(fileUrl)
         setReceiptApprovalStatus('waiting')
-        
-        // Обновляем статус проекта на waiting_receipt (как в обычном стартапе)
-        if (projectRequestId) {
-          try {
-            const { error: updateError } = await supabase
-              .from('projects')
-              .update({ 
-                status: 'waiting_receipt',
-                updated_at: new Date().toISOString()
-              })
-              .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
-            
-            if (updateError) {
-              console.warn('⚠️ Не удалось обновить статус проекта:', updateError)
-            }
-            
-            // Отправляем чек менеджеру через Telegram
-            await sendTelegramMessage({
-              endpoint: 'telegram/send-receipt',
-              payload: {
-                projectRequestId,
-                receiptUrl: urlData?.publicUrl,
-                fileName: file.name
-              }
-            })
-          } catch (error) {
-            console.warn('⚠️ Ошибка обработки чека:', error)
+
+        // Отправляем чек менеджеру через Telegram
+        await sendTelegramMessage({
+          endpoint: 'telegram/send-receipt',
+          payload: {
+            projectRequestId,
+            receiptUrl: fileUrl,
+            fileName: file.name
           }
-        }
-        
+        })
+
       } catch (error: any) {
         console.error('❌ Ошибка загрузки чека:', error)
         setError("Ошибка загрузки чека: " + error.message)
