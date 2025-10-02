@@ -65,11 +65,8 @@ import CompanyForm from '@/components/project-constructor/forms/CompanyForm'
 import ContactsForm from '@/components/project-constructor/forms/ContactsForm'
 import BankForm from '@/components/project-constructor/forms/BankForm'
 import { WaitingApprovalLoader, WaitingManagerReceiptLoader, RejectionMessage } from '@/components/project-constructor/status/StatusLoaders'
-import { DealAnimation } from '@/components/project-constructor/DealAnimation'
-import { ManagerReceiptSection } from '@/components/project-constructor/ManagerReceiptSection'
-import { ClientReceiptUploadSection } from '@/components/project-constructor/ClientReceiptUploadSection'
+import { StageRouter } from '@/components/project-constructor/StageRouter'
 import { PaymentDetailsCard } from '@/components/project-constructor/PaymentDetailsCard'
-import { PaymentForm } from '@/components/project-constructor/PaymentForm'
 import FileUploadForm from '@/components/project-constructor/forms/FileUploadForm'
 import PaymentMethodForm from '@/components/project-constructor/forms/PaymentMethodForm'
 import RequisitesForm from '@/components/project-constructor/forms/RequisitesForm'
@@ -3125,67 +3122,36 @@ function ProjectConstructorContent() {
             onDismiss={() => setAutoFillNotification(null)}
           />
 
-          {/* Этап 2: Ожидание апрува менеджера или платежка */}
-          {currentStage === 2 ? (
-            <div className="min-h-[400px] flex items-center justify-center">
-                          <div className="text-center">
-              <div className="text-lg font-semibold mb-4">Этап 2: Подготовка инфраструктуры</div>
-              <div className="text-sm text-gray-600 mb-4">
-                Статус менеджера: {managerApprovalStatus || 'null'}
-              </div>
-              {managerApprovalStatus === 'pending' && <WaitingApprovalLoader projectRequestId={projectRequestId} />}
-              {managerApprovalStatus === 'approved' && (
-                <PaymentForm
-                  receiptApprovalStatus={receiptApprovalStatus}
-                  setReceiptApprovalStatus={setReceiptApprovalStatus}
-                  projectRequestId={projectRequestId}
-                  manualData={manualData}
-                  setCurrentStage={setCurrentStage}
-                  uploadSupplierReceipt={uploadSupplierReceipt}
-                  supabase={supabase}
-                  POLLING_INTERVALS={POLLING_INTERVALS}
-                />
-              )}
-              {managerApprovalStatus === 'rejected' && <RejectionMessage managerApprovalMessage={managerApprovalMessage} onRejectionReset={() => { setManagerApprovalStatus(null); setCurrentStage(1); }} />}
-              {!managerApprovalStatus && (
-                <div className="text-red-500">
-                  Ошибка: статус менеджера не установлен
-                </div>
-              )}
-            </div>
-            </div>
-          ) : currentStage === 3 && receiptApprovalStatus !== 'approved' ? (
-            <DealAnimation
-              dealAnimationStep={dealAnimationStep}
-              dealAnimationStatus={dealAnimationStatus}
-              dealAnimationComplete={dealAnimationComplete}
-            />
-          ) : currentStage === 3 && receiptApprovalStatus === 'approved' ? (
-            <ManagerReceiptSection
-              hasManagerReceipt={hasManagerReceipt}
-              managerReceiptUrl={managerReceiptUrl}
-              isRequestSent={isRequestSent}
-              showFullLoader={showFullLoader}
-              setShowFullLoader={setShowFullLoader}
-              projectRequestId={projectRequestId}
-              sendManagerReceiptRequest={sendManagerReceiptRequest}
-              setCurrentStage={setCurrentStage}
-            />
-
-
-
-          ) : currentStage === 4 ? (
-            <ClientReceiptUploadSection
-              clientReceiptUrl={clientReceiptUrl}
-              clientReceiptUploadError={clientReceiptUploadError}
-              isUploadingClientReceipt={isUploadingClientReceipt}
-              handleClientReceiptUpload={handleClientReceiptUpload}
-              handleRemoveClientReceipt={handleRemoveClientReceipt}
-              handleShowProjectDetails={handleShowProjectDetails}
-              setCurrentStage={setCurrentStage}
-            />
-
-          ) : (
+          <StageRouter
+            currentStage={currentStage}
+            setCurrentStage={setCurrentStage}
+            managerApprovalStatus={managerApprovalStatus}
+            setManagerApprovalStatus={setManagerApprovalStatus}
+            managerApprovalMessage={managerApprovalMessage}
+            receiptApprovalStatus={receiptApprovalStatus}
+            setReceiptApprovalStatus={setReceiptApprovalStatus}
+            projectRequestId={projectRequestId}
+            manualData={manualData}
+            uploadSupplierReceipt={uploadSupplierReceipt}
+            supabase={supabase}
+            POLLING_INTERVALS={POLLING_INTERVALS}
+            dealAnimationStep={dealAnimationStep}
+            dealAnimationStatus={dealAnimationStatus}
+            dealAnimationComplete={dealAnimationComplete}
+            hasManagerReceipt={hasManagerReceipt}
+            managerReceiptUrl={managerReceiptUrl}
+            isRequestSent={isRequestSent}
+            showFullLoader={showFullLoader}
+            setShowFullLoader={setShowFullLoader}
+            sendManagerReceiptRequest={sendManagerReceiptRequest}
+            clientReceiptUrl={clientReceiptUrl}
+            clientReceiptUploadError={clientReceiptUploadError}
+            isUploadingClientReceipt={isUploadingClientReceipt}
+            handleClientReceiptUpload={handleClientReceiptUpload}
+            handleRemoveClientReceipt={handleRemoveClientReceipt}
+            handleShowProjectDetails={handleShowProjectDetails}
+          >
+            {/* Stage 1: Step configuration area */}
             <div className="min-h-[200px] border-2 border-dashed border-gray-300 rounded-lg p-6 relative">
             {/* Кнопки действий в правом верхнем углу внутри контейнера */}
             {lastHoveredStep && stepConfigs[lastHoveredStep] && (
@@ -4859,7 +4825,7 @@ function ProjectConstructorContent() {
               )}
             </AnimatePresence>
           </div>
-          )}
+          </StageRouter>
         </CardContent>
       </Card>
 
