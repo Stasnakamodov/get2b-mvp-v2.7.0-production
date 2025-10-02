@@ -4,7 +4,6 @@ import * as React from "react"
 import type {
   ManualData,
   PartialStepConfigs,
-  StepConfig,
   User as UserType,
   ProjectDetails,
   SupplierData,
@@ -67,7 +66,6 @@ import ContactsForm from '@/components/project-constructor/forms/ContactsForm'
 import BankForm from '@/components/project-constructor/forms/BankForm'
 import { WaitingApprovalLoader, WaitingManagerReceiptLoader, RejectionMessage } from '@/components/project-constructor/status/StatusLoaders'
 import { StageRouter } from '@/components/project-constructor/StageRouter'
-import { Stage1Container } from '@/components/project-constructor/Stage1Container'
 import { PaymentDetailsCard } from '@/components/project-constructor/PaymentDetailsCard'
 import FileUploadForm from '@/components/project-constructor/forms/FileUploadForm'
 import PaymentMethodForm from '@/components/project-constructor/forms/PaymentMethodForm'
@@ -3049,28 +3047,6 @@ function ProjectConstructorContent() {
     }
   }
 
-  // ========================================
-  // HELPER FUNCTIONS ДЛЯ STAGE1CONTAINER
-  // ========================================
-
-  // Получить доступные источники данных для текущего шага
-  const availableSources: StepConfig[] = lastHoveredStep
-    ? (lastHoveredStep === 1 || lastHoveredStep === 2
-        ? (['profile', 'template', 'catalog', 'manual', 'upload'] as StepConfig[])
-        : (['profile', 'template', 'catalog', 'manual'] as StepConfig[]))
-    : []
-
-  // Получить информацию об источнике
-  const getSourceInfo = (source: StepConfig) => {
-    return dataSources[source as keyof typeof dataSources] || { name: source, color: 'bg-gray-500' }
-  }
-
-  // Получить иконку источника
-  const getSourceIcon = (source: StepConfig) => {
-    const sourceData = dataSources[source as keyof typeof dataSources]
-    return sourceData?.icon || Plus
-  }
-
   return (
     <div className="container mx-auto py-8 pb-24">
       {/* Заголовок */}
@@ -3175,29 +3151,1680 @@ function ProjectConstructorContent() {
             handleRemoveClientReceipt={handleRemoveClientReceipt}
             handleShowProjectDetails={handleShowProjectDetails}
           >
-            <Stage1Container
-              stepConfigs={stepConfigs as Record<number, StepConfig>}
-              manualData={manualData}
-              lastHoveredStep={lastHoveredStep}
-              constructorSteps={constructorSteps}
-              templateSelection={templateSelection}
-              setTemplateSelection={setTemplateSelection}
-              templates={templates}
-              templatesLoading={templatesLoading}
-              fetchTemplates={fetchTemplates}
-              projectDetailsDialogOpen={projectDetailsDialogOpen}
-              setProjectDetailsDialogOpen={setProjectDetailsDialogOpen}
-              projectDetails={projectDetails}
-              handleRemoveSource={handleRemoveSource}
-              handleEditData={handleEditData}
-              handleAddProductsFromCatalog={handleAddProductsFromCatalog}
-              handleSourceSelect={handleSourceSelect}
-              handleTemplateSelect={handleTemplateSelect}
-              isStepEnabled={isStepEnabled}
-              availableSources={availableSources}
-              getSourceInfo={getSourceInfo}
-              getSourceIcon={getSourceIcon}
-            />
+            {/* Stage 1: Step configuration area */}
+            <div className="min-h-[200px] border-2 border-dashed border-gray-300 rounded-lg p-6 relative">
+            {/* Кнопки действий в правом верхнем углу внутри контейнера */}
+            {lastHoveredStep && stepConfigs[lastHoveredStep] && (
+              <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+                {/* Кнопка удаления */}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleRemoveSource(lastHoveredStep)}
+                  className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                      <X className="h-3 w-3 text-red-500" />
+                    </div>
+                    <span className="font-medium">Удалить данные</span>
+                  </div>
+                </Button>
+
+                {/* Кнопка просмотра всех данных */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditData('company')}
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                      <FileText className="h-3 w-3 text-blue-600" />
+                    </div>
+                    <span className="font-medium">Посмотреть все данные</span>
+                  </div>
+                </Button>
+
+                {/* Кнопка добавления товаров из каталога (только для шага 2) */}
+                {lastHoveredStep === 2 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleAddProductsFromCatalog()}
+                    className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center">
+                        <Plus className="h-3 w-3 text-orange-600" />
+                      </div>
+                      <span className="font-medium">Добавить товары</span>
+                    </div>
+                  </Button>
+                )}
+              </div>
+            )}
+            
+
+            <AnimatePresence>
+              {lastHoveredStep && isStepEnabled(lastHoveredStep) ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  style={{ height: '100%' }}
+                >
+                  {/* Заголовок выбранного шага */}
+                  <div className="text-center mb-6">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
+                        {lastHoveredStep === 1 ? 'I' : lastHoveredStep === 2 ? 'II' : lastHoveredStep === 3 ? 'III' : 
+                         lastHoveredStep === 4 ? 'IV' : lastHoveredStep === 5 ? 'V' : lastHoveredStep === 6 ? 'VI' : 'VII'}
+                      </div>
+                      <h3 className="text-lg font-semibold">
+                        {constructorSteps.find(s => s.id === lastHoveredStep)?.name}
+                      </h3>
+                    </div>
+                    <p className="text-gray-600">
+                      {constructorSteps.find(s => s.id === lastHoveredStep)?.description}
+                    </p>
+                  </div>
+
+                  {/* Показываем выбор шаблонов пользователя */}
+                  {templateSelection ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-base font-semibold text-gray-800">Выберите шаблон</h4>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => fetchTemplates()}
+                            disabled={templatesLoading}
+                          >
+                            {templatesLoading ? 'Загрузка...' : 'Обновить'}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setTemplateSelection(false)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="grid gap-4">
+                        {templatesLoading ? (
+                          <div className="flex items-center justify-center p-8">
+                            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="ml-2 text-gray-600">Загрузка шаблонов...</span>
+                          </div>
+                        ) : templatesError ? (
+                          <div className="text-center py-8 text-red-500">
+                            <p>Ошибка загрузки шаблонов: {templatesError}</p>
+                            <div className="flex gap-2 mt-4 justify-center">
+                              <Button 
+                                onClick={() => fetchTemplates()}
+                                variant="outline" 
+                              >
+                                Попробовать снова
+                              </Button>
+                              <Button 
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch('/api/check-project-templates')
+                                    const data = await response.json()
+                                    console.log('🔍 Результат проверки таблицы:', data)
+                                    alert(`Проверка таблицы: ${JSON.stringify(data, null, 2)}`)
+                                  } catch (error) {
+                                    console.error('Ошибка проверки:', error)
+                                    alert('Ошибка проверки таблицы')
+                                  }
+                                }}
+                                variant="outline" 
+                              >
+                                Проверить таблицу
+                              </Button>
+                              <Button 
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch('/api/create-project-templates-table', {
+                                      method: 'POST'
+                                    })
+                                    const data = await response.json()
+                                    console.log('🔧 Результат создания таблицы:', data)
+                                    if (data.success) {
+                                      alert('Таблица создана успешно! Обновите страницу.')
+                                      window.location.reload()
+                                    } else {
+                                      alert(`Ошибка создания таблицы: ${data.error}`)
+                                    }
+                                  } catch (error) {
+                                    console.error('Ошибка создания:', error)
+                                    alert('Ошибка создания таблицы')
+                                  }
+                                }}
+                                variant="outline" 
+                                className="bg-green-50 hover:bg-green-100"
+                              >
+                                Создать таблицу
+                              </Button>
+                              <Button 
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch('/api/analyze-database-structure')
+                                    const data = await response.json()
+                                    console.log('🔍 Результат анализа БД:', data)
+                                    alert(`Анализ БД: ${JSON.stringify(data.summary, null, 2)}`)
+                                  } catch (error) {
+                                    console.error('Ошибка анализа:', error)
+                                    alert('Ошибка анализа БД')
+                                  }
+                                }}
+                                variant="outline" 
+                                className="bg-blue-50 hover:bg-blue-100"
+                              >
+                                Анализ БД
+                              </Button>
+                            </div>
+                          </div>
+                        ) : getUserTemplates().length === 0 ? (
+                          <div className="text-center py-8 text-gray-500">
+                            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                            <p>У вас пока нет сохраненных шаблонов</p>
+                            <p className="text-sm mt-2">Создайте шаблон в разделе "Создать проект"</p>
+                          </div>
+                        ) : (
+                          getUserTemplates().map((template) => (
+                            <div
+                              key={template.id}
+                              className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
+                              onClick={() => handleTemplateSelect(template.id)}
+                            >
+                              <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+                                <FileText className="h-6 w-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-lg font-semibold text-gray-800 mb-1">{template.name}</div>
+                                <div className="text-sm text-gray-600 leading-relaxed">{template.description}</div>
+                                <div className="text-xs text-gray-500 mt-1">Использован: {template.lastUsed}</div>
+                              </div>
+                              <div className="text-blue-500">
+                                <ArrowRight className="h-5 w-5" />
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ) : templateStepSelection ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-base font-semibold text-gray-800">Выберите шаг для заполнения из шаблона</h4>
+                        <Button variant="outline" size="sm" onClick={() => setTemplateStepSelection(null)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Кнопка "Заполнить все шаги" */}
+                      {templateStepSelection.availableSteps.length > 1 && (
+                        <div className="mb-4">
+                          <Button 
+                            onClick={handleFillAllTemplateSteps}
+                            variant="outline"
+                            className="w-full h-10 text-sm font-medium border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Заполнить все шаги из шаблона
+                          </Button>
+                        </div>
+                      )}
+                      
+                      <div className="grid gap-4">
+                        {templateStepSelection.availableSteps.map((stepId) => {
+                          const step = constructorSteps.find(s => s.id === stepId)
+                          return (
+                            <div
+                              key={stepId}
+                              className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
+                              onClick={() => handleTemplateStepSelect(stepId)}
+                            >
+                              <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center shadow-sm">
+                                <span className="text-white font-bold text-lg">
+                                  {stepId === 1 ? 'I' : stepId === 2 ? 'II' : stepId === 3 ? 'III' : 
+                                   stepId === 4 ? 'IV' : stepId === 5 ? 'V' : stepId === 6 ? 'VI' : 'VII'}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-lg font-semibold text-gray-800 mb-1">{step?.name}</div>
+                                <div className="text-sm text-gray-600 leading-relaxed">{step?.description}</div>
+                              </div>
+                              <div className="text-blue-500">
+                                <ArrowRight className="h-5 w-5" />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                  ) : selectedSource === "manual" ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-medium text-gray-700">Заполнение вручную</h4>
+                        <Button variant="outline" size="sm" onClick={handleCancelSource}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Формы для разных шагов */}
+                      {lastHoveredStep === 1 && editingType === 'company' && (
+                        <CompanyForm 
+                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onCancel={handleCancelSource}
+                          initialData={manualData[lastHoveredStep] as any}
+                        />
+                      )}
+                      
+                      {lastHoveredStep === 1 && editingType === 'contacts' && (
+                        <ContactsForm 
+                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onCancel={handleCancelSource}
+                          initialData={manualData[lastHoveredStep] as any}
+                        />
+                      )}
+                      
+                      {lastHoveredStep === 1 && editingType === 'bank' && (
+                        <BankForm 
+                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onCancel={handleCancelSource}
+                          initialData={manualData[lastHoveredStep] as any}
+                        />
+                      )}
+                      
+                      {lastHoveredStep === 1 && !editingType && (
+                        <CompanyForm 
+                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onCancel={handleCancelSource}
+                          initialData={manualData[lastHoveredStep] as any}
+                        />
+                      )}
+                      
+                      {lastHoveredStep === 2 && (
+                        <SpecificationForm 
+                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onCancel={handleCancelSource}
+                          initialData={manualData[lastHoveredStep] as any}
+                        />
+                      )}
+                      
+                      {lastHoveredStep === 3 && (
+                        <FileUploadForm 
+                          onSave={(data) => {
+                            if (data.file) {
+                              handleFileUpload(lastHoveredStep, data.file)
+                            }
+                            handleManualDataSave(lastHoveredStep, data)
+                          }}
+                          onCancel={handleCancelSource}
+                        />
+                      )}
+                      
+                      {lastHoveredStep === 4 && (
+                        <PaymentMethodForm 
+                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onCancel={handleCancelSource}
+                          initialData={manualData[lastHoveredStep] as any}
+                          getStepData={(stepId) => manualData[stepId]}
+                        />
+                      )}
+                      
+                      {lastHoveredStep === 5 && (
+                        <RequisitesForm 
+                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onCancel={handleCancelSource}
+                          initialData={manualData[lastHoveredStep] as any}
+                        />
+                      )}
+                    </div>
+                  ) : selectedSource === "upload" ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-medium text-gray-700">Загрузка документа</h4>
+                        <Button variant="outline" size="sm" onClick={handleCancelSource}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                            <Eye className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-800">
+                              {lastHoveredStep === 1 ? "Анализ карточки компании" : "Анализ спецификации"}
+                            </h3>
+                            <p className="text-sm text-slate-600">
+                              {lastHoveredStep === 1 
+                                ? "Загрузите документ компании для автоматического извлечения данных" 
+                                : "Загрузите инвойс или спецификацию для автоматического заполнения"
+                              }
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          {/* Drag & Drop зона */}
+                          <div 
+                            className="border-2 border-dashed border-orange-300 rounded-lg p-8 text-center hover:border-orange-400 transition-colors cursor-pointer"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const files = e.dataTransfer.files;
+                              if (files.length > 0) {
+                                handleFileUpload(lastHoveredStep, files[0]);
+                              }
+                            }}
+                            onClick={() => document.getElementById(`ocr-file-input-${lastHoveredStep}`)?.click()}
+                          >
+                            <Upload className="w-12 h-12 text-orange-500 mx-auto mb-4" />
+                            <p className="text-lg font-medium text-slate-700 mb-2">
+                              Перетащите файл сюда или нажмите для выбора
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              Поддерживаемые форматы: PDF, JPG, PNG, XLSX, DOCX
+                            </p>
+                            <input 
+                              id={`ocr-file-input-${lastHoveredStep}`}
+                              type="file" 
+                              accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.docx,.doc"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleFileUpload(lastHoveredStep, file);
+                                }
+                              }}
+                            />
+                          </div>
+                          
+                          {/* Информация о поддерживаемых документах */}
+                          <div className="bg-orange-50 rounded-lg p-4">
+                            <h4 className="font-medium text-orange-800 mb-2">
+                              {lastHoveredStep === 1 ? "Поддерживаемые документы:" : "Поддерживаемые документы:"}
+                            </h4>
+                            <ul className="text-sm text-orange-700 space-y-1">
+                              {lastHoveredStep === 1 ? (
+                                <>
+                                  <li>• Карточки компаний</li>
+                                  <li>• Свидетельства о регистрации</li>
+                                  <li>• Договоры с реквизитами</li>
+                                  <li>• Банковские документы</li>
+                                </>
+                              ) : (
+                                <>
+                                  <li>• Инвойсы (счета-фактуры)</li>
+                                  <li>• Спецификации товаров</li>
+                                  <li>• Коммерческие предложения</li>
+                                  <li>• Прайс-листы</li>
+                                </>
+                              )}
+                            </ul>
+                          </div>
+                          
+                          {/* Статус загрузки и анализа */}
+                          {ocrAnalyzing[lastHoveredStep] && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                              <div className="flex items-center gap-2">
+                                <Loader className="w-5 h-5 text-blue-600 animate-spin" />
+                                <span className="text-blue-800 font-medium">Анализируем документ...</span>
+                              </div>
+                              <p className="text-sm text-blue-600 mt-1">
+                                Пожалуйста, подождите, извлекаем данные
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Статус успешной загрузки */}
+                          {uploadedFiles[lastHoveredStep] && !ocrAnalyzing[lastHoveredStep] && !ocrError[lastHoveredStep] && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                                <span className="text-green-800 font-medium">Файл загружен и проанализирован</span>
+                              </div>
+                              <p className="text-sm text-green-600 mt-1">
+                                Данные автоматически заполнены в форму
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Статус ошибки */}
+                          {ocrError[lastHoveredStep] && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                              <div className="flex items-center gap-2">
+                                <X className="w-5 h-5 text-red-600" />
+                                <span className="text-red-800 font-medium">Ошибка анализа</span>
+                              </div>
+                              <p className="text-sm text-red-600 mt-1">
+                                {ocrError[lastHoveredStep]}
+                              </p>
+                              
+                              {/* Отладочная информация */}
+                              {ocrDebugData[lastHoveredStep] && (
+                                <details className="mt-3">
+                                  <summary className="text-sm text-red-700 cursor-pointer">
+                                    Показать отладочную информацию
+                                  </summary>
+                                  <pre className="text-xs text-red-600 mt-2 bg-red-100 p-2 rounded overflow-auto max-h-32">
+                                    {JSON.stringify(ocrDebugData[lastHoveredStep], null, 2)}
+                                  </pre>
+                                </details>
+                                                  )}
+                  </div>
+                )}
+
+                {/* Блок для 7-го шага - Подтверждение получения */}
+                {hasManagerReceipt && (
+                  <div className="mt-6">
+                    <div className="bg-orange-100 border border-orange-300 rounded-lg p-4">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2 text-orange-800">
+                        <Upload className="h-4 w-4" />
+                        Шаг 7: Загрузите чек о получении средств
+                      </h4>
+                      
+                      {!clientReceiptUrl ? (
+                        <div className="space-y-3">
+                          <p className="text-sm text-orange-700">
+                            Пожалуйста, загрузите чек или скриншот, подтверждающий что вы получили средства от поставщика.
+                          </p>
+                          
+                          {clientReceiptUploadError && (
+                            <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+                              {clientReceiptUploadError}
+                            </div>
+                          )}
+                          
+                          <div className="flex flex-col gap-2">
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={handleClientReceiptUpload}
+                              className="hidden"
+                              id="client-receipt-upload"
+                            />
+                            
+                            <Button
+                              onClick={() => document.getElementById('client-receipt-upload')?.click()}
+                              disabled={isUploadingClientReceipt}
+                              variant="outline"
+                              className="w-full border-orange-300 hover:border-orange-400 text-orange-800"
+                            >
+                              {isUploadingClientReceipt ? (
+                                <>
+                                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                  Загружаю чек...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="h-4 w-4 mr-2" />
+                                  Выбрать файл чека
+                                </>
+                              )}
+                            </Button>
+                            
+                            <p className="text-xs text-gray-500 text-center">
+                              Поддерживаются: JPG, PNG, PDF (макс. 50 МБ)
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <div className="flex-1">
+                              <p className="font-medium text-green-800">Чек загружен и отправлен менеджеру</p>
+                              <a 
+                                href={clientReceiptUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-orange-600 hover:underline text-sm"
+                              >
+                                Просмотреть загруженный чек →
+                              </a>
+                            </div>
+                            <Button
+                              onClick={handleRemoveClientReceipt}
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 border-red-300 hover:border-red-400"
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Удалить
+                            </Button>
+                          </div>
+                          
+                          <div className="bg-green-50 border border-green-200 rounded p-3">
+                            <p className="text-sm text-green-700">
+                              ✅ Ваш чек отправлен менеджеру. Теперь вы можете завершить проект.
+                            </p>
+                          </div>
+                          
+                          {/* Кнопка "Подробнее" */}
+                          <div className="flex justify-center mt-4">
+                            <Button
+                              onClick={handleShowProjectDetails}
+                              variant="outline"
+                              className="text-blue-600 border-blue-300 hover:border-blue-400 hover:bg-blue-50"
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Подробнее о проекте
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+                    </div>
+                  ) : stepConfigs[lastHoveredStep] ? (
+                    // Только 3 кубика с данными для первого шага
+                    <div className="flex justify-center">
+                      {lastHoveredStep === 1 && manualData[lastHoveredStep] && (
+                        <div className="grid grid-cols-3 gap-4 w-full max-w-4xl">
+                          {/* Кубик 1: Данные компании - кликабельный */}
+                          <div 
+                            className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-blue-300 hover:scale-105"
+                            onClick={() => handlePreviewData('company', manualData[lastHoveredStep])}
+                          >
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                <Building className="h-4 w-4 text-white" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-800">Данные компании</div>
+                                <div className="text-xs text-gray-500">Основная информация</div>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-800 font-medium">{manualData[lastHoveredStep].name}</div>
+                            <div className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                              <span>Нажмите для просмотра</span>
+                              <Eye className="h-3 w-3" />
+                            </div>
+                          </div>
+                          
+                          {/* Кубик 2: Данные расчетного счета - кликабельный */}
+                          <div 
+                            className="bg-white border-2 border-green-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-green-300 hover:scale-105"
+                            onClick={() => handlePreviewData('bank', manualData[lastHoveredStep])}
+                          >
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                <Banknote className="h-4 w-4 text-white" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-800">Расчетный счет</div>
+                                <div className="text-xs text-gray-500">Банковские реквизиты</div>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-800">{manualData[lastHoveredStep].bankName}</div>
+                            {manualData[lastHoveredStep].bankAccount && (
+                              <div className="text-xs text-gray-500">{manualData[lastHoveredStep].bankAccount}</div>
+                            )}
+                            <div className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                              <span>Нажмите для просмотра</span>
+                              <Eye className="h-3 w-3" />
+                            </div>
+                          </div>
+                          
+                          {/* Кубик 3: Дополнительные данные - кликабельный */}
+                          <div 
+                            className="bg-white border-2 border-purple-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-purple-300 hover:scale-105"
+                            onClick={() => handlePreviewData('contacts', manualData[lastHoveredStep])}
+                          >
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
+                                <Mail className="h-4 w-4 text-white" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-800">Дополнительно</div>
+                                <div className="text-xs text-gray-500">Контакты и детали</div>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-800">{manualData[lastHoveredStep].email}</div>
+                            {manualData[lastHoveredStep].phone && (
+                              <div className="text-sm text-gray-800 mt-1">{manualData[lastHoveredStep].phone}</div>
+                            )}
+                            <div className="text-xs text-purple-600 mt-2 flex items-center gap-1">
+                              <span>Нажмите для просмотра</span>
+                              <Eye className="h-3 w-3" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Полная форма данных шага */}
+                      
+
+                      
+                      
+                      {/* Шаг 2: Горизонтальный слайдер товаров */}
+                      {lastHoveredStep === 2 && manualData[lastHoveredStep] && (
+                        <div className="flex justify-center">
+                          <div className="w-full max-w-6xl">
+                            {/* Слайдер товаров */}
+                            {manualData[lastHoveredStep]?.items && manualData[lastHoveredStep].items.length > 0 && (
+                              <div className="mb-6">
+                                {/* Заголовок слайдера */}
+                                <div className="flex items-center justify-between mb-4">
+                                  <h3 className="text-lg font-semibold text-gray-800">
+                                    Товары ({manualData[lastHoveredStep].items.length})
+                                  </h3>
+                                  {/* Пагинация удалена - используются точки-индикаторы внизу */}
+                          </div>
+                          
+                                {/* Контейнер слайдера */}
+                                <div className="relative">
+                                  {/* Кнопка "Назад" */}
+                                  {currentProductIndex > 0 && (
+                                    <button
+                                      onClick={() => setCurrentProductIndex(prev => Math.max(0, prev - productsPerView))}
+                                      className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full p-2 shadow-md hover:bg-gray-50 transition-all duration-200"
+                                    >
+                                      <ChevronLeft className="h-5 w-5 text-gray-600" />
+                                    </button>
+                                  )}
+                                  
+                                  {/* Кнопка "Вперед" */}
+                                  {currentProductIndex + productsPerView < (manualData[lastHoveredStep]?.items?.length || 0) && (
+                                    <button
+                                      onClick={() => setCurrentProductIndex(prev => Math.min((manualData[lastHoveredStep]?.items?.length || 0) - productsPerView, prev + productsPerView))}
+                                      className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full p-2 shadow-md hover:bg-gray-50 transition-all duration-200"
+                                    >
+                                      <ChevronRight className="h-5 w-5 text-gray-600" />
+                                    </button>
+                                  )}
+                                  
+                                  {/* Текущие товары (по 3) */}
+                                  <div className="grid grid-cols-3 gap-4 mx-12">
+                                    {Array.from({ length: productsPerView }, (_, i) => {
+                                      const itemIndex = currentProductIndex + i;
+                                      const item = manualData[lastHoveredStep]?.items?.[itemIndex];
+                                      
+                                      if (!item) return null;
+                                      
+                                      return (
+                                        <div 
+                                          key={itemIndex}
+                                className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-blue-400 hover:scale-105"
+                                          onClick={() => handlePreviewData('product', manualData[lastHoveredStep])}
+                              >
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                    <Package className="h-4 w-4 text-white" />
+                                          </div>
+                                          <div>
+                                              <div className="text-sm font-semibold text-gray-800">
+                                                Товар {itemIndex + 1}
+                                              </div>
+                                    <div className="text-xs text-gray-500">Спецификация</div>
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-gray-400">📦</span>
+                                              <span className="text-gray-800 font-medium text-sm truncate">
+                                                {item.item_name || item.name || 'Товар без названия'}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-gray-400">🏷️</span>
+                                              <span className="text-gray-800 text-sm">
+                                                {(item as any).item_code || 'Без артикула'}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-gray-400">💰</span>
+                                              <span className="text-gray-800 text-sm">
+                                                {item.price} {manualData[lastHoveredStep]?.currency || 'RUB'}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-gray-400">📊</span>
+                                              <span className="text-gray-800 text-sm">
+                                                {item.quantity} шт
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-gray-400">💳</span>
+                                              <span className="text-gray-800 font-semibold text-sm">
+                                                {item.total} {manualData[lastHoveredStep]?.currency || 'RUB'}
+                                            </span>
+                                          </div>
+                                        </div>
+                                
+                                <div className="text-xs text-green-600 mt-3 flex items-center gap-1">
+                                  <span>Нажмите для просмотра</span>
+                                  <Eye className="h-3 w-3" />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                                
+                                {/* Индикаторы слайдера */}
+                                <div className="flex justify-center gap-2 mt-4">
+                                  {Array.from({ length: Math.ceil(manualData[lastHoveredStep].items.length / productsPerView) }, (_, groupIndex) => (
+                                    <button
+                                      key={groupIndex}
+                                      onClick={() => setCurrentProductIndex(groupIndex * productsPerView)}
+                                      className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                                        Math.floor(currentProductIndex / productsPerView) === groupIndex
+                                          ? 'bg-blue-500' 
+                                          : 'bg-gray-300 hover:bg-gray-400'
+                                      }`}
+                                    />
+                                  ))}
+                                      </div>
+                                  </div>
+                                )}
+                                
+                            {/* Сводная информация */}
+                            <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-4 shadow-sm">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                  <FileText className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">Сводка</div>
+                                  <div className="text-xs text-gray-500">Общая информация</div>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">🏪</span>
+                                  <span className="text-gray-800 font-medium">
+                                    {manualData[lastHoveredStep]?.supplier || 
+                                     manualData[lastHoveredStep]?.items?.[0]?.item_name || 
+                                     'Не указано'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">📦</span>
+                                  <span className="text-gray-800">
+                                    {manualData[lastHoveredStep]?.items?.length || 0} позиций
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">💰</span>
+                                  <span className="text-gray-800">{manualData[lastHoveredStep]?.currency || 'Не указано'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Шаг 4: Методы оплаты - показываем кубики для каждого метода */}
+                      {lastHoveredStep === 4 && manualData[lastHoveredStep] && (
+                        <div className="flex justify-center">
+                          <div className="grid grid-cols-3 gap-4 w-full">
+                            {['bank-transfer', 'p2p', 'crypto'].map((method: string, index: number) => {
+                                // Проверяем, выбран ли этот метод
+                                const isSelected = manualData[4]?.selectedMethod === method ||
+                                                 manualData[4]?.method === method ||
+                                                 manualData[4]?.defaultMethod === method
+
+                                // Проверяем, есть ли данные поставщика для этого метода
+                                let hasSupplierData = false;
+
+                                // Приоритет 1: Проверяем selectedSupplierData (самый актуальный источник)
+                                if (selectedSupplierData) {
+                                  if ((method === 'bank-transfer' || method === 'bank') && (selectedSupplierData.bank_accounts?.length && selectedSupplierData.bank_accounts.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer' as any))) {
+                                    hasSupplierData = true;
+                                  }
+                                  if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length && selectedSupplierData.p2p_cards.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
+                                    hasSupplierData = true;
+                                  }
+                                  if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length && selectedSupplierData.crypto_wallets.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
+                                    hasSupplierData = true;
+                                  }
+                                }
+
+                                // Приоритет 2: Проверяем через manualData[4] (если selectedSupplierData недоступен)
+                                if (!hasSupplierData && manualData[4]) {
+                                  // Проверяем по методам из manualData[4] (из каталога)
+                                  if (manualData[4].methods && manualData[4].methods.includes(method)) {
+                                    hasSupplierData = true;
+                                  }
+                                  // Проверяем по доступным данным поставщика в manualData[4]
+                                  if (!hasSupplierData && manualData[4].supplier_data) {
+                                    const supplier = manualData[4].supplier_data;
+                                    if ((method === 'bank-transfer' || method === 'bank') && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer' as any))) {
+                                      hasSupplierData = true;
+                                    }
+                                    if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p'))) {
+                                      hasSupplierData = true;
+                                    }
+                                    if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) {
+                                      hasSupplierData = true;
+                                    }
+                                  }
+                                }
+
+                                console.log('🔍 [DEBUG] Method Check:', {
+                                  method,
+                                  hasSupplierData,
+                                  manualData4: manualData[4],
+                                  selectedSupplierData: {
+                                    name: selectedSupplierData?.name,
+                                    payment_methods: selectedSupplierData?.payment_methods,
+                                    bank_accounts: selectedSupplierData?.bank_accounts,
+                                    p2p_cards: selectedSupplierData?.p2p_cards,
+                                    crypto_wallets: selectedSupplierData?.crypto_wallets
+                                  }
+                                });
+                                return <div
+                                  key={index}
+                                  className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                    isSelected
+                                      ? (method === 'crypto' ? 'ring-4 ring-green-400 border-green-500 bg-green-100' :
+                                         method === 'p2p' ? 'ring-4 ring-blue-400 border-blue-500 bg-blue-100' :
+                                         'ring-4 ring-orange-400 border-orange-500 bg-orange-100')
+                                      : hasSupplierData
+                                        ? (method === 'crypto' ? 'border-green-300 bg-green-50 hover:border-green-400' :
+                                           method === 'p2p' ? 'border-blue-300 bg-blue-50 hover:border-blue-400' :
+                                           'border-orange-300 bg-orange-50 hover:border-orange-400')
+                                        : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                                  }`}
+                                  onClick={() => handlePaymentMethodSelect(method, selectedSupplierData)}
+                                >
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                      isSelected
+                                        ? (method === 'crypto' ? 'bg-green-600 ring-2 ring-green-300' :
+                                           method === 'p2p' ? 'bg-blue-600 ring-2 ring-blue-300' :
+                                           'bg-orange-600 ring-2 ring-orange-300')
+                                        : hasSupplierData
+                                          ? (method === 'crypto' ? 'bg-green-500' :
+                                             method === 'p2p' ? 'bg-blue-500' :
+                                             'bg-orange-500')
+                                          : 'bg-gray-400'
+                                    }`}>
+                                      {isSelected ? <CheckCircle2 className="h-4 w-4 text-white" /> : <CreditCard className="h-4 w-4 text-white" />}
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-800">
+                                        {method === 'crypto' ? 'Криптовалюта' :
+                                         method === 'p2p' ? 'P2P перевод' :
+                                         'Банковский перевод'}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {method === 'crypto' ? 'Крипто платеж' :
+                                         method === 'p2p' ? 'P2P платеж' :
+                                         'Банковский платеж'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-sm text-gray-800">
+                                    Статус
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {isSelected ? 'ВЫБРАН' : hasSupplierData ? 'Автозаполнение' : 'Ручное заполнение'}
+                                  </div>
+                                  <div className={`text-xs mt-2 flex items-center gap-1 ${
+                                    isSelected
+                                      ? (method === 'crypto' ? 'text-green-600 font-bold' :
+                                         method === 'p2p' ? 'text-blue-600 font-bold' :
+                                         'text-orange-600 font-bold')
+                                      : method === 'crypto' ? 'text-green-600' :
+                                        method === 'p2p' ? 'text-blue-600' :
+                                        'text-gray-600'
+                                  }`}>
+                                    <span>{isSelected ? 'ВЫБРАНО' : 'Выбрать'}</span>
+                                    {isSelected ? <CheckCircle2 className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />}
+                                  </div>
+                                </div>
+                              })
+                            }
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Шаг 5: Реквизиты - показываем форму если реквизиты были заполнены */}
+                      {(() => {
+                        const step5HasData = !!manualData[5];
+                        const step5HasUserChoice = manualData[5]?.user_choice;
+                        const step5HasType = manualData[5]?.type;
+                        // Показываем кубик если есть тип (либо от user_choice, либо от OCR/catalog)
+                        const shouldShowStep5Form = lastHoveredStep === 5 && step5HasData && step5HasType;
+
+                        console.log('🔍 [Step 5 Debug]:', {
+                          lastHoveredStep,
+                          step5HasData,
+                          step5HasUserChoice,
+                          step5HasType,
+                          shouldShowStep5Form,
+                          manualData5: manualData[5]
+                        });
+
+                        return shouldShowStep5Form;
+                      })() && (
+                        <div className="flex justify-center">
+                          <div className="grid grid-cols-3 gap-4 w-full">
+                            {manualData[lastHoveredStep].type === 'multiple' && manualData[lastHoveredStep].requisites ? (
+                              // Показываем все кубики реквизитов
+                              manualData[lastHoveredStep].requisites.map((requisite: any, index: number) => (
+                                <div 
+                                  key={index}
+                                  className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                    requisite.type === 'crypto' ? 'border-green-200 hover:border-green-300' :
+                                    requisite.type === 'p2p' ? 'border-blue-200 hover:border-blue-300' :
+                                    'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                  onClick={() => handlePreviewData('requisites', requisite)}
+                                >
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                      requisite.type === 'crypto' ? 'bg-green-500' :
+                                      requisite.type === 'p2p' ? 'bg-blue-500' :
+                                      'bg-gray-500'
+                                    }`}>
+                                      <Banknote className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-800">
+                                        {requisite.type === 'crypto' ? 'Криптокошелек' :
+                                         requisite.type === 'p2p' ? 'Карта поставщика' :
+                                         'Расчетный счет'}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {requisite.type === 'crypto' ? 'Криптореквизиты' :
+                                         requisite.type === 'p2p' ? 'P2P реквизиты' :
+                                         'Банковские реквизиты'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-sm text-gray-800">
+                                    {requisite.type === 'crypto' ? 'Сеть' :
+                                     requisite.type === 'p2p' ? 'Банк карты' :
+                                     'Банк поставщика'}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {requisite.type === 'crypto' ? (requisite.crypto_network || 'Не указана') :
+                                     requisite.type === 'p2p' ? (requisite.card_bank || 'Не указан') :
+                                     `${requisite.accountNumber || 'Не указано'}`}
+                                  </div>
+                                  <div className={`text-xs mt-2 flex items-center gap-1 ${
+                                    requisite.type === 'crypto' ? 'text-green-600' :
+                                    requisite.type === 'p2p' ? 'text-blue-600' :
+                                    'text-gray-600'
+                                  }`}>
+                                    <span>Нажмите для просмотра</span>
+                                    <Eye className="h-3 w-3" />
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              // Показываем один кубик для одиночного типа
+                              <div
+                                className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${
+                                  manualData[5]?.type === 'crypto' ? 'border-green-500 bg-green-100 hover:border-green-600 ring-green-400' :
+                                  manualData[5]?.type === 'p2p' ? 'border-blue-500 bg-blue-100 hover:border-blue-600 ring-blue-400' :
+                                  'border-orange-500 bg-orange-100 hover:border-orange-600 ring-orange-400'
+                                }`}
+                                onClick={() => handlePreviewData('requisites', manualData[5])}
+                              >
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-2 ${
+                                    manualData[5]?.type === 'crypto' ? 'bg-green-600 ring-green-300' :
+                                    manualData[5]?.type === 'p2p' ? 'bg-blue-600 ring-blue-300' :
+                                    'bg-orange-600 ring-orange-300'
+                                  }`}>
+                                    <CheckCircle2 className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-800">
+                                      {manualData[lastHoveredStep].type === 'crypto' ? 'Криптокошелек' :
+                                       manualData[lastHoveredStep].type === 'p2p' ? 'Карта поставщика' :
+                                       'Расчетный счет'}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {manualData[lastHoveredStep].type === 'crypto' ? 'Криптореквизиты' :
+                                       manualData[lastHoveredStep].type === 'p2p' ? 'P2P реквизиты' :
+                                       'Банковские реквизиты'}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-sm text-gray-800">
+                                  {manualData[lastHoveredStep].type === 'crypto' ? 'Сеть' :
+                                   manualData[lastHoveredStep].type === 'p2p' ? 'Банк карты' :
+                                   'Банк поставщика'}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {manualData[lastHoveredStep].type === 'crypto' ? (manualData[lastHoveredStep].crypto_network || 'Не указана') :
+                                   manualData[lastHoveredStep].type === 'p2p' ? (manualData[lastHoveredStep].card_bank || 'Не указан') :
+                                   `${manualData[lastHoveredStep].accountNumber || 'Не указано'}`}
+                                </div>
+                                <div className={`text-xs mt-2 flex items-center gap-1 font-bold ${
+                                  manualData[5]?.type === 'crypto' ? 'text-green-600' :
+                                  manualData[5]?.type === 'p2p' ? 'text-blue-600' :
+                                  'text-orange-600'
+                                }`}>
+                                  <span>ЗАПОЛНЕНО</span>
+                                  <CheckCircle2 className="h-3 w-3" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* СПЕЦИАЛЬНО для шага 5: показываем кубики выбора когда есть stepConfigs[5] = 'catalog' - позволяем пользователю менять тип реквизитов даже после автозаполнения */}
+                      {lastHoveredStep === 5 && (() => {
+                        console.log('🔍 [DEBUG Step 5] Наведение на шаг 5:');
+                        console.log('  - lastHoveredStep:', lastHoveredStep);
+                        console.log('  - stepConfigs[5]:', stepConfigs[5]);
+                        console.log('  - stepConfigs:', stepConfigs);
+                        console.log('  - manualData[5]:', manualData[5]);
+                        console.log('  - selectedSupplierData:', selectedSupplierData);
+
+                        // Показываем кубики выбора только если НЕТ type в manualData[5] (т.е. данные еще не заполнены)
+                        const shouldShowCubes = (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
+                                                (manualData[5] && Object.keys(manualData[5]).length > 0 && !manualData[5].type);
+                        console.log('  - shouldShowCubes (stepConfigs[5] in ["catalog", "blue_room", "orange_room"] OR has manualData[5] WITHOUT type):', shouldShowCubes);
+
+                        return shouldShowCubes;
+                      })() && (() => {
+                        // Проверяем доступные методы поставщика
+                        const checkMethodAvailability = (method: string) => {
+                          // Приоритет 1: selectedSupplierData
+                          if (selectedSupplierData) {
+                            if (method === 'bank-transfer' && ((selectedSupplierData.bank_accounts?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
+                              return true;
+                            }
+                            if (method === 'p2p' && ((selectedSupplierData.p2p_cards?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
+                              return true;
+                            }
+                            if (method === 'crypto' && ((selectedSupplierData.crypto_wallets?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
+                              return true;
+                            }
+                          }
+
+                          // Приоритет 2: manualData[4]
+                          if (manualData[4]) {
+                            if (manualData[4].methods && manualData[4].methods.includes(method)) {
+                              return true;
+                            }
+                            if (manualData[4].supplier_data) {
+                              const supplier = manualData[4].supplier_data;
+                              if (method === 'bank-transfer' && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer'))) {
+                                return true;
+                              }
+                              if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p'))) {
+                                return true;
+                              }
+                              if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) {
+                                return true;
+                              }
+                            }
+                          }
+
+                          // Приоритет 3: Проверяем OCR данные в manualData[4] (после автозаполнения из инвойса)
+                          if (manualData[4]?.method === method) {
+                            return true;
+                          }
+
+                          return false;
+                        };
+
+                        const bankAvailable = checkMethodAvailability('bank-transfer');
+                        const p2pAvailable = checkMethodAvailability('p2p');
+                        const cryptoAvailable = checkMethodAvailability('crypto');
+
+                        return (
+                          <div className="mb-6">
+                            <h4 className="text-base font-semibold text-gray-800 mb-4">Выберите тип реквизитов:</h4>
+                            <div className="grid grid-cols-3 gap-4 w-full">
+                            {/* Банковский перевод */}
+                            <div
+                              className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                bankAvailable
+                                  ? 'border-orange-400 bg-orange-100 hover:border-orange-500 ring-2 ring-orange-200'
+                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                // Обновляем шаг 5 (реквизиты)
+                                setManualData(prev => ({
+                                  ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'bank-transfer',
+                                    method: 'bank-transfer',
+                                    user_choice: true
+                                  },
+                                  5: {
+                                    type: 'bank',
+                                    bankName: '',
+                                    accountNumber: '',
+                                    swift: '',
+                                    recipientName: '',
+                                    user_choice: true
+                                  }
+                                }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
+                                setLastHoveredStep(0);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                                  <Banknote className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">Банковский перевод</div>
+                                  <div className="text-xs text-gray-500">Банковские реквизиты</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                Использовать банковские реквизиты
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">
+                                SWIFT, IBAN, счета
+                              </div>
+                            </div>
+
+                            {/* P2P переводы */}
+                            <div
+                              className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                p2pAvailable
+                                  ? 'border-blue-400 bg-blue-100 hover:border-blue-500 ring-2 ring-blue-200'
+                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
+                                setManualData(prev => ({
+                                  ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'p2p',
+                                    method: 'p2p',
+                                    user_choice: true
+                                  },
+                                  5: {
+                                    ...prev[5],  // ✅ Сохраняем данные каталога
+                                    type: 'p2p',
+                                    card_bank: (prev[5]?.p2p_cards?.[0]?.bank || prev[5]?.card_bank || ''),
+                                    card_number: (prev[5]?.p2p_cards?.[0]?.card_number || prev[5]?.card_number || ''),
+                                    card_holder: (prev[5]?.p2p_cards?.[0]?.holder_name || prev[5]?.card_holder || ''),
+                                    user_choice: true
+                                  }
+                                }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
+                                setLastHoveredStep(0);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                  <CreditCard className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">P2P переводы</div>
+                                  <div className="text-xs text-gray-500">Карта поставщика</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                Использовать P2P карты
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">
+                                Банковские карты
+                              </div>
+                            </div>
+
+                            {/* Криптовалюта */}
+                            <div
+                              className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                cryptoAvailable
+                                  ? 'border-green-400 bg-green-100 hover:border-green-500 ring-2 ring-green-200'
+                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
+                                setManualData(prev => ({
+                                  ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'crypto',
+                                    method: 'crypto',
+                                    user_choice: true
+                                  },
+                                  5: {
+                                    type: 'crypto',
+                                    crypto_wallet: '',
+                                    crypto_network: '',
+                                    user_choice: true
+                                  }
+                                }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
+                                setLastHoveredStep(0);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                  <Coins className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">Криптовалюта</div>
+                                  <div className="text-xs text-gray-500">Криптокошелек</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                Использовать криптовалюты
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">
+                                BTC, ETH, USDT и др.
+                              </div>
+                            </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Для других шагов - обычная карточка */}
+                      {lastHoveredStep !== 1 && lastHoveredStep !== 2 && lastHoveredStep !== 4 && lastHoveredStep !== 5 && manualData[lastHoveredStep] && (
+                        <div 
+                          className={`border-2 border-gray-200 rounded-xl p-6 shadow-lg max-w-md w-full transition-all duration-200
+                            ${manualData[lastHoveredStep].echo_data 
+                              ? 'bg-white/60 backdrop-blur-sm border-indigo-200' 
+                              : 'bg-white'}
+                          `}
+                        >
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              stepConfigs[lastHoveredStep] === "profile" ? "bg-blue-500" :
+                              stepConfigs[lastHoveredStep] === "template" ? "bg-green-500" :
+                              (stepConfigs[lastHoveredStep] === "blue_room" || stepConfigs[lastHoveredStep] === "orange_room" || stepConfigs[lastHoveredStep] === "echo_cards") ? "bg-purple-500" :
+                              stepConfigs[lastHoveredStep] === "echo" ? "bg-orange-500" :
+                              stepConfigs[lastHoveredStep] === "echoData" ? "bg-indigo-500" :
+                              stepConfigs[lastHoveredStep] === "manual" ? "bg-gray-500" : "bg-emerald-500"
+                            }`}>
+                              {stepConfigs[lastHoveredStep] === "profile" ? <Users className="h-4 w-4 text-white" /> :
+                               stepConfigs[lastHoveredStep] === "template" ? <FileText className="h-4 w-4 text-white" /> :
+                               stepConfigs[lastHoveredStep] === "blue_room" ? <Store className="h-4 w-4 text-white" /> :
+                               stepConfigs[lastHoveredStep] === "orange_room" ? <Store className="h-4 w-4 text-white" /> :
+                               stepConfigs[lastHoveredStep] === "echo_cards" ? <Store className="h-4 w-4 text-white" /> :
+                               stepConfigs[lastHoveredStep] === "catalog" ? <Store className="h-4 w-4 text-white" /> :
+                               stepConfigs[lastHoveredStep] === "echo" ? <FileText className="h-4 w-4 text-white" /> :
+                               stepConfigs[lastHoveredStep] === "echoData" ? <Clock className="h-4 w-4 text-white" /> :
+                               stepConfigs[lastHoveredStep] === "manual" ? <Plus className="h-4 w-4 text-white" /> : <CheckCircle className="h-4 w-4 text-white" />}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-800">
+                                {dataSources[stepConfigs[lastHoveredStep] as keyof typeof dataSources]?.name}
+                              </div>
+                              {stepConfigs[lastHoveredStep] === "template" && manualData[lastHoveredStep]?.templateName && (
+                                <div className="text-xs text-gray-500">{manualData[lastHoveredStep].templateName}</div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3 mb-4">
+                            {lastHoveredStep === 3 && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400">📄</span>
+                                <span className="text-gray-800">{uploadedFiles[lastHoveredStep]}</span>
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full ml-auto">
+                                  ✓ Загружен
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      {/* Для шага 5: показываем кубики выбора типа реквизитов */}
+                      {lastHoveredStep === 5 && (() => {
+                        // Проверяем доступные методы поставщика
+                        const checkMethodAvailability = (method: string) => {
+                          // Приоритет 1: selectedSupplierData
+                          if (selectedSupplierData) {
+                            if (method === 'bank-transfer' && ((selectedSupplierData.bank_accounts?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
+                              return true;
+                            }
+                            if (method === 'p2p' && ((selectedSupplierData.p2p_cards?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
+                              return true;
+                            }
+                            if (method === 'crypto' && ((selectedSupplierData.crypto_wallets?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
+                              return true;
+                            }
+                          }
+
+                          // Приоритет 2: manualData[4]
+                          if (manualData[4]) {
+                            if (manualData[4].methods && manualData[4].methods.includes(method)) {
+                              return true;
+                            }
+                            if (manualData[4].supplier_data) {
+                              const supplier = manualData[4].supplier_data;
+                              if (method === 'bank-transfer' && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer'))) {
+                                return true;
+                              }
+                              if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p'))) {
+                                return true;
+                              }
+                              if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) {
+                                return true;
+                              }
+                            }
+                          }
+
+                          // Приоритет 3: Проверяем OCR данные в manualData[4] (после автозаполнения из инвойса)
+                          if (manualData[4]?.method === method) {
+                            return true;
+                          }
+
+                          return false;
+                        };
+
+                        const bankAvailable = checkMethodAvailability('bank-transfer');
+                        const p2pAvailable = checkMethodAvailability('p2p');
+                        const cryptoAvailable = checkMethodAvailability('crypto');
+
+
+                        return (
+                          <div className="mb-6">
+                            <h4 className="text-base font-semibold text-gray-800 mb-4">Выберите тип реквизитов:</h4>
+                            <div className="grid grid-cols-3 gap-4 w-full">
+                            {/* Банковский перевод */}
+                            <div
+                              className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                bankAvailable
+                                  ? 'border-orange-400 bg-orange-100 hover:border-orange-500 ring-2 ring-orange-200'
+                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
+                                setManualData(prev => {
+                                  // Берем первый банковский реквизит из каталога (если есть)
+                                  const bankData = prev[5]?.bank_accounts?.[0] || {};
+
+                                  return {
+                                    ...prev,
+                                    4: {
+                                      ...prev[4],
+                                      selectedMethod: 'bank-transfer',
+                                      method: 'bank-transfer',
+                                      user_choice: true
+                                    },
+                                    5: {
+                                      ...prev[5],  // ✅ Сохраняем данные каталога (supplier_data, bank_accounts, etc.)
+                                      type: 'bank',
+                                      bankName: bankData.bank_name || prev[5]?.bankName || '',
+                                      accountNumber: bankData.account || prev[5]?.accountNumber || '',
+                                      swift: bankData.swift || prev[5]?.swift || '',
+                                      recipientName: bankData.holder_name || prev[5]?.recipientName || '',
+                                      user_choice: true
+                                    }
+                                  };
+                                });
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
+                                setLastHoveredStep(0);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                                  <Banknote className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">Банковский перевод</div>
+                                  <div className="text-xs text-gray-500">Банковские реквизиты</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                Использовать банковские реквизиты
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">
+                                SWIFT, IBAN, счета
+                              </div>
+                            </div>
+
+                            {/* P2P переводы */}
+                            <div
+                              className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                p2pAvailable
+                                  ? 'border-blue-400 bg-blue-100 hover:border-blue-500 ring-2 ring-blue-200'
+                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
+                                setManualData(prev => ({
+                                  ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'p2p',
+                                    method: 'p2p',
+                                    user_choice: true
+                                  },
+                                  5: {
+                                    ...prev[5],  // ✅ Сохраняем данные каталога
+                                    type: 'p2p',
+                                    card_bank: (prev[5]?.p2p_cards?.[0]?.bank || prev[5]?.card_bank || ''),
+                                    card_number: (prev[5]?.p2p_cards?.[0]?.card_number || prev[5]?.card_number || ''),
+                                    card_holder: (prev[5]?.p2p_cards?.[0]?.holder_name || prev[5]?.card_holder || ''),
+                                    user_choice: true
+                                  }
+                                }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
+                                setLastHoveredStep(0);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                  <CreditCard className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">P2P переводы</div>
+                                  <div className="text-xs text-gray-500">Карта поставщика</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                Использовать P2P карты
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">
+                                Банковские карты
+                              </div>
+                            </div>
+
+                            {/* Криптовалюта */}
+                            <div
+                              className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                cryptoAvailable
+                                  ? 'border-green-400 bg-green-100 hover:border-green-500 ring-2 ring-green-200'
+                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                // Обновляем шаги 4 и 5 (двусторонняя связь)
+                                setManualData(prev => ({
+                                  ...prev,
+                                  4: {
+                                    ...prev[4],
+                                    selectedMethod: 'crypto',
+                                    method: 'crypto',
+                                    user_choice: true
+                                  },
+                                  5: {
+                                    ...prev[5],  // ✅ Сохраняем данные каталога
+                                    type: 'crypto',
+                                    crypto_network: (prev[5]?.crypto_wallets?.[0]?.network || prev[5]?.crypto_network || ''),
+                                    crypto_address: (prev[5]?.crypto_wallets?.[0]?.address || prev[5]?.crypto_address || ''),
+                                    user_choice: true
+                                  }
+                                }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
+                                setLastHoveredStep(0);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                  <Coins className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800">Криптовалюта</div>
+                                  <div className="text-xs text-gray-500">Криптокошелек</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                Использовать криптовалюты
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">
+                                BTC, ETH, USDT и др.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        );
+                      })()}
+
+                      <h4 className="text-base font-semibold text-gray-800 mb-4">Доступные источники данных:</h4>
+                      <div className="grid gap-4">
+                        {constructorSteps.find(s => s.id === lastHoveredStep)?.sources.map((source) => {
+                          const sourceInfo = dataSources[source as keyof typeof dataSources]
+                          const SourceIcon = sourceInfo?.icon
+                          return (
+                            <div
+                              key={source}
+                              className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
+                              onClick={() => handleSourceSelect(source)}
+                            >
+                              <div className={`w-12 h-12 rounded-full ${sourceInfo?.color} flex items-center justify-center shadow-sm`}>
+                                <SourceIcon className="h-6 w-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-lg font-semibold text-gray-800 mb-1">{sourceInfo?.name}</div>
+                                <div className="text-sm text-gray-600 leading-relaxed">
+                                  {source === "profile" && (lastHoveredStep === 1 ? "Использовать данные из профиля клиента" : "Использовать данные из профиля поставщика")}
+                                  {source === "template" && "Выбрать из сохраненных шаблонов"}
+                                  {source === "catalog" && "Из синей и оранжевой комнат каталога (включая эхо карточки)"}
+                                  {source === "manual" && "Заполнить самостоятельно"}
+                                  {source === "automatic" && "Автоматическая обработка"}
+                                        </div>
+      </div>
+
+      {/* Диалог деталей проекта */}
+      {projectDetailsDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Детали проекта</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setProjectDetailsDialogOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {projectDetails && (
+              <div className="space-y-6">
+                {/* Основная информация */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3">Основная информация</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">ID проекта</p>
+                      <p className="font-medium">{projectDetails.id}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Статус</p>
+                      <p className="font-medium">{projectDetails.status}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Текущий этап</p>
+                      <p className="font-medium">{projectDetails.currentStage}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Создан</p>
+                      <p className="font-medium">
+                        {new Date(projectDetails.created_at).toLocaleString('ru-RU')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Обновлен</p>
+                      <p className="font-medium">
+                        {new Date(projectDetails.updated_at).toLocaleString('ru-RU')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Данные шагов */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3">Данные шагов</h3>
+                  <div className="space-y-4">
+                    {Object.entries(projectDetails.manualData || {}).map(([stepId, data]: [string, any]) => (
+                      <div key={stepId} className="border border-gray-200 rounded p-3">
+                        <h4 className="font-medium mb-2">Шаг {stepId}</h4>
+                        <pre className="text-sm bg-white p-2 rounded border overflow-x-auto">
+                          {JSON.stringify(data, null, 2)}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Конфигурации шагов */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3">Конфигурации шагов</h3>
+                  <div className="space-y-4">
+                    {Object.entries(projectDetails.stepConfigs || {}).map(([stepId, config]: [string, any]) => (
+                      <div key={stepId} className="border border-gray-200 rounded p-3">
+                        <h4 className="font-medium mb-2">Шаг {stepId}</h4>
+                        <pre className="text-sm bg-white p-2 rounded border overflow-x-auto">
+                          {JSON.stringify(config, null, 2)}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Дополнительные данные проекта */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3">Дополнительные данные</h3>
+                  <pre className="text-sm bg-white p-2 rounded border overflow-x-auto">
+                    {JSON.stringify(projectDetails, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+})}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              ) : lastHoveredStep && !isStepEnabled(lastHoveredStep) ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-4">
+                    <Blocks className="h-12 w-12 mx-auto" />
+                  </div>
+                  <p className="text-gray-500">Сначала настройте основные шаги (I и II)</p>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Blocks className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>Наведите на кубик для выбора источника данных</p>
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
           </StageRouter>
         </CardContent>
       </Card>
