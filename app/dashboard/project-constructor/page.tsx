@@ -103,6 +103,7 @@ import CatalogModal from "../create-project/components/CatalogModal"
 import { AutoFillNotification } from "@/components/project-constructor/notifications/AutoFillNotification"
 import { useTemplateSystem } from "@/hooks/project-constructor/useTemplateSystem"
 import { useOcrUpload } from "@/hooks/project-constructor/useOcrUpload"
+import { useStepData } from "@/hooks/project-constructor/useStepData"
 import { POLLING_INTERVALS, TIMEOUTS } from "@/components/project-constructor/config/PollingConstants"
 import { ModalProvider, useModals } from "./components/modals/ModalContext"
 import ModalManager from "./components/modals/ModalManager"
@@ -1593,6 +1594,20 @@ function ProjectConstructorContent() {
     bucketMap
   })
 
+  // ===== НОВЫЙ ХУК: Step Data Management =====
+  // Извлекаем логику сохранения/удаления данных шагов
+  // Этот хук НЕ содержит state - работает с внешним manualData
+  // ⚠️ НЕ вызывает autoFill* - это только для ручного ввода!
+  const stepData = useStepData({
+    manualData,
+    setManualData,
+    setSelectedSource,
+    setEditingType,
+    setStepConfigs,
+    checkSummaryReadiness,
+    currentStage
+  })
+
   // Обработчик отмены выбора источника
 
   // Удалено: функция handleViewStepData больше не нужна - используем инлайн-формы
@@ -2547,7 +2562,7 @@ function ProjectConstructorContent() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => handleRemoveSource(lastHoveredStep)}
+                  onClick={() => stepData.removeStepData(lastHoveredStep)}
                   className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
                 >
                   <div className="flex items-center gap-2">
@@ -2804,7 +2819,7 @@ function ProjectConstructorContent() {
                       {/* Формы для разных шагов */}
                       {lastHoveredStep === 1 && editingType === 'company' && (
                         <CompanyForm 
-                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
                           initialData={manualData[lastHoveredStep] as any}
                         />
@@ -2812,7 +2827,7 @@ function ProjectConstructorContent() {
                       
                       {lastHoveredStep === 1 && editingType === 'contacts' && (
                         <ContactsForm 
-                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
                           initialData={manualData[lastHoveredStep] as any}
                         />
@@ -2820,7 +2835,7 @@ function ProjectConstructorContent() {
                       
                       {lastHoveredStep === 1 && editingType === 'bank' && (
                         <BankForm 
-                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
                           initialData={manualData[lastHoveredStep] as any}
                         />
@@ -2828,7 +2843,7 @@ function ProjectConstructorContent() {
                       
                       {lastHoveredStep === 1 && !editingType && (
                         <CompanyForm 
-                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
                           initialData={manualData[lastHoveredStep] as any}
                         />
@@ -2836,7 +2851,7 @@ function ProjectConstructorContent() {
                       
                       {lastHoveredStep === 2 && (
                         <SpecificationForm 
-                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
                           initialData={manualData[lastHoveredStep] as any}
                         />
@@ -2848,7 +2863,7 @@ function ProjectConstructorContent() {
                             if (data.file) {
                               ocrUpload.handleFileUpload(lastHoveredStep, data.file)
                             }
-                            handleManualDataSave(lastHoveredStep, data)
+                            stepData.saveStepData(lastHoveredStep, data)
                           }}
                           onCancel={handleCancelSource}
                         />
@@ -2856,7 +2871,7 @@ function ProjectConstructorContent() {
                       
                       {lastHoveredStep === 4 && (
                         <PaymentMethodForm 
-                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
                           initialData={manualData[lastHoveredStep] as any}
                           getStepData={(stepId) => manualData[stepId]}
@@ -2865,7 +2880,7 @@ function ProjectConstructorContent() {
                       
                       {lastHoveredStep === 5 && (
                         <RequisitesForm 
-                          onSave={(data) => handleManualDataSave(lastHoveredStep, data)}
+                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
                           onCancel={handleCancelSource}
                           initialData={manualData[lastHoveredStep] as any}
                         />
