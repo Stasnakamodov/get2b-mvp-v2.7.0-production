@@ -15,11 +15,11 @@ interface TemplateData {
 
 interface UseTemplateSystemProps {
   templates: any[] | null
-  setStepConfigs: React.Dispatch<React.SetStateAction<Record<number, string>>>
+  setStepConfigs: any // Используем any чтобы избежать конфликта типов PartialStepConfigs vs Record<number, string>
   setManualData: React.Dispatch<React.SetStateAction<Record<number, any>>>
   setSelectedSource: React.Dispatch<React.SetStateAction<any>>
-  autoFillStepsFromSupplier: (stepData: any) => void | Promise<void>
-  autoFillStepFromRequisites: (stepData: any, stepId: number) => Promise<void>
+  autoFillStepsFromSupplier: (stepData: any) => void | Promise<void> | Promise<boolean>
+  autoFillStepFromRequisites: (stepData: any, stepId: number) => Promise<void> | Promise<boolean>
 }
 
 export function useTemplateSystem({
@@ -94,7 +94,7 @@ export function useTemplateSystem({
 
     if (templateData.data[stepId as keyof typeof templateData.data]) {
       // Применяем данные шаблона
-      setStepConfigs(prev => ({
+      setStepConfigs((prev: any) => ({
         ...prev,
         [stepId]: "template"
       }))
@@ -170,7 +170,7 @@ export function useTemplateSystem({
       templateStepSelection.availableSteps.forEach(stepId => {
         if (templateData.data[stepId as keyof typeof templateData.data]) {
           const stepData = templateData.data[stepId as keyof typeof templateData.data]
-          setStepConfigs(prev => ({
+          setStepConfigs((prev: any) => ({
             ...prev,
             [stepId]: "template"
           }))
