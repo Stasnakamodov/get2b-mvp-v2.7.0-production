@@ -20,7 +20,7 @@ export const CompanyDataSchema = z.object({
   legal_address: z.string().optional(),
   email: z.string().email('Неверный формат email').optional().or(z.literal('')),
   phone: z.string().optional(),
-  website: z.string().url('Неверный формат URL').optional().or(z.literal('')),
+  website: z.string().optional(), // Убрана строгая валидация URL - разрешаем любой текст
 })
 
 export type CompanyData = z.infer<typeof CompanyDataSchema>
