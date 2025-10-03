@@ -3250,10 +3250,10 @@ function ProjectConstructorContent() {
                       )}
                       
                       {lastHoveredStep === 3 && (
-                        <FileUploadForm 
+                        <FileUploadForm
                           onSave={(data) => {
                             if (data.file) {
-                              handleFileUpload(lastHoveredStep, data.file)
+                              ocrUpload.handleFileUpload(lastHoveredStep, data.file)
                             }
                             handleManualDataSave(lastHoveredStep, data)
                           }}
@@ -3314,7 +3314,7 @@ function ProjectConstructorContent() {
                               e.preventDefault();
                               const files = e.dataTransfer.files;
                               if (files.length > 0) {
-                                handleFileUpload(lastHoveredStep, files[0]);
+                                ocrUpload.handleFileUpload(lastHoveredStep, files[0]);
                               }
                             }}
                             onClick={() => document.getElementById(`ocr-file-input-${lastHoveredStep}`)?.click()}
@@ -3334,7 +3334,7 @@ function ProjectConstructorContent() {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  handleFileUpload(lastHoveredStep, file);
+                                  ocrUpload.handleFileUpload(lastHoveredStep, file);
                                 }
                               }}
                             />
@@ -3365,7 +3365,7 @@ function ProjectConstructorContent() {
                           </div>
                           
                           {/* Статус загрузки и анализа */}
-                          {ocrAnalyzing[lastHoveredStep] && (
+                          {ocrUpload.ocrAnalyzing[lastHoveredStep] && (
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                               <div className="flex items-center gap-2">
                                 <Loader className="w-5 h-5 text-blue-600 animate-spin" />
@@ -3376,9 +3376,9 @@ function ProjectConstructorContent() {
                               </p>
                             </div>
                           )}
-                          
+
                           {/* Статус успешной загрузки */}
-                          {uploadedFiles[lastHoveredStep] && !ocrAnalyzing[lastHoveredStep] && !ocrError[lastHoveredStep] && (
+                          {ocrUpload.uploadedFiles[lastHoveredStep] && !ocrUpload.ocrAnalyzing[lastHoveredStep] && !ocrUpload.ocrError[lastHoveredStep] && (
                             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                               <div className="flex items-center gap-2">
                                 <CheckCircle className="w-5 h-5 text-green-600" />
@@ -3389,26 +3389,26 @@ function ProjectConstructorContent() {
                               </p>
                             </div>
                           )}
-                          
+
                           {/* Статус ошибки */}
-                          {ocrError[lastHoveredStep] && (
+                          {ocrUpload.ocrError[lastHoveredStep] && (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                               <div className="flex items-center gap-2">
                                 <X className="w-5 h-5 text-red-600" />
                                 <span className="text-red-800 font-medium">Ошибка анализа</span>
                               </div>
                               <p className="text-sm text-red-600 mt-1">
-                                {ocrError[lastHoveredStep]}
+                                {ocrUpload.ocrError[lastHoveredStep]}
                               </p>
-                              
+
                               {/* Отладочная информация */}
-                              {ocrDebugData[lastHoveredStep] && (
+                              {ocrUpload.ocrDebugData[lastHoveredStep] && (
                                 <details className="mt-3">
                                   <summary className="text-sm text-red-700 cursor-pointer">
                                     Показать отладочную информацию
                                   </summary>
                                   <pre className="text-xs text-red-600 mt-2 bg-red-100 p-2 rounded overflow-auto max-h-32">
-                                    {JSON.stringify(ocrDebugData[lastHoveredStep], null, 2)}
+                                    {JSON.stringify(ocrUpload.ocrDebugData[lastHoveredStep], null, 2)}
                                   </pre>
                                 </details>
                                                   )}
