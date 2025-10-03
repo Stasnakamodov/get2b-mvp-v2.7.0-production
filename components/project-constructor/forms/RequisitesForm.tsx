@@ -172,7 +172,7 @@ const RequisitesForm = ({ onSave, onCancel, initialData }: RequisitesFormProps) 
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Вернуться
+          Сохранить и вернуться
         </Button>
         <Button type="button" onClick={() => {
           setFormData({
