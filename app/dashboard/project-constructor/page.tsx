@@ -969,20 +969,6 @@ function ProjectConstructorContent() {
     autoFillStepFromRequisites
   })
 
-  // ===== НОВЫЙ ХУК: OCR Upload =====
-  // Извлекаем логику загрузки файлов и OCR анализа в отдельный хук
-  const ocrUpload = useOcrUpload({
-    supabase,
-    setManualData,
-    setStepConfigs,
-    setSelectedSource,
-    suggestPaymentMethodAndRequisites,
-    uploadFileToStorage,
-    generateFileDate,
-    cleanFileName,
-    bucketMap
-  })
-
   // Функция для получения данных из шаблонов для конкретного шага
   const getTemplateDataForStep = async (stepId: number) => {
     console.log('Запрос данных из шаблонов для шага:', stepId)
@@ -1998,6 +1984,21 @@ function ProjectConstructorContent() {
     console.log("   - Шаг 4 (Способ оплаты):", paymentMethodData);
     console.log("   - Шаг 5 (Реквизиты):", requisitesData);
   };
+
+  // ===== НОВЫЙ ХУК: OCR Upload =====
+  // Извлекаем логику загрузки файлов и OCR анализа в отдельный хук
+  // Подключаем ПОСЛЕ всех функций, которые используются внутри хука
+  const ocrUpload = useOcrUpload({
+    supabase,
+    setManualData,
+    setStepConfigs,
+    setSelectedSource,
+    suggestPaymentMethodAndRequisites,
+    uploadFileToStorage,
+    generateFileDate,
+    cleanFileName,
+    bucketMap
+  })
 
   // Обработчик отмены выбора источника
 
