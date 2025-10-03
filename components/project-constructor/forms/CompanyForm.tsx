@@ -52,7 +52,18 @@ const CompanyForm = ({ onSave, onCancel, initialData, isInlineView = false }: Co
         phone: formData.phone,
         website: formData.website,
       })
-      onSave(validatedData)
+
+      // Добавляем банковские и контактные данные (они не в схеме валидации, но их нужно сохранить)
+      const fullData = {
+        ...validatedData,
+        bank_name: formData.bankName,
+        bank_account: formData.bankAccount,
+        bik: formData.bik,
+        corr_account: formData.correspondentAccount,
+        director: formData.director,
+      }
+
+      onSave(fullData)
     } catch (error: any) {
       console.error('Ошибка валидации формы компании:', error)
       if (!isInlineView) {
