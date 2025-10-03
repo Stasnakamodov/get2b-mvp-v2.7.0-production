@@ -102,6 +102,7 @@ import { useToast } from "@/components/ui/use-toast"
 import CatalogModal from "../create-project/components/CatalogModal"
 import { AutoFillNotification } from "@/components/project-constructor/notifications/AutoFillNotification"
 import { useTemplateSystem } from "@/hooks/project-constructor/useTemplateSystem"
+import { useOcrUpload } from "@/hooks/project-constructor/useOcrUpload"
 import { POLLING_INTERVALS, TIMEOUTS } from "@/components/project-constructor/config/PollingConstants"
 import { ModalProvider, useModals } from "./components/modals/ModalContext"
 import ModalManager from "./components/modals/ModalManager"
@@ -155,11 +156,11 @@ function ProjectConstructorContent() {
     supplierName: string;
     filledSteps: number[];
   } | null>(null)
-  
-  // Состояния для OCR анализа
-  const [ocrAnalyzing, setOcrAnalyzing] = useState<Record<number, boolean>>({})
-  const [ocrError, setOcrError] = useState<Record<number, string>>({})
-  const [ocrDebugData, setOcrDebugData] = useState<OcrDebugData>({})
+
+  // ===== СТАРЫЕ СОСТОЯНИЯ OCR (закомментированы, т.к. переехали в useOcrUpload хук) =====
+  // const [ocrAnalyzing, setOcrAnalyzing] = useState<Record<number, boolean>>({})
+  // const [ocrError, setOcrError] = useState<Record<number, string>>({})
+  // const [ocrDebugData, setOcrDebugData] = useState<OcrDebugData>({})
   const [currentProductIndex, setCurrentProductIndex] = useState<number>(0)
   const productsPerView = PRODUCT_DISPLAY_CONFIG.PRODUCTS_PER_VIEW
 
@@ -966,6 +967,20 @@ function ProjectConstructorContent() {
     setSelectedSource,
     autoFillStepsFromSupplier,
     autoFillStepFromRequisites
+  })
+
+  // ===== НОВЫЙ ХУК: OCR Upload =====
+  // Извлекаем логику загрузки файлов и OCR анализа в отдельный хук
+  const ocrUpload = useOcrUpload({
+    supabase,
+    setManualData,
+    setStepConfigs,
+    setSelectedSource,
+    suggestPaymentMethodAndRequisites,
+    uploadFileToStorage,
+    generateFileDate,
+    cleanFileName,
+    bucketMap
   })
 
   // Функция для получения данных из шаблонов для конкретного шага
