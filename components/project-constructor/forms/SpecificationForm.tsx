@@ -57,12 +57,24 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
     setFormData(prev => ({ ...prev, total_amount: totalAmount }))
   }, [formData.items])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+
+    // Очищаем пустые optional поля перед валидацией
+    const cleanedData = {
+      ...formData,
+      items: formData.items.map(item => ({
+        ...item,
+        supplier_name: item.supplier_name || undefined,
+        supplier_id: item.supplier_id || undefined,
+        notes: item.notes || undefined,
+      })),
+      notes: formData.notes || undefined,
+    }
 
     // Валидация через Zod схему
     try {
-      const validatedData = SpecificationDataSchema.parse(formData)
+      const validatedData = SpecificationDataSchema.parse(cleanedData)
       onSave(validatedData)
     } catch (error: any) {
       console.error('Ошибка валидации формы спецификации:', error)
