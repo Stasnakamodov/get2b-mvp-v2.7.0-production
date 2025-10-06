@@ -74,31 +74,20 @@ export function SummaryBlock({
               {configuredStepsSummary.map((item) => (
                 <div
                   key={item.stepId}
-                  className={`flex items-center gap-3 p-3 rounded-lg hover:shadow-md cursor-pointer transition-all duration-200 border-2 relative z-10 ${
-                    item.source === 'echoData'
-                      ? 'bg-purple-50 hover:bg-purple-100 border-purple-400 hover:border-purple-500'
-                      : 'bg-gray-50 hover:bg-gray-100 border-blue-400 hover:border-blue-500'
-                  }`}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:shadow-md cursor-pointer transition-all duration-200 border-2 relative z-10 bg-gray-50 hover:bg-gray-100 border-blue-400 hover:border-blue-500"
                   style={{ pointerEvents: 'auto' }}
                   onClick={() => onStepCardClick(item)}
                 >
-                  <div className={`w-8 h-8 rounded text-white flex items-center justify-center text-sm font-bold ${
-                    item.source === 'echoData' ? 'bg-purple-500' : 'bg-blue-500'
-                  }`}>
+                  <div className="w-8 h-8 rounded text-white flex items-center justify-center text-sm font-bold bg-blue-500">
                     {item.stepId}
                   </div>
                   <div className="flex-1">
                     <div className="font-medium">{item.stepName}</div>
-                    <div className={`text-sm ${
-                      item.source === 'echoData' ? 'text-purple-600' : 'text-gray-500'
-                    }`}>
+                    <div className="text-sm text-gray-500">
                       Источник: {item.sourceName}
-                      {item.source === 'echoData' && ' ✨'}
                     </div>
                   </div>
-                  <ChevronRight className={`h-4 w-4 ${
-                    item.source === 'echoData' ? 'text-purple-400' : 'text-gray-400'
-                  }`} />
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
                 </div>
               ))}
             </div>

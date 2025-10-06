@@ -767,12 +767,6 @@ function ProjectConstructorContent() {
     if (stepId === 4 || stepId === 5) {
       console.log(`🎯 Обрабатываем клик по шагу ${stepId}`)
       
-      // Если данные уже применены, не показываем ничего (просмотр только через карточки в блоке 2)
-      if (manualData[stepId]?.user_choice && stepConfigs[stepId] === 'echoData') {
-        console.log('✅ Эхо данные уже применены, просмотр доступен только через карточки в блоке 2')
-        return
-      }
-      
       // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Клик по кубикам 4 и 5 больше не показывает модалку с эхо данными
       // Пользователь может заполнить вручную или выбрать из рекомендаций (оранжевые кубики)
       console.log('❌ Эхо данные отключены. Заполните вручную или используйте рекомендации.')
@@ -3334,30 +3328,19 @@ function ProjectConstructorContent() {
 
                       {/* Для других шагов - обычная карточка */}
                       {lastHoveredStep !== 1 && lastHoveredStep !== 2 && lastHoveredStep !== 4 && lastHoveredStep !== 5 && manualData[lastHoveredStep] && (
-                        <div 
-                          className={`border-2 border-gray-200 rounded-xl p-6 shadow-lg max-w-md w-full transition-all duration-200
-                            ${manualData[lastHoveredStep].echo_data 
-                              ? 'bg-white/60 backdrop-blur-sm border-indigo-200' 
-                              : 'bg-white'}
-                          `}
-                        >
+                        <div className="border-2 border-gray-200 rounded-xl p-6 shadow-lg max-w-md w-full transition-all duration-200 bg-white">
                           <div className="flex items-center gap-3 mb-4">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                               stepConfigs[lastHoveredStep] === "profile" ? "bg-blue-500" :
                               stepConfigs[lastHoveredStep] === "template" ? "bg-green-500" :
-                              (stepConfigs[lastHoveredStep] === "blue_room" || stepConfigs[lastHoveredStep] === "orange_room" || stepConfigs[lastHoveredStep] === "echo_cards") ? "bg-purple-500" :
-                              stepConfigs[lastHoveredStep] === "echo" ? "bg-orange-500" :
-                              stepConfigs[lastHoveredStep] === "echoData" ? "bg-indigo-500" :
+                              (stepConfigs[lastHoveredStep] === "blue_room" || stepConfigs[lastHoveredStep] === "orange_room") ? "bg-purple-500" :
                               stepConfigs[lastHoveredStep] === "manual" ? "bg-gray-500" : "bg-emerald-500"
                             }`}>
                               {stepConfigs[lastHoveredStep] === "profile" ? <Users className="h-4 w-4 text-white" /> :
                                stepConfigs[lastHoveredStep] === "template" ? <FileText className="h-4 w-4 text-white" /> :
                                stepConfigs[lastHoveredStep] === "blue_room" ? <Store className="h-4 w-4 text-white" /> :
                                stepConfigs[lastHoveredStep] === "orange_room" ? <Store className="h-4 w-4 text-white" /> :
-                               stepConfigs[lastHoveredStep] === "echo_cards" ? <Store className="h-4 w-4 text-white" /> :
                                stepConfigs[lastHoveredStep] === "catalog" ? <Store className="h-4 w-4 text-white" /> :
-                               stepConfigs[lastHoveredStep] === "echo" ? <FileText className="h-4 w-4 text-white" /> :
-                               stepConfigs[lastHoveredStep] === "echoData" ? <Clock className="h-4 w-4 text-white" /> :
                                stepConfigs[lastHoveredStep] === "manual" ? <Plus className="h-4 w-4 text-white" /> : <CheckCircle className="h-4 w-4 text-white" />}
                             </div>
                             <div>
