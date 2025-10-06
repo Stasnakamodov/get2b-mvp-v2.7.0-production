@@ -166,7 +166,7 @@ function ProjectConstructorContent() {
   const [currentProductIndex, setCurrentProductIndex] = useState<number>(0)
   const productsPerView = PRODUCT_DISPLAY_CONFIG.PRODUCTS_PER_VIEW
 
-  const [showPhantomOptions, setShowPhantomOptions] = useState<boolean>(false)
+  // showPhantomOptions удалена (мёртвый state - не используется)
   const [showSupplierProfileSelector, setShowSupplierProfileSelector] = useState<boolean>(false)
   const [showCatalogSourceModal, setShowCatalogSourceModal] = useState<boolean>(false)
 
@@ -190,7 +190,7 @@ function ProjectConstructorContent() {
 
   // Состояние для обработки ошибок загрузки шаблонов
   const [templateError, setTemplateError] = useState<string | null>(null)
-  const [templateLoading, setTemplateLoading] = useState<boolean>(false)
+  // templateLoading удалена (мёртвый state - не используется)
   
   // Состояние для отслеживания текущего этапа
   const [currentStage, setCurrentStage] = useState<number>(1)
@@ -484,20 +484,7 @@ function ProjectConstructorContent() {
 
   // findSupplierInAnyStep извлечена в utils/project-constructor/SupplierFinder.ts
 
-  // Закрытие выпадающего списка при клике вне его области
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
-      if (!target.closest('.phantom-options-dropdown')) {
-        setShowPhantomOptions(false)
-      }
-    }
-    
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
+  // Удалён useEffect для showPhantomOptions (мёртвый код)
 
   // Загружаем шаблоны при монтировании компонента (хук useProjectTemplates объявлен выше)
   React.useEffect(() => {
@@ -1345,82 +1332,7 @@ function ProjectConstructorContent() {
     }
   }
 
-  // Обработчик сохранения данных формы
-  const handleManualDataSave = (stepId: StepNumber, data: any) => {
-    // Валидация данных перед сохранением
-    const validation = validateStepData(stepId, data)
-    if (!validation.success) {
-      console.error(`Ошибка валидации шага ${stepId}:`, validation.errors)
-      // Показываем пользователю первую ошибку
-      alert(`Ошибка валидации: ${validation.errors[0]}`)
-      return
-    }
-    console.log('=== СОХРАНЕНИЕ ДАННЫХ ===')
-    console.log('stepId:', stepId)
-    console.log('data для сохранения:', data)
-    
-    setManualData(prev => {
-      console.log('Текущие manualData:', prev)
-      
-      // Для шага 1 объединяем данные с существующими
-      if (stepId === 1) {
-        const existingData = prev[stepId] || {}
-        const mergedData = { ...existingData, ...data }
-        console.log('Объединенные данные:', mergedData)
-        const newData = { ...prev, [stepId]: mergedData }
-        
-              // Проверяем готовность к сводке после обновления данных (только если не на этапе 2+)
-      setTimeout(() => {
-        if (currentStage < 2) {
-          checkSummaryReadiness()
-        }
-      }, 100)
-      return newData
-      }
-      
-      // Для остальных шагов просто заменяем
-      const newData = { ...prev, [stepId]: data }
-      
-      // Автоматическое заполнение шагов IV и V после заполнения шага II
-      if (stepId === 2) {
-        autoFillStepsFromSupplier(data)
-      }
-      
-      // Автоматическое заполнение шага II после заполнения шагов IV или V
-      if (stepId === 4 || stepId === 5) {
-        autoFillStepFromRequisites(data, stepId).catch(error => {
-          console.error('Ошибка автозаполнения при сохранении шага', stepId, ':', error)
-        })
-      }
-      
-      // Проверяем готовность к сводке после обновления данных (только если не на этапе 2+)
-      setTimeout(() => {
-        if (currentStage < 2) {
-          checkSummaryReadiness()
-        }
-      }, 100)
-      return newData
-    })
-    
-    // Проверяем переход между этапами
-    setTimeout(() => {
-      const currentStage = getCurrentStage()
-      const previousStage = getCurrentStage() // Это будет предыдущий этап
-      
-      if (currentStage === 2 && previousStage === 1) {
-        // Показываем уведомление о переходе к этапу 2
-        setAutoFillNotification({
-          show: true,
-          message: '🎉 Этап 1 завершен! Теперь доступны шаги 3, 6, 7 для завершения сделки.',
-          supplierName: '',
-          filledSteps: [3, 6, 7]
-        })
-      }
-    }, 100)
-    
-    setSelectedSource(null) // Скрываем форму после сохранения
-    setEditingType('') // Сбрасываем тип редактирования
-  }
+  // handleManualDataSave удалена (мёртвый код - не вызывается)
 
   // ===== СТАРЫЙ OCR КОД УДАЛЕН (строки 1499-1908) =====
   // handleFileUpload, analyzeCompanyCard, analyzeSpecification, extractBankRequisitesFromInvoice
@@ -1537,31 +1449,7 @@ function ProjectConstructorContent() {
 
   // Удалено: функция handleViewStepData больше не нужна - используем инлайн-формы
 
-  const handleRemoveSource = (stepId: number) => {
-    // Удаляем источник данных для конкретного шага
-    setStepConfigs(prev => {
-      const newConfigs = { ...prev }
-      delete newConfigs[stepId]
-      return newConfigs
-    })
-    
-    // Очищаем сохраненные данные
-    setManualData(prev => {
-      const newData = { ...prev }
-      delete newData[stepId]
-      return newData
-    })
-    
-    // Очищаем загруженные файлы
-    setUploadedFiles(prev => {
-      const newFiles = { ...prev }
-      delete newFiles[stepId]
-      return newFiles
-    })
-    
-    // Сбрасываем выбранный источник
-    setSelectedSource(null)
-  }
+  // handleRemoveSource удалена (мёртвый код - не вызывается)
 
   // Функция для открытия предварительного просмотра данных
   const handlePreviewData = (type: string, data: any) => {
