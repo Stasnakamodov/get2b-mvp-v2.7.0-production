@@ -19,7 +19,6 @@ interface UseTemplateSystemProps {
   setManualData: React.Dispatch<React.SetStateAction<Record<number, any>>>
   setSelectedSource: React.Dispatch<React.SetStateAction<any>>
   autoFillStepsFromSupplier: (stepData: any) => void | Promise<void> | Promise<boolean>
-  autoFillStepFromRequisites: (stepData: any, stepId: number) => Promise<void> | Promise<boolean>
 }
 
 export function useTemplateSystem({
@@ -27,8 +26,7 @@ export function useTemplateSystem({
   setStepConfigs,
   setManualData,
   setSelectedSource,
-  autoFillStepsFromSupplier,
-  autoFillStepFromRequisites
+  autoFillStepsFromSupplier
 }: UseTemplateSystemProps) {
   const [templateSelection, setTemplateSelection] = useState<boolean>(false)
   const [templateStepSelection, setTemplateStepSelection] = useState<{
@@ -111,13 +109,6 @@ export function useTemplateSystem({
       if (stepId === 2) {
         autoFillStepsFromSupplier(stepData)
       }
-
-      // Проверяем, нужно ли автоматическое заполнение (если это шаги IV или V)
-      if (stepId === 4 || stepId === 5) {
-        autoFillStepFromRequisites(stepData, stepId).catch(error => {
-          console.error('Ошибка автозаполнения из шага', stepId, ':', error)
-        })
-      }
     } else {
       console.log(`❌ Нет данных шаблона для шага ${stepId}`)
     }
@@ -187,15 +178,7 @@ export function useTemplateSystem({
             }, 100)
           }
 
-          // Проверяем, нужно ли автоматическое заполнение (если это шаги IV или V)
-          if (stepId === 4 || stepId === 5) {
-            // Используем setTimeout, чтобы дать время для обновления состояния
-            setTimeout(() => {
-              autoFillStepFromRequisites(stepData, stepId).catch(error => {
-                console.error('Ошибка отложенного автозаполнения из шага', stepId, ':', error)
-              })
-            }, 100)
-          }
+          // autoFillStepFromRequisites удалена (эхо-данные отключены)
         }
       })
 

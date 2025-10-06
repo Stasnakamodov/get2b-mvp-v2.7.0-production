@@ -682,84 +682,7 @@ function ProjectConstructorContent() {
     }
   }
 
-  // Функция автоматического заполнения шага II на основе данных шагов IV или V
-  const autoFillStepFromRequisites = async (stepData: any, stepId: number) => {
-    console.log(`=== АВТОМАТИЧЕСКОЕ ЗАПОЛНЕНИЕ ШАГА II НА ОСНОВЕ ШАГА ${stepId} ===`)
-    console.log('Данные для проверки:', stepData)
-
-    // Проверяем, есть ли supplier_id в данных
-    let supplierId = stepData.supplier_id
-    if (!supplierId) {
-      console.log('supplier_id не найден в данных шага', stepId)
-      return false
-    }
-
-    console.log('Найден supplier_id:', supplierId)
-
-    try {
-      // Получаем данные поставщика
-      const supplierData = await getSupplierDataFromCatalog(supplierId)
-
-      if (supplierData) {
-        console.log('Данные поставщика найдены:', supplierData.name)
-
-        // Получаем товары поставщика
-        const supplierProducts = await getSupplierProducts(supplierId)
-
-        if (supplierProducts && supplierProducts.length > 0) {
-          // Автоматически заполняем шаг II (спецификация товаров)
-          setManualData(prev => ({
-            ...prev,
-            2: {
-              supplier: supplierData.name,
-              currency: 'RUB',
-              items: supplierProducts.map(product => ({
-                ...product,
-                supplier_id: supplierId,
-                supplier_name: supplierData.name
-              })),
-              auto_filled: true
-            }
-          }))
-
-          // Устанавливаем источник данных для шага II
-          setStepConfigs(prev => ({
-            ...prev,
-            2: "catalog"
-          }))
-        
-        // Показываем уведомление об автоматическом заполнении
-        setAutoFillNotification({
-          show: true,
-          message: `Товары поставщика автоматически добавлены в спецификацию`,
-          supplierName: supplierData.name,
-          filledSteps: [2]
-        })
-        
-        // Скрываем уведомление через 5 секунд
-        setTimeout(() => {
-          setAutoFillNotification(null)
-        }, 5000)
-        
-        // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Автозаполнение шагов 4-5 из эхо данных отключено
-        // Пользователь увидит рекомендации из каталога (оранжевые кубики)
-        
-        console.log('✅ Шаг II автоматически заполнен товарами поставщика')
-        return true
-      } else {
-        console.log('❌ Товары поставщика не найдены')
-      }
-    } else {
-      console.log('❌ Данные поставщика не найдены для ID:', supplierId)
-    }
-
-    } catch (error) {
-      console.error('💥 Критическая ошибка автозаполнения шага II:', error)
-      return false
-    }
-
-    return false
-  }
+  // autoFillStepFromRequisites удалена (эхо-данные отключены, не используется)
 
   // ===== НОВЫЙ ХУК: Template System =====
   // Извлекаем логику работы с шаблонами в отдельный хук
@@ -768,8 +691,7 @@ function ProjectConstructorContent() {
     setStepConfigs,
     setManualData,
     setSelectedSource,
-    autoFillStepsFromSupplier,
-    autoFillStepFromRequisites
+    autoFillStepsFromSupplier
   })
 
   // Функция для получения данных из шаблонов для конкретного шага
@@ -1425,22 +1347,6 @@ function ProjectConstructorContent() {
       console.log(`✅ [ATOMIC] Добавлено ${catalogItems.length} товаров в спецификацию`)
 
       // Вызываем автоматическое заполнение для Step II данных (обратная связь)
-      const step2Data = {
-        supplier: catalogItems[0]?.supplier_name,
-        currency: catalogItems[0]?.currency || 'USD',
-        items: catalogItems,
-        supplier_id: catalogItems[0]?.supplier_id // Добавляем supplier_id для правильной работы autoFillStepFromRequisites
-      }
-
-      // Используем setTimeout для правильной последовательности обновлений состояния
-      setTimeout(() => {
-        if (catalogItems[0]?.supplier_id) {
-          autoFillStepFromRequisites(step2Data, 2).catch(error => {
-            console.error('Ошибка автозаполнения из каталога:', error)
-          })
-        }
-      }, 100)
-
       // 🎯 АВТОЗАПОЛНЕНИЕ ДАННЫХ ПОСТАВЩИКА ДЛЯ ШАГОВ IV И V
       const firstProduct = products[0]
       if (firstProduct?.supplier_id) {
