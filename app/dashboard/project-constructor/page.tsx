@@ -105,6 +105,8 @@ import { AutoFillNotification } from "@/components/project-constructor/notificat
 import { useTemplateSystem } from "@/hooks/project-constructor/useTemplateSystem"
 import { useOcrUpload } from "@/hooks/project-constructor/useOcrUpload"
 import { useStepData } from "@/hooks/project-constructor/useStepData"
+import { useManagerPolling } from "@/hooks/project-constructor/useManagerPolling"
+import { useReceiptPolling } from "@/hooks/project-constructor/useReceiptPolling"
 import { POLLING_INTERVALS, TIMEOUTS } from "@/components/project-constructor/config/PollingConstants"
 import { ModalProvider, useModals } from "./components/modals/ModalContext"
 import ModalManager from "./components/modals/ModalManager"
@@ -514,125 +516,18 @@ function ProjectConstructorContent() {
   }, []) // Убираем fetchTemplates из зависимостей
 
   // Polling статуса модерации атомарного конструктора
-  useEffect(() => {
-    if (!projectRequestId || currentStage !== 2) return
-    
-    const checkManagerStatus = async () => {
-      try {
-        console.log('🔍 Проверяем статус для projectRequestId:', projectRequestId)
-        const cleanRequestId = cleanProjectRequestId(projectRequestId)
-        console.log('🧹 Очищенный requestId для поиска:', cleanRequestId)
-        
-        const { data: projects, error } = await supabase
-          .from('projects')
-          .select('atomic_moderation_status')
-          .ilike('atomic_request_id', `%${cleanRequestId}%`)
-          .order('created_at', { ascending: false })
-          .limit(1)
-
-        if (error) {
-          console.error('❌ Ошибка проверки статуса модерации:', error)
-          return
-        }
-
-        if (projects && projects.length > 0 && projects[0].atomic_moderation_status) {
-          const status = projects[0].atomic_moderation_status
-          console.log('📊 Статус модерации обновлен:', status)
-          setManagerApprovalStatus(status)
-          
-          // Если одобрено, показываем платёжку (шаг 3)
-          if (status === 'approved') {
-            console.log('✅ Атомарный конструктор одобрен - показываем платёжку')
-            // НЕ переходим к этапу 3, остаемся на этапе 2 для показа платёжки
-          }
-        } else {
-          console.log('📊 Записи не найдены или статус пустой')
-        }
-      } catch (error) {
-        console.error('❌ Ошибка polling статуса модерации:', error)
-      }
-    }
-
-    // Проверяем статус каждые 4 секунды
-    const interval = setInterval(checkManagerStatus, POLLING_INTERVALS.MANAGER_STATUS_CHECK)
-    
-    // Первая проверка сразу
-    checkManagerStatus()
-    
-    return () => clearInterval(interval)
-  }, [projectRequestId, currentStage, setCurrentStage])
+  useManagerPolling(projectRequestId, currentStage, managerApprovalStatus, setManagerApprovalStatus)
 
   // Polling статуса одобрения чека
-  useEffect(() => {
-    if (!projectRequestId || currentStage !== 2) return
-    
-    const checkReceiptStatus = async () => {
-      try {
-        console.log('🔍 Проверяем статус чека для projectRequestId:', projectRequestId)
-        const cleanRequestId = cleanProjectRequestId(projectRequestId)
-        console.log('🧹 Очищенный requestId для поиска чека:', cleanRequestId)
-        
-        const { data: projects, error } = await supabase
-          .from('projects')
-          .select('status, atomic_moderation_status')
-          .ilike('atomic_request_id', `%${cleanRequestId}%`)
-          .order('created_at', { ascending: false })
-          .limit(1)
-
-        if (error) {
-          console.error('❌ Ошибка проверки статуса чека:', error)
-          return
-        }
-
-        console.log('📊 [DEBUG] Найденные проекты для чека:', projects)
-
-        if (projects && projects.length > 0) {
-          const project = projects[0]
-          console.log('📊 [DEBUG] Проект найден:', {
-            status: project.status,
-            atomic_moderation_status: project.atomic_moderation_status
-          })
-          
-          // Обновляем статус менеджера если он не установлен
-          if (project.atomic_moderation_status && managerApprovalStatus !== project.atomic_moderation_status) {
-            console.log('📊 Обновляем статус менеджера:', project.atomic_moderation_status)
-            setManagerApprovalStatus(project.atomic_moderation_status)
-          }
-          
-          if (project.status) {
-            const status = project.status
-            console.log('📊 Статус чека обновлен:', status)
-            
-            if (status === 'receipt_approved' && receiptApprovalStatus !== 'approved') {
-              console.log('✅ Чек одобрен - переходим к этапу 3 (анимация сделки)')
-              setReceiptApprovalStatus('approved')
-              setCurrentStage(3) // Переходим к этапу 3: анимация сделки
-            } else if (status === 'receipt_rejected' && receiptApprovalStatus !== 'rejected') {
-              console.log('❌ Чек отклонен')
-              setReceiptApprovalStatus('rejected')
-            } else if (status === 'waiting_receipt' && receiptApprovalStatus !== 'waiting') {
-              console.log('⏳ Чек загружен, ждет одобрения')
-              setReceiptApprovalStatus('waiting')
-            }
-          } else {
-            console.log('📊 Статус чека пустой')
-          }
-        } else {
-          console.log('📊 Записи не найдены')
-        }
-      } catch (error) {
-        console.error('❌ Ошибка polling статуса чека:', error)
-      }
-    }
-
-    // Проверяем статус каждые 4 секунды
-    const interval = setInterval(checkReceiptStatus, POLLING_INTERVALS.RECEIPT_STATUS_CHECK)
-    
-    // Первая проверка сразу
-    checkReceiptStatus()
-    
-    return () => clearInterval(interval)
-  }, [projectRequestId, currentStage, managerApprovalStatus, receiptApprovalStatus])
+  useReceiptPolling(
+    projectRequestId,
+    currentStage,
+    managerApprovalStatus,
+    receiptApprovalStatus,
+    setManagerApprovalStatus,
+    setReceiptApprovalStatus,
+    setCurrentStage
+  )
 
   // Polling чека от менеджера - теперь обрабатывается хуком useProjectPolling
 
