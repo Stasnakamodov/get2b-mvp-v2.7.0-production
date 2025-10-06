@@ -288,7 +288,7 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
       </div>
 
       <div className="flex gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={saveFormData} className="flex-1 h-12 text-base font-medium">
+        <Button type="button" variant="outline" onClick={handleSubmit} className="flex-1 h-12 text-base font-medium">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Сохранить и вернуться
         </Button>
