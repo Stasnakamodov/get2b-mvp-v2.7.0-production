@@ -544,12 +544,12 @@ export interface OcrDebugData {
 
 export const StepDataSchemas = {
   1: CompanyDataSchema,
-  2: ContactsDataSchema,
+  2: SpecificationDataSchema, // Шаг 2: Спецификация товаров
   3: BankDataSchema,
   4: PaymentMethodsDataSchema,
-  5: SpecificationDataSchema,
+  5: RequisitesDataSchema,
   6: FileUploadDataSchema,
-  7: RequisitesDataSchema,
+  7: ContactsDataSchema, // Контакты перенесены на шаг 7 (не используются)
 } as const
 
 // Хелпер для валидации данных шага
