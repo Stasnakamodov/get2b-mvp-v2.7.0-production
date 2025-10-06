@@ -479,11 +479,6 @@ function ProjectConstructorContent() {
     return getConfiguredStepsSummaryUtil(constructorSteps, dataSources, createValidationContext())
   }, [stepConfigs, manualData, receiptApprovalStatus, hasManagerReceipt, clientReceiptUrl])
 
-  // Wrapper для isStepFilledByUser с контекстом
-  const isStepFilledByUserWithContext = (stepId: number) => {
-    return isStepFilledByUser(stepId, createValidationContext())
-  }
-
   // findSupplierInAnyStep извлечена в utils/project-constructor/SupplierFinder.ts
 
   // Удалён useEffect для showPhantomOptions (мёртвый код)
