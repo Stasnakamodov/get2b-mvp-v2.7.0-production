@@ -645,44 +645,8 @@ function ProjectConstructorContent() {
   // getUserTemplates, getSupplierDataFromCatalog, getSupplierProducts теперь в useCatalogData хуке
 
   // Функция автоматического заполнения шагов IV и V на основе данных шага II
-  const autoFillStepsFromSupplier = async (stepData: any) => {
-    console.log('=== АВТОМАТИЧЕСКОЕ ЗАПОЛНЕНИЕ ШАГОВ IV и V ===')
-    console.log('Данные для проверки:', stepData)
-
-    // Проверяем, есть ли товары в данных
-    if (stepData && stepData.items && stepData.items.length > 0) {
-      console.log('Найдены товары:', stepData.items)
-
-      // Получаем данные поставщика из первого товара
-      const firstItem = stepData.items[0]
-
-      // Если есть supplier_id или supplier name, устанавливаем stepConfigs[5] = 'catalog'
-      // для показа рекомендаций из каталога
-      // ЭХО ДАННЫЕ в атомарном конструкторе ОТКЛЮЧЕНЫ для упрощения работы
-      if (firstItem?.supplier_id || stepData.supplier) {
-        console.log('✅ Данные поставщика найдены, устанавливаем stepConfigs[5] = catalog')
-        console.log('   supplier_id:', firstItem?.supplier_id)
-        console.log('   supplier:', stepData.supplier)
-
-        // Устанавливаем stepConfigs[5] = 'catalog' для показа рекомендаций из каталога
-        setStepConfigs(prev => ({
-          ...prev,
-          5: 'catalog'
-        }))
-
-        console.log('✅ stepConfigs[5] = catalog установлен для показа рекомендаций из каталога')
-        return true
-      } else {
-        console.log('❌ supplier не найден в данных')
-        return false
-      }
-    } else {
-      console.log('❌ Товары не найдены в данных')
-      return false
-    }
-  }
-
-  // autoFillStepFromRequisites удалена (эхо-данные отключены, не используется)
+  // autoFillStepsFromSupplier удалена (для шаблонов/профилей не нужна)
+  // Автозаполнение шага 5 для ОКР/каталога работает через useEffect (строки 424-466)
 
   // ===== НОВЫЙ ХУК: Template System =====
   // Извлекаем логику работы с шаблонами в отдельный хук
@@ -690,8 +654,7 @@ function ProjectConstructorContent() {
     templates,
     setStepConfigs,
     setManualData,
-    setSelectedSource,
-    autoFillStepsFromSupplier
+    setSelectedSource
   })
 
   // Функция для получения данных из шаблонов для конкретного шага

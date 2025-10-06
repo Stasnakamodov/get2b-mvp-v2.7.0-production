@@ -18,15 +18,13 @@ interface UseTemplateSystemProps {
   setStepConfigs: any // Используем any чтобы избежать конфликта типов PartialStepConfigs vs Record<number, string>
   setManualData: React.Dispatch<React.SetStateAction<Record<number, any>>>
   setSelectedSource: React.Dispatch<React.SetStateAction<any>>
-  autoFillStepsFromSupplier: (stepData: any) => void | Promise<void> | Promise<boolean>
 }
 
 export function useTemplateSystem({
   templates,
   setStepConfigs,
   setManualData,
-  setSelectedSource,
-  autoFillStepsFromSupplier
+  setSelectedSource
 }: UseTemplateSystemProps) {
   const [templateSelection, setTemplateSelection] = useState<boolean>(false)
   const [templateStepSelection, setTemplateStepSelection] = useState<{
@@ -105,10 +103,7 @@ export function useTemplateSystem({
       setTemplateStepSelection(null)
       console.log(`✅ Применены данные шаблона для шага ${stepId}:`, stepData)
 
-      // Проверяем, нужно ли автоматическое заполнение (если это шаг II)
-      if (stepId === 2) {
-        autoFillStepsFromSupplier(stepData)
-      }
+      // autoFillStepsFromSupplier удалена (для шаблонов не нужна)
     } else {
       console.log(`❌ Нет данных шаблона для шага ${stepId}`)
     }
@@ -170,15 +165,7 @@ export function useTemplateSystem({
             [stepId]: stepData
           }))
 
-          // Проверяем, нужно ли автоматическое заполнение (если это шаг II)
-          if (stepId === 2) {
-            // Используем setTimeout, чтобы дать время для обновления состояния
-            setTimeout(async () => {
-              await autoFillStepsFromSupplier(stepData)
-            }, 100)
-          }
-
-          // autoFillStepFromRequisites удалена (эхо-данные отключены)
+          // autoFillStepsFromSupplier и autoFillStepFromRequisites удалены (для шаблонов не нужны)
         }
       })
 
