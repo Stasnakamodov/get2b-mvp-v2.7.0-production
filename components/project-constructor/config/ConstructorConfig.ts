@@ -16,7 +16,7 @@ import {
 // Структура шагов конструктора
 export const constructorSteps = [
   { id: 1, name: "Данные клиента", description: "Данные компании", sources: ["profile", "template", "manual", "upload"] },
-  { id: 2, name: "Спецификация", description: "Спецификация товаров", sources: ["profile", "template", "catalog", "manual", "upload"] },
+  { id: 2, name: "Спецификация", description: "Спецификация товаров", sources: ["template", "catalog", "manual", "upload"] },
   { id: 3, name: "Пополнение агента", description: "Загрузка чека", sources: ["manual"] },
   { id: 4, name: "Метод", description: "Способ оплаты", sources: ["profile", "template", "catalog", "manual"] },
   { id: 5, name: "Реквизиты", description: "Банковские реквизиты", sources: ["profile", "template", "catalog", "manual"] },
