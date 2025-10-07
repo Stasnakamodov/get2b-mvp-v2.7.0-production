@@ -2046,7 +2046,10 @@ function ProjectConstructorContent() {
             handleRemoveClientReceipt={handleRemoveClientReceipt}
             handleShowProjectDetails={handleShowProjectDetails}
           >
-            {/* Stage 1: Step configuration area */}
+            {/* ============================================================ */}
+            {/* BLOCK 2: Configuration Area (Область настройки)             */}
+            {/* Lines 2050-3400 | 5 render modes based on step state       */}
+            {/* ============================================================ */}
             <div className="min-h-[200px] border-2 border-dashed border-gray-300 rounded-lg p-6 relative">
             {/* Кнопки действий в правом верхнем углу внутри контейнера */}
             {lastHoveredStep && stepConfigs[lastHoveredStep] && (
@@ -2125,7 +2128,7 @@ function ProjectConstructorContent() {
                     </p>
                   </div>
 
-                  {/* Показываем выбор шаблонов пользователя */}
+                  {/* ========== MODE 1: Template Selection ========== */}
                   {templateSystem.templateSelection ? (
                     <div>
                       <div className="flex items-center justify-between mb-4">
@@ -2251,6 +2254,7 @@ function ProjectConstructorContent() {
                     </div>
                   ) : templateSystem.templateStepSelection ? (
                     <div>
+                      {/* ========== MODE 2: Template Step Selection ========== */}
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-base font-semibold text-gray-800">Выберите шаг для заполнения из шаблона</h4>
                         <Button variant="outline" size="sm" onClick={() => templateSystem.setTemplateStepSelection(null)}>
@@ -2302,6 +2306,7 @@ function ProjectConstructorContent() {
 
                   ) : selectedSource === "manual" ? (
                     <div>
+                      {/* ========== MODE 3: Manual Form Entry ========== */}
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-sm font-medium text-gray-700">Заполнение вручную</h4>
                         <Button variant="outline" size="sm" onClick={handleCancelSource}>
@@ -2381,6 +2386,7 @@ function ProjectConstructorContent() {
                     </div>
                   ) : selectedSource === "upload" ? (
                     <div>
+                      {/* ========== MODE 4: Upload/OCR Interface ========== */}
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-sm font-medium text-gray-700">Загрузка документа</h4>
                         <Button variant="outline" size="sm" onClick={handleCancelSource}>
@@ -2622,8 +2628,8 @@ function ProjectConstructorContent() {
             </div>
                     </div>
                   ) : stepConfigs[lastHoveredStep] ? (
-                    // Только 3 кубика с данными для первого шага
                     <div className="flex justify-center">
+                      {/* ========== MODE 5: Filled State (Cubes/Sliders) ========== */}
                       {lastHoveredStep === 1 && manualData[lastHoveredStep] && (
                         <div className="grid grid-cols-3 gap-4 w-full max-w-4xl">
                           {/* Кубик 1: Данные компании - кликабельный */}
@@ -3369,6 +3375,7 @@ function ProjectConstructorContent() {
                     </div>
                   ) : (
                     <div>
+                      {/* ========== UNFILLED STATE: Source Selection Menu ========== */}
                       <h4 className="text-base font-semibold text-gray-800 mb-4">Доступные источники данных:</h4>
                       <div className="grid gap-4">
                         {constructorSteps.find(s => s.id === lastHoveredStep)?.sources.map((source) => {
