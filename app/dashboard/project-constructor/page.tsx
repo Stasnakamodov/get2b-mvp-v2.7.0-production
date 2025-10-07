@@ -20,6 +20,7 @@ import { findSupplierInAnyStep } from '@/utils/project-constructor/SupplierFinde
 import { SummaryBlock } from '@/components/project-constructor/SummaryBlock'
 import { StepCubes } from '@/components/project-constructor/StepCubes'
 import { TemplateSelectionMode } from './components/configuration-modes/TemplateSelectionMode'
+import { TemplateStepSelectionMode } from './components/configuration-modes/TemplateStepSelectionMode'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -2180,56 +2181,13 @@ function ProjectConstructorContent() {
                       }}
                     />
                   ) : templateSystem.templateStepSelection ? (
-                    <div>
-                      {/* ========== MODE 2: Template Step Selection ========== */}
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-base font-semibold text-gray-800">Выберите шаг для заполнения из шаблона</h4>
-                        <Button variant="outline" size="sm" onClick={() => templateSystem.setTemplateStepSelection(null)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      {/* Кнопка "Заполнить все шаги" */}
-                      {templateSystem.templateStepSelection.availableSteps.length > 1 && (
-                        <div className="mb-4">
-                          <Button
-                            onClick={templateSystem.handleFillAllTemplateSteps}
-                            variant="outline"
-                            className="w-full h-10 text-sm font-medium border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Заполнить все шаги из шаблона
-                          </Button>
-                        </div>
-                      )}
-
-                      <div className="grid gap-4">
-                        {templateSystem.templateStepSelection.availableSteps.map((stepId) => {
-                          const step = constructorSteps.find(s => s.id === stepId)
-                          return (
-                            <div
-                              key={stepId}
-                              className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
-                              onClick={() => templateSystem.handleTemplateStepSelect(stepId)}
-                            >
-                              <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center shadow-sm">
-                                <span className="text-white font-bold text-lg">
-                                  {stepId === 1 ? 'I' : stepId === 2 ? 'II' : stepId === 3 ? 'III' : 
-                                   stepId === 4 ? 'IV' : stepId === 5 ? 'V' : stepId === 6 ? 'VI' : 'VII'}
-                                </span>
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-lg font-semibold text-gray-800 mb-1">{step?.name}</div>
-                                <div className="text-sm text-gray-600 leading-relaxed">{step?.description}</div>
-                              </div>
-                              <div className="text-blue-500">
-                                <ArrowRight className="h-5 w-5" />
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
+                    <TemplateStepSelectionMode
+                      availableSteps={templateSystem.templateStepSelection.availableSteps}
+                      constructorSteps={constructorSteps}
+                      onStepSelect={(stepId) => templateSystem.handleTemplateStepSelect(stepId)}
+                      onFillAllSteps={templateSystem.handleFillAllTemplateSteps}
+                      onClose={() => templateSystem.setTemplateStepSelection(null)}
+                    />
 
                   ) : selectedSource === "manual" ? (
                     <div>
