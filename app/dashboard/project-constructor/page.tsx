@@ -19,6 +19,7 @@ import { uploadFileToStorage, sendTelegramMessage, fetchFromApi, fetchCatalogDat
 import { findSupplierInAnyStep } from '@/utils/project-constructor/SupplierFinder'
 import { SummaryBlock } from '@/components/project-constructor/SummaryBlock'
 import { StepCubes } from '@/components/project-constructor/StepCubes'
+import { TemplateSelectionMode } from './components/configuration-modes/TemplateSelectionMode'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -2130,128 +2131,54 @@ function ProjectConstructorContent() {
 
                   {/* ========== MODE 1: Template Selection ========== */}
                   {templateSystem.templateSelection ? (
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-base font-semibold text-gray-800">Выберите шаблон</h4>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => fetchTemplates()}
-                            disabled={templatesLoading}
-                          >
-                            {templatesLoading ? 'Загрузка...' : 'Обновить'}
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => templateSystem.setTemplateSelection(false)}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="grid gap-4">
-                        {templatesLoading ? (
-                          <div className="flex items-center justify-center p-8">
-                            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="ml-2 text-gray-600">Загрузка шаблонов...</span>
-                          </div>
-                        ) : templatesError ? (
-                          <div className="text-center py-8 text-red-500">
-                            <p>Ошибка загрузки шаблонов: {templatesError}</p>
-                            <div className="flex gap-2 mt-4 justify-center">
-                              <Button 
-                                onClick={() => fetchTemplates()}
-                                variant="outline" 
-                              >
-                                Попробовать снова
-                              </Button>
-                              <Button 
-                                onClick={async () => {
-                                  try {
-                                    const response = await fetch('/api/check-project-templates')
-                                    const data = await response.json()
-                                    console.log('🔍 Результат проверки таблицы:', data)
-                                    alert(`Проверка таблицы: ${JSON.stringify(data, null, 2)}`)
-                                  } catch (error) {
-                                    console.error('Ошибка проверки:', error)
-                                    alert('Ошибка проверки таблицы')
-                                  }
-                                }}
-                                variant="outline" 
-                              >
-                                Проверить таблицу
-                              </Button>
-                              <Button 
-                                onClick={async () => {
-                                  try {
-                                    const response = await fetch('/api/create-project-templates-table', {
-                                      method: 'POST'
-                                    })
-                                    const data = await response.json()
-                                    console.log('🔧 Результат создания таблицы:', data)
-                                    if (data.success) {
-                                      alert('Таблица создана успешно! Обновите страницу.')
-                                      window.location.reload()
-                                    } else {
-                                      alert(`Ошибка создания таблицы: ${data.error}`)
-                                    }
-                                  } catch (error) {
-                                    console.error('Ошибка создания:', error)
-                                    alert('Ошибка создания таблицы')
-                                  }
-                                }}
-                                variant="outline" 
-                                className="bg-green-50 hover:bg-green-100"
-                              >
-                                Создать таблицу
-                              </Button>
-                              <Button 
-                                onClick={async () => {
-                                  try {
-                                    const response = await fetch('/api/analyze-database-structure')
-                                    const data = await response.json()
-                                    console.log('🔍 Результат анализа БД:', data)
-                                    alert(`Анализ БД: ${JSON.stringify(data.summary, null, 2)}`)
-                                  } catch (error) {
-                                    console.error('Ошибка анализа:', error)
-                                    alert('Ошибка анализа БД')
-                                  }
-                                }}
-                                variant="outline" 
-                                className="bg-blue-50 hover:bg-blue-100"
-                              >
-                                Анализ БД
-                              </Button>
-                            </div>
-                          </div>
-                        ) : getUserTemplates().length === 0 ? (
-                          <div className="text-center py-8 text-gray-500">
-                            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                            <p>У вас пока нет сохраненных шаблонов</p>
-                            <p className="text-sm mt-2">Создайте шаблон в разделе "Создать проект"</p>
-                          </div>
-                        ) : (
-                          getUserTemplates().map((template) => (
-                            <div
-                              key={template.id}
-                              className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
-                              onClick={() => templateSystem.handleTemplateSelect(template.id)}
-                            >
-                              <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
-                                <FileText className="h-6 w-6 text-white" />
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-lg font-semibold text-gray-800 mb-1">{template.name}</div>
-                                <div className="text-sm text-gray-600 leading-relaxed">{template.description}</div>
-                                <div className="text-xs text-gray-500 mt-1">Использован: {template.lastUsed}</div>
-                              </div>
-                              <div className="text-blue-500">
-                                <ArrowRight className="h-5 w-5" />
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                    <TemplateSelectionMode
+                      templates={getUserTemplates()}
+                      templatesLoading={templatesLoading}
+                      templatesError={templatesError}
+                      onTemplateSelect={(templateId) => templateSystem.handleTemplateSelect(templateId)}
+                      onRefresh={() => fetchTemplates()}
+                      onClose={() => templateSystem.setTemplateSelection(false)}
+                      onCheckTable={async () => {
+                        try {
+                          const response = await fetch('/api/check-project-templates')
+                          const data = await response.json()
+                          console.log('🔍 Результат проверки таблицы:', data)
+                          alert(`Проверка таблицы: ${JSON.stringify(data, null, 2)}`)
+                        } catch (error) {
+                          console.error('Ошибка проверки:', error)
+                          alert('Ошибка проверки таблицы')
+                        }
+                      }}
+                      onCreateTable={async () => {
+                        try {
+                          const response = await fetch('/api/create-project-templates-table', {
+                            method: 'POST'
+                          })
+                          const data = await response.json()
+                          console.log('🔧 Результат создания таблицы:', data)
+                          if (data.success) {
+                            alert('Таблица создана успешно! Обновите страницу.')
+                            window.location.reload()
+                          } else {
+                            alert(`Ошибка создания таблицы: ${data.error}`)
+                          }
+                        } catch (error) {
+                          console.error('Ошибка создания:', error)
+                          alert('Ошибка создания таблицы')
+                        }
+                      }}
+                      onAnalyzeDB={async () => {
+                        try {
+                          const response = await fetch('/api/analyze-database-structure')
+                          const data = await response.json()
+                          console.log('🔍 Результат анализа БД:', data)
+                          alert(`Анализ БД: ${JSON.stringify(data.summary, null, 2)}`)
+                        } catch (error) {
+                          console.error('Ошибка анализа:', error)
+                          alert('Ошибка анализа БД')
+                        }
+                      }}
+                    />
                   ) : templateSystem.templateStepSelection ? (
                     <div>
                       {/* ========== MODE 2: Template Step Selection ========== */}
