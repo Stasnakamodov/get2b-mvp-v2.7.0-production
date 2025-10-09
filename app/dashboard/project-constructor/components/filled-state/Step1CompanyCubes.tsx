@@ -18,35 +18,37 @@ interface Step1CompanyCubesProps {
  */
 export function Step1CompanyCubes({ data, onPreview }: Step1CompanyCubesProps) {
   return (
-    <div className="grid grid-cols-3 gap-4 w-full max-w-4xl">
-      <DataCube
-        icon={Building}
-        color="blue"
-        title="Данные компании"
-        subtitle="Основная информация"
-        primaryValue={data.name}
-        onClick={() => onPreview('company', data)}
-      />
+    <div className="flex justify-center">
+      <div className="grid grid-cols-3 gap-4 w-full max-w-4xl">
+        <DataCube
+          icon={Building}
+          color="blue"
+          title="Данные компании"
+          subtitle="Основная информация"
+          primaryValue={data.name}
+          onClick={() => onPreview('company', data)}
+        />
 
-      <DataCube
-        icon={Banknote}
-        color="green"
-        title="Расчетный счет"
-        subtitle="Банковские реквизиты"
-        primaryValue={data.bankName}
-        secondaryValue={data.bankAccount}
-        onClick={() => onPreview('bank', data)}
-      />
+        <DataCube
+          icon={Banknote}
+          color="green"
+          title="Расчетный счет"
+          subtitle="Банковские реквизиты"
+          primaryValue={data.bankName}
+          secondaryValue={data.bankAccount}
+          onClick={() => onPreview('bank', data)}
+        />
 
-      <DataCube
-        icon={Mail}
-        color="purple"
-        title="Дополнительно"
-        subtitle="Контакты и детали"
-        primaryValue={data.email}
-        secondaryValue={data.phone}
-        onClick={() => onPreview('contacts', data)}
-      />
+        <DataCube
+          icon={Mail}
+          color="purple"
+          title="Дополнительно"
+          subtitle="Контакты и детали"
+          primaryValue={data.email}
+          secondaryValue={data.phone}
+          onClick={() => onPreview('contacts', data)}
+        />
+      </div>
     </div>
   )
 }
