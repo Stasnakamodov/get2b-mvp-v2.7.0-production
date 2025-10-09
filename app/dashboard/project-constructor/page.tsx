@@ -23,6 +23,7 @@ import { TemplateSelectionMode } from './components/configuration-modes/Template
 import { TemplateStepSelectionMode } from './components/configuration-modes/TemplateStepSelectionMode'
 import { ManualFormEntryMode } from './components/configuration-modes/ManualFormEntryMode'
 import { UploadOCRMode } from './components/configuration-modes/UploadOCRMode'
+import { EmptyState } from './components/EmptyState'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -3089,17 +3090,9 @@ function ProjectConstructorContent() {
                   )}
                 </motion.div>
               ) : lastHoveredStep && !isStepEnabled(lastHoveredStep) ? (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 mb-4">
-                    <Blocks className="h-12 w-12 mx-auto" />
-                  </div>
-                  <p className="text-gray-500">Сначала настройте основные шаги (I и II)</p>
-                </div>
+                <EmptyState type="disabled-step" />
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Blocks className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p>Наведите на кубик для выбора источника данных</p>
-                </div>
+                <EmptyState type="hover-prompt" />
               )}
             </AnimatePresence>
           </div>
