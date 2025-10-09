@@ -27,6 +27,7 @@ import { UploadOCRMode } from './components/configuration-modes/UploadOCRMode'
 import { EmptyState } from './components/EmptyState'
 import { Step1CompanyCubes } from './components/filled-state/Step1CompanyCubes'
 import { Step4PaymentMethodCubes } from './components/filled-state/Step4PaymentMethodCubes'
+import { Step5RequisitesDisplay } from './components/filled-state/Step5RequisitesDisplay'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -2400,114 +2401,10 @@ function ProjectConstructorContent() {
 
                         return shouldShowStep5Form;
                       })() && (
-                        <div className="flex justify-center">
-                          <div className="grid grid-cols-3 gap-4 w-full">
-                            {manualData[lastHoveredStep].type === 'multiple' && manualData[lastHoveredStep].requisites ? (
-                              // Показываем все кубики реквизитов
-                              manualData[lastHoveredStep].requisites.map((requisite: any, index: number) => (
-                                <div 
-                                  key={index}
-                                  className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
-                                    requisite.type === 'crypto' ? 'border-green-200 hover:border-green-300' :
-                                    requisite.type === 'p2p' ? 'border-blue-200 hover:border-blue-300' :
-                                    'border-gray-200 hover:border-gray-300'
-                                  }`}
-                                  onClick={() => handlePreviewData('requisites', requisite)}
-                                >
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                      requisite.type === 'crypto' ? 'bg-green-500' :
-                                      requisite.type === 'p2p' ? 'bg-blue-500' :
-                                      'bg-gray-500'
-                                    }`}>
-                                      <Banknote className="h-4 w-4 text-white" />
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-semibold text-gray-800">
-                                        {requisite.type === 'crypto' ? 'Криптокошелек' :
-                                         requisite.type === 'p2p' ? 'Карта поставщика' :
-                                         'Расчетный счет'}
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        {requisite.type === 'crypto' ? 'Криптореквизиты' :
-                                         requisite.type === 'p2p' ? 'P2P реквизиты' :
-                                         'Банковские реквизиты'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="text-sm text-gray-800">
-                                    {requisite.type === 'crypto' ? 'Сеть' :
-                                     requisite.type === 'p2p' ? 'Банк карты' :
-                                     'Банк поставщика'}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {requisite.type === 'crypto' ? (requisite.crypto_network || 'Не указана') :
-                                     requisite.type === 'p2p' ? (requisite.card_bank || 'Не указан') :
-                                     `${requisite.accountNumber || 'Не указано'}`}
-                                  </div>
-                                  <div className={`text-xs mt-2 flex items-center gap-1 ${
-                                    requisite.type === 'crypto' ? 'text-green-600' :
-                                    requisite.type === 'p2p' ? 'text-blue-600' :
-                                    'text-gray-600'
-                                  }`}>
-                                    <span>Нажмите для просмотра</span>
-                                    <Eye className="h-3 w-3" />
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              // Показываем один кубик для одиночного типа
-                              <div
-                                className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${
-                                  manualData[5]?.type === 'crypto' ? 'border-green-500 bg-green-100 hover:border-green-600 ring-green-400' :
-                                  manualData[5]?.type === 'p2p' ? 'border-blue-500 bg-blue-100 hover:border-blue-600 ring-blue-400' :
-                                  'border-orange-500 bg-orange-100 hover:border-orange-600 ring-orange-400'
-                                }`}
-                                onClick={() => handlePreviewData('requisites', manualData[5])}
-                              >
-                                <div className="flex items-center gap-2 mb-3">
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-2 ${
-                                    manualData[5]?.type === 'crypto' ? 'bg-green-600 ring-green-300' :
-                                    manualData[5]?.type === 'p2p' ? 'bg-blue-600 ring-blue-300' :
-                                    'bg-orange-600 ring-orange-300'
-                                  }`}>
-                                    <CheckCircle2 className="h-4 w-4 text-white" />
-                                  </div>
-                                  <div>
-                                    <div className="text-sm font-semibold text-gray-800">
-                                      {manualData[lastHoveredStep].type === 'crypto' ? 'Криптокошелек' :
-                                       manualData[lastHoveredStep].type === 'p2p' ? 'Карта поставщика' :
-                                       'Расчетный счет'}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      {manualData[lastHoveredStep].type === 'crypto' ? 'Криптореквизиты' :
-                                       manualData[lastHoveredStep].type === 'p2p' ? 'P2P реквизиты' :
-                                       'Банковские реквизиты'}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-sm text-gray-800">
-                                  {manualData[lastHoveredStep].type === 'crypto' ? 'Сеть' :
-                                   manualData[lastHoveredStep].type === 'p2p' ? 'Банк карты' :
-                                   'Банк поставщика'}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {manualData[lastHoveredStep].type === 'crypto' ? (manualData[lastHoveredStep].crypto_network || 'Не указана') :
-                                   manualData[lastHoveredStep].type === 'p2p' ? (manualData[lastHoveredStep].card_bank || 'Не указан') :
-                                   `${manualData[lastHoveredStep].accountNumber || 'Не указано'}`}
-                                </div>
-                                <div className={`text-xs mt-2 flex items-center gap-1 font-bold ${
-                                  manualData[5]?.type === 'crypto' ? 'text-green-600' :
-                                  manualData[5]?.type === 'p2p' ? 'text-blue-600' :
-                                  'text-orange-600'
-                                }`}>
-                                  <span>ЗАПОЛНЕНО</span>
-                                  <CheckCircle2 className="h-3 w-3" />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                        <Step5RequisitesDisplay
+                          data={manualData[lastHoveredStep]}
+                          onPreview={handlePreviewData}
+                        />
                       )}
 
                       {/* СПЕЦИАЛЬНО для шага 5: показываем кубики выбора когда есть stepConfigs[5] = 'catalog' - позволяем пользователю менять тип реквизитов даже после автозаполнения */}
