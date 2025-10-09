@@ -26,6 +26,7 @@ import { ManualFormEntryMode } from './components/configuration-modes/ManualForm
 import { UploadOCRMode } from './components/configuration-modes/UploadOCRMode'
 import { EmptyState } from './components/EmptyState'
 import { Step1CompanyCubes } from './components/filled-state/Step1CompanyCubes'
+import { Step4PaymentMethodCubes } from './components/filled-state/Step4PaymentMethodCubes'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -2373,128 +2374,11 @@ function ProjectConstructorContent() {
 
                       {/* Шаг 4: Методы оплаты - показываем кубики для каждого метода */}
                       {lastHoveredStep === 4 && manualData[lastHoveredStep] && (
-                        <div className="flex justify-center">
-                          <div className="grid grid-cols-3 gap-4 w-full">
-                            {['bank-transfer', 'p2p', 'crypto'].map((method: string, index: number) => {
-                                // Проверяем, выбран ли этот метод
-                                const isSelected = manualData[4]?.selectedMethod === method ||
-                                                 manualData[4]?.method === method ||
-                                                 manualData[4]?.defaultMethod === method
-
-                                // Проверяем, есть ли данные поставщика для этого метода
-                                let hasSupplierData = false;
-
-                                // Приоритет 1: Проверяем selectedSupplierData (самый актуальный источник)
-                                if (selectedSupplierData) {
-                                  if ((method === 'bank-transfer' || method === 'bank') && (selectedSupplierData.bank_accounts?.length && selectedSupplierData.bank_accounts.length > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer' as any))) {
-                                    hasSupplierData = true;
-                                  }
-                                  if (method === 'p2p' && (selectedSupplierData.p2p_cards?.length && selectedSupplierData.p2p_cards.length > 0 || selectedSupplierData.payment_methods?.includes('p2p'))) {
-                                    hasSupplierData = true;
-                                  }
-                                  if (method === 'crypto' && (selectedSupplierData.crypto_wallets?.length && selectedSupplierData.crypto_wallets.length > 0 || selectedSupplierData.payment_methods?.includes('crypto'))) {
-                                    hasSupplierData = true;
-                                  }
-                                }
-
-                                // Приоритет 2: Проверяем через manualData[4] (если selectedSupplierData недоступен)
-                                if (!hasSupplierData && manualData[4]) {
-                                  // Проверяем по методам из manualData[4] (из каталога)
-                                  if (manualData[4].methods && manualData[4].methods.includes(method)) {
-                                    hasSupplierData = true;
-                                  }
-                                  // Проверяем по доступным данным поставщика в manualData[4]
-                                  if (!hasSupplierData && manualData[4].supplier_data) {
-                                    const supplier = manualData[4].supplier_data;
-                                    if ((method === 'bank-transfer' || method === 'bank') && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer' as any))) {
-                                      hasSupplierData = true;
-                                    }
-                                    if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p'))) {
-                                      hasSupplierData = true;
-                                    }
-                                    if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) {
-                                      hasSupplierData = true;
-                                    }
-                                  }
-                                }
-
-                                console.log('🔍 [DEBUG] Method Check:', {
-                                  method,
-                                  hasSupplierData,
-                                  manualData4: manualData[4],
-                                  selectedSupplierData: {
-                                    name: selectedSupplierData?.name,
-                                    payment_methods: selectedSupplierData?.payment_methods,
-                                    bank_accounts: selectedSupplierData?.bank_accounts,
-                                    p2p_cards: selectedSupplierData?.p2p_cards,
-                                    crypto_wallets: selectedSupplierData?.crypto_wallets
-                                  }
-                                });
-                                return <div
-                                  key={index}
-                                  className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
-                                    isSelected
-                                      ? (method === 'crypto' ? 'ring-4 ring-green-400 border-green-500 bg-green-100' :
-                                         method === 'p2p' ? 'ring-4 ring-blue-400 border-blue-500 bg-blue-100' :
-                                         'ring-4 ring-orange-400 border-orange-500 bg-orange-100')
-                                      : hasSupplierData
-                                        ? (method === 'crypto' ? 'border-green-300 bg-green-50 hover:border-green-400' :
-                                           method === 'p2p' ? 'border-blue-300 bg-blue-50 hover:border-blue-400' :
-                                           'border-orange-300 bg-orange-50 hover:border-orange-400')
-                                        : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-                                  }`}
-                                  onClick={() => handlePaymentMethodSelect(method, selectedSupplierData)}
-                                >
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                      isSelected
-                                        ? (method === 'crypto' ? 'bg-green-600 ring-2 ring-green-300' :
-                                           method === 'p2p' ? 'bg-blue-600 ring-2 ring-blue-300' :
-                                           'bg-orange-600 ring-2 ring-orange-300')
-                                        : hasSupplierData
-                                          ? (method === 'crypto' ? 'bg-green-500' :
-                                             method === 'p2p' ? 'bg-blue-500' :
-                                             'bg-orange-500')
-                                          : 'bg-gray-400'
-                                    }`}>
-                                      {isSelected ? <CheckCircle2 className="h-4 w-4 text-white" /> : <CreditCard className="h-4 w-4 text-white" />}
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-semibold text-gray-800">
-                                        {method === 'crypto' ? 'Криптовалюта' :
-                                         method === 'p2p' ? 'P2P перевод' :
-                                         'Банковский перевод'}
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        {method === 'crypto' ? 'Крипто платеж' :
-                                         method === 'p2p' ? 'P2P платеж' :
-                                         'Банковский платеж'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="text-sm text-gray-800">
-                                    Статус
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {isSelected ? 'ВЫБРАН' : hasSupplierData ? 'Автозаполнение' : 'Ручное заполнение'}
-                                  </div>
-                                  <div className={`text-xs mt-2 flex items-center gap-1 ${
-                                    isSelected
-                                      ? (method === 'crypto' ? 'text-green-600 font-bold' :
-                                         method === 'p2p' ? 'text-blue-600 font-bold' :
-                                         'text-orange-600 font-bold')
-                                      : method === 'crypto' ? 'text-green-600' :
-                                        method === 'p2p' ? 'text-blue-600' :
-                                        'text-gray-600'
-                                  }`}>
-                                    <span>{isSelected ? 'ВЫБРАНО' : 'Выбрать'}</span>
-                                    {isSelected ? <CheckCircle2 className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />}
-                                  </div>
-                                </div>
-                              })
-                            }
-                          </div>
-                        </div>
+                        <Step4PaymentMethodCubes
+                          manualData={manualData}
+                          selectedSupplierData={selectedSupplierData}
+                          onMethodSelect={handlePaymentMethodSelect}
+                        />
                       )}
                       
                       {/* Шаг 5: Реквизиты - показываем форму если реквизиты были заполнены */}
