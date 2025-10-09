@@ -17,6 +17,7 @@ import { validateStepData } from '@/types/project-constructor.types'
 import { useState, useEffect, useRef, useMemo } from "react"
 import { uploadFileToStorage, sendTelegramMessage, fetchFromApi, fetchCatalogData } from '@/utils/ApiUtils'
 import { findSupplierInAnyStep } from '@/utils/project-constructor/SupplierFinder'
+import { isStepEnabled as isStepEnabledUtil } from '@/utils/project-constructor/StepValidation'
 import { SummaryBlock } from '@/components/project-constructor/SummaryBlock'
 import { StepCubes } from '@/components/project-constructor/StepCubes'
 import { TemplateSelectionMode } from './components/configuration-modes/TemplateSelectionMode'
@@ -1034,33 +1035,9 @@ function ProjectConstructorContent() {
   // getSourceDisplayName извлечена в отдельный утиль
 
   // Проверка доступности шага
+  // Step enablement logic extracted to StepValidation.ts
   const isStepEnabled = (stepId: number) => {
-    // Этап 1: Подготовка данных
-    if (currentStage === 1) {
-      // Активные шаги в этапе 1: 1, 2, 4, 5
-      if ([1, 2, 4, 5].includes(stepId)) {
-        return true
-      }
-      
-      // Закрытые шаги в этапе 1: 3, 6, 7
-      if ([3, 6, 7].includes(stepId)) {
-        return false
-      }
-    }
-    
-    // Этап 2: Подготовка инфраструктуры
-    if (currentStage === 2) {
-      // Все шаги доступны в этапе 2
-      return true
-    }
-    
-    // Этап 3: Анимация сделки
-    if (currentStage === 3) {
-      // Все шаги доступны в этапе 3
-      return true
-    }
-    
-    return false
+    return isStepEnabledUtil(stepId, currentStage)
   }
 
   // Получение прогресса
