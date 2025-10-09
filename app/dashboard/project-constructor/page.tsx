@@ -25,6 +25,7 @@ import { TemplateStepSelectionMode } from './components/configuration-modes/Temp
 import { ManualFormEntryMode } from './components/configuration-modes/ManualFormEntryMode'
 import { UploadOCRMode } from './components/configuration-modes/UploadOCRMode'
 import { EmptyState } from './components/EmptyState'
+import { Step1CompanyCubes } from './components/filled-state/Step1CompanyCubes'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -2199,76 +2200,10 @@ function ProjectConstructorContent() {
                     <div className="flex justify-center">
                       {/* ========== MODE 5: Filled State (Cubes/Sliders) ========== */}
                       {lastHoveredStep === 1 && manualData[lastHoveredStep] && (
-                        <div className="grid grid-cols-3 gap-4 w-full max-w-4xl">
-                          {/* Кубик 1: Данные компании - кликабельный */}
-                          <div 
-                            className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-blue-300 hover:scale-105"
-                            onClick={() => handlePreviewData('company', manualData[lastHoveredStep])}
-                          >
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                                <Building className="h-4 w-4 text-white" />
-                              </div>
-                              <div>
-                                <div className="text-sm font-semibold text-gray-800">Данные компании</div>
-                                <div className="text-xs text-gray-500">Основная информация</div>
-                              </div>
-                            </div>
-                            <div className="text-sm text-gray-800 font-medium">{manualData[lastHoveredStep].name}</div>
-                            <div className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-                              <span>Нажмите для просмотра</span>
-                              <Eye className="h-3 w-3" />
-                            </div>
-                          </div>
-                          
-                          {/* Кубик 2: Данные расчетного счета - кликабельный */}
-                          <div 
-                            className="bg-white border-2 border-green-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-green-300 hover:scale-105"
-                            onClick={() => handlePreviewData('bank', manualData[lastHoveredStep])}
-                          >
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                                <Banknote className="h-4 w-4 text-white" />
-                              </div>
-                              <div>
-                                <div className="text-sm font-semibold text-gray-800">Расчетный счет</div>
-                                <div className="text-xs text-gray-500">Банковские реквизиты</div>
-                              </div>
-                            </div>
-                            <div className="text-sm text-gray-800">{manualData[lastHoveredStep].bankName}</div>
-                            {manualData[lastHoveredStep].bankAccount && (
-                              <div className="text-xs text-gray-500">{manualData[lastHoveredStep].bankAccount}</div>
-                            )}
-                            <div className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                              <span>Нажмите для просмотра</span>
-                              <Eye className="h-3 w-3" />
-                            </div>
-                          </div>
-                          
-                          {/* Кубик 3: Дополнительные данные - кликабельный */}
-                          <div 
-                            className="bg-white border-2 border-purple-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-purple-300 hover:scale-105"
-                            onClick={() => handlePreviewData('contacts', manualData[lastHoveredStep])}
-                          >
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
-                                <Mail className="h-4 w-4 text-white" />
-                              </div>
-                              <div>
-                                <div className="text-sm font-semibold text-gray-800">Дополнительно</div>
-                                <div className="text-xs text-gray-500">Контакты и детали</div>
-                              </div>
-                            </div>
-                            <div className="text-sm text-gray-800">{manualData[lastHoveredStep].email}</div>
-                            {manualData[lastHoveredStep].phone && (
-                              <div className="text-sm text-gray-800 mt-1">{manualData[lastHoveredStep].phone}</div>
-                            )}
-                            <div className="text-xs text-purple-600 mt-2 flex items-center gap-1">
-                              <span>Нажмите для просмотра</span>
-                              <Eye className="h-3 w-3" />
-                            </div>
-                          </div>
-                        </div>
+                        <Step1CompanyCubes
+                          data={manualData[lastHoveredStep]}
+                          onPreview={handlePreviewData}
+                        />
                       )}
                       
                       {/* Полная форма данных шага */}
