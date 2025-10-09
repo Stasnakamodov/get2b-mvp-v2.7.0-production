@@ -138,23 +138,40 @@ export function useOcrUpload({
     try {
       console.log("🔍 Начинаем анализ карточки компании...")
 
-      const analysisResponse = await fetch('/api/document-analysis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileUrl: fileUrl,
-          fileType: fileType,
-          documentType: 'company_card' // ⚠️ КРИТИЧНО!
+      // Добавляем таймаут для запроса
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 секунд
+
+      let analysisResult: any
+      try {
+        const analysisResponse = await fetch('/api/document-analysis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileUrl: fileUrl,
+            fileType: fileType,
+            documentType: 'company_card' // ⚠️ КРИТИЧНО!
+          }),
+          signal: controller.signal
         })
-      })
 
-      if (!analysisResponse.ok) {
-        const errorText = await analysisResponse.text()
-        console.error("❌ Ошибка API:", analysisResponse.status, errorText)
-        throw new Error(`Ошибка анализа документа: ${analysisResponse.status} - ${errorText}`)
+        clearTimeout(timeoutId)
+
+        if (!analysisResponse.ok) {
+          const errorText = await analysisResponse.text()
+          console.error("❌ Ошибка API:", analysisResponse.status, errorText)
+          throw new Error(`Ошибка анализа документа: ${analysisResponse.status} - ${errorText}`)
+        }
+
+        analysisResult = await analysisResponse.json()
+
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Превышено время ожидания (60 сек). Попробуйте загрузить файл меньшего размера.')
+        }
+        throw fetchError
       }
-
-      const analysisResult = await analysisResponse.json()
 
       // Проверяем успешность анализа
       if (!analysisResult.success) {
@@ -239,23 +256,41 @@ export function useOcrUpload({
     try {
       console.log("🔍 Начинаем анализ спецификации...")
 
-      const analysisResponse = await fetch('/api/document-analysis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileUrl: fileUrl,
-          fileType: fileType,
-          documentType: 'invoice' // ⚠️ КРИТИЧНО!
-        })
-      })
+      // Добавляем таймаут для запроса
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 секунд
 
-      if (!analysisResponse.ok) {
-        const errorText = await analysisResponse.text()
-        console.error("❌ Ошибка API:", analysisResponse.status, errorText)
-        throw new Error(`Ошибка анализа документа: ${analysisResponse.status} - ${errorText}`)
+      let analysisResult: any
+      try {
+        const analysisResponse = await fetch('/api/document-analysis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileUrl: fileUrl,
+            fileType: fileType,
+            documentType: 'invoice' // ⚠️ КРИТИЧНО!
+          }),
+          signal: controller.signal
+        })
+
+        clearTimeout(timeoutId)
+
+        if (!analysisResponse.ok) {
+          const errorText = await analysisResponse.text()
+          console.error("❌ Ошибка API:", analysisResponse.status, errorText)
+          throw new Error(`Ошибка анализа документа: ${analysisResponse.status} - ${errorText}`)
+        }
+
+        analysisResult = await analysisResponse.json()
+
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Превышено время ожидания (60 сек). Попробуйте загрузить файл меньшего размера.')
+        }
+        throw fetchError
       }
 
-      const analysisResult = await analysisResponse.json()
       const extractedData = analysisResult.suggestions
       const analysisText = analysisResult.extractedText
 

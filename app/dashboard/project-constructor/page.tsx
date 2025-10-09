@@ -21,6 +21,8 @@ import { SummaryBlock } from '@/components/project-constructor/SummaryBlock'
 import { StepCubes } from '@/components/project-constructor/StepCubes'
 import { TemplateSelectionMode } from './components/configuration-modes/TemplateSelectionMode'
 import { TemplateStepSelectionMode } from './components/configuration-modes/TemplateStepSelectionMode'
+import { ManualFormEntryMode } from './components/configuration-modes/ManualFormEntryMode'
+import { UploadOCRMode } from './components/configuration-modes/UploadOCRMode'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -146,7 +148,6 @@ function ProjectConstructorContent() {
   const [hoveredStep, setHoveredStep] = useState<number | null>(null)
   const [lastHoveredStep, setLastHoveredStep] = useState<number | null>(null)
   const [manualData, setManualData] = useState<ManualData>({})
-  const [uploadedFiles, setUploadedFiles] = useState<Record<number, string>>({})
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   // ===== СТАРЫЙ КОД (закомментирован, т.к. переехал в useTemplateSystem хук) =====
   // const [templateStepSelection, setTemplateStepSelection] = useState<{templateId: string, availableSteps: number[]} | null>(null)
@@ -2190,328 +2191,32 @@ function ProjectConstructorContent() {
                     />
 
                   ) : selectedSource === "manual" ? (
-                    <div>
-                      {/* ========== MODE 3: Manual Form Entry ========== */}
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-sm font-medium text-gray-700">Заполнение вручную</h4>
-                        <Button variant="outline" size="sm" onClick={handleCancelSource}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                      {/* Формы для разных шагов */}
-                      {lastHoveredStep === 1 && editingType === 'company' && (
-                        <CompanyForm 
-                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
-                          onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep] as any}
-                        />
-                      )}
-                      
-                      {lastHoveredStep === 1 && editingType === 'contacts' && (
-                        <ContactsForm 
-                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
-                          onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep] as any}
-                        />
-                      )}
-                      
-                      {lastHoveredStep === 1 && editingType === 'bank' && (
-                        <BankForm 
-                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
-                          onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep] as any}
-                        />
-                      )}
-                      
-                      {lastHoveredStep === 1 && !editingType && (
-                        <CompanyForm 
-                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
-                          onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep] as any}
-                        />
-                      )}
-                      
-                      {lastHoveredStep === 2 && (
-                        <SpecificationForm 
-                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
-                          onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep] as any}
-                        />
-                      )}
-                      
-                      {lastHoveredStep === 3 && (
-                        <FileUploadForm
-                          onSave={(data) => {
-                            if (data.file) {
-                              ocrUpload.handleFileUpload(lastHoveredStep, data.file)
-                            }
-                            stepData.saveStepData(lastHoveredStep, data)
-                          }}
-                          onCancel={handleCancelSource}
-                        />
-                      )}
-                      
-                      {lastHoveredStep === 4 && (
-                        <PaymentMethodForm 
-                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
-                          onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep] as any}
-                          getStepData={(stepId) => manualData[stepId]}
-                        />
-                      )}
-                      
-                      {lastHoveredStep === 5 && (
-                        <RequisitesForm 
-                          onSave={(data) => stepData.saveStepData(lastHoveredStep, data)}
-                          onCancel={handleCancelSource}
-                          initialData={manualData[lastHoveredStep] as any}
-                        />
-                      )}
-                    </div>
+                    <ManualFormEntryMode
+                      lastHoveredStep={lastHoveredStep}
+                      editingType={editingType}
+                      manualData={manualData}
+                      onSave={(stepId, data) => stepData.saveStepData(stepId as 1 | 2 | 3 | 4 | 5 | 6 | 7, data)}
+                      onCancel={handleCancelSource}
+                      onFileUpload={ocrUpload.handleFileUpload}
+                      getStepData={(stepId) => manualData[stepId]}
+                    />
                   ) : selectedSource === "upload" ? (
-                    <div>
-                      {/* ========== MODE 4: Upload/OCR Interface ========== */}
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-sm font-medium text-gray-700">Загрузка документа</h4>
-                        <Button variant="outline" size="sm" onClick={handleCancelSource}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-                            <Eye className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-slate-800">
-                              {lastHoveredStep === 1 ? "Анализ карточки компании" : "Анализ спецификации"}
-                            </h3>
-                            <p className="text-sm text-slate-600">
-                              {lastHoveredStep === 1 
-                                ? "Загрузите документ компании для автоматического извлечения данных" 
-                                : "Загрузите инвойс или спецификацию для автоматического заполнения"
-                              }
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          {/* Drag & Drop зона */}
-                          <div 
-                            className="border-2 border-dashed border-orange-300 rounded-lg p-8 text-center hover:border-orange-400 transition-colors cursor-pointer"
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              const files = e.dataTransfer.files;
-                              if (files.length > 0) {
-                                ocrUpload.handleFileUpload(lastHoveredStep, files[0]);
-                              }
-                            }}
-                            onClick={() => document.getElementById(`ocr-file-input-${lastHoveredStep}`)?.click()}
-                          >
-                            <Upload className="w-12 h-12 text-orange-500 mx-auto mb-4" />
-                            <p className="text-lg font-medium text-slate-700 mb-2">
-                              Перетащите файл сюда или нажмите для выбора
-                            </p>
-                            <p className="text-sm text-slate-500">
-                              Поддерживаемые форматы: PDF, JPG, PNG, XLSX, DOCX
-                            </p>
-                            <input 
-                              id={`ocr-file-input-${lastHoveredStep}`}
-                              type="file" 
-                              accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.docx,.doc"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  ocrUpload.handleFileUpload(lastHoveredStep, file);
-                                }
-                              }}
-                            />
-                          </div>
-                          
-                          {/* Информация о поддерживаемых документах */}
-                          <div className="bg-orange-50 rounded-lg p-4">
-                            <h4 className="font-medium text-orange-800 mb-2">
-                              {lastHoveredStep === 1 ? "Поддерживаемые документы:" : "Поддерживаемые документы:"}
-                            </h4>
-                            <ul className="text-sm text-orange-700 space-y-1">
-                              {lastHoveredStep === 1 ? (
-                                <>
-                                  <li>• Карточки компаний</li>
-                                  <li>• Свидетельства о регистрации</li>
-                                  <li>• Договоры с реквизитами</li>
-                                  <li>• Банковские документы</li>
-                                </>
-                              ) : (
-                                <>
-                                  <li>• Инвойсы (счета-фактуры)</li>
-                                  <li>• Спецификации товаров</li>
-                                  <li>• Коммерческие предложения</li>
-                                  <li>• Прайс-листы</li>
-                                </>
-                              )}
-                            </ul>
-                          </div>
-                          
-                          {/* Статус загрузки и анализа */}
-                          {ocrUpload.ocrAnalyzing[lastHoveredStep] && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                              <div className="flex items-center gap-2">
-                                <Loader className="w-5 h-5 text-blue-600 animate-spin" />
-                                <span className="text-blue-800 font-medium">Анализируем документ...</span>
-                              </div>
-                              <p className="text-sm text-blue-600 mt-1">
-                                Пожалуйста, подождите, извлекаем данные
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Статус успешной загрузки */}
-                          {ocrUpload.uploadedFiles[lastHoveredStep] && !ocrUpload.ocrAnalyzing[lastHoveredStep] && !ocrUpload.ocrError[lastHoveredStep] && (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="w-5 h-5 text-green-600" />
-                                <span className="text-green-800 font-medium">Файл загружен и проанализирован</span>
-                              </div>
-                              <p className="text-sm text-green-600 mt-1">
-                                Данные автоматически заполнены в форму
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Статус ошибки */}
-                          {ocrUpload.ocrError[lastHoveredStep] && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                              <div className="flex items-center gap-2">
-                                <X className="w-5 h-5 text-red-600" />
-                                <span className="text-red-800 font-medium">Ошибка анализа</span>
-                              </div>
-                              <p className="text-sm text-red-600 mt-1">
-                                {ocrUpload.ocrError[lastHoveredStep]}
-                              </p>
-
-                              {/* Отладочная информация */}
-                              {ocrUpload.ocrDebugData[lastHoveredStep] && (
-                                <details className="mt-3">
-                                  <summary className="text-sm text-red-700 cursor-pointer">
-                                    Показать отладочную информацию
-                                  </summary>
-                                  <pre className="text-xs text-red-600 mt-2 bg-red-100 p-2 rounded overflow-auto max-h-32">
-                                    {JSON.stringify(ocrUpload.ocrDebugData[lastHoveredStep], null, 2)}
-                                  </pre>
-                                </details>
-                                                  )}
-                  </div>
-                )}
-
-                {/* Блок для 7-го шага - Подтверждение получения */}
-                {hasManagerReceipt && (
-                  <div className="mt-6">
-                    <div className="bg-orange-100 border border-orange-300 rounded-lg p-4">
-                      <h4 className="font-semibold mb-3 flex items-center gap-2 text-orange-800">
-                        <Upload className="h-4 w-4" />
-                        Шаг 7: Загрузите чек о получении средств
-                      </h4>
-                      
-                      {!clientReceiptUrl ? (
-                        <div className="space-y-3">
-                          <p className="text-sm text-orange-700">
-                            Пожалуйста, загрузите чек или скриншот, подтверждающий что вы получили средства от поставщика.
-                          </p>
-                          
-                          {clientReceiptUploadError && (
-                            <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
-                              {clientReceiptUploadError}
-                            </div>
-                          )}
-                          
-                          <div className="flex flex-col gap-2">
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={handleClientReceiptUpload}
-                              className="hidden"
-                              id="client-receipt-upload"
-                            />
-                            
-                            <Button
-                              onClick={() => document.getElementById('client-receipt-upload')?.click()}
-                              disabled={isUploadingClientReceipt}
-                              variant="outline"
-                              className="w-full border-orange-300 hover:border-orange-400 text-orange-800"
-                            >
-                              {isUploadingClientReceipt ? (
-                                <>
-                                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                                  Загружаю чек...
-                                </>
-                              ) : (
-                                <>
-                                  <Upload className="h-4 w-4 mr-2" />
-                                  Выбрать файл чека
-                                </>
-                              )}
-                            </Button>
-                            
-                            <p className="text-xs text-gray-500 text-center">
-                              Поддерживаются: JPG, PNG, PDF (макс. 50 МБ)
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                            <div className="flex-1">
-                              <p className="font-medium text-green-800">Чек загружен и отправлен менеджеру</p>
-                              <a 
-                                href={clientReceiptUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-orange-600 hover:underline text-sm"
-                              >
-                                Просмотреть загруженный чек →
-                              </a>
-                            </div>
-                            <Button
-                              onClick={handleRemoveClientReceipt}
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 border-red-300 hover:border-red-400"
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Удалить
-                            </Button>
-                          </div>
-                          
-                          <div className="bg-green-50 border border-green-200 rounded p-3">
-                            <p className="text-sm text-green-700">
-                              ✅ Ваш чек отправлен менеджеру. Теперь вы можете завершить проект.
-                            </p>
-                          </div>
-                          
-                          {/* Кнопка "Подробнее" */}
-                          <div className="flex justify-center mt-4">
-                            <Button
-                              onClick={handleShowProjectDetails}
-                              variant="outline"
-                              className="text-blue-600 border-blue-300 hover:border-blue-400 hover:bg-blue-50"
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Подробнее о проекте
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-                    </div>
+                    <UploadOCRMode
+                      lastHoveredStep={lastHoveredStep}
+                      ocrAnalyzing={ocrUpload.ocrAnalyzing}
+                      uploadedFiles={ocrUpload.uploadedFiles}
+                      ocrError={ocrUpload.ocrError}
+                      ocrDebugData={ocrUpload.ocrDebugData}
+                      hasManagerReceipt={hasManagerReceipt}
+                      clientReceiptUrl={clientReceiptUrl}
+                      clientReceiptUploadError={clientReceiptUploadError}
+                      isUploadingClientReceipt={isUploadingClientReceipt}
+                      onFileUpload={ocrUpload.handleFileUpload}
+                      onClose={handleCancelSource}
+                      onClientReceiptUpload={handleClientReceiptUpload}
+                      onRemoveClientReceipt={handleRemoveClientReceipt}
+                      onShowProjectDetails={handleShowProjectDetails}
+                    />
                   ) : stepConfigs[lastHoveredStep] ? (
                     <div className="flex justify-center">
                       {/* ========== MODE 5: Filled State (Cubes/Sliders) ========== */}
@@ -3245,10 +2950,10 @@ function ProjectConstructorContent() {
                           </div>
                           
                           <div className="space-y-3 mb-4">
-                            {lastHoveredStep === 3 && (
+                            {lastHoveredStep === 3 && ocrUpload.uploadedFiles[lastHoveredStep] && (
                               <div className="flex items-center gap-2">
                                 <span className="text-gray-400">📄</span>
-                                <span className="text-gray-800">{uploadedFiles[lastHoveredStep]}</span>
+                                <span className="text-gray-800">{ocrUpload.uploadedFiles[lastHoveredStep]}</span>
                                 <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full ml-auto">
                                   ✓ Загружен
                                 </span>
