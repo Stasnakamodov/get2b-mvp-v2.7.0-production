@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/dialog"
 import {
   Blocks,
-  Building,
   FileText,
   Store,
   Users,
@@ -51,8 +50,6 @@ import {
   ArrowRight,
   ArrowLeft,
   X,
-  ChevronRight,
-  ChevronLeft,
   CreditCard,
   Banknote,
   Coins,
@@ -61,13 +58,10 @@ import {
   Clock,
   Send,
   Upload,
-  Package,
-  Mail,
   Edit,
   Lock,
   Check,
   Loader,
-  Eye,
   User,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
