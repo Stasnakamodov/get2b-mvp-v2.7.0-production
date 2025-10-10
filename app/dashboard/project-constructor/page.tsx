@@ -20,6 +20,7 @@ import { findSupplierInAnyStep } from '@/utils/project-constructor/SupplierFinde
 import { isStepEnabled as isStepEnabledUtil } from '@/utils/project-constructor/StepValidation'
 import { SummaryBlock } from '@/components/project-constructor/SummaryBlock'
 import { StepCubes } from '@/components/project-constructor/StepCubes'
+import { AutoFillService } from '@/lib/services/AutoFillService'
 import { TemplateSelectionMode } from './components/configuration-modes/TemplateSelectionMode'
 import { TemplateStepSelectionMode } from './components/configuration-modes/TemplateStepSelectionMode'
 import { ManualFormEntryMode } from './components/configuration-modes/ManualFormEntryMode'
@@ -424,6 +425,7 @@ function ProjectConstructorContent() {
   })
 
   // useEffect для автоматической установки stepConfigs[5] = 'catalog' когда есть данные автозаполнения
+  // ✅ ОБНОВЛЕНО: Добавлена проверка приоритетов через AutoFillService
   useEffect(() => {
     // Проверяем есть ли у выбранного поставщика данные для автозаполнения 5-го шага
     if (selectedSupplierData || (manualData[4] && (manualData[4].methods || manualData[4].supplier_data))) {
@@ -457,13 +459,20 @@ function ProjectConstructorContent() {
         }
       }
 
-      // Устанавливаем stepConfigs[5] = 'catalog' если есть данные автозаполнения
+      // ✅ НОВОЕ: Проверяем возможность автозаполнения через AutoFillService
       if (hasStep5AutofillData && stepConfigs[5] !== 'catalog') {
-        setStepConfigs(prev => ({
-          ...prev,
-          5: 'catalog'
-        }));
-        console.log('✅ [Step 5 Auto Config] Установлен stepConfigs[5] = "catalog" - есть данные автозаполнения');
+        const currentState = { stepConfigs, manualData };
+        const canFill = AutoFillService.canAutoFill(5, 'catalog', currentState);
+
+        if (canFill) {
+          setStepConfigs(prev => ({
+            ...prev,
+            5: 'catalog'
+          }));
+          console.log('✅ [Step 5 Auto Config] Установлен stepConfigs[5] = "catalog" - есть данные автозаполнения');
+        } else {
+          console.log('⏸️ [Step 5 Auto Config] Пропущена установка stepConfigs[5] = "catalog" - приоритет источника выше');
+        }
       }
     }
   }, [selectedSupplierData, manualData[4], stepConfigs[5]]);
@@ -1088,37 +1097,34 @@ function ProjectConstructorContent() {
 
   // 🔥 НОВАЯ ФУНКЦИЯ: Предложение способа оплаты и реквизитов
   const suggestPaymentMethodAndRequisites = (bankRequisites: any, ocrSupplierName: string) => {
-    console.log("💡 Предлагаем способ оплаты и реквизиты:", bankRequisites);
-    console.log("🏢 Поставщик из OCR (переданный):", ocrSupplierName);
-    
+    console.log("💡 OCR: Предлагаем способ оплаты и реквизиты:", bankRequisites);
+    console.log("🏢 OCR: Поставщик из OCR (переданный):", ocrSupplierName);
+
     // Используем переданное имя поставщика
     let supplierName = ocrSupplierName || '';
-    
+
     // Если OCR не нашел поставщика, пробуем из банковских реквизитов
     if (!supplierName) {
       supplierName = bankRequisites.recipientName || '';
-      console.log("🔍 Поставщик из банковских реквизитов (fallback):", supplierName);
+      console.log("🔍 OCR: Поставщик из банковских реквизитов (fallback):", supplierName);
     }
-    
+
     // Fallback to step 2 data if still empty (though it should be passed now)
     if (!supplierName && manualData[2]?.supplier) {
       supplierName = manualData[2].supplier;
-      console.log("🔍 Поставщик из шага 2 (fallback):", supplierName);
+      console.log("🔍 OCR: Поставщик из шага 2 (fallback):", supplierName);
     }
-    
-    console.log("🏢 Финальный поставщик для шага 4:", supplierName);
-    
-    console.log("🏢 Поставщик для модального окна:", supplierName);
-    
-    // Автоматически предлагаем "Банковский перевод" как способ оплаты
+
+    console.log("🏢 OCR: Финальный поставщик для шага 4:", supplierName);
+
+    // Подготавливаем данные для автозаполнения
     const paymentMethodData = {
       method: 'bank-transfer',
       supplier: supplierName,
       suggested: true,
       source: 'ocr_invoice'
     };
-    
-    // Подготавливаем реквизиты как предложения
+
     const requisitesData = {
       type: 'bank',  // Устанавливаем тип для корректного отображения
       bankName: bankRequisites.bankName || '',
@@ -1130,38 +1136,57 @@ function ProjectConstructorContent() {
       suggested: true,
       source: 'ocr_invoice'
     };
-    
-    // 🔥 ДОПОЛНИТЕЛЬНАЯ ОТЛАДКА
-    console.log("🔍 ДЕТАЛЬНАЯ ОТЛАДКА РЕКВИЗИТОВ:");
+
+    console.log("🔍 OCR: ДЕТАЛЬНАЯ ОТЛАДКА РЕКВИЗИТОВ:");
     console.log("   - bankRequisites.bankName:", bankRequisites.bankName);
     console.log("   - bankRequisites.accountNumber:", bankRequisites.accountNumber);
     console.log("   - bankRequisites.swift:", bankRequisites.swift);
     console.log("   - bankRequisites.recipientName:", bankRequisites.recipientName);
-    console.log("   - requisitesData.bankName:", requisitesData.bankName);
-    console.log("   - requisitesData.accountNumber:", requisitesData.accountNumber);
-    console.log("   - requisitesData.swift:", requisitesData.swift);
-    
-    // Сохраняем предложения в manualData
-    setManualData(prev => {
-      const newData = {
-        ...prev,
-        4: paymentMethodData,  // Шаг 4 - Способ оплаты
-        5: requisitesData      // Шаг 5 - Реквизиты
-      };
-      console.log("💾 Сохраняем в manualData[5]:", newData[5]);
-      return newData;
-    });
-    
-    // Устанавливаем источники данных
-    setStepConfigs(prev => ({
-      ...prev,
-      4: 'ocr_suggestion',
-      5: 'ocr_suggestion'
-    }));
-    
-    console.log("✅ Предложения сохранены:");
-    console.log("   - Шаг 4 (Способ оплаты):", paymentMethodData);
-    console.log("   - Шаг 5 (Реквизиты):", requisitesData);
+
+    // ✅ НОВОЕ: Проверка приоритетов через AutoFillService
+    const currentState = { stepConfigs, manualData };
+
+    const canFillStep4 = AutoFillService.canAutoFill(4, 'ocr_suggestion', currentState);
+    const canFillStep5 = AutoFillService.canAutoFill(5, 'ocr_suggestion', currentState);
+
+    if (!canFillStep4 && !canFillStep5) {
+      console.log("⏸️ OCR: Пропускаем автозаполнение - уже заполнено источником с выше приоритетом");
+      return;
+    }
+
+    // Заполняем только разрешенные шаги
+    if (canFillStep4) {
+      AutoFillService.safeAutoFill(
+        4,
+        paymentMethodData,
+        'ocr_suggestion',
+        currentState,
+        (newManualData, newStepConfigs) => {
+          setManualData(newManualData);
+          setStepConfigs(newStepConfigs);
+        }
+      );
+    }
+
+    if (canFillStep5) {
+      // Обновляем currentState если Step 4 был заполнен
+      const updatedState = canFillStep4
+        ? { stepConfigs: { ...stepConfigs, 4: 'ocr_suggestion' }, manualData: { ...manualData, 4: paymentMethodData } }
+        : currentState;
+
+      AutoFillService.safeAutoFill(
+        5,
+        requisitesData,
+        'ocr_suggestion',
+        updatedState,
+        (newManualData, newStepConfigs) => {
+          setManualData(newManualData);
+          setStepConfigs(newStepConfigs);
+        }
+      );
+    }
+
+    console.log("✅ OCR: Предложения обработаны (Step 4:", canFillStep4, ", Step 5:", canFillStep5, ")");
   };
 
   // ===== НОВЫЙ ХУК: OCR Upload =====
@@ -1302,16 +1327,15 @@ function ProjectConstructorContent() {
             if (supplier) {
               console.log('✅ [ATOMIC] Найден поставщик в каталоге:', supplier)
 
-              // Заполняем Step IV с РЕАЛЬНЫМИ методами оплаты из каталога
-              console.log('🎯 [ATOMIC] Заполняю Step 4 с данными поставщика:', supplier.name)
-              console.log('💳 [ATOMIC] Доступные методы оплаты:', supplier.payment_methods)
-
               // Фильтруем методы оплаты, исключая cash (наличные) и убираем дубликаты
               const normalizedMethods = (supplier.payment_methods || ['bank_transfer'])
                 .map((method: string) => method === 'bank_transfer' ? 'bank-transfer' : method) // Нормализуем формат
                 .filter((method: string) => method !== 'cash') // Исключаем наличные
                 .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index) // Убираем дубликаты
               const availableMethods = normalizedMethods.length > 0 ? normalizedMethods : ['bank-transfer']
+
+              console.log('🎯 [ATOMIC] Заполняю Step 4 с данными поставщика:', supplier.name)
+              console.log('💳 [ATOMIC] Доступные методы оплаты:', availableMethods)
 
               const step4Data = {
                 type: 'multiple',
@@ -1320,64 +1344,97 @@ function ProjectConstructorContent() {
                 auto_filled: true,
                 supplier_name: supplier.name,
                 supplier_data: supplier,
-                catalog_source: 'verified_supplier',
-                user_choice: true
+                catalog_source: 'verified_supplier'
               }
 
-              console.log('📋 [ATOMIC] Step 4 Data:', step4Data)
-
-              setManualData(prev => ({
-                ...prev,
-                4: step4Data
-              }))
-
-              // Заполняем Step V с РЕАЛЬНЫМИ реквизитами из каталога
               // Определяем тип по первому доступному методу оплаты
               const primaryType = supplier.payment_methods?.includes('bank-transfer') || supplier.bank_accounts?.length > 0 ? 'bank' :
                                   supplier.payment_methods?.includes('p2p') || supplier.p2p_cards?.length > 0 ? 'p2p' :
                                   supplier.payment_methods?.includes('crypto') || supplier.crypto_wallets?.length > 0 ? 'crypto' : 'bank';
 
-              setManualData(prev => ({
-                ...prev,
-                5: {
-                  type: primaryType,  // ✅ Добавляем type для корректного отображения кубика с данными
-                  supplier_name: supplier.name,
-                  supplier_data: supplier,
+              const step5Data = {
+                type: primaryType,
+                supplier_name: supplier.name,
+                supplier_data: supplier,
+                bank_accounts: supplier.bank_accounts || [],
+                crypto_wallets: supplier.crypto_wallets || [],
+                p2p_cards: supplier.p2p_cards || [],
+                requisites: {
                   bank_accounts: supplier.bank_accounts || [],
                   crypto_wallets: supplier.crypto_wallets || [],
-                  p2p_cards: supplier.p2p_cards || [],
-                  requisites: {
-                    bank_accounts: supplier.bank_accounts || [],
-                    crypto_wallets: supplier.crypto_wallets || [],
-                    p2p_cards: supplier.p2p_cards || []
-                  },
-                  auto_filled: true,
-                  catalog_source: 'verified_supplier',
-                  user_choice: false
+                  p2p_cards: supplier.p2p_cards || []
+                },
+                auto_filled: true,
+                catalog_source: 'verified_supplier'
+              }
+
+              // ✅ НОВОЕ: Безопасное автозаполнение через AutoFillService
+              const currentState = { stepConfigs, manualData };
+              let step4Filled = false;
+              let step5Filled = false;
+
+              // Попытка заполнить Step 4
+              step4Filled = AutoFillService.safeAutoFill(
+                4,
+                step4Data,
+                'catalog',
+                currentState,
+                (newManualData, newStepConfigs) => {
+                  setManualData(newManualData);
+                  setStepConfigs(newStepConfigs);
                 }
-              }))
+              );
 
-              // Устанавливаем конфигурацию как каталожную
-              setStepConfigs(prev => ({
-                ...prev,
-                4: 'catalog',
-                5: 'catalog'
-              }))
+              // Попытка заполнить Step 5
+              if (step4Filled) {
+                // Обновляем состояние если Step 4 был заполнен
+                const updatedState = {
+                  stepConfigs: { ...stepConfigs, 4: 'catalog' },
+                  manualData: { ...manualData, 4: step4Data }
+                };
+                step5Filled = AutoFillService.safeAutoFill(
+                  5,
+                  step5Data,
+                  'catalog',
+                  updatedState,
+                  (newManualData, newStepConfigs) => {
+                    setManualData(newManualData);
+                    setStepConfigs(newStepConfigs);
+                  }
+                );
+              } else {
+                step5Filled = AutoFillService.safeAutoFill(
+                  5,
+                  step5Data,
+                  'catalog',
+                  currentState,
+                  (newManualData, newStepConfigs) => {
+                    setManualData(newManualData);
+                    setStepConfigs(newStepConfigs);
+                  }
+                );
+              }
 
-              console.log('✅ [ATOMIC] Шаги 4 и 5 заполнены РЕАЛЬНЫМИ данными каталога')
+              console.log('✅ [ATOMIC] Автозаполнение завершено (Step 4:', step4Filled, ', Step 5:', step5Filled, ')')
 
-              // Показываем уведомление с реальными данными
-              setAutoFillNotification({
-                show: true,
-                message: `Данные поставщика "${supplier.name}" из каталога применены. Доступно методов: ${supplier.payment_methods?.length || 0}`,
-                supplierName: supplier.name,
-                filledSteps: [4, 5]
-              })
+              // Показываем уведомление только если хотя бы один шаг заполнен
+              if (step4Filled || step5Filled) {
+                const filledSteps = [];
+                if (step4Filled) filledSteps.push(4);
+                if (step5Filled) filledSteps.push(5);
 
-              // Скрываем уведомление через 7 секунд
-              setTimeout(() => {
-                setAutoFillNotification(null)
-              }, 7000)
+                setAutoFillNotification({
+                  show: true,
+                  message: `Данные поставщика "${supplier.name}" из каталога применены. Доступно методов: ${availableMethods.length}`,
+                  supplierName: supplier.name,
+                  filledSteps
+                })
+
+                // Скрываем уведомление через 7 секунд
+                setTimeout(() => {
+                  setAutoFillNotification(null)
+                }, 7000)
+              }
             } else {
               console.log('❌ [ATOMIC] Поставщик не найден в каталоге')
 
@@ -1385,24 +1442,28 @@ function ProjectConstructorContent() {
               // Пользователь увидит рекомендации из каталога или заполнит вручную
               console.log('❌ [ATOMIC] Нет данных поставщика, пользователь заполнит вручную')
 
-              // Fallback с базовыми данными
-              setManualData(prev => ({
-                ...prev,
-                4: {
-                  type: 'multiple',
-                  methods: ['bank_transfer'],
-                  payment_method: 'bank_transfer',
-                  auto_filled: true,
-                  supplier_name: firstProduct.supplier_name,
-                  catalog_source: 'unknown_supplier',
-                  user_choice: true
-                }
-              }))
+              // Fallback с базовыми данными (только Step 4)
+              const fallbackStep4Data = {
+                type: 'multiple',
+                methods: ['bank_transfer'],
+                payment_method: 'bank_transfer',
+                auto_filled: true,
+                supplier_name: firstProduct.supplier_name,
+                catalog_source: 'unknown_supplier'
+              }
 
-              setStepConfigs(prev => ({
-                ...prev,
-                4: 'catalog'
-              }))
+              // ✅ НОВОЕ: Безопасное автозаполнение через AutoFillService
+              const currentState = { stepConfigs, manualData };
+              AutoFillService.safeAutoFill(
+                4,
+                fallbackStep4Data,
+                'catalog',
+                currentState,
+                (newManualData, newStepConfigs) => {
+                  setManualData(newManualData);
+                  setStepConfigs(newStepConfigs);
+                }
+              );
             }
           }).catch(error => {
             console.error('❌ [ATOMIC] Ошибка загрузки данных каталога:', error)
