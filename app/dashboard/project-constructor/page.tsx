@@ -2190,7 +2190,16 @@ function ProjectConstructorContent() {
                       onClose={() => templateSystem.setTemplateStepSelection(null)}
                     />
 
-                  ) : (selectedSource === "manual" || (lastHoveredStep && stepConfigs[lastHoveredStep] === 'manual')) && lastHoveredStep !== 4 ? (
+                  ) : (() => {
+                    const shouldShowManual = (selectedSource === "manual" || (lastHoveredStep && stepConfigs[lastHoveredStep] === 'manual')) && lastHoveredStep !== 4;
+                    console.log('🔍 [DEBUG ManualFormEntryMode]');
+                    console.log('  - lastHoveredStep:', lastHoveredStep);
+                    console.log('  - selectedSource:', selectedSource);
+                    console.log('  - stepConfigs[lastHoveredStep]:', lastHoveredStep ? stepConfigs[lastHoveredStep] : 'N/A');
+                    console.log('  - shouldShowManual:', shouldShowManual);
+                    console.log('  - manualData[5]:', manualData[5]);
+                    return shouldShowManual;
+                  })() ? (
                     <ManualFormEntryMode
                       lastHoveredStep={lastHoveredStep}
                       editingType={editingType}
