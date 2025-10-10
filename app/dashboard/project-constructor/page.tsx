@@ -2508,26 +2508,33 @@ function ProjectConstructorContent() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
-                                // Обновляем шаг 5 (реквизиты)
+                                // Используем автозаполнение через handlePaymentMethodSelect
+                                const supplierData = catalogSuggestions[5]?.supplier_data || selectedSupplierData;
+
+                                // Обновляем Step 4
                                 setManualData(prev => ({
                                   ...prev,
                                   4: {
                                     ...prev[4],
+                                    ...(catalogSuggestions[5] || {}),
                                     selectedMethod: 'bank-transfer',
                                     method: 'bank-transfer',
                                     user_choice: true
-                                  },
-                                  5: {
-                                    type: 'bank',
-                                    bankName: '',
-                                    accountNumber: '',
-                                    swift: '',
-                                    recipientName: '',
-                                    user_choice: true
                                   }
                                 }));
-                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
-                                setLastHoveredStep(0);
+                                setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
+
+                                // Очищаем рекомендацию Step 5
+                                if (catalogSuggestions[5]) {
+                                  setCatalogSuggestions(prev => {
+                                    const newSugg = {...prev};
+                                    delete newSugg[5];
+                                    return newSugg;
+                                  });
+                                }
+
+                                // Автозаполняем Step 5 через общую функцию
+                                handlePaymentMethodSelect('bank-transfer', supplierData);
                               }}
                             >
                               <div className="flex items-center gap-2 mb-3">
@@ -2557,26 +2564,33 @@ function ProjectConstructorContent() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
-                                // Обновляем шаги 4 и 5 (двусторонняя связь)
+                                // Используем автозаполнение через handlePaymentMethodSelect
+                                const supplierData = catalogSuggestions[5]?.supplier_data || selectedSupplierData;
+
+                                // Обновляем Step 4
                                 setManualData(prev => ({
                                   ...prev,
                                   4: {
                                     ...prev[4],
+                                    ...(catalogSuggestions[5] || {}),
                                     selectedMethod: 'p2p',
                                     method: 'p2p',
                                     user_choice: true
-                                  },
-                                  5: {
-                                    ...prev[5],  // ✅ Сохраняем данные каталога
-                                    type: 'p2p',
-                                    card_bank: (prev[5]?.p2p_cards?.[0]?.bank || prev[5]?.card_bank || ''),
-                                    card_number: (prev[5]?.p2p_cards?.[0]?.card_number || prev[5]?.card_number || ''),
-                                    card_holder: (prev[5]?.p2p_cards?.[0]?.holder_name || prev[5]?.card_holder || ''),
-                                    user_choice: true
                                   }
                                 }));
-                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
-                                setLastHoveredStep(0);
+                                setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
+
+                                // Очищаем рекомендацию Step 5
+                                if (catalogSuggestions[5]) {
+                                  setCatalogSuggestions(prev => {
+                                    const newSugg = {...prev};
+                                    delete newSugg[5];
+                                    return newSugg;
+                                  });
+                                }
+
+                                // Автозаполняем Step 5 через общую функцию
+                                handlePaymentMethodSelect('p2p', supplierData);
                               }}
                             >
                               <div className="flex items-center gap-2 mb-3">
@@ -2606,23 +2620,34 @@ function ProjectConstructorContent() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
-                                // Обновляем шаги 4 и 5 (двусторонняя связь)
+                                // Используем автозаполнение через handlePaymentMethodSelect
+                                const supplierData = catalogSuggestions[5]?.supplier_data || selectedSupplierData;
+
+                                // Обновляем Step 4
                                 setManualData(prev => ({
                                   ...prev,
                                   4: {
                                     ...prev[4],
+                                    ...(catalogSuggestions[5] || {}),
                                     selectedMethod: 'crypto',
                                     method: 'crypto',
                                     user_choice: true
-                                  },
-                                  5: {
-                                    type: 'crypto',
-                                    crypto_wallet: '',
-                                    crypto_network: '',
-                                    user_choice: true
                                   }
                                 }));
-                                setStepConfigs(prev => ({ ...prev, 4: 'manual', 5: 'manual' }));
+                                setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
+
+                                // Очищаем рекомендацию Step 5
+                                if (catalogSuggestions[5]) {
+                                  setCatalogSuggestions(prev => {
+                                    const newSugg = {...prev};
+                                    delete newSugg[5];
+                                    return newSugg;
+                                  });
+                                }
+
+                                // Автозаполняем Step 5 через общую функцию
+                                handlePaymentMethodSelect('crypto', supplierData);
+                                setStepConfigs(prev => ({ ...prev, 4: 'catalog', 5: 'catalog' }));
                                 setLastHoveredStep(0);
                               }}
                             >
