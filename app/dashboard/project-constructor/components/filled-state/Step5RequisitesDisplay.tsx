@@ -143,26 +143,31 @@ export function Step5RequisitesDisplay({ data, onPreview }: Step5RequisitesDispl
   // Одиночный реквизит (выбранный)
   const colors = getSelectedColorClasses(data.type)
 
-  // Формируем детали для отображения
+  // Формируем детали для отображения - ВСЕ доступные поля
   const getDetails = () => {
     if (data.type === 'crypto') {
       return [
-        { label: 'Валюта', value: data.crypto_name || 'Не указана' },
-        { label: 'Адрес', value: data.crypto_address ? `${data.crypto_address.substring(0, 12)}...${data.crypto_address.substring(data.crypto_address.length - 4)}` : 'Не указан' },
-        { label: 'Сеть', value: data.crypto_network || 'Не указана' }
+        { label: 'Криптовалюта', value: data.crypto_name || data.crypto_address?.substring(0, 3).toUpperCase() || 'Не указана', highlight: true },
+        { label: 'Адрес кошелька', value: data.crypto_address ? `${data.crypto_address.substring(0, 16)}...${data.crypto_address.substring(data.crypto_address.length - 6)}` : 'Не указан', mono: true },
+        { label: 'Сеть блокчейна', value: data.crypto_network || 'Не указана' },
+        { label: 'Полный адрес', value: data.crypto_address || 'Не указан', mono: true, small: true }
       ]
     } else if (data.type === 'p2p') {
       return [
-        { label: 'Банк карты', value: data.card_bank || 'Не указан' },
-        { label: 'Номер карты', value: data.card_number ? `**** **** **** ${data.card_number.slice(-4)}` : 'Не указан' },
-        { label: 'Держатель', value: data.card_holder || 'Не указан' }
+        { label: 'Банк-эмитент карты', value: data.card_bank || 'Не указан', highlight: true },
+        { label: 'Номер карты', value: data.card_number ? `**** **** **** ${data.card_number.slice(-4)}` : 'Не указан', mono: true },
+        { label: 'Владелец карты', value: data.card_holder || 'Не указан' },
+        { label: 'Срок действия', value: data.card_expiry || 'Бессрочно' }
       ]
     } else {
-      // bank
+      // bank - показываем ВСЕ поля
       return [
-        { label: 'Банк', value: data.bankName || 'Не указан' },
-        { label: 'Счет', value: data.accountNumber || 'Не указан' },
-        { label: 'SWIFT', value: data.swift || 'Не указан' }
+        { label: 'Название банка', value: data.bankName || 'Не указан', highlight: true },
+        { label: 'Номер счета', value: data.accountNumber || 'Не указан', mono: true },
+        { label: 'SWIFT код', value: data.swift || 'Не указан', mono: true },
+        { label: 'IBAN', value: data.iban || 'Не указан', mono: true },
+        { label: 'Получатель платежа', value: data.recipientName || 'Не указан' },
+        { label: 'Валюта счета', value: data.transferCurrency || 'RUB' }
       ]
     }
   }
@@ -197,12 +202,21 @@ export function Step5RequisitesDisplay({ data, onPreview }: Step5RequisitesDispl
             </div>
           </div>
 
-          {/* Детали реквизитов - крупнее и с большими отступами */}
-          <div className="grid grid-cols-3 gap-6">
+          {/* Детали реквизитов - все доступные поля */}
+          <div className="grid grid-cols-3 gap-4">
             {details.map((detail, index) => (
               <div key={index} className="bg-white/70 rounded-lg p-4 border border-gray-100">
-                <div className="text-sm font-medium text-gray-500 mb-2">{detail.label}</div>
-                <div className="text-lg font-semibold text-gray-900" title={detail.value}>
+                <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+                  {detail.label}
+                </div>
+                <div
+                  className={`font-semibold text-gray-900 break-all ${
+                    detail.small ? 'text-xs' : 'text-base'
+                  } ${detail.mono ? 'font-mono' : ''} ${
+                    detail.highlight ? 'text-orange-600' : ''
+                  }`}
+                  title={detail.value}
+                >
                   {detail.value}
                 </div>
               </div>
