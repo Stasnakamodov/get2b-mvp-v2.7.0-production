@@ -1162,8 +1162,8 @@ function ProjectConstructorContent() {
         'ocr_suggestion',
         currentState,
         (newManualData, newStepConfigs) => {
-          setManualData(newManualData);
-          setStepConfigs(newStepConfigs);
+          setManualData(prev => ({ ...prev, ...newManualData }));  // ← Functional update!
+          setStepConfigs(prev => ({ ...prev, ...newStepConfigs }));
         }
       );
     }
@@ -1180,8 +1180,8 @@ function ProjectConstructorContent() {
         'ocr_suggestion',
         updatedState,
         (newManualData, newStepConfigs) => {
-          setManualData(newManualData);
-          setStepConfigs(newStepConfigs);
+          setManualData(prev => ({ ...prev, ...newManualData }));  // ← Functional update!
+          setStepConfigs(prev => ({ ...prev, ...newStepConfigs }));
         }
       );
     }

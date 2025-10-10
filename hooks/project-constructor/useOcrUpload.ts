@@ -69,6 +69,8 @@ export function useOcrUpload({
   // ========================================
 
   const handleFileUpload = async (stepId: number, file: File) => {
+    console.log('🔥 [OCR] handleFileUpload ВЫЗВАН!', { stepId, fileName: file?.name, fileType: file?.type })
+
     // Сразу показываем индикатор загрузки
     setOcrAnalyzing(prev => ({ ...prev, [stepId]: true }))
     setOcrError(prev => ({ ...prev, [stepId]: '' }))
