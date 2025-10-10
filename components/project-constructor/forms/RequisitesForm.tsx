@@ -309,16 +309,12 @@ const RequisitesForm = ({ onSave, onCancel, initialData }: RequisitesFormProps) 
           console.log('🔍 [RequisitesForm] Нажата кнопка "Сохранить и вернуться"');
           console.log('  - formData:', formData);
 
-          // Сначала сохраняем данные
+          // Сохраняем данные (useStepData автоматически закроет форму)
           const dataToSave = { ...formData, suggested: false, source: 'manual' };
           console.log('  - dataToSave:', dataToSave);
 
           onSave(dataToSave);
-          console.log('  - onSave вызван');
-
-          // Затем закрываем форму
-          onCancel();
-          console.log('  - onCancel вызван');
+          console.log('  - onSave вызван, форма закроется автоматически');
         }}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Сохранить и вернуться

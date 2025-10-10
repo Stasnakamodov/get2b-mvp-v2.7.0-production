@@ -25,6 +25,7 @@ interface StepDataParams {
   setSelectedSource: (source: string | null) => void
   setEditingType: (type: string) => void
   setStepConfigs: React.Dispatch<React.SetStateAction<any>>
+  setLastHoveredStep?: (step: number | null) => void
 
   // Проверка готовности к переходу на Stage 2
   checkSummaryReadiness: () => void
@@ -44,6 +45,7 @@ export function useStepData(params: StepDataParams) {
     setSelectedSource,
     setEditingType,
     setStepConfigs,
+    setLastHoveredStep,
     checkSummaryReadiness,
     currentStage,
     setSelectedProfileId,
@@ -133,6 +135,11 @@ export function useStepData(params: StepDataParams) {
     // 4. Закрываем модалы
     setSelectedSource(null)
     setEditingType('')
+
+    // 5. Закрываем область настройки
+    if (setLastHoveredStep) {
+      setLastHoveredStep(null)
+    }
   }
 
   /**

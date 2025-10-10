@@ -1219,6 +1219,7 @@ function ProjectConstructorContent() {
     setSelectedSource,
     setEditingType,
     setStepConfigs,
+    setLastHoveredStep,
     checkSummaryReadiness,
     currentStage,
     setSelectedProfileId,
