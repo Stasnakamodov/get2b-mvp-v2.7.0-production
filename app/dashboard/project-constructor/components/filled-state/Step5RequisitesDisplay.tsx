@@ -175,53 +175,55 @@ export function Step5RequisitesDisplay({ data, onPreview }: Step5RequisitesDispl
     <div className="flex justify-center">
       <div className="grid grid-cols-3 gap-4 w-full">
         <div
-          className={`bg-white border-2 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${colors.container}`}
+          className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${colors.container}`}
           onClick={() => onPreview('requisites', data)}
         >
           {/* Заголовок и статус */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ring-2 ${colors.icon}`}>
-                <CheckCircle2 className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-2 ${colors.icon}`}>
+                <CheckCircle2 className="h-4 w-4 text-white" />
               </div>
               <div>
-                <div className="text-lg font-bold text-gray-800">
+                <div className="text-sm font-bold text-gray-800">
                   {getTitle(data.type)}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-xs text-gray-500">
                   {getSubtitle(data.type)}
                 </div>
               </div>
             </div>
-            <div className={`text-base flex items-center gap-2 font-bold ${colors.text}`}>
-              <CheckCircle2 className="h-4 w-4" />
+            <div className={`text-xs flex items-center gap-1 font-bold ${colors.text}`}>
+              <CheckCircle2 className="h-3 w-3" />
               <span>ЗАПОЛНЕНО</span>
             </div>
           </div>
 
-          {/* Название поставщика - КРУПНО */}
-          <div className="mb-6 pb-4 border-b border-gray-200">
-            <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
-              Поставщик
+          {/* Основная информация - горизонтально в одну строку */}
+          <div className="flex items-center gap-8">
+            {/* Поставщик */}
+            <div className="flex-1">
+              <div className="text-xs text-gray-500 mb-1">
+                Поставщик
+              </div>
+              <div className="text-2xl font-bold text-orange-600">
+                {supplierName}
+              </div>
             </div>
-            <div className="text-2xl font-bold text-orange-600">
-              {supplierName}
-            </div>
-          </div>
 
-          {/* Ключевые реквизиты - два поля */}
-          <div className="space-y-4">
-            <div>
-              <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+            {/* Банк/Сеть */}
+            <div className="flex-1">
+              <div className="text-xs text-gray-500 mb-1">
                 {mainDetails.first.label}
               </div>
-              <div className="text-lg font-semibold text-gray-900">
+              <div className="text-xl font-semibold text-gray-900">
                 {mainDetails.first.value}
               </div>
             </div>
 
-            <div>
-              <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+            {/* Реквизиты */}
+            <div className="flex-1">
+              <div className="text-xs text-gray-500 mb-1">
                 {mainDetails.second.label}
               </div>
               <div className={`text-lg font-semibold text-gray-900 ${mainDetails.second.mono ? 'font-mono' : ''}`}>
