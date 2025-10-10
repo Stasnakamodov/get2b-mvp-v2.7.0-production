@@ -2142,7 +2142,7 @@ function ProjectConstructorContent() {
                           </Button>
                         )}
 
-                        {(stepConfigs[lastHoveredStep] === 'ocr_suggestion' || stepConfigs[lastHoveredStep] === 'catalog') && (
+                        {(stepConfigs[lastHoveredStep] === 'ocr_suggestion' && (lastHoveredStep === 4 || lastHoveredStep === 5)) && (
                           <Button
                             variant="outline"
                             size="sm"
