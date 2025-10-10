@@ -2600,7 +2600,9 @@ function ProjectConstructorContent() {
                               }}
                             >
                               <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                  bankAvailable ? 'bg-orange-500' : 'bg-gray-400'
+                                }`}>
                                   <Banknote className="h-4 w-4 text-white" />
                                 </div>
                                 <div>
@@ -2667,7 +2669,9 @@ function ProjectConstructorContent() {
                               }}
                             >
                               <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                  p2pAvailable ? 'bg-blue-500' : 'bg-gray-400'
+                                }`}>
                                   <CreditCard className="h-4 w-4 text-white" />
                                 </div>
                                 <div>
@@ -2736,7 +2740,9 @@ function ProjectConstructorContent() {
                               }}
                             >
                               <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                  cryptoAvailable ? 'bg-green-500' : 'bg-gray-400'
+                                }`}>
                                   <Coins className="h-4 w-4 text-white" />
                                 </div>
                                 <div>
