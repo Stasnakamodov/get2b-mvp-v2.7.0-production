@@ -2564,10 +2564,11 @@ function ProjectConstructorContent() {
                               }`}
                               onClick={() => {
                                 if (isManualEntry) {
-                                  // Ручное заполнение - просто устанавливаем type
+                                  // Ручное заполнение - сохраняем существующие данные и устанавливаем type
                                   setManualData(prev => ({
                                     ...prev,
                                     5: {
+                                      ...(prev[5] || {}),
                                       type: 'bank',
                                       user_choice: true,
                                       source: 'manual'
@@ -2633,10 +2634,11 @@ function ProjectConstructorContent() {
                               }`}
                               onClick={() => {
                                 if (isManualEntry) {
-                                  // Ручное заполнение - просто устанавливаем type
+                                  // Ручное заполнение - сохраняем существующие данные и устанавливаем type
                                   setManualData(prev => ({
                                     ...prev,
                                     5: {
+                                      ...(prev[5] || {}),
                                       type: 'p2p',
                                       user_choice: true,
                                       source: 'manual'
@@ -2702,10 +2704,11 @@ function ProjectConstructorContent() {
                               }`}
                               onClick={() => {
                                 if (isManualEntry) {
-                                  // Ручное заполнение - просто устанавливаем type
+                                  // Ручное заполнение - сохраняем существующие данные и устанавливаем type
                                   setManualData(prev => ({
                                     ...prev,
                                     5: {
+                                      ...(prev[5] || {}),
                                       type: 'crypto',
                                       user_choice: true,
                                       source: 'manual'
