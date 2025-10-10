@@ -2247,10 +2247,12 @@ function ProjectConstructorContent() {
                     <>
                       {/* ========== MODE 5: Filled State (Cubes/Sliders) ========== */}
                       {lastHoveredStep === 1 && manualData[lastHoveredStep] && (
-                        <Step1CompanyCubes
-                          data={manualData[lastHoveredStep]}
-                          onPreview={handlePreviewData}
-                        />
+                        <div className="mt-24">
+                          <Step1CompanyCubes
+                            data={manualData[lastHoveredStep]}
+                            onPreview={handlePreviewData}
+                          />
+                        </div>
                       )}
                       
                       {/* Полная форма данных шага */}
@@ -2260,27 +2262,33 @@ function ProjectConstructorContent() {
                       
                       {/* Шаг 2: Горизонтальный слайдер товаров */}
                       {lastHoveredStep === 2 && manualData[lastHoveredStep] && (
-                        <Step3SpecificationSlider
-                          data={manualData[lastHoveredStep]}
-                          onPreview={handlePreviewData}
-                        />
+                        <div className="mt-24">
+                          <Step3SpecificationSlider
+                            data={manualData[lastHoveredStep]}
+                            onPreview={handlePreviewData}
+                          />
+                        </div>
                       )}
 
                       {/* Шаг 3: Спецификация (использует тот же слайдер) */}
                       {lastHoveredStep === 3 && manualData[lastHoveredStep] && (
-                        <Step3SpecificationSlider
-                          data={manualData[lastHoveredStep]}
-                          onPreview={handlePreviewData}
-                        />
+                        <div className="mt-24">
+                          <Step3SpecificationSlider
+                            data={manualData[lastHoveredStep]}
+                            onPreview={handlePreviewData}
+                          />
+                        </div>
                       )}
 
                       {/* Шаг 4: Методы оплаты - показываем кубики для каждого метода */}
                       {lastHoveredStep === 4 && manualData[lastHoveredStep] && (
-                        <Step4PaymentMethodCubes
-                          manualData={manualData}
-                          selectedSupplierData={selectedSupplierData}
-                          onMethodSelect={handlePaymentMethodSelect}
-                        />
+                        <div className="mt-24">
+                          <Step4PaymentMethodCubes
+                            manualData={manualData}
+                            selectedSupplierData={selectedSupplierData}
+                            onMethodSelect={handlePaymentMethodSelect}
+                          />
+                        </div>
                       )}
                       
                       {/* Шаг 5: Реквизиты - показываем форму если реквизиты были заполнены */}
@@ -2302,10 +2310,12 @@ function ProjectConstructorContent() {
 
                         return shouldShowStep5Form;
                       })() && (
-                        <Step5RequisitesDisplay
-                          data={manualData[lastHoveredStep]}
-                          onPreview={handlePreviewData}
-                        />
+                        <div className="mt-24">
+                          <Step5RequisitesDisplay
+                            data={manualData[lastHoveredStep]}
+                            onPreview={handlePreviewData}
+                          />
+                        </div>
                       )}
 
                       {/* СПЕЦИАЛЬНО для шага 5: показываем кубики выбора когда есть stepConfigs[5] = 'catalog' - позволяем пользователю менять тип реквизитов даже после автозаполнения */}
