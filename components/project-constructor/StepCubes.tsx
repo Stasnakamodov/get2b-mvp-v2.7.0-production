@@ -17,6 +17,7 @@ interface StepCubesProps {
   currentStage: number
   stepConfigs: Record<number, string> | { [index: number]: string | undefined }
   manualData: any
+  catalogSuggestions: Record<number, any>
   receiptApprovalStatus: string | null
   hasManagerReceipt: boolean
   clientReceiptUrl: string | null
@@ -33,6 +34,7 @@ export function StepCubes({
   currentStage,
   stepConfigs,
   manualData,
+  catalogSuggestions,
   receiptApprovalStatus,
   hasManagerReceipt,
   clientReceiptUrl,
@@ -80,17 +82,21 @@ export function StepCubes({
 
               <div className={`
                   aspect-square rounded-lg border-2 p-4 flex flex-col items-center justify-center relative group
-                ${(stepConfigs[step.id] && manualData[step.id]?.user_choice) ||
-                  (stepConfigs[step.id] && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||
-                  (manualData[step.id] && Object.keys(manualData[step.id]).length > 0 && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||
-                  (step.id === 3 && receiptApprovalStatus === 'approved') ||
-                  (step.id === 6 && hasManagerReceipt) ||
-                  (step.id === 7 && clientReceiptUrl)
-                                        ? 'border-blue-500 border-dashed bg-blue-50'
-                                        : isEnabled
-                                            ? 'border-gray-300 hover:border-blue-400'
-                                            : 'border-gray-200 bg-gray-50'
-                                      }
+                ${
+                  // ОРАНЖЕВАЯ подсветка для рекомендаций из каталога (Steps 4 и 5)
+                  catalogSuggestions[step.id] && !manualData[step.id]
+                    ? 'border-orange-400 border-2 bg-orange-50 animate-pulse shadow-lg shadow-orange-200'
+                    : (stepConfigs[step.id] && manualData[step.id]?.user_choice) ||
+                      (stepConfigs[step.id] && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||
+                      (manualData[step.id] && Object.keys(manualData[step.id]).length > 0 && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||
+                      (step.id === 3 && receiptApprovalStatus === 'approved') ||
+                      (step.id === 6 && hasManagerReceipt) ||
+                      (step.id === 7 && clientReceiptUrl)
+                    ? 'border-blue-500 border-dashed bg-blue-50'
+                    : isEnabled
+                    ? 'border-gray-300 hover:border-blue-400'
+                    : 'border-gray-200 bg-gray-50'
+                }
                 `}>
                              {/* Индикатор заблокированного шага с tooltip */}
            {!isEnabled && (
@@ -129,9 +135,18 @@ export function StepCubes({
 
 
 
+                {/* Индикатор рекомендации "!" для каталога */}
+                {catalogSuggestions[step.id] && !manualData[step.id] && (
+                  <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-bold animate-pulse">
+                    !
+                  </div>
+                )}
+
                 {/* Римская цифра в правом верхнем углу */}
                 <div className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    isEnabled
+                    catalogSuggestions[step.id] && !manualData[step.id]
+                      ? 'bg-orange-500 text-white'
+                      : isEnabled
                       ? (stepConfigs[step.id] && manualData[step.id]?.user_choice) ||
                          (stepConfigs[step.id] && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||
                          (manualData[step.id] && Object.keys(manualData[step.id]).length > 0 && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||

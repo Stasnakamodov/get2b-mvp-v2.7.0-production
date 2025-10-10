@@ -775,17 +775,20 @@ function ProjectConstructorContent() {
     console.log(`🖱️ Клик по шагу ${stepId}`)
     console.log(`📊 manualData[${stepId}]:`, manualData[stepId])
     console.log(`📊 stepConfigs[${stepId}]:`, stepConfigs[stepId])
-    
-    // Для шагов 4 и 5: показываем модальное окно с предложением данных
+
+    // Для шагов 4 и 5: обновляем lastHoveredStep для показа области настройки
     if (stepId === 4 || stepId === 5) {
       console.log(`🎯 Обрабатываем клик по шагу ${stepId}`)
-      
+
+      // ВАЖНО: Обновляем lastHoveredStep чтобы показать область настройки
+      handleStepHover(stepId)
+
       // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Клик по кубикам 4 и 5 больше не показывает модалку с эхо данными
       // Пользователь может заполнить вручную или выбрать из рекомендаций (оранжевые кубики)
       console.log('❌ Эхо данные отключены. Заполните вручную или используйте рекомендации.')
       return
     }
-    
+
     // Для остальных шагов: стандартная логика hover
     handleStepHover(stepId)
   }
@@ -1967,6 +1970,7 @@ function ProjectConstructorContent() {
         currentStage={currentStage}
         stepConfigs={stepConfigs}
         manualData={manualData}
+        catalogSuggestions={catalogSuggestions}
         receiptApprovalStatus={receiptApprovalStatus}
         hasManagerReceipt={hasManagerReceipt}
         clientReceiptUrl={clientReceiptUrl}
@@ -2194,7 +2198,7 @@ function ProjectConstructorContent() {
                       onRemoveClientReceipt={handleRemoveClientReceipt}
                       onShowProjectDetails={handleShowProjectDetails}
                     />
-                  ) : stepConfigs[lastHoveredStep] ? (
+                  ) : stepConfigs[lastHoveredStep] || (lastHoveredStep === 4 && catalogSuggestions[4]) || (lastHoveredStep === 5 && catalogSuggestions[5]) ? (
                     <>
                       {/* ========== MODE 5: Filled State (Cubes/Sliders) ========== */}
                       {lastHoveredStep === 1 && manualData[lastHoveredStep] && (
@@ -2241,7 +2245,139 @@ function ProjectConstructorContent() {
                           />
                         </div>
                       )}
-                      
+
+                      {/* Шаг 4: Если есть РЕКОМЕНДАЦИЯ из каталога - показываем ТРИ КУБИКА выбора метода (КОПИЯ Step 5) */}
+                      {lastHoveredStep === 4 && catalogSuggestions[4] && !manualData[4] && (() => {
+                        console.log('🎯 [Step 4 CUBES] Рендер трёх кубиков!');
+                        console.log('  - catalogSuggestions[4]:', catalogSuggestions[4]);
+
+                        const checkMethodAvailability = (method: string) => {
+                          if (catalogSuggestions[4].methods?.includes(method)) return true;
+                          const supplier = catalogSuggestions[4].supplier_data;
+                          if (!supplier) return false;
+                          if (method === 'bank-transfer' && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer'))) return true;
+                          if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p') || supplier.payment_methods?.includes('card'))) return true;
+                          if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) return true;
+                          return false;
+                        };
+
+                        const bankAvailable = checkMethodAvailability('bank-transfer');
+                        const p2pAvailable = checkMethodAvailability('p2p');
+                        const cryptoAvailable = checkMethodAvailability('crypto');
+
+                        return (
+                          <div className="mb-6">
+                            <h4 className="text-base font-semibold text-gray-800 mb-4">Выберите метод оплаты:</h4>
+                            <div className="grid grid-cols-3 gap-4 w-full">
+                              {/* Банковский перевод */}
+                              <div
+                                className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                  bankAvailable
+                                    ? 'border-orange-400 bg-orange-100 hover:border-orange-500 ring-2 ring-orange-200'
+                                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                                }`}
+                                onClick={() => {
+                                  setManualData(prev => ({ ...prev, 4: { ...catalogSuggestions[4], selectedMethod: 'bank-transfer', method: 'bank-transfer', user_choice: true } }));
+                                  setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
+                                  setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; return newSugg; });
+                                  handlePaymentMethodSelect('bank-transfer', catalogSuggestions[4].supplier_data || selectedSupplierData);
+                                }}
+                              >
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                    bankAvailable ? 'bg-orange-500' : 'bg-gray-400'
+                                  }`}>
+                                    <Banknote className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-800">Банковский перевод</div>
+                                    <div className="text-xs text-gray-500">Банковские реквизиты</div>
+                                  </div>
+                                </div>
+                                <div className={`text-sm font-medium mt-2 ${
+                                  bankAvailable ? 'text-orange-600' : 'text-gray-600'
+                                }`}>
+                                  {bankAvailable ? 'Автозаполнение доступно' : 'Ручное заполнение'}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  SWIFT, IBAN, счета
+                                </div>
+                              </div>
+
+                              {/* P2P переводы */}
+                              <div
+                                className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                  p2pAvailable
+                                    ? 'border-blue-400 bg-blue-100 hover:border-blue-500 ring-2 ring-blue-200'
+                                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                                }`}
+                                onClick={() => {
+                                  setManualData(prev => ({ ...prev, 4: { ...catalogSuggestions[4], selectedMethod: 'p2p', method: 'p2p', user_choice: true } }));
+                                  setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
+                                  setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; return newSugg; });
+                                  handlePaymentMethodSelect('p2p', catalogSuggestions[4].supplier_data || selectedSupplierData);
+                                }}
+                              >
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                    p2pAvailable ? 'bg-blue-500' : 'bg-gray-400'
+                                  }`}>
+                                    <CreditCard className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-800">P2P переводы</div>
+                                    <div className="text-xs text-gray-500">Карта поставщика</div>
+                                  </div>
+                                </div>
+                                <div className={`text-sm font-medium mt-2 ${
+                                  p2pAvailable ? 'text-blue-600' : 'text-gray-600'
+                                }`}>
+                                  {p2pAvailable ? 'Автозаполнение доступно' : 'Ручное заполнение'}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Банковские карты
+                                </div>
+                              </div>
+
+                              {/* Криптовалюта */}
+                              <div
+                                className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 ${
+                                  cryptoAvailable
+                                    ? 'border-green-400 bg-green-100 hover:border-green-500 ring-2 ring-green-200'
+                                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                                }`}
+                                onClick={() => {
+                                  setManualData(prev => ({ ...prev, 4: { ...catalogSuggestions[4], selectedMethod: 'crypto', method: 'crypto', user_choice: true } }));
+                                  setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
+                                  setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; return newSugg; });
+                                  handlePaymentMethodSelect('crypto', catalogSuggestions[4].supplier_data || selectedSupplierData);
+                                }}
+                              >
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                    cryptoAvailable ? 'bg-green-500' : 'bg-gray-400'
+                                  }`}>
+                                    <Coins className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-800">Криптовалюта</div>
+                                    <div className="text-xs text-gray-500">Криптокошелек</div>
+                                  </div>
+                                </div>
+                                <div className={`text-sm font-medium mt-2 ${
+                                  cryptoAvailable ? 'text-green-600' : 'text-gray-600'
+                                }`}>
+                                  {cryptoAvailable ? 'Автозаполнение доступно' : 'Ручное заполнение'}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  BTC, ETH, USDT
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {/* Шаг 5: Реквизиты - показываем форму если реквизиты были заполнены */}
                       {(() => {
                         const step5HasData = !!manualData[5];
@@ -2269,25 +2405,37 @@ function ProjectConstructorContent() {
                         </div>
                       )}
 
-                      {/* СПЕЦИАЛЬНО для шага 5: показываем кубики выбора когда есть stepConfigs[5] = 'catalog' - позволяем пользователю менять тип реквизитов даже после автозаполнения */}
+                      {/* СПЕЦИАЛЬНО для шага 5: показываем кубики выбора когда есть рекомендация из каталога ИЛИ stepConfigs[5] */}
                       {lastHoveredStep === 5 && (() => {
                         console.log('🔍 [DEBUG Step 5] Наведение на шаг 5:');
                         console.log('  - lastHoveredStep:', lastHoveredStep);
+                        console.log('  - catalogSuggestions[5]:', catalogSuggestions[5]);
                         console.log('  - stepConfigs[5]:', stepConfigs[5]);
-                        console.log('  - stepConfigs:', stepConfigs);
                         console.log('  - manualData[5]:', manualData[5]);
                         console.log('  - selectedSupplierData:', selectedSupplierData);
 
-                        // Показываем кубики выбора только если НЕТ type в manualData[5] (т.е. данные еще не заполнены)
-                        const shouldShowCubes = (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
+                        // Показываем кубики если есть рекомендация ИЛИ stepConfigs, но НЕТ заполненных данных с type
+                        const shouldShowCubes = (catalogSuggestions[5] && !manualData[5]) ||
+                                                (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
                                                 (manualData[5] && Object.keys(manualData[5]).length > 0 && !manualData[5].type);
-                        console.log('  - shouldShowCubes (stepConfigs[5] in ["catalog", "blue_room", "orange_room"] OR has manualData[5] WITHOUT type):', shouldShowCubes);
+                        console.log('  - shouldShowCubes:', shouldShowCubes);
 
                         return shouldShowCubes;
                       })() && (() => {
                         // Проверяем доступные методы поставщика
                         const checkMethodAvailability = (method: string) => {
-                          // Приоритет 1: selectedSupplierData
+                          // Приоритет 1: catalogSuggestions[5] (рекомендация из каталога)
+                          if (catalogSuggestions[5]) {
+                            if (catalogSuggestions[5].methods?.includes(method)) return true;
+                            const supplier = catalogSuggestions[5].supplier_data;
+                            if (supplier) {
+                              if (method === 'bank-transfer' && (supplier.bank_accounts?.length > 0 || supplier.payment_methods?.includes('bank-transfer'))) return true;
+                              if (method === 'p2p' && (supplier.p2p_cards?.length > 0 || supplier.payment_methods?.includes('p2p') || supplier.payment_methods?.includes('card'))) return true;
+                              if (method === 'crypto' && (supplier.crypto_wallets?.length > 0 || supplier.payment_methods?.includes('crypto'))) return true;
+                            }
+                          }
+
+                          // Приоритет 2: selectedSupplierData
                           if (selectedSupplierData) {
                             if (method === 'bank-transfer' && ((selectedSupplierData.bank_accounts?.length || 0) > 0 || selectedSupplierData.payment_methods?.includes('bank-transfer'))) {
                               return true;
@@ -2300,7 +2448,7 @@ function ProjectConstructorContent() {
                             }
                           }
 
-                          // Приоритет 2: manualData[4]
+                          // Приоритет 3: manualData[4]
                           if (manualData[4]) {
                             if (manualData[4].methods && manualData[4].methods.includes(method)) {
                               return true;
@@ -2319,7 +2467,7 @@ function ProjectConstructorContent() {
                             }
                           }
 
-                          // Приоритет 3: Проверяем OCR данные в manualData[4] (после автозаполнения из инвойса)
+                          // Приоритет 4: Проверяем OCR данные в manualData[4] (после автозаполнения из инвойса)
                           if (manualData[4]?.method === method) {
                             return true;
                           }
@@ -2374,10 +2522,12 @@ function ProjectConstructorContent() {
                                   <div className="text-xs text-gray-500">Банковские реквизиты</div>
                                 </div>
                               </div>
-                              <div className="text-sm text-gray-800">
-                                Использовать банковские реквизиты
+                              <div className={`text-sm font-medium mt-2 ${
+                                bankAvailable ? 'text-orange-600' : 'text-gray-600'
+                              }`}>
+                                {bankAvailable ? 'Автозаполнение доступно' : 'Ручное заполнение'}
                               </div>
-                              <div className="text-xs text-gray-600 mt-2">
+                              <div className="text-xs text-gray-500 mt-1">
                                 SWIFT, IBAN, счета
                               </div>
                             </div>
@@ -2421,10 +2571,12 @@ function ProjectConstructorContent() {
                                   <div className="text-xs text-gray-500">Карта поставщика</div>
                                 </div>
                               </div>
-                              <div className="text-sm text-gray-800">
-                                Использовать P2P карты
+                              <div className={`text-sm font-medium mt-2 ${
+                                p2pAvailable ? 'text-blue-600' : 'text-gray-600'
+                              }`}>
+                                {p2pAvailable ? 'Автозаполнение доступно' : 'Ручное заполнение'}
                               </div>
-                              <div className="text-xs text-gray-600 mt-2">
+                              <div className="text-xs text-gray-500 mt-1">
                                 Банковские карты
                               </div>
                             </div>
@@ -2466,10 +2618,12 @@ function ProjectConstructorContent() {
                                   <div className="text-xs text-gray-500">Криптокошелек</div>
                                 </div>
                               </div>
-                              <div className="text-sm text-gray-800">
-                                Использовать криптовалюты
+                              <div className={`text-sm font-medium mt-2 ${
+                                cryptoAvailable ? 'text-green-600' : 'text-gray-600'
+                              }`}>
+                                {cryptoAvailable ? 'Автозаполнение доступно' : 'Ручное заполнение'}
                               </div>
-                              <div className="text-xs text-gray-600 mt-2">
+                              <div className="text-xs text-gray-500 mt-1">
                                 BTC, ETH, USDT и др.
                               </div>
                             </div>
