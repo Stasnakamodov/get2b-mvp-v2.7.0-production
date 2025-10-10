@@ -2191,7 +2191,11 @@ function ProjectConstructorContent() {
                     />
 
                   ) : (() => {
-                    const shouldShowManual = (selectedSource === "manual" || (lastHoveredStep && stepConfigs[lastHoveredStep] === 'manual')) && lastHoveredStep !== 4;
+                    // Step 4: исключён (используются кубики)
+                    // Step 5: исключён если нет type (сначала показываются кубики выбора)
+                    const shouldShowManual = (selectedSource === "manual" || (lastHoveredStep && stepConfigs[lastHoveredStep] === 'manual'))
+                      && lastHoveredStep !== 4
+                      && !(lastHoveredStep === 5 && !manualData[5]?.type);
                     console.log('🔍 [DEBUG ManualFormEntryMode]');
                     console.log('  - lastHoveredStep:', lastHoveredStep);
                     console.log('  - selectedSource:', selectedSource);
