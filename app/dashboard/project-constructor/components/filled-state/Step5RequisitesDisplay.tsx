@@ -142,31 +142,71 @@ export function Step5RequisitesDisplay({ data, onPreview }: Step5RequisitesDispl
 
   // Одиночный реквизит (выбранный)
   const colors = getSelectedColorClasses(data.type)
+
+  // Формируем детали для отображения
+  const getDetails = () => {
+    if (data.type === 'crypto') {
+      return [
+        { label: 'Валюта', value: data.crypto_name || 'Не указана' },
+        { label: 'Адрес', value: data.crypto_address ? `${data.crypto_address.substring(0, 12)}...${data.crypto_address.substring(data.crypto_address.length - 4)}` : 'Не указан' },
+        { label: 'Сеть', value: data.crypto_network || 'Не указана' }
+      ]
+    } else if (data.type === 'p2p') {
+      return [
+        { label: 'Банк карты', value: data.card_bank || 'Не указан' },
+        { label: 'Номер карты', value: data.card_number ? `**** **** **** ${data.card_number.slice(-4)}` : 'Не указан' },
+        { label: 'Держатель', value: data.card_holder || 'Не указан' }
+      ]
+    } else {
+      // bank
+      return [
+        { label: 'Банк', value: data.bankName || 'Не указан' },
+        { label: 'Счет', value: data.accountNumber || 'Не указан' },
+        { label: 'SWIFT', value: data.swift || 'Не указан' }
+      ]
+    }
+  }
+
+  const details = getDetails()
+
   return (
     <div className="flex justify-center">
       <div className="grid grid-cols-3 gap-4 w-full">
         <div
-          className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${colors.container}`}
+          className={`bg-white border-2 rounded-xl p-8 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${colors.container}`}
           onClick={() => onPreview('requisites', data)}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-2 ${colors.icon}`}>
-              <CheckCircle2 className="h-4 w-4 text-white" />
+          {/* Заголовок и статус в одной строке */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ring-2 ${colors.icon}`}>
+                <CheckCircle2 className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <div className="text-xl font-bold text-gray-800">
+                  {getTitle(data.type)}
+                </div>
+                <div className="text-base text-gray-500">
+                  {getSubtitle(data.type)}
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="text-sm font-semibold text-gray-800">
-                {getTitle(data.type)}
-              </div>
-              <div className="text-xs text-gray-500">
-                {getSubtitle(data.type)}
-              </div>
+            <div className={`text-lg flex items-center gap-2 font-bold ${colors.text}`}>
+              <CheckCircle2 className="h-5 w-5" />
+              <span>ЗАПОЛНЕНО</span>
             </div>
           </div>
-          <div className="text-sm text-gray-800">{getLabel(data.type)}</div>
-          <div className="text-xs text-gray-500">{getValue(data)}</div>
-          <div className={`text-xs mt-2 flex items-center gap-1 font-bold ${colors.text}`}>
-            <span>ЗАПОЛНЕНО</span>
-            <CheckCircle2 className="h-3 w-3" />
+
+          {/* Детали реквизитов - крупнее и с большими отступами */}
+          <div className="grid grid-cols-3 gap-6">
+            {details.map((detail, index) => (
+              <div key={index} className="bg-white/70 rounded-lg p-4 border border-gray-100">
+                <div className="text-sm font-medium text-gray-500 mb-2">{detail.label}</div>
+                <div className="text-lg font-semibold text-gray-900" title={detail.value}>
+                  {detail.value}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
