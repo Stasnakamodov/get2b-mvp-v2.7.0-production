@@ -254,7 +254,8 @@ function ProjectConstructorContent() {
     () => openModal('stageTransition'),
     setStageTransitionShown,
     setSelectedSource,
-    setEditingType
+    setEditingType,
+    setLastHoveredStep
   )
 
   // Manager Communication хук

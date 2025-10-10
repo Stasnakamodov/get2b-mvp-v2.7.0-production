@@ -308,7 +308,8 @@ const RequisitesForm = ({ onSave, onCancel, initialData }: RequisitesFormProps) 
         <Button type="button" variant="outline" onClick={() => {
           // Сначала сохраняем данные
           onSave({ ...formData, suggested: false, source: 'manual' })
-          // Затем закрываем форму (onSave уже вызовет setSelectedSource(null))
+          // Затем закрываем форму
+          onCancel()
         }}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Сохранить и вернуться
