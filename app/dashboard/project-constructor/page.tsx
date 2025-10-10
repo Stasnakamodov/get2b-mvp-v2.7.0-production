@@ -1301,19 +1301,8 @@ function ProjectConstructorContent() {
         items: [...(manualData[2]?.items || []), ...catalogItems]
       }
 
-      // Добавляем товары в Step II
-      setManualData(prev => ({
-        ...prev,
-        2: step2Data
-      }))
-
-      // Устанавливаем источник данных для Step II
-      setStepConfigs(prev => ({
-        ...prev,
-        2: 'catalog'
-      }))
-
       console.log(`✅ [ATOMIC] Добавлено ${catalogItems.length} товаров в спецификацию`)
+      console.log(`📦 [ATOMIC] step2Data:`, step2Data)
 
       // Вызываем автоматическое заполнение для Step II данных (обратная связь)
       // 🎯 АВТОЗАПОЛНЕНИЕ ДАННЫХ ПОСТАВЩИКА ДЛЯ ШАГОВ IV И V
@@ -1391,8 +1380,9 @@ function ProjectConstructorContent() {
                 'catalog',
                 currentState,
                 (newManualData, newStepConfigs) => {
-                  setManualData(newManualData);
-                  setStepConfigs(newStepConfigs);
+                  // ✅ ВАЖНО: Добавляем Step 2 в newManualData!
+                  setManualData({ ...newManualData, 2: step2Data });
+                  setStepConfigs({ ...newStepConfigs, 2: 'catalog' });
                 }
               );
 
@@ -1400,8 +1390,8 @@ function ProjectConstructorContent() {
               if (step4Filled) {
                 // Обновляем состояние если Step 4 был заполнен
                 const updatedState = {
-                  stepConfigs: { ...stepConfigs, 4: 'catalog' },
-                  manualData: { ...manualData, 4: step4Data }
+                  stepConfigs: { ...stepConfigs, 2: 'catalog', 4: 'catalog' },
+                  manualData: { ...manualData, 2: step2Data, 4: step4Data }
                 };
                 step5Filled = AutoFillService.safeAutoFill(
                   5,
@@ -1409,8 +1399,9 @@ function ProjectConstructorContent() {
                   'catalog',
                   updatedState,
                   (newManualData, newStepConfigs) => {
-                    setManualData(newManualData);
-                    setStepConfigs(newStepConfigs);
+                    // ✅ ВАЖНО: Добавляем Step 2 в newManualData!
+                    setManualData({ ...newManualData, 2: step2Data });
+                    setStepConfigs({ ...newStepConfigs, 2: 'catalog' });
                   }
                 );
               } else {
@@ -1420,8 +1411,9 @@ function ProjectConstructorContent() {
                   'catalog',
                   currentState,
                   (newManualData, newStepConfigs) => {
-                    setManualData(newManualData);
-                    setStepConfigs(newStepConfigs);
+                    // ✅ ВАЖНО: Добавляем Step 2 в newManualData!
+                    setManualData({ ...newManualData, 2: step2Data });
+                    setStepConfigs({ ...newStepConfigs, 2: 'catalog' });
                   }
                 );
               }
@@ -1474,8 +1466,9 @@ function ProjectConstructorContent() {
                 'catalog',
                 currentState,
                 (newManualData, newStepConfigs) => {
-                  setManualData(newManualData);
-                  setStepConfigs(newStepConfigs);
+                  // ✅ ВАЖНО: Добавляем Step 2 в newManualData!
+                  setManualData({ ...newManualData, 2: step2Data });
+                  setStepConfigs({ ...newStepConfigs, 2: 'catalog' });
                 }
               );
             }
