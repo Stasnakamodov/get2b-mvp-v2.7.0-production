@@ -340,7 +340,43 @@ export interface ExtendedFileUploadData extends FileUploadData {
 // ШАГ 7: РЕКВИЗИТЫ ПОЛУЧАТЕЛЯ
 // ========================================
 
-export const RequisitesDataSchema = z.object({
+// Схема для банковских реквизитов
+const BankRequisitesSchema = z.object({
+  type: z.literal('bank'),
+  bankName: z.string().optional(),
+  accountNumber: z.string().min(1, 'Номер счета обязателен'),
+  swift: z.string().optional(),
+  iban: z.string().optional(),
+  recipientName: z.string().optional(),
+  recipientAddress: z.string().optional(),
+  transferCurrency: z.string().optional(),
+  supplier: z.string().optional(),
+  supplier_name: z.string().optional(),
+})
+
+// Схема для P2P карты
+const P2PRequisitesSchema = z.object({
+  type: z.literal('p2p'),
+  card_bank: z.string().min(1, 'Банк карты обязателен'),
+  card_number: z.string().min(1, 'Номер карты обязателен'),
+  card_holder: z.string().optional(),
+  card_expiry: z.string().optional(),
+  supplier: z.string().optional(),
+  supplier_name: z.string().optional(),
+})
+
+// Схема для криптокошелька
+const CryptoRequisitesSchema = z.object({
+  type: z.literal('crypto'),
+  crypto_name: z.string().min(1, 'Криптовалюта обязательна'),
+  crypto_address: z.string().min(1, 'Адрес кошелька обязателен'),
+  crypto_network: z.string().min(1, 'Сеть обязательна'),
+  supplier: z.string().optional(),
+  supplier_name: z.string().optional(),
+})
+
+// Старая схема для обратной совместимости (банковские реквизиты без type)
+const LegacyRequisitesSchema = z.object({
   recipient_name: z.string().min(1, 'Название получателя обязательно'),
   recipient_inn: z.string().optional(),
   recipient_kpp: z.string().optional(),
@@ -350,6 +386,14 @@ export const RequisitesDataSchema = z.object({
   recipient_bik: z.string().min(9, 'БИК должен содержать 9 цифр').max(9),
   payment_purpose: z.string().min(1, 'Назначение платежа обязательно'),
 })
+
+// Объединённая схема - проверяет наличие type и выбирает нужную схему
+export const RequisitesDataSchema = z.union([
+  BankRequisitesSchema,
+  P2PRequisitesSchema,
+  CryptoRequisitesSchema,
+  LegacyRequisitesSchema
+])
 
 export type RequisitesData = z.infer<typeof RequisitesDataSchema>
 
