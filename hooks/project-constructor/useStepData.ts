@@ -117,7 +117,13 @@ export function useStepData(params: StepDataParams) {
       return newData
     })
 
-    // 3. Закрываем модалы
+    // 3. Устанавливаем stepConfigs для сохранённого шага
+    setStepConfigs((prev: any) => ({
+      ...prev,
+      [stepId]: 'manual'
+    }))
+
+    // 4. Закрываем модалы
     setSelectedSource(null)
     setEditingType('')
   }
