@@ -2076,15 +2076,18 @@ function ProjectConstructorContent() {
                               <span className="font-medium">Удалить данные</span>
                             </Button>
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditData('company')}
-                              className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
-                            >
-                              <FileText className="h-4 w-4 mr-2" />
-                              <span className="font-medium">Посмотреть все данные</span>
-                            </Button>
+                            {/* Скрываем кнопку "Посмотреть все данные" для Step 4 - там всего 2 поля */}
+                            {lastHoveredStep !== 4 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditData('company')}
+                                className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                <span className="font-medium">Посмотреть все данные</span>
+                              </Button>
+                            )}
                           </>
                         )}
 
