@@ -2142,6 +2142,7 @@ function ProjectConstructorContent() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   style={{ height: '100%' }}
+                  className="pt-32"
                 >
                   {/* Заголовок выбранного шага */}
                   <div className="text-center mb-6">
