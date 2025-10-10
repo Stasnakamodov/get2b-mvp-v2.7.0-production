@@ -2190,7 +2190,7 @@ function ProjectConstructorContent() {
                       onClose={() => templateSystem.setTemplateStepSelection(null)}
                     />
 
-                  ) : selectedSource === "manual" && lastHoveredStep !== 4 ? (
+                  ) : (selectedSource === "manual" || (lastHoveredStep && stepConfigs[lastHoveredStep] === 'manual')) && lastHoveredStep !== 4 ? (
                     <ManualFormEntryMode
                       lastHoveredStep={lastHoveredStep}
                       editingType={editingType}
