@@ -2296,7 +2296,8 @@ function ProjectConstructorContent() {
                                 onClick={() => {
                                   setManualData(prev => ({ ...prev, 4: { ...catalogSuggestions[4], selectedMethod: 'bank-transfer', method: 'bank-transfer', user_choice: true } }));
                                   setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
-                                  setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; return newSugg; });
+                                  // Очищаем рекомендации для Steps 4 и 5
+                                  setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; delete newSugg[5]; return newSugg; });
                                   handlePaymentMethodSelect('bank-transfer', catalogSuggestions[4].supplier_data || selectedSupplierData);
                                 }}
                               >
@@ -2331,7 +2332,8 @@ function ProjectConstructorContent() {
                                 onClick={() => {
                                   setManualData(prev => ({ ...prev, 4: { ...catalogSuggestions[4], selectedMethod: 'p2p', method: 'p2p', user_choice: true } }));
                                   setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
-                                  setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; return newSugg; });
+                                  // Очищаем рекомендации для Steps 4 и 5
+                                  setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; delete newSugg[5]; return newSugg; });
                                   handlePaymentMethodSelect('p2p', catalogSuggestions[4].supplier_data || selectedSupplierData);
                                 }}
                               >
@@ -2366,7 +2368,8 @@ function ProjectConstructorContent() {
                                 onClick={() => {
                                   setManualData(prev => ({ ...prev, 4: { ...catalogSuggestions[4], selectedMethod: 'crypto', method: 'crypto', user_choice: true } }));
                                   setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
-                                  setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; return newSugg; });
+                                  // Очищаем рекомендации для Steps 4 и 5
+                                  setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; delete newSugg[5]; return newSugg; });
                                   handlePaymentMethodSelect('crypto', catalogSuggestions[4].supplier_data || selectedSupplierData);
                                 }}
                               >
@@ -2526,14 +2529,13 @@ function ProjectConstructorContent() {
                                 }));
                                 setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
 
-                                // Очищаем рекомендацию Step 5
-                                if (catalogSuggestions[5]) {
-                                  setCatalogSuggestions(prev => {
-                                    const newSugg = {...prev};
-                                    delete newSugg[5];
-                                    return newSugg;
-                                  });
-                                }
+                                // Очищаем рекомендации для Steps 4 и 5 (метод выбран)
+                                setCatalogSuggestions(prev => {
+                                  const newSugg = {...prev};
+                                  delete newSugg[4];
+                                  delete newSugg[5];
+                                  return newSugg;
+                                });
 
                                 // Автозаполняем Step 5 через общую функцию
                                 handlePaymentMethodSelect('bank-transfer', supplierData);
@@ -2582,14 +2584,13 @@ function ProjectConstructorContent() {
                                 }));
                                 setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
 
-                                // Очищаем рекомендацию Step 5
-                                if (catalogSuggestions[5]) {
-                                  setCatalogSuggestions(prev => {
-                                    const newSugg = {...prev};
-                                    delete newSugg[5];
-                                    return newSugg;
-                                  });
-                                }
+                                // Очищаем рекомендации для Steps 4 и 5 (метод выбран)
+                                setCatalogSuggestions(prev => {
+                                  const newSugg = {...prev};
+                                  delete newSugg[4];
+                                  delete newSugg[5];
+                                  return newSugg;
+                                });
 
                                 // Автозаполняем Step 5 через общую функцию
                                 handlePaymentMethodSelect('p2p', supplierData);
@@ -2638,14 +2639,13 @@ function ProjectConstructorContent() {
                                 }));
                                 setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
 
-                                // Очищаем рекомендацию Step 5
-                                if (catalogSuggestions[5]) {
-                                  setCatalogSuggestions(prev => {
-                                    const newSugg = {...prev};
-                                    delete newSugg[5];
-                                    return newSugg;
-                                  });
-                                }
+                                // Очищаем рекомендации для Steps 4 и 5 (метод выбран)
+                                setCatalogSuggestions(prev => {
+                                  const newSugg = {...prev};
+                                  delete newSugg[4];
+                                  delete newSugg[5];
+                                  return newSugg;
+                                });
 
                                 // Автозаполняем Step 5 через общую функцию
                                 handlePaymentMethodSelect('crypto', supplierData);
