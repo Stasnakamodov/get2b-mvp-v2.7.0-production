@@ -306,10 +306,19 @@ const RequisitesForm = ({ onSave, onCancel, initialData }: RequisitesFormProps) 
 
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => {
+          console.log('🔍 [RequisitesForm] Нажата кнопка "Сохранить и вернуться"');
+          console.log('  - formData:', formData);
+
           // Сначала сохраняем данные
-          onSave({ ...formData, suggested: false, source: 'manual' })
+          const dataToSave = { ...formData, suggested: false, source: 'manual' };
+          console.log('  - dataToSave:', dataToSave);
+
+          onSave(dataToSave);
+          console.log('  - onSave вызван');
+
           // Затем закрываем форму
-          onCancel()
+          onCancel();
+          console.log('  - onCancel вызван');
         }}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Сохранить и вернуться

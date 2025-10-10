@@ -54,10 +54,17 @@ export function useStepData(params: StepDataParams) {
    * Сохранение данных шага (РУЧНОЙ ВВОД - без автозаполнения)
    */
   const saveStepData = (stepId: StepNumber, data: any) => {
+    console.log('🔍 [useStepData] saveStepData вызван');
+    console.log('  - stepId:', stepId);
+    console.log('  - data:', data);
+
     // 1. Валидация
     const validation = validateStepData(stepId, data)
+    console.log('  - validation.success:', validation.success);
+    console.log('  - validation.errors:', validation.errors);
+
     if (!validation.success) {
-      console.error(`Ошибка валидации шага ${stepId}:`, validation.errors)
+      console.error(`❌ Ошибка валидации шага ${stepId}:`, validation.errors)
       alert(`Ошибка валидации: ${validation.errors[0]}`)
       return
     }
