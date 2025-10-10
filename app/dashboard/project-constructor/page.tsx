@@ -150,6 +150,7 @@ function ProjectConstructorContent() {
   const [lastHoveredStep, setLastHoveredStep] = useState<number | null>(null)
   const [manualData, setManualData] = useState<ManualData>({})
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
+  const [catalogSuggestions, setCatalogSuggestions] = useState<Record<number, any>>({})
   // ===== СТАРЫЙ КОД (закомментирован, т.к. переехал в useTemplateSystem хук) =====
   // const [templateStepSelection, setTemplateStepSelection] = useState<{templateId: string, availableSteps: number[]} | null>(null)
   // const [templateSelection, setTemplateSelection] = useState<boolean>(false)
@@ -1368,92 +1369,41 @@ function ProjectConstructorContent() {
                 catalog_source: 'verified_supplier'
               }
 
-              // ✅ РЕФАКТОРИНГ: Собираем все шаги для обновления
-              const stepsToUpdate: Record<number, any> = {
-                2: step2Data  // Step 2 ВСЕГДА добавляем
-              }
-              const configsToUpdate: Record<number, string> = {
-                2: 'catalog'
-              }
+              // ✅ Заполняем только Step 2
+              setManualData(prev => ({ ...prev, 2: step2Data }))
+              setStepConfigs(prev => ({ ...prev, 2: 'catalog' }))
 
-              // Проверяем можно ли заполнить Step 4
+              console.log('✅ [CATALOG] Step 2 заполнен товарами из каталога')
+
+              // 💡 Сохраняем предложения для Steps 4/5 (не заполняем автоматически!)
               const currentState = { stepConfigs, manualData }
+              const suggestions: Record<number, any> = {}
+
               if (AutoFillService.canAutoFill(4, 'catalog', currentState)) {
-                stepsToUpdate[4] = step4Data
-                configsToUpdate[4] = 'catalog'
-                console.log('✅ [ATOMIC] Step 4 добавлен в обновление')
-              } else {
-                console.log('⏸️ [ATOMIC] Step 4 пропущен - приоритет выше')
+                suggestions[4] = step4Data
+                console.log('💡 [CATALOG] Доступно предложение для Step 4')
               }
 
-              // Проверяем можно ли заполнить Step 5 (с учётом Step 4)
               const stateWithStep4 = {
-                stepConfigs: { ...stepConfigs, ...configsToUpdate },
-                manualData: { ...manualData, ...stepsToUpdate }
+                stepConfigs: { ...stepConfigs, 4: 'catalog' },
+                manualData: { ...manualData, 4: step4Data }
               }
               if (AutoFillService.canAutoFill(5, 'catalog', stateWithStep4)) {
-                stepsToUpdate[5] = step5Data
-                configsToUpdate[5] = 'catalog'
-                console.log('✅ [ATOMIC] Step 5 добавлен в обновление')
-              } else {
-                console.log('⏸️ [ATOMIC] Step 5 пропущен - приоритет выше')
+                suggestions[5] = step5Data
+                console.log('💡 [CATALOG] Доступно предложение для Step 5')
               }
 
-              // ✅ ОДИН РАЗ обновляем ВСЁ
-              setManualData(prev => ({ ...prev, ...stepsToUpdate }))
-              setStepConfigs(prev => ({ ...prev, ...configsToUpdate }))
-
-              console.log('✅ [ATOMIC] Автозаполнение завершено. Обновлены шаги:', Object.keys(stepsToUpdate))
-
-              // Показываем уведомление
-              const filledSteps = Object.keys(stepsToUpdate).map(Number).filter(s => s !== 2)
-              if (filledSteps.length > 0) {
-                setAutoFillNotification({
-                  show: true,
-                  message: `Данные поставщика "${supplier.name}" из каталога применены. Доступно методов: ${availableMethods.length}`,
-                  supplierName: supplier.name,
-                  filledSteps
-                })
-
-                // Скрываем уведомление через 7 секунд
-                setTimeout(() => {
-                  setAutoFillNotification(null)
-                }, 7000)
-              }
+              // ✅ Сохраняем suggestions в state для показа подсвеченных кубиков
+              setCatalogSuggestions(suggestions)
+              console.log('💡 [CATALOG] Доступные предложения сохранены:', Object.keys(suggestions))
             } else {
-              console.log('❌ [ATOMIC] Поставщик не найден в каталоге')
+              console.log('❌ [CATALOG] Поставщик не найден в каталоге')
 
-              // Fallback с базовыми данными
-              const fallbackStep4Data = {
-                type: 'multiple',
-                methods: ['bank_transfer'],
-                payment_method: 'bank_transfer',
-                auto_filled: true,
-                supplier_name: firstProduct.supplier_name,
-                catalog_source: 'unknown_supplier'
-              }
+              // Заполняем только Step 2
+              setManualData(prev => ({ ...prev, 2: step2Data }))
+              setStepConfigs(prev => ({ ...prev, 2: 'catalog' }))
 
-              // ✅ РЕФАКТОРИНГ: Собираем шаги для fallback
-              const stepsToUpdate: Record<number, any> = {
-                2: step2Data  // Step 2 ВСЕГДА добавляем
-              }
-              const configsToUpdate: Record<number, string> = {
-                2: 'catalog'
-              }
-
-              // Проверяем можно ли заполнить Step 4
-              const currentState = { stepConfigs, manualData }
-              if (AutoFillService.canAutoFill(4, 'catalog', currentState)) {
-                stepsToUpdate[4] = fallbackStep4Data
-                configsToUpdate[4] = 'catalog'
-                console.log('✅ [ATOMIC] Fallback Step 4 добавлен в обновление')
-              }
-
-              // ✅ ОДИН РАЗ обновляем ВСЁ
-              setManualData(prev => ({ ...prev, ...stepsToUpdate }))
-              setStepConfigs(prev => ({ ...prev, ...configsToUpdate }))
-
-              console.log('✅ [ATOMIC] Fallback завершён. Обновлены шаги:', Object.keys(stepsToUpdate))
+              console.log('✅ [CATALOG] Step 2 заполнен (fallback - поставщик не найден)')
             }
           }).catch(error => {
             console.error('❌ [ATOMIC] Ошибка загрузки данных каталога:', error)
