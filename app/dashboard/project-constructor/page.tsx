@@ -1326,12 +1326,12 @@ function ProjectConstructorContent() {
 
               // Фильтруем методы оплаты, исключая cash (наличные) и убираем дубликаты
               const normalizedMethods = (supplier.payment_methods || ['bank_transfer'])
-                .map((method: string) => method === 'bank_transfer' ? 'bank-transfer' : method) // Нормализуем формат
-                .filter((method: string) => method !== 'cash') // Исключаем наличные
-                .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index) // Убираем дубликаты
+                .map((method: string) => method === 'bank_transfer' ? 'bank-transfer' : method)
+                .filter((method: string) => method !== 'cash')
+                .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index)
               const availableMethods = normalizedMethods.length > 0 ? normalizedMethods : ['bank-transfer']
 
-              console.log('🎯 [ATOMIC] Заполняю Step 4 с данными поставщика:', supplier.name)
+              console.log('🎯 [ATOMIC] Заполняю Steps 2, 4, 5 с данными поставщика:', supplier.name)
               console.log('💳 [ATOMIC] Доступные методы оплаты:', availableMethods)
 
               const step4Data = {
@@ -1365,67 +1365,46 @@ function ProjectConstructorContent() {
                 catalog_source: 'verified_supplier'
               }
 
-              // ✅ НОВОЕ: Включаем Step 2 в currentState
-              const currentState = {
-                stepConfigs: { ...stepConfigs, 2: 'catalog' },
-                manualData: { ...manualData, 2: step2Data }
-              };
-              let step4Filled = false;
-              let step5Filled = false;
-
-              // Попытка заполнить Step 4
-              step4Filled = AutoFillService.safeAutoFill(
-                4,
-                step4Data,
-                'catalog',
-                currentState,
-                (newManualData, newStepConfigs) => {
-                  // ✅ ВАЖНО: Добавляем Step 2 в newManualData!
-                  setManualData({ ...newManualData, 2: step2Data });
-                  setStepConfigs({ ...newStepConfigs, 2: 'catalog' });
-                }
-              );
-
-              // Попытка заполнить Step 5
-              if (step4Filled) {
-                // Обновляем состояние если Step 4 был заполнен
-                const updatedState = {
-                  stepConfigs: { ...stepConfigs, 2: 'catalog', 4: 'catalog' },
-                  manualData: { ...manualData, 2: step2Data, 4: step4Data }
-                };
-                step5Filled = AutoFillService.safeAutoFill(
-                  5,
-                  step5Data,
-                  'catalog',
-                  updatedState,
-                  (newManualData, newStepConfigs) => {
-                    // ✅ ВАЖНО: Добавляем Step 2 в newManualData!
-                    setManualData({ ...newManualData, 2: step2Data });
-                    setStepConfigs({ ...newStepConfigs, 2: 'catalog' });
-                  }
-                );
-              } else {
-                step5Filled = AutoFillService.safeAutoFill(
-                  5,
-                  step5Data,
-                  'catalog',
-                  currentState,
-                  (newManualData, newStepConfigs) => {
-                    // ✅ ВАЖНО: Добавляем Step 2 в newManualData!
-                    setManualData({ ...newManualData, 2: step2Data });
-                    setStepConfigs({ ...newStepConfigs, 2: 'catalog' });
-                  }
-                );
+              // ✅ РЕФАКТОРИНГ: Собираем все шаги для обновления
+              const stepsToUpdate: Record<number, any> = {
+                2: step2Data  // Step 2 ВСЕГДА добавляем
+              }
+              const configsToUpdate: Record<number, string> = {
+                2: 'catalog'
               }
 
-              console.log('✅ [ATOMIC] Автозаполнение завершено (Step 4:', step4Filled, ', Step 5:', step5Filled, ')')
+              // Проверяем можно ли заполнить Step 4
+              const currentState = { stepConfigs, manualData }
+              if (AutoFillService.canAutoFill(4, 'catalog', currentState)) {
+                stepsToUpdate[4] = step4Data
+                configsToUpdate[4] = 'catalog'
+                console.log('✅ [ATOMIC] Step 4 добавлен в обновление')
+              } else {
+                console.log('⏸️ [ATOMIC] Step 4 пропущен - приоритет выше')
+              }
 
-              // Показываем уведомление только если хотя бы один шаг заполнен
-              if (step4Filled || step5Filled) {
-                const filledSteps = [];
-                if (step4Filled) filledSteps.push(4);
-                if (step5Filled) filledSteps.push(5);
+              // Проверяем можно ли заполнить Step 5 (с учётом Step 4)
+              const stateWithStep4 = {
+                stepConfigs: { ...stepConfigs, ...configsToUpdate },
+                manualData: { ...manualData, ...stepsToUpdate }
+              }
+              if (AutoFillService.canAutoFill(5, 'catalog', stateWithStep4)) {
+                stepsToUpdate[5] = step5Data
+                configsToUpdate[5] = 'catalog'
+                console.log('✅ [ATOMIC] Step 5 добавлен в обновление')
+              } else {
+                console.log('⏸️ [ATOMIC] Step 5 пропущен - приоритет выше')
+              }
 
+              // ✅ ОДИН РАЗ обновляем ВСЁ
+              setManualData(prev => ({ ...prev, ...stepsToUpdate }))
+              setStepConfigs(prev => ({ ...prev, ...configsToUpdate }))
+
+              console.log('✅ [ATOMIC] Автозаполнение завершено. Обновлены шаги:', Object.keys(stepsToUpdate))
+
+              // Показываем уведомление
+              const filledSteps = Object.keys(stepsToUpdate).map(Number).filter(s => s !== 2)
+              if (filledSteps.length > 0) {
                 setAutoFillNotification({
                   show: true,
                   message: `Данные поставщика "${supplier.name}" из каталога применены. Доступно методов: ${availableMethods.length}`,
@@ -1441,11 +1420,7 @@ function ProjectConstructorContent() {
             } else {
               console.log('❌ [ATOMIC] Поставщик не найден в каталоге')
 
-              // ЭХО ДАННЫЕ ОТКЛЮЧЕНЫ: Fallback с эхо данными отключен
-              // Пользователь увидит рекомендации из каталога или заполнит вручную
-              console.log('❌ [ATOMIC] Нет данных поставщика, пользователь заполнит вручную')
-
-              // Fallback с базовыми данными (только Step 4)
+              // Fallback с базовыми данными
               const fallbackStep4Data = {
                 type: 'multiple',
                 methods: ['bank_transfer'],
@@ -1455,22 +1430,27 @@ function ProjectConstructorContent() {
                 catalog_source: 'unknown_supplier'
               }
 
-              // ✅ НОВОЕ: Включаем Step 2 в currentState
-              const currentState = {
-                stepConfigs: { ...stepConfigs, 2: 'catalog' },
-                manualData: { ...manualData, 2: step2Data }
-              };
-              AutoFillService.safeAutoFill(
-                4,
-                fallbackStep4Data,
-                'catalog',
-                currentState,
-                (newManualData, newStepConfigs) => {
-                  // ✅ ВАЖНО: Добавляем Step 2 в newManualData!
-                  setManualData({ ...newManualData, 2: step2Data });
-                  setStepConfigs({ ...newStepConfigs, 2: 'catalog' });
-                }
-              );
+              // ✅ РЕФАКТОРИНГ: Собираем шаги для fallback
+              const stepsToUpdate: Record<number, any> = {
+                2: step2Data  // Step 2 ВСЕГДА добавляем
+              }
+              const configsToUpdate: Record<number, string> = {
+                2: 'catalog'
+              }
+
+              // Проверяем можно ли заполнить Step 4
+              const currentState = { stepConfigs, manualData }
+              if (AutoFillService.canAutoFill(4, 'catalog', currentState)) {
+                stepsToUpdate[4] = fallbackStep4Data
+                configsToUpdate[4] = 'catalog'
+                console.log('✅ [ATOMIC] Fallback Step 4 добавлен в обновление')
+              }
+
+              // ✅ ОДИН РАЗ обновляем ВСЁ
+              setManualData(prev => ({ ...prev, ...stepsToUpdate }))
+              setStepConfigs(prev => ({ ...prev, ...configsToUpdate }))
+
+              console.log('✅ [ATOMIC] Fallback завершён. Обновлены шаги:', Object.keys(stepsToUpdate))
             }
           }).catch(error => {
             console.error('❌ [ATOMIC] Ошибка загрузки данных каталога:', error)
