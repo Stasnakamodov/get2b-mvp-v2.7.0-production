@@ -2062,27 +2062,31 @@ function ProjectConstructorContent() {
                     </div>
 
                     {/* Кнопки действий справа (absolute) */}
-                    {stepConfigs[lastHoveredStep] && (
+                    {(stepConfigs[lastHoveredStep] || catalogSuggestions[lastHoveredStep]) && (
                       <div className="absolute top-0 right-0 flex flex-col gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => stepData.removeStepData(lastHoveredStep)}
-                          className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
-                        >
-                          <X className="h-4 w-4 mr-2" />
-                          <span className="font-medium">Удалить данные</span>
-                        </Button>
+                        {stepConfigs[lastHoveredStep] && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => stepData.removeStepData(lastHoveredStep)}
+                              className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              <span className="font-medium">Удалить данные</span>
+                            </Button>
 
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditData('company')}
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          <span className="font-medium">Посмотреть все данные</span>
-                        </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditData('company')}
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              <span className="font-medium">Посмотреть все данные</span>
+                            </Button>
+                          </>
+                        )}
 
                         {lastHoveredStep === 2 && (
                           <Button
@@ -2097,11 +2101,23 @@ function ProjectConstructorContent() {
                         )}
 
                         {(stepConfigs[lastHoveredStep] === 'ocr_suggestion' ||
-                          (stepConfigs[lastHoveredStep] === 'catalog' && lastHoveredStep !== 2)) && (
+                          (stepConfigs[lastHoveredStep] === 'catalog' && lastHoveredStep !== 2) ||
+                          catalogSuggestions[lastHoveredStep]) && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => stepData.removeStepData(lastHoveredStep)}
+                            onClick={() => {
+                              // Удаляем рекомендацию из catalogSuggestions
+                              if (catalogSuggestions[lastHoveredStep]) {
+                                setCatalogSuggestions(prev => {
+                                  const newSugg = {...prev}
+                                  delete newSugg[lastHoveredStep]
+                                  return newSugg
+                                })
+                              }
+                              // И очищаем данные шага
+                              stepData.removeStepData(lastHoveredStep)
+                            }}
                             className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
                           >
                             <X className="h-4 w-4 mr-2" />
@@ -2266,7 +2282,7 @@ function ProjectConstructorContent() {
                         const cryptoAvailable = checkMethodAvailability('crypto');
 
                         return (
-                          <div className="mb-6">
+                          <div className="mb-6 mt-24">
                             <h4 className="text-base font-semibold text-gray-800 mb-4">Выберите метод оплаты:</h4>
                             <div className="grid grid-cols-3 gap-4 w-full">
                               {/* Банковский перевод */}
@@ -2481,7 +2497,7 @@ function ProjectConstructorContent() {
                         const cryptoAvailable = checkMethodAvailability('crypto');
 
                         return (
-                          <div className="mb-6">
+                          <div className="mb-6 mt-24">
                             <h4 className="text-base font-semibold text-gray-800 mb-4">Выберите тип реквизитов:</h4>
                             <div className="grid grid-cols-3 gap-4 w-full">
                             {/* Банковский перевод */}
