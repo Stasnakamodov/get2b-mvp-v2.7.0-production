@@ -2246,8 +2246,8 @@ function ProjectConstructorContent() {
                         </div>
                       )}
 
-                      {/* Шаг 4: Если есть РЕКОМЕНДАЦИЯ из каталога - показываем ТРИ КУБИКА выбора метода (КОПИЯ Step 5) */}
-                      {lastHoveredStep === 4 && catalogSuggestions[4] && !manualData[4] && (() => {
+                      {/* Шаг 4: Если есть РЕКОМЕНДАЦИЯ из каталога - показываем ТРИ КУБИКА выбора метода ВСЕГДА (даже после выбора) */}
+                      {lastHoveredStep === 4 && catalogSuggestions[4] && (() => {
                         console.log('🎯 [Step 4 CUBES] Рендер трёх кубиков!');
                         console.log('  - catalogSuggestions[4]:', catalogSuggestions[4]);
 
@@ -2414,8 +2414,9 @@ function ProjectConstructorContent() {
                         console.log('  - manualData[5]:', manualData[5]);
                         console.log('  - selectedSupplierData:', selectedSupplierData);
 
-                        // Показываем кубики если есть рекомендация ИЛИ stepConfigs, но НЕТ заполненных данных с type
-                        const shouldShowCubes = (catalogSuggestions[5] && !manualData[5]) ||
+                        // Показываем кубики ВСЕГДА когда есть рекомендация из каталога (даже после выбора)
+                        // ИЛИ когда есть stepConfigs но НЕТ type
+                        const shouldShowCubes = catalogSuggestions[5] ||
                                                 (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
                                                 (manualData[5] && Object.keys(manualData[5]).length > 0 && !manualData[5].type);
                         console.log('  - shouldShowCubes:', shouldShowCubes);
