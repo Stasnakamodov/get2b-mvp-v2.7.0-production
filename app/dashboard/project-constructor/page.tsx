@@ -2080,19 +2080,19 @@ function ProjectConstructorContent() {
             {/* BLOCK 2: Configuration Area (Область настройки)             */}
             {/* Lines 2050-3400 | 5 render modes based on step state       */}
             {/* ============================================================ */}
-            <div className="min-h-[200px] border-2 border-dashed border-gray-300 rounded-lg p-6 relative">
+            <div className="min-h-[400px] border-2 border-dashed border-gray-300 rounded-lg p-6 relative">
             {/* Кнопки действий в правом верхнем углу внутри контейнера */}
             {lastHoveredStep && stepConfigs[lastHoveredStep] && (
-              <div className="absolute top-2 right-2 z-10 flex flex-col gap-1.5">
+              <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
                 {/* Кнопка удаления */}
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => stepData.removeStepData(lastHoveredStep)}
-                  className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white h-8 px-2.5 text-xs"
+                  className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
                 >
-                  <X className="h-3.5 w-3.5 mr-1.5" />
-                  <span className="font-medium">Удалить</span>
+                  <X className="h-4 w-4 mr-2" />
+                  <span className="font-medium">Удалить данные</span>
                 </Button>
 
                 {/* Кнопка просмотра всех данных */}
@@ -2100,10 +2100,10 @@ function ProjectConstructorContent() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleEditData('company')}
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white h-8 px-2.5 text-xs"
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
                 >
-                  <FileText className="h-3.5 w-3.5 mr-1.5" />
-                  <span className="font-medium">Посмотреть</span>
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span className="font-medium">Посмотреть все данные</span>
                 </Button>
 
                 {/* Кнопка добавления товаров из каталога (только для шага 2) */}
@@ -2112,10 +2112,10 @@ function ProjectConstructorContent() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddProductsFromCatalog()}
-                    className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white h-8 px-2.5 text-xs"
+                    className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
                   >
-                    <Plus className="h-3.5 w-3.5 mr-1.5" />
-                    <span className="font-medium">Добавить</span>
+                    <Plus className="h-4 w-4 mr-2" />
+                    <span className="font-medium">Добавить товары</span>
                   </Button>
                 )}
 
@@ -2125,10 +2125,10 @@ function ProjectConstructorContent() {
                     variant="outline"
                     size="sm"
                     onClick={() => stepData.removeStepData(lastHoveredStep)}
-                    className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white h-8 px-2.5 text-xs"
+                    className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
                   >
-                    <X className="h-3.5 w-3.5 mr-1.5" />
-                    <span className="font-medium">Отменить</span>
+                    <X className="h-4 w-4 mr-2" />
+                    <span className="font-medium">Отменить рекомендацию</span>
                   </Button>
                 )}
               </div>
