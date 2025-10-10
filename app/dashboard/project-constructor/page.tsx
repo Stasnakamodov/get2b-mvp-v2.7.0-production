@@ -2076,8 +2076,11 @@ function ProjectConstructorContent() {
                               <span className="font-medium">Удалить данные</span>
                             </Button>
 
-                            {/* Скрываем кнопку "Посмотреть все данные" для Step 4 - там всего 2 поля */}
-                            {lastHoveredStep !== 4 && (
+                            {/* Скрываем кнопку "Посмотреть все данные" для:
+                                - Step 4: всего 2 поля
+                                - Step 5 при ручном заполнении: кнопка нужна только для просмотра рекомендаций из каталога
+                            */}
+                            {lastHoveredStep !== 4 && !(lastHoveredStep === 5 && stepConfigs[5] === 'manual') && (
                               <Button
                                 variant="outline"
                                 size="sm"
