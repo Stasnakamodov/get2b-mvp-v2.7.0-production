@@ -1276,16 +1276,23 @@ function ProjectConstructorContent() {
       console.log('📦 [ATOMIC] Получены товары из каталога:', products)
 
       // Преобразуем товары в формат Step II
-      const catalogItems = products.map(product => ({
-        name: product.name || product.item_name || 'Товар из каталога',
-        quantity: product.quantity || 1,
-        price: parseFloat(product.price) || 0,
-        currency: product.currency || 'USD',
-        supplier_id: product.supplier_id,
-        supplier_name: product.supplier_name,
-        image_url: product.image_url || product.images?.[0] || '',
-        sku: product.sku || product.item_code || ''
-      }))
+      const catalogItems = products.map(product => {
+        const quantity = product.quantity || 1
+        const price = parseFloat(product.price) || 0
+        return {
+          item_name: product.name || product.item_name || 'Товар из каталога',
+          name: product.name || product.item_name || 'Товар из каталога',
+          quantity,
+          price,
+          total: quantity * price,
+          currency: product.currency || 'USD',
+          supplier_id: product.supplier_id,
+          supplier_name: product.supplier_name,
+          image_url: product.image_url || product.images?.[0] || '',
+          sku: product.sku || product.item_code || '',
+          item_code: product.sku || product.item_code || ''
+        }
+      })
 
       // Добавляем товары в Step II
       setManualData(prev => ({
