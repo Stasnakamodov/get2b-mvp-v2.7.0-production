@@ -2435,10 +2435,11 @@ function ProjectConstructorContent() {
                         console.log('  - selectedSupplierData:', selectedSupplierData);
 
                         // Показываем кубики ТОЛЬКО если метод ЕЩЁ НЕ ВЫБРАН (нет type)
-                        // ИЛИ когда есть stepConfigs но НЕТ type
-                        const shouldShowCubes = (catalogSuggestions[5] && !manualData[5]?.type) ||
-                                                (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
-                                                (manualData[5] && Object.keys(manualData[5]).length > 0 && !manualData[5].type);
+                        const shouldShowCubes = !manualData[5]?.type && (
+                          catalogSuggestions[5] ||
+                          (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
+                          (manualData[5] && Object.keys(manualData[5]).length > 0)
+                        );
                         console.log('  - shouldShowCubes:', shouldShowCubes);
                         console.log('  - manualData[5]?.type:', manualData[5]?.type);
 

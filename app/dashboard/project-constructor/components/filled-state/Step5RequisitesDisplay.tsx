@@ -175,7 +175,7 @@ export function Step5RequisitesDisplay({ data, onPreview }: Step5RequisitesDispl
     <div className="flex justify-center">
       <div className="grid grid-cols-3 gap-4 w-full">
         <div
-          className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${colors.container}`}
+          className={`bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-2 ${colors.container}`}
           onClick={() => onPreview('requisites', data)}
         >
           {/* Заголовок и статус */}
@@ -206,7 +206,7 @@ export function Step5RequisitesDisplay({ data, onPreview }: Step5RequisitesDispl
               <div className="text-xs text-gray-500 mb-1">
                 Поставщик
               </div>
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-2xl font-bold text-gray-900">
                 {supplierName}
               </div>
             </div>
