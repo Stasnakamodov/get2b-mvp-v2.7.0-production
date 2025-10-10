@@ -143,84 +143,91 @@ export function Step5RequisitesDisplay({ data, onPreview }: Step5RequisitesDispl
   // Одиночный реквизит (выбранный)
   const colors = getSelectedColorClasses(data.type)
 
-  // Формируем детали для отображения - ВСЕ доступные поля
-  const getDetails = () => {
+  // Формируем детали - ТОЛЬКО самое важное
+  const getSupplierName = () => {
+    return data.supplier_name || data.recipientName || 'Поставщик'
+  }
+
+  const getMainDetails = () => {
     if (data.type === 'crypto') {
-      return [
-        { label: 'Криптовалюта', value: data.crypto_name || data.crypto_address?.substring(0, 3).toUpperCase() || 'Не указана', highlight: true },
-        { label: 'Адрес кошелька', value: data.crypto_address ? `${data.crypto_address.substring(0, 16)}...${data.crypto_address.substring(data.crypto_address.length - 6)}` : 'Не указан', mono: true },
-        { label: 'Сеть блокчейна', value: data.crypto_network || 'Не указана' },
-        { label: 'Полный адрес', value: data.crypto_address || 'Не указан', mono: true, small: true }
-      ]
+      return {
+        first: { label: 'Криптовалюта', value: data.crypto_name || 'USDT' },
+        second: { label: 'Адрес кошелька', value: data.crypto_address ? `${data.crypto_address.substring(0, 20)}...${data.crypto_address.substring(data.crypto_address.length - 8)}` : 'Не указан', mono: true }
+      }
     } else if (data.type === 'p2p') {
-      return [
-        { label: 'Банк-эмитент карты', value: data.card_bank || 'Не указан', highlight: true },
-        { label: 'Номер карты', value: data.card_number ? `**** **** **** ${data.card_number.slice(-4)}` : 'Не указан', mono: true },
-        { label: 'Владелец карты', value: data.card_holder || 'Не указан' },
-        { label: 'Срок действия', value: data.card_expiry || 'Бессрочно' }
-      ]
+      return {
+        first: { label: 'Банк карты', value: data.card_bank || 'Не указан' },
+        second: { label: 'Номер карты', value: data.card_number ? `**** **** **** ${data.card_number.slice(-4)}` : 'Не указан', mono: true }
+      }
     } else {
-      // bank - показываем ВСЕ поля
-      return [
-        { label: 'Название банка', value: data.bankName || 'Не указан', highlight: true },
-        { label: 'Номер счета', value: data.accountNumber || 'Не указан', mono: true },
-        { label: 'SWIFT код', value: data.swift || 'Не указан', mono: true },
-        { label: 'IBAN', value: data.iban || 'Не указан', mono: true },
-        { label: 'Получатель платежа', value: data.recipientName || 'Не указан' },
-        { label: 'Валюта счета', value: data.transferCurrency || 'RUB' }
-      ]
+      // bank
+      return {
+        first: { label: 'Банк поставщика', value: data.bankName || 'Не указан' },
+        second: { label: 'Расчетный счет', value: data.accountNumber || 'Не указан', mono: true }
+      }
     }
   }
 
-  const details = getDetails()
+  const supplierName = getSupplierName()
+  const mainDetails = getMainDetails()
 
   return (
     <div className="flex justify-center">
       <div className="grid grid-cols-3 gap-4 w-full">
         <div
-          className={`bg-white border-2 rounded-xl p-8 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${colors.container}`}
+          className={`bg-white border-2 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 col-span-3 ring-4 ${colors.container}`}
           onClick={() => onPreview('requisites', data)}
         >
-          {/* Заголовок и статус в одной строке */}
+          {/* Заголовок и статус */}
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ring-2 ${colors.icon}`}>
-                <CheckCircle2 className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ring-2 ${colors.icon}`}>
+                <CheckCircle2 className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="text-xl font-bold text-gray-800">
+                <div className="text-lg font-bold text-gray-800">
                   {getTitle(data.type)}
                 </div>
-                <div className="text-base text-gray-500">
+                <div className="text-sm text-gray-500">
                   {getSubtitle(data.type)}
                 </div>
               </div>
             </div>
-            <div className={`text-lg flex items-center gap-2 font-bold ${colors.text}`}>
-              <CheckCircle2 className="h-5 w-5" />
+            <div className={`text-base flex items-center gap-2 font-bold ${colors.text}`}>
+              <CheckCircle2 className="h-4 w-4" />
               <span>ЗАПОЛНЕНО</span>
             </div>
           </div>
 
-          {/* Детали реквизитов - все доступные поля */}
-          <div className="grid grid-cols-3 gap-4">
-            {details.map((detail, index) => (
-              <div key={index} className="bg-white/70 rounded-lg p-4 border border-gray-100">
-                <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
-                  {detail.label}
-                </div>
-                <div
-                  className={`font-semibold text-gray-900 break-all ${
-                    detail.small ? 'text-xs' : 'text-base'
-                  } ${detail.mono ? 'font-mono' : ''} ${
-                    detail.highlight ? 'text-orange-600' : ''
-                  }`}
-                  title={detail.value}
-                >
-                  {detail.value}
-                </div>
+          {/* Название поставщика - КРУПНО */}
+          <div className="mb-6 pb-4 border-b border-gray-200">
+            <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+              Поставщик
+            </div>
+            <div className="text-2xl font-bold text-orange-600">
+              {supplierName}
+            </div>
+          </div>
+
+          {/* Ключевые реквизиты - два поля */}
+          <div className="space-y-4">
+            <div>
+              <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                {mainDetails.first.label}
               </div>
-            ))}
+              <div className="text-lg font-semibold text-gray-900">
+                {mainDetails.first.value}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                {mainDetails.second.label}
+              </div>
+              <div className={`text-lg font-semibold text-gray-900 ${mainDetails.second.mono ? 'font-mono' : ''}`}>
+                {mainDetails.second.value}
+              </div>
+            </div>
           </div>
         </div>
       </div>
