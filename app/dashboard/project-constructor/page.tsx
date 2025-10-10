@@ -2294,11 +2294,16 @@ function ProjectConstructorContent() {
                                     : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                                 }`}
                                 onClick={() => {
-                                  setManualData(prev => ({ ...prev, 4: { ...catalogSuggestions[4], selectedMethod: 'bank-transfer', method: 'bank-transfer', user_choice: true } }));
+                                  setManualData(prev => ({
+                                    ...prev,
+                                    4: { ...(catalogSuggestions[4] || {}), selectedMethod: 'bank-transfer', method: 'bank-transfer', user_choice: true }
+                                  }));
                                   setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
                                   // Очищаем рекомендации для Steps 4 и 5
                                   setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; delete newSugg[5]; return newSugg; });
-                                  handlePaymentMethodSelect('bank-transfer', catalogSuggestions[4].supplier_data || selectedSupplierData);
+                                  // Вызываем handlePaymentMethodSelect с данными поставщика (если есть) или null
+                                  const supplierData = catalogSuggestions[4]?.supplier_data || selectedSupplierData || null;
+                                  handlePaymentMethodSelect('bank-transfer', supplierData);
                                 }}
                               >
                                 <div className="flex items-center gap-2 mb-3">
@@ -2330,11 +2335,16 @@ function ProjectConstructorContent() {
                                     : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                                 }`}
                                 onClick={() => {
-                                  setManualData(prev => ({ ...prev, 4: { ...catalogSuggestions[4], selectedMethod: 'p2p', method: 'p2p', user_choice: true } }));
+                                  setManualData(prev => ({
+                                    ...prev,
+                                    4: { ...(catalogSuggestions[4] || {}), selectedMethod: 'p2p', method: 'p2p', user_choice: true }
+                                  }));
                                   setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
                                   // Очищаем рекомендации для Steps 4 и 5
                                   setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; delete newSugg[5]; return newSugg; });
-                                  handlePaymentMethodSelect('p2p', catalogSuggestions[4].supplier_data || selectedSupplierData);
+                                  // Вызываем handlePaymentMethodSelect с данными поставщика (если есть) или null
+                                  const supplierData = catalogSuggestions[4]?.supplier_data || selectedSupplierData || null;
+                                  handlePaymentMethodSelect('p2p', supplierData);
                                 }}
                               >
                                 <div className="flex items-center gap-2 mb-3">
@@ -2366,11 +2376,16 @@ function ProjectConstructorContent() {
                                     : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                                 }`}
                                 onClick={() => {
-                                  setManualData(prev => ({ ...prev, 4: { ...catalogSuggestions[4], selectedMethod: 'crypto', method: 'crypto', user_choice: true } }));
+                                  setManualData(prev => ({
+                                    ...prev,
+                                    4: { ...(catalogSuggestions[4] || {}), selectedMethod: 'crypto', method: 'crypto', user_choice: true }
+                                  }));
                                   setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
                                   // Очищаем рекомендации для Steps 4 и 5
                                   setCatalogSuggestions(prev => { const newSugg = {...prev}; delete newSugg[4]; delete newSugg[5]; return newSugg; });
-                                  handlePaymentMethodSelect('crypto', catalogSuggestions[4].supplier_data || selectedSupplierData);
+                                  // Вызываем handlePaymentMethodSelect с данными поставщика (если есть) или null
+                                  const supplierData = catalogSuggestions[4]?.supplier_data || selectedSupplierData || null;
+                                  handlePaymentMethodSelect('crypto', supplierData);
                                 }}
                               >
                                 <div className="flex items-center gap-2 mb-3">
