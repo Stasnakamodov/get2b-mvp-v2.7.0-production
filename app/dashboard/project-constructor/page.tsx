@@ -2081,60 +2081,6 @@ function ProjectConstructorContent() {
             {/* Lines 2050-3400 | 5 render modes based on step state       */}
             {/* ============================================================ */}
             <div className="min-h-[400px] border-2 border-dashed border-gray-300 rounded-lg p-6 relative">
-            {/* Кнопки действий в правом верхнем углу внутри контейнера */}
-            {lastHoveredStep && stepConfigs[lastHoveredStep] && (
-              <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-                {/* Кнопка удаления */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => stepData.removeStepData(lastHoveredStep)}
-                  className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  <span className="font-medium">Удалить данные</span>
-                </Button>
-
-                {/* Кнопка просмотра всех данных */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEditData('company')}
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  <span className="font-medium">Посмотреть все данные</span>
-                </Button>
-
-                {/* Кнопка добавления товаров из каталога (только для шага 2) */}
-                {lastHoveredStep === 2 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddProductsFromCatalog()}
-                    className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    <span className="font-medium">Добавить товары</span>
-                  </Button>
-                )}
-
-                {/* Кнопка отмены автовыбора (для OCR и каталога) */}
-                {lastHoveredStep && (stepConfigs[lastHoveredStep] === 'ocr_suggestion' || stepConfigs[lastHoveredStep] === 'catalog') && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => stepData.removeStepData(lastHoveredStep)}
-                    className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    <span className="font-medium">Отменить рекомендацию</span>
-                  </Button>
-                )}
-              </div>
-            )}
-            
-
             <AnimatePresence>
               {lastHoveredStep && isStepEnabled(lastHoveredStep) ? (
                 <motion.div
@@ -2142,22 +2088,73 @@ function ProjectConstructorContent() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   style={{ height: '100%' }}
-                  className="pt-32"
                 >
-                  {/* Заголовок выбранного шага */}
-                  <div className="text-center mb-6">
-                    <div className="flex items-center justify-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                        {lastHoveredStep === 1 ? 'I' : lastHoveredStep === 2 ? 'II' : lastHoveredStep === 3 ? 'III' : 
-                         lastHoveredStep === 4 ? 'IV' : lastHoveredStep === 5 ? 'V' : lastHoveredStep === 6 ? 'VI' : 'VII'}
+                  {/* Заголовок выбранного шага + Кнопки действий */}
+                  <div className="flex items-start justify-between mb-6">
+                    {/* Левая часть - заголовок */}
+                    <div className="text-center flex-1">
+                      <div className="flex items-center justify-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
+                          {lastHoveredStep === 1 ? 'I' : lastHoveredStep === 2 ? 'II' : lastHoveredStep === 3 ? 'III' :
+                           lastHoveredStep === 4 ? 'IV' : lastHoveredStep === 5 ? 'V' : lastHoveredStep === 6 ? 'VI' : 'VII'}
+                        </div>
+                        <h3 className="text-lg font-semibold">
+                          {constructorSteps.find(s => s.id === lastHoveredStep)?.name}
+                        </h3>
                       </div>
-                      <h3 className="text-lg font-semibold">
-                        {constructorSteps.find(s => s.id === lastHoveredStep)?.name}
-                      </h3>
+                      <p className="text-gray-600">
+                        {constructorSteps.find(s => s.id === lastHoveredStep)?.description}
+                      </p>
                     </div>
-                    <p className="text-gray-600">
-                      {constructorSteps.find(s => s.id === lastHoveredStep)?.description}
-                    </p>
+
+                    {/* Правая часть - кнопки действий */}
+                    {stepConfigs[lastHoveredStep] && (
+                      <div className="flex flex-col gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => stepData.removeStepData(lastHoveredStep)}
+                          className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          <span className="font-medium">Удалить данные</span>
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditData('company')}
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          <span className="font-medium">Посмотреть все данные</span>
+                        </Button>
+
+                        {lastHoveredStep === 2 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddProductsFromCatalog()}
+                            className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            <span className="font-medium">Добавить товары</span>
+                          </Button>
+                        )}
+
+                        {(stepConfigs[lastHoveredStep] === 'ocr_suggestion' || stepConfigs[lastHoveredStep] === 'catalog') && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => stepData.removeStepData(lastHoveredStep)}
+                            className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            <span className="font-medium">Отменить рекомендацию</span>
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* ========== MODE 1: Template Selection ========== */}
