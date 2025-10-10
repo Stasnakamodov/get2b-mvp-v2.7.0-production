@@ -1215,7 +1215,9 @@ function ProjectConstructorContent() {
     setEditingType,
     setStepConfigs,
     checkSummaryReadiness,
-    currentStage
+    currentStage,
+    setSelectedProfileId,
+    setSelectedSupplierProfileId
   })
 
   // Обработчик отмены выбора источника

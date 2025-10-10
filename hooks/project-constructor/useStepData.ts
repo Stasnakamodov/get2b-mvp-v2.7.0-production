@@ -31,6 +31,10 @@ interface StepDataParams {
 
   // Текущий этап
   currentStage: number
+
+  // Опциональные функции для сброса выбранных профилей
+  setSelectedProfileId?: (id: string | null) => void
+  setSelectedSupplierProfileId?: (id: string | null) => void
 }
 
 export function useStepData(params: StepDataParams) {
@@ -41,7 +45,9 @@ export function useStepData(params: StepDataParams) {
     setEditingType,
     setStepConfigs,
     checkSummaryReadiness,
-    currentStage
+    currentStage,
+    setSelectedProfileId,
+    setSelectedSupplierProfileId
   } = params
 
   /**
@@ -123,6 +129,16 @@ export function useStepData(params: StepDataParams) {
 
     // Сбрасываем выбранный источник
     setSelectedSource(null)
+
+    // Сбрасываем выбранные профили при удалении Step 1 (клиент) или Step 3 (поставщик)
+    if (stepId === 1 && setSelectedProfileId) {
+      console.log('🔄 Сбрасываем выбранный профиль клиента')
+      setSelectedProfileId(null)
+    }
+    if (stepId === 3 && setSelectedSupplierProfileId) {
+      console.log('🔄 Сбрасываем выбранный профиль поставщика')
+      setSelectedSupplierProfileId(null)
+    }
   }
 
   return {
