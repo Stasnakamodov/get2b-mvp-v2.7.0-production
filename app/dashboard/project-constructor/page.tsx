@@ -2462,6 +2462,7 @@ function ProjectConstructorContent() {
                         const shouldShowCubes = !manualData[5]?.type && (
                           catalogSuggestions[5] ||
                           selectedSource === "manual" ||
+                          stepConfigs[5] === 'manual' ||
                           (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
                           (manualData[5] && Object.keys(manualData[5]).length > 0)
                         );
