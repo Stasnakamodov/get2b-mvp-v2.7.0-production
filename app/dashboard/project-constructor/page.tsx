@@ -2083,20 +2083,16 @@ function ProjectConstructorContent() {
             <div className="min-h-[200px] border-2 border-dashed border-gray-300 rounded-lg p-6 relative">
             {/* Кнопки действий в правом верхнем углу внутри контейнера */}
             {lastHoveredStep && stepConfigs[lastHoveredStep] && (
-              <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+              <div className="absolute top-2 right-2 z-10 flex flex-col gap-1.5">
                 {/* Кнопка удаления */}
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => stepData.removeStepData(lastHoveredStep)}
-                  className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                  className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md bg-white h-8 px-2.5 text-xs"
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
-                      <X className="h-3 w-3 text-red-500" />
-                    </div>
-                    <span className="font-medium">Удалить данные</span>
-                  </div>
+                  <X className="h-3.5 w-3.5 mr-1.5" />
+                  <span className="font-medium">Удалить</span>
                 </Button>
 
                 {/* Кнопка просмотра всех данных */}
@@ -2104,14 +2100,10 @@ function ProjectConstructorContent() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleEditData('company')}
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white h-8 px-2.5 text-xs"
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
-                      <FileText className="h-3 w-3 text-blue-600" />
-                    </div>
-                    <span className="font-medium">Посмотреть все данные</span>
-                  </div>
+                  <FileText className="h-3.5 w-3.5 mr-1.5" />
+                  <span className="font-medium">Посмотреть</span>
                 </Button>
 
                 {/* Кнопка добавления товаров из каталога (только для шага 2) */}
@@ -2120,14 +2112,10 @@ function ProjectConstructorContent() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddProductsFromCatalog()}
-                    className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                    className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white h-8 px-2.5 text-xs"
                   >
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center">
-                        <Plus className="h-3 w-3 text-orange-600" />
-                      </div>
-                      <span className="font-medium">Добавить товары</span>
-                    </div>
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    <span className="font-medium">Добавить</span>
                   </Button>
                 )}
 
@@ -2137,14 +2125,10 @@ function ProjectConstructorContent() {
                     variant="outline"
                     size="sm"
                     onClick={() => stepData.removeStepData(lastHoveredStep)}
-                    className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                    className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white h-8 px-2.5 text-xs"
                   >
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-yellow-100 flex items-center justify-center">
-                        <X className="h-3 w-3 text-yellow-600" />
-                      </div>
-                      <span className="font-medium">Отменить автовыбор</span>
-                    </div>
+                    <X className="h-3.5 w-3.5 mr-1.5" />
+                    <span className="font-medium">Отменить</span>
                   </Button>
                 )}
               </div>
