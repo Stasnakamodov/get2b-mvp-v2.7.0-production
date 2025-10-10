@@ -8,7 +8,6 @@ import ContactsForm from '@/components/project-constructor/forms/ContactsForm'
 import BankForm from '@/components/project-constructor/forms/BankForm'
 import SpecificationForm from '@/components/project-constructor/forms/SpecificationForm'
 import FileUploadForm from '@/components/project-constructor/forms/FileUploadForm'
-import PaymentMethodForm from '@/components/project-constructor/forms/PaymentMethodForm'
 import RequisitesForm from '@/components/project-constructor/forms/RequisitesForm'
 
 interface ManualFormEntryModeProps {
@@ -100,14 +99,7 @@ export function ManualFormEntryMode({
         />
       )}
 
-      {lastHoveredStep === 4 && (
-        <PaymentMethodForm
-          onSave={(data) => onSave(lastHoveredStep, data)}
-          onCancel={onCancel}
-          initialData={manualData[lastHoveredStep] as any}
-          getStepData={getStepData}
-        />
-      )}
+      {/* Step 4 больше не использует форму - используются 3 кубика выбора в filled state */}
 
       {lastHoveredStep === 5 && (
         <RequisitesForm

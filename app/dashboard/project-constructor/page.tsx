@@ -2265,13 +2265,19 @@ function ProjectConstructorContent() {
                         </div>
                       )}
 
-                      {/* Шаг 4: Если есть РЕКОМЕНДАЦИЯ из каталога И метод ЕЩЁ НЕ ВЫБРАН - показываем ТРИ КУБИКА выбора */}
-                      {lastHoveredStep === 4 && catalogSuggestions[4] && !manualData[4]?.method && (() => {
+                      {/* Шаг 4: Если есть РЕКОМЕНДАЦИЯ из каталога ИЛИ ручное заполнение И метод ЕЩЁ НЕ ВЫБРАН - показываем ТРИ КУБИКА выбора */}
+                      {lastHoveredStep === 4 && (catalogSuggestions[4] || selectedSource === "manual") && !manualData[4]?.method && (() => {
                         console.log('🎯 [Step 4 CUBES] Рендер трёх кубиков выбора!');
                         console.log('  - catalogSuggestions[4]:', catalogSuggestions[4]);
                         console.log('  - manualData[4]?.method:', manualData[4]?.method);
 
+                        // Для ручного заполнения все методы доступны (серые кубики)
+                        const isManualEntry = selectedSource === "manual";
+
                         const checkMethodAvailability = (method: string) => {
+                          // Если ручное заполнение - все методы доступны
+                          if (isManualEntry) return false; // false = серый цвет
+
                           if (catalogSuggestions[4].methods?.includes(method)) return true;
                           const supplier = catalogSuggestions[4].supplier_data;
                           if (!supplier) return false;
