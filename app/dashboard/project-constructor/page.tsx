@@ -2116,8 +2116,8 @@ function ProjectConstructorContent() {
 
                 {/* Кнопка добавления товаров из каталога (только для шага 2) */}
                 {lastHoveredStep === 2 && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => handleAddProductsFromCatalog()}
                     className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
@@ -2127,6 +2127,23 @@ function ProjectConstructorContent() {
                         <Plus className="h-3 w-3 text-orange-600" />
                       </div>
                       <span className="font-medium">Добавить товары</span>
+                    </div>
+                  </Button>
+                )}
+
+                {/* Кнопка отмены автовыбора (для OCR и каталога) */}
+                {lastHoveredStep && (stepConfigs[lastHoveredStep] === 'ocr_suggestion' || stepConfigs[lastHoveredStep] === 'catalog') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => stepData.removeStepData(lastHoveredStep)}
+                    className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <X className="h-3 w-3 text-yellow-600" />
+                      </div>
+                      <span className="font-medium">Отменить автовыбор</span>
                     </div>
                   </Button>
                 )}
