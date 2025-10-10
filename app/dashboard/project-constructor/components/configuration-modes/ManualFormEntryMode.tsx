@@ -100,8 +100,9 @@ export function ManualFormEntryMode({
       )}
 
       {/* Step 4 больше не использует форму - используются 3 кубика выбора в filled state */}
+      {/* Step 5 больше не использует форму напрямую - сначала 3 кубика выбора типа, затем форма */}
 
-      {lastHoveredStep === 5 && (
+      {lastHoveredStep === 5 && manualData[5]?.type && (
         <RequisitesForm
           onSave={(data) => onSave(lastHoveredStep, data)}
           onCancel={onCancel}

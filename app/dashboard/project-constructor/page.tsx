@@ -2461,6 +2461,7 @@ function ProjectConstructorContent() {
                         // Показываем кубики ТОЛЬКО если метод ЕЩЁ НЕ ВЫБРАН (нет type)
                         const shouldShowCubes = !manualData[5]?.type && (
                           catalogSuggestions[5] ||
+                          selectedSource === "manual" ||
                           (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
                           (manualData[5] && Object.keys(manualData[5]).length > 0)
                         );
@@ -2469,8 +2470,14 @@ function ProjectConstructorContent() {
 
                         return shouldShowCubes;
                       })() && (() => {
+                        // Для ручного заполнения все методы доступны (серые кубики)
+                        const isManualEntry = selectedSource === "manual";
+
                         // Проверяем доступные методы поставщика
                         const checkMethodAvailability = (method: string) => {
+                          // Если ручное заполнение - все методы доступны (серые)
+                          if (isManualEntry) return false; // false = серый цвет
+
                           // Приоритет 1: catalogSuggestions[5] (рекомендация из каталога)
                           if (catalogSuggestions[5]) {
                             if (catalogSuggestions[5].methods?.includes(method)) return true;
@@ -2538,32 +2545,44 @@ function ProjectConstructorContent() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
-                                // Используем автозаполнение через handlePaymentMethodSelect
-                                const supplierData = catalogSuggestions[5]?.supplier_data || selectedSupplierData;
+                                if (isManualEntry) {
+                                  // Ручное заполнение - просто устанавливаем type
+                                  setManualData(prev => ({
+                                    ...prev,
+                                    5: {
+                                      type: 'bank',
+                                      user_choice: true,
+                                      source: 'manual'
+                                    }
+                                  }));
+                                } else {
+                                  // Автозаполнение через handlePaymentMethodSelect
+                                  const supplierData = catalogSuggestions[5]?.supplier_data || selectedSupplierData;
 
-                                // Обновляем Step 4
-                                setManualData(prev => ({
-                                  ...prev,
-                                  4: {
-                                    ...prev[4],
-                                    ...(catalogSuggestions[5] || {}),
-                                    selectedMethod: 'bank-transfer',
-                                    method: 'bank-transfer',
-                                    user_choice: true
-                                  }
-                                }));
-                                setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
+                                  // Обновляем Step 4
+                                  setManualData(prev => ({
+                                    ...prev,
+                                    4: {
+                                      ...prev[4],
+                                      ...(catalogSuggestions[5] || {}),
+                                      selectedMethod: 'bank-transfer',
+                                      method: 'bank-transfer',
+                                      user_choice: true
+                                    }
+                                  }));
+                                  setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
 
-                                // Очищаем рекомендации для Steps 4 и 5 (метод выбран)
-                                setCatalogSuggestions(prev => {
-                                  const newSugg = {...prev};
-                                  delete newSugg[4];
-                                  delete newSugg[5];
-                                  return newSugg;
-                                });
+                                  // Очищаем рекомендации для Steps 4 и 5 (метод выбран)
+                                  setCatalogSuggestions(prev => {
+                                    const newSugg = {...prev};
+                                    delete newSugg[4];
+                                    delete newSugg[5];
+                                    return newSugg;
+                                  });
 
-                                // Автозаполняем Step 5 через общую функцию
-                                handlePaymentMethodSelect('bank-transfer', supplierData);
+                                  // Автозаполняем Step 5 через общую функцию
+                                  handlePaymentMethodSelect('bank-transfer', supplierData);
+                                }
                               }}
                             >
                               <div className="flex items-center gap-2 mb-3">
@@ -2593,32 +2612,44 @@ function ProjectConstructorContent() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
-                                // Используем автозаполнение через handlePaymentMethodSelect
-                                const supplierData = catalogSuggestions[5]?.supplier_data || selectedSupplierData;
+                                if (isManualEntry) {
+                                  // Ручное заполнение - просто устанавливаем type
+                                  setManualData(prev => ({
+                                    ...prev,
+                                    5: {
+                                      type: 'p2p',
+                                      user_choice: true,
+                                      source: 'manual'
+                                    }
+                                  }));
+                                } else {
+                                  // Автозаполнение через handlePaymentMethodSelect
+                                  const supplierData = catalogSuggestions[5]?.supplier_data || selectedSupplierData;
 
-                                // Обновляем Step 4
-                                setManualData(prev => ({
-                                  ...prev,
-                                  4: {
-                                    ...prev[4],
-                                    ...(catalogSuggestions[5] || {}),
-                                    selectedMethod: 'p2p',
-                                    method: 'p2p',
-                                    user_choice: true
-                                  }
-                                }));
-                                setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
+                                  // Обновляем Step 4
+                                  setManualData(prev => ({
+                                    ...prev,
+                                    4: {
+                                      ...prev[4],
+                                      ...(catalogSuggestions[5] || {}),
+                                      selectedMethod: 'p2p',
+                                      method: 'p2p',
+                                      user_choice: true
+                                    }
+                                  }));
+                                  setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
 
-                                // Очищаем рекомендации для Steps 4 и 5 (метод выбран)
-                                setCatalogSuggestions(prev => {
-                                  const newSugg = {...prev};
-                                  delete newSugg[4];
-                                  delete newSugg[5];
-                                  return newSugg;
-                                });
+                                  // Очищаем рекомендации для Steps 4 и 5 (метод выбран)
+                                  setCatalogSuggestions(prev => {
+                                    const newSugg = {...prev};
+                                    delete newSugg[4];
+                                    delete newSugg[5];
+                                    return newSugg;
+                                  });
 
-                                // Автозаполняем Step 5 через общую функцию
-                                handlePaymentMethodSelect('p2p', supplierData);
+                                  // Автозаполняем Step 5 через общую функцию
+                                  handlePaymentMethodSelect('p2p', supplierData);
+                                }
                               }}
                             >
                               <div className="flex items-center gap-2 mb-3">
@@ -2648,34 +2679,46 @@ function ProjectConstructorContent() {
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                               }`}
                               onClick={() => {
-                                // Используем автозаполнение через handlePaymentMethodSelect
-                                const supplierData = catalogSuggestions[5]?.supplier_data || selectedSupplierData;
+                                if (isManualEntry) {
+                                  // Ручное заполнение - просто устанавливаем type
+                                  setManualData(prev => ({
+                                    ...prev,
+                                    5: {
+                                      type: 'crypto',
+                                      user_choice: true,
+                                      source: 'manual'
+                                    }
+                                  }));
+                                } else {
+                                  // Автозаполнение через handlePaymentMethodSelect
+                                  const supplierData = catalogSuggestions[5]?.supplier_data || selectedSupplierData;
 
-                                // Обновляем Step 4
-                                setManualData(prev => ({
-                                  ...prev,
-                                  4: {
-                                    ...prev[4],
-                                    ...(catalogSuggestions[5] || {}),
-                                    selectedMethod: 'crypto',
-                                    method: 'crypto',
-                                    user_choice: true
-                                  }
-                                }));
-                                setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
+                                  // Обновляем Step 4
+                                  setManualData(prev => ({
+                                    ...prev,
+                                    4: {
+                                      ...prev[4],
+                                      ...(catalogSuggestions[5] || {}),
+                                      selectedMethod: 'crypto',
+                                      method: 'crypto',
+                                      user_choice: true
+                                    }
+                                  }));
+                                  setStepConfigs(prev => ({ ...prev, 4: 'catalog' }));
 
-                                // Очищаем рекомендации для Steps 4 и 5 (метод выбран)
-                                setCatalogSuggestions(prev => {
-                                  const newSugg = {...prev};
-                                  delete newSugg[4];
-                                  delete newSugg[5];
-                                  return newSugg;
-                                });
+                                  // Очищаем рекомендации для Steps 4 и 5 (метод выбран)
+                                  setCatalogSuggestions(prev => {
+                                    const newSugg = {...prev};
+                                    delete newSugg[4];
+                                    delete newSugg[5];
+                                    return newSugg;
+                                  });
 
-                                // Автозаполняем Step 5 через общую функцию
-                                handlePaymentMethodSelect('crypto', supplierData);
-                                setStepConfigs(prev => ({ ...prev, 4: 'catalog', 5: 'catalog' }));
-                                setLastHoveredStep(0);
+                                  // Автозаполняем Step 5 через общую функцию
+                                  handlePaymentMethodSelect('crypto', supplierData);
+                                  setStepConfigs(prev => ({ ...prev, 4: 'catalog', 5: 'catalog' }));
+                                  setLastHoveredStep(0);
+                                }
                               }}
                             >
                               <div className="flex items-center gap-2 mb-3">
