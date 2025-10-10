@@ -1294,15 +1294,17 @@ function ProjectConstructorContent() {
         }
       })
 
+      // Создаём данные для Step 2
+      const step2Data = {
+        supplier: catalogItems[0]?.supplier_name || '',
+        currency: catalogItems[0]?.currency || 'USD',
+        items: [...(manualData[2]?.items || []), ...catalogItems]
+      }
+
       // Добавляем товары в Step II
       setManualData(prev => ({
         ...prev,
-        2: {
-          ...prev[2],
-          supplier: catalogItems[0]?.supplier_name || prev[2]?.supplier,
-          currency: catalogItems[0]?.currency || prev[2]?.currency || 'USD',
-          items: [...(prev[2]?.items || []), ...catalogItems]
-        }
+        2: step2Data
       }))
 
       // Устанавливаем источник данных для Step II
@@ -1374,8 +1376,11 @@ function ProjectConstructorContent() {
                 catalog_source: 'verified_supplier'
               }
 
-              // ✅ НОВОЕ: Безопасное автозаполнение через AutoFillService
-              const currentState = { stepConfigs, manualData };
+              // ✅ НОВОЕ: Включаем Step 2 в currentState
+              const currentState = {
+                stepConfigs: { ...stepConfigs, 2: 'catalog' },
+                manualData: { ...manualData, 2: step2Data }
+              };
               let step4Filled = false;
               let step5Filled = false;
 
@@ -1458,8 +1463,11 @@ function ProjectConstructorContent() {
                 catalog_source: 'unknown_supplier'
               }
 
-              // ✅ НОВОЕ: Безопасное автозаполнение через AutoFillService
-              const currentState = { stepConfigs, manualData };
+              // ✅ НОВОЕ: Включаем Step 2 в currentState
+              const currentState = {
+                stepConfigs: { ...stepConfigs, 2: 'catalog' },
+                manualData: { ...manualData, 2: step2Data }
+              };
               AutoFillService.safeAutoFill(
                 4,
                 fallbackStep4Data,
