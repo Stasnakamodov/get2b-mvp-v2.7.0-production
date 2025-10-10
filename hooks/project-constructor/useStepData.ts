@@ -92,6 +92,21 @@ export function useStepData(params: StepDataParams) {
       // ❌ НЕ ВЫЗЫВАЕМ autoFillStepsFromSupplier - это только для OCR/Каталога!
       // ❌ НЕ ВЫЗЫВАЕМ autoFillStepFromRequisites - это только для OCR/Каталога!
 
+      // ✅ СПЕЦИАЛЬНО для Step 4: автоматически подготавливаем Step 5
+      if (stepId === 4 && data.method) {
+        console.log('🔗 [SYNC] Подготовка Step 5 при сохранении Step 4 с методом:', data.method)
+
+        // Создаём базовую структуру для Step 5 на основе выбранного метода
+        const requisiteType = data.method === 'bank-transfer' ? 'bank' : data.method
+        newData[5] = {
+          user_choice: true,
+          type: requisiteType,
+          source: 'manual'
+        }
+
+        console.log('✅ [SYNC] Step 5 подготовлен с типом:', requisiteType)
+      }
+
       // Проверяем готовность к сводке
       setTimeout(() => {
         if (currentStage < 2) {
