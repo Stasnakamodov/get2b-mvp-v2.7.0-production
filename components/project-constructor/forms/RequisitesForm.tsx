@@ -63,6 +63,34 @@ const RequisitesForm = ({ onSave, onCancel, initialData }: RequisitesFormProps) 
     supplier: initialData?.supplier || initialData?.supplier_name || initialData?.recipientName || ''
   })
 
+  // Обновляем formData при изменении initialData (когда форма переоткрывается с сохранёнными данными)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        type: initialData.type || requisiteType,
+        // Bank fields
+        bankName: initialData.bankName || '',
+        accountNumber: initialData.accountNumber || '',
+        swift: initialData.swift || '',
+        iban: initialData.iban || '',
+        recipientName: initialData.recipientName || initialData.supplier_name || '',
+        recipientAddress: initialData.recipientAddress || '',
+        transferCurrency: initialData.transferCurrency || 'USD',
+        // P2P fields
+        card_bank: initialData.card_bank || '',
+        card_number: initialData.card_number || '',
+        card_holder: initialData.card_holder || initialData.supplier_name || '',
+        card_expiry: initialData.card_expiry || '',
+        // Crypto fields
+        crypto_name: initialData.crypto_name || 'USDT',
+        crypto_address: initialData.crypto_address || '',
+        crypto_network: initialData.crypto_network || 'TRC20',
+        // Common
+        supplier: initialData.supplier || initialData.supplier_name || initialData.recipientName || ''
+      })
+    }
+  }, [initialData])
+
   // 🔥 НОВОЕ: Автоматически заполняем поставщика из получателя
   useEffect(() => {
     if (formData.recipientName && !formData.supplier) {
