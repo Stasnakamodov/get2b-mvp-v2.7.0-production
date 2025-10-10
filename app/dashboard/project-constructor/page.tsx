@@ -2090,9 +2090,9 @@ function ProjectConstructorContent() {
                   style={{ height: '100%' }}
                 >
                   {/* Заголовок выбранного шага + Кнопки действий */}
-                  <div className="flex items-start justify-between mb-6">
-                    {/* Левая часть - заголовок */}
-                    <div className="text-center flex-1">
+                  <div className="relative mb-6">
+                    {/* Заголовок по центру */}
+                    <div className="text-center">
                       <div className="flex items-center justify-center gap-3 mb-2">
                         <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
                           {lastHoveredStep === 1 ? 'I' : lastHoveredStep === 2 ? 'II' : lastHoveredStep === 3 ? 'III' :
@@ -2107,9 +2107,9 @@ function ProjectConstructorContent() {
                       </p>
                     </div>
 
-                    {/* Правая часть - кнопки действий */}
+                    {/* Кнопки действий справа (absolute) */}
                     {stepConfigs[lastHoveredStep] && (
-                      <div className="flex flex-col gap-2 ml-4">
+                      <div className="absolute top-0 right-0 flex flex-col gap-2">
                         <Button
                           variant="outline"
                           size="sm"
