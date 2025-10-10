@@ -12,7 +12,7 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
   console.log("🔍 SpecificationForm получил initialData:", initialData);
 
   const [formData, setFormData] = useState({
-    items: initialData?.items || [{
+    items: (initialData?.items || [{
       item_name: '',
       quantity: 1,
       unit: 'шт',
@@ -21,7 +21,10 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
       supplier_name: '',
       supplier_id: '',
       notes: ''
-    }] as SpecificationItem[],
+    }]).map(item => ({
+      ...item,
+      unit: item.unit || 'шт'  // ← Добавляем дефолтное значение для старых товаров
+    })) as SpecificationItem[],
     total_amount: initialData?.total_amount || 0,
     currency: initialData?.currency || 'RUB',
     notes: initialData?.notes || ''
@@ -32,7 +35,7 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
     console.log("🔄 SpecificationForm useEffect - initialData изменился:", initialData);
     if (initialData) {
       const newFormData = {
-        items: initialData.items || [{
+        items: (initialData.items || [{
           item_name: '',
           quantity: 1,
           unit: 'шт',
@@ -41,7 +44,10 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
           supplier_name: '',
           supplier_id: '',
           notes: ''
-        }],
+        }]).map(item => ({
+          ...item,
+          unit: item.unit || 'шт'  // ← Добавляем дефолтное значение для старых товаров
+        })),
         total_amount: initialData.total_amount || 0,
         currency: initialData.currency || 'RUB',
         notes: initialData.notes || ''
@@ -74,12 +80,15 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
 
     // Валидация через Zod схему
     try {
+      console.log('🔍 [VALIDATION] Данные перед валидацией:', JSON.stringify(cleanedData, null, 2))
       const validatedData = SpecificationDataSchema.parse(cleanedData)
       onSave(validatedData)
     } catch (error: any) {
-      console.error('Ошибка валидации формы спецификации:', error)
+      console.error('❌ [VALIDATION] Ошибка валидации формы спецификации:', error)
       if (error.errors) {
-        alert(`Ошибка заполнения: ${error.errors[0].message}`)
+        console.error('❌ [VALIDATION] Все ошибки:', error.errors)
+        const errorMessages = error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join('\n')
+        alert(`Ошибка заполнения:\n${errorMessages}`)
       } else {
         alert('Заполните все обязательные поля')
       }

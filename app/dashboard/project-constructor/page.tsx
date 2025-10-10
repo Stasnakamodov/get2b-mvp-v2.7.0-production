@@ -1283,6 +1283,7 @@ function ProjectConstructorContent() {
           item_name: product.name || product.item_name || 'Товар из каталога',
           name: product.name || product.item_name || 'Товар из каталога',
           quantity,
+          unit: product.unit || 'шт',
           price,
           total: quantity * price,
           currency: product.currency || 'USD',
