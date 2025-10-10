@@ -1261,8 +1261,7 @@ function ProjectConstructorContent() {
   const handleEditData = (type: string) => {
     setSelectedSource("manual")
     closeModal('preview')
-    // ВСЕ типы редактирования теперь открывают полную форму компании
-    setEditingType('company')
+    setEditingType(type)
   }
 
   // Функция удалена - счетчики теперь управляются в CatalogModal
