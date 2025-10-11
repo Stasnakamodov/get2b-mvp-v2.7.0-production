@@ -116,6 +116,24 @@ export function useStepData(params: StepDataParams) {
         console.log('✅ [SYNC] Step 5 подготовлен с типом:', requisiteType)
       }
 
+      // ✅ СПЕЦИАЛЬНО для Step 5: автоматически заполняем Step 4 при сохранении реквизитов
+      if (stepId === 5 && data.type) {
+        console.log('🔗 [SYNC] Автозаполнение Step 4 при сохранении Step 5 с типом:', data.type)
+
+        // Определяем метод на основе типа реквизитов
+        const method = data.type === 'bank' ? 'bank-transfer' : data.type
+
+        // Если Step 4 ещё не заполнен, создаём его
+        if (!newData[4] || !newData[4].method) {
+          newData[4] = {
+            method: method,
+            user_choice: true,
+            source: 'manual'
+          }
+          console.log('✅ [SYNC] Step 4 автоматически заполнен методом:', method)
+        }
+      }
+
       // Проверяем готовность к сводке
       setTimeout(() => {
         if (currentStage < 2) {
@@ -127,10 +145,20 @@ export function useStepData(params: StepDataParams) {
     })
 
     // 3. Устанавливаем stepConfigs для сохранённого шага
-    setStepConfigs((prev: any) => ({
-      ...prev,
-      [stepId]: 'manual'
-    }))
+    setStepConfigs((prev: any) => {
+      const newConfigs = {
+        ...prev,
+        [stepId]: 'manual'
+      }
+
+      // ✅ Если сохраняем Step 5 и Step 4 был автоматически заполнен, устанавливаем stepConfigs[4]
+      if (stepId === 5 && data.type && (!prev[4] || prev[4] !== 'manual')) {
+        newConfigs[4] = 'manual'
+        console.log('✅ [SYNC] stepConfigs[4] установлен в "manual"')
+      }
+
+      return newConfigs
+    })
 
     // 4. Закрываем модалы
     setSelectedSource(null)

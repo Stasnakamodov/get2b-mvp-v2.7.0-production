@@ -2197,10 +2197,34 @@ function ProjectConstructorContent() {
 
                   ) : (() => {
                     // Step 4: исключён (используются кубики)
-                    // Step 5: исключён если нет type (сначала показываются кубики выбора)
+                    // Step 5: СПЕЦИАЛЬНАЯ ЛОГИКА
+                    if (lastHoveredStep === 5) {
+                      // Проверяем заполненность реквизитов Step 5
+                      const step5Data = manualData[5];
+                      const hasType = step5Data?.type;
+
+                      // Если тип НЕ выбран → показываем кубики выбора (не форму)
+                      if (!hasType) return false;
+
+                      // Если тип выбран, проверяем заполненность данных
+                      let isFullyFilled = false;
+                      if (hasType === 'crypto') {
+                        isFullyFilled = !!(step5Data.crypto_address && step5Data.crypto_name && step5Data.supplier);
+                      } else if (hasType === 'p2p') {
+                        isFullyFilled = !!(step5Data.card_number && step5Data.card_bank && step5Data.supplier);
+                      } else if (hasType === 'bank') {
+                        isFullyFilled = !!(step5Data.accountNumber && step5Data.bankName && step5Data.supplier);
+                      }
+
+                      // Если данные ПОЛНОСТЬЮ заполнены → НЕ показываем форму (покажется кубик)
+                      // Если данные НЕ заполнены → показываем форму для заполнения
+                      return !isFullyFilled;
+                    }
+
+                    // Для других шагов стандартная логика
                     const shouldShowManual = (selectedSource === "manual" || (lastHoveredStep && stepConfigs[lastHoveredStep] === 'manual'))
-                      && lastHoveredStep !== 4
-                      && !(lastHoveredStep === 5 && !manualData[5]?.type);
+                      && lastHoveredStep !== 4;
+
                     console.log('🔍 [DEBUG ManualFormEntryMode]');
                     console.log('  - lastHoveredStep:', lastHoveredStep);
                     console.log('  - selectedSource:', selectedSource);
@@ -2440,24 +2464,35 @@ function ProjectConstructorContent() {
                         );
                       })()}
 
-                      {/* Шаг 5: Реквизиты - показываем форму если реквизиты были заполнены */}
+                      {/* Шаг 5: Реквизиты - показываем заполненный кубик если данные полные */}
                       {(() => {
-                        const step5HasData = !!manualData[5];
-                        const step5HasUserChoice = manualData[5]?.user_choice;
-                        const step5HasType = manualData[5]?.type;
-                        // Показываем кубик если есть тип (либо от user_choice, либо от OCR/catalog)
-                        const shouldShowStep5Form = lastHoveredStep === 5 && step5HasData && step5HasType;
+                        if (lastHoveredStep !== 5) return false;
 
-                        console.log('🔍 [Step 5 Debug]:', {
+                        const step5Data = manualData[5];
+                        const hasType = step5Data?.type;
+
+                        // Если типа нет - показываем кубики выбора (не filled state)
+                        if (!hasType) return false;
+
+                        // Проверяем ПОЛНОТУ заполнения данных
+                        let isFullyFilled = false;
+                        if (hasType === 'crypto') {
+                          isFullyFilled = !!(step5Data.crypto_address && step5Data.crypto_name && step5Data.supplier);
+                        } else if (hasType === 'p2p') {
+                          isFullyFilled = !!(step5Data.card_number && step5Data.card_bank && step5Data.supplier);
+                        } else if (hasType === 'bank') {
+                          isFullyFilled = !!(step5Data.accountNumber && step5Data.bankName && step5Data.supplier);
+                        }
+
+                        console.log('🔍 [Step5RequisitesDisplay Debug]:', {
                           lastHoveredStep,
-                          step5HasData,
-                          step5HasUserChoice,
-                          step5HasType,
-                          shouldShowStep5Form,
-                          manualData5: manualData[5]
+                          hasType,
+                          isFullyFilled,
+                          step5Data
                         });
 
-                        return shouldShowStep5Form;
+                        // Показываем кубик ТОЛЬКО если данные ПОЛНОСТЬЮ заполнены
+                        return isFullyFilled;
                       })() && (
                         <div className="mt-24">
                           <Step5RequisitesDisplay
@@ -2469,20 +2504,17 @@ function ProjectConstructorContent() {
 
                       {/* СПЕЦИАЛЬНО для шага 5: показываем кубики выбора когда есть рекомендация из каталога ИЛИ stepConfigs[5] */}
                       {lastHoveredStep === 5 && (() => {
-                        console.log('🔍 [DEBUG Step 5] Наведение на шаг 5:');
-                        console.log('  - lastHoveredStep:', lastHoveredStep);
+                        console.log('🔍 [DEBUG Step 5 Cubes] Проверка показа кубиков:');
                         console.log('  - catalogSuggestions[5]:', catalogSuggestions[5]);
                         console.log('  - stepConfigs[5]:', stepConfigs[5]);
                         console.log('  - manualData[5]:', manualData[5]);
-                        console.log('  - selectedSupplierData:', selectedSupplierData);
 
-                        // Показываем кубики ТОЛЬКО если метод ЕЩЁ НЕ ВЫБРАН (нет type)
+                        // Показываем кубики ТОЛЬКО если тип ЕЩЁ НЕ ВЫБРАН (нет type)
                         const shouldShowCubes = !manualData[5]?.type && (
                           catalogSuggestions[5] ||
                           selectedSource === "manual" ||
                           stepConfigs[5] === 'manual' ||
-                          (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5])) ||
-                          (manualData[5] && Object.keys(manualData[5]).length > 0)
+                          (stepConfigs[5] && ['catalog', 'blue_room', 'orange_room'].includes(stepConfigs[5]))
                         );
                         console.log('  - shouldShowCubes:', shouldShowCubes);
                         console.log('  - manualData[5]?.type:', manualData[5]?.type);

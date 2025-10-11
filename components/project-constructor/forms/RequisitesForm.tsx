@@ -64,8 +64,10 @@ const RequisitesForm = ({ onSave, onCancel, initialData }: RequisitesFormProps) 
   })
 
   // Обновляем formData при изменении initialData (когда форма переоткрывается с сохранёнными данными)
+  // Используем JSON.stringify для глубокого сравнения
   useEffect(() => {
     if (initialData) {
+      console.log('🔍 [RequisitesForm] useEffect сработал, обновляем formData:', initialData);
       setFormData({
         type: initialData.type || requisiteType,
         // Bank fields
@@ -89,7 +91,7 @@ const RequisitesForm = ({ onSave, onCancel, initialData }: RequisitesFormProps) 
         supplier: initialData.supplier || initialData.supplier_name || initialData.recipientName || ''
       })
     }
-  }, [initialData])
+  }, [JSON.stringify(initialData), requisiteType])
 
   // 🔥 НОВОЕ: Автоматически заполняем поставщика из получателя
   useEffect(() => {
