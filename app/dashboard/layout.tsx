@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
-import { FileText, BarChart3, MessageSquare, User, Menu, X, Home, BookOpen, PlusCircle, Package, History, ChevronLeft, ChevronRight } from "lucide-react"
+import { FileText, BarChart3, MessageSquare, User, Menu, X, Home, BookOpen, PlusCircle, Package, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
 import ThemeToggle from "@/components/theme-toggle"
@@ -23,14 +23,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       icon: Home,
     },
     {
-      title: "Ваши сделки",
-      href: "/dashboard/active-projects",
-      icon: BarChart3,
-    },
-    {
-      title: "История",
-      href: "/dashboard/history",
-      icon: History,
+      title: "Каталог Get2B",
+      href: "/dashboard/catalog",
+      icon: Package,
     },
     {
       title: "Создать проект",
@@ -38,9 +33,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       icon: PlusCircle,
     },
     {
-      title: "Каталог Get2B",
-      href: "/dashboard/catalog",
-      icon: Package,
+      title: "Ваши сделки",
+      href: "/dashboard/active-projects",
+      icon: BarChart3,
     },
     {
       title: "Конструктор проектов",

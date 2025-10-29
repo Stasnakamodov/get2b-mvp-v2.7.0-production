@@ -3,26 +3,25 @@
 import React, { useState, useEffect, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { motion } from "framer-motion"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabaseClient"
 import { ProjectTimeline } from "@/components/ui/ProjectTimeline"
-import { 
-  Building2, 
-  Calendar, 
-  Clock, 
-  Search, 
-  ArrowRight, 
-  History, 
-  FileText, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Building2,
+  Clock,
+  Search,
+  ArrowRight,
+  History,
+  FileText,
+  AlertTriangle,
+  CheckCircle,
   Eye,
   LayoutGrid,
   List,
@@ -33,15 +32,19 @@ import {
   Truck,
   AlertCircle,
   Sparkles,
-  Grid
+  Grid,
+  User,
+  Activity,
+  Star,
+  Calendar,
+  Timer,
+  Zap,
+  XCircle
 } from "lucide-react"
 import { ProjectStatus } from "@/lib/types/project-status"
 import { STATUS_LABELS } from "@/lib/types/project-status"
-import { Project as ProjectType } from "@/lib/types"
 import { ProjectStatusBadge } from "@/components/ui/ProjectStatus"
-import * as RadixSelect from "@radix-ui/react-select"
 import { cn } from "@/lib/utils"
-import { ChevronDown } from "lucide-react"
 
 // Типы для проектов
 interface Project {
@@ -51,42 +54,6 @@ interface Project {
   status: ProjectStatus
   current_step: number
   created_at: string
-}
-
-// Вспомогательная функция для определения следующего этапа
-function getNextStage(currentStage: string): string {
-  switch (currentStage) {
-    case "card":
-      return "Спецификация"
-    case "application":
-      return "Пополнение агента"
-    case "replenishment":
-      return "Выбор метода"
-    case "method":
-      return "Заполнение реквизитов"
-    case "requisites":
-      return "Получение средств"
-    case "receiving":
-      return "Подтверждение"
-    case "confirmation":
-      return "Завершение проекта"
-    default:
-      return "Начало проекта"
-  }
-}
-
-// Добавляю функцию для преобразования currentStage в номер шага
-function getStepFromStage(stage: string): number {
-  switch (stage) {
-    case "card": return 1;
-    case "application": return 2;
-    case "replenishment": return 3;
-    case "method": return 4;
-    case "requisites": return 5;
-    case "receiving": return 6;
-    case "confirmation": return 7;
-    default: return 1;
-  }
 }
 
 const steps = [
@@ -148,6 +115,10 @@ function ActiveProjectsPageContent() {
   const [sortType, setSortType] = useState<string>("date_desc")
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards")
   const [quickFilter, setQuickFilter] = useState<string | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [historyTab, setHistoryTab] = useState<'user_history' | 'project_history'>('user_history')
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'completed' | 'in_progress' | 'waiting'>('all')
+  const [selectedProjectIdForHistory, setSelectedProjectIdForHistory] = useState<string | null>(null)
 
   useEffect(() => {
     // Загрузка проектов только текущего пользователя из Supabase
@@ -166,22 +137,29 @@ function ActiveProjectsPageContent() {
         })));
       }
     };
-    
+
     // Первоначальная загрузка
     fetchProjects();
-    
+
     // Умный поллинг только для активных проектов
-    const hasActiveProjects = projects.some(p => 
-      p.status !== "completed" && 
+    const hasActiveProjects = projects.some(p =>
+      p.status !== "completed" &&
       ["waiting_approval", "waiting_receipt", "in_progress"].includes(p.status)
     );
-    
+
     // Поллинг только если есть активные проекты, требующие обновления
     if (hasActiveProjects) {
       const interval = setInterval(fetchProjects, 10000); // каждые 10 секунд вместо 5
       return () => clearInterval(interval);
     }
   }, [projects.length]); // Зависимость от количества проектов
+
+  // Загрузка истории при открытии вкладки "История"
+  useEffect(() => {
+    if (showHistory && projects.length > 0) {
+      fetchAllHistory();
+    }
+  }, [showHistory, projects.length]);
 
   // Добавим состояние для диалога подтверждения удаления
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -190,6 +168,101 @@ function ActiveProjectsPageContent() {
   const [selectedProjectForHistory, setSelectedProjectForHistory] = useState<Project | null>(null)
   const [projectStatusHistory, setProjectStatusHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [allStatusHistory, setAllStatusHistory] = useState<any[]>([])
+
+  const fetchAllHistory = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const projectIds = projects.map(p => p.id);
+      if (projectIds.length > 0) {
+        const { data: historyData, error } = await supabase
+          .from("project_status_history")
+          .select("*")
+          .in("project_id", projectIds)
+          .order("changed_at", { ascending: false});
+
+        if (!error && historyData) {
+          const historyWithProjects = historyData.map(item => ({
+            ...item,
+            project: projects.find(p => p.id === item.project_id)
+          }));
+          setAllStatusHistory(historyWithProjects);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching history:", error);
+    }
+  };
+
+  // Фильтрация истории
+  const filteredHistory = useMemo(() => {
+    let filtered = selectedProjectIdForHistory
+      ? allStatusHistory.filter(item => item.project_id === selectedProjectIdForHistory)
+      : allStatusHistory;
+
+    if (historyFilter === 'all') return filtered;
+
+    return filtered.filter(item => {
+      if (historyFilter === 'completed') return item.status === 'completed';
+      if (historyFilter === 'in_progress') return ['in_progress', 'waiting_approval', 'waiting_receipt'].includes(item.status);
+      if (historyFilter === 'waiting') return ['waiting_approval', 'waiting_receipt'].includes(item.status);
+      return true;
+    });
+  }, [allStatusHistory, selectedProjectIdForHistory, historyFilter]);
+
+  // Функции для стилизации статусов
+  const getStatusColor = (status: ProjectStatus) => {
+    switch (status) {
+      case "completed":
+        return "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700"
+      case "in_progress":
+        return "bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-900/20 dark:to-sky-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700"
+      case "waiting_approval":
+        return "bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700"
+      case "receipt_rejected":
+        return "bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700"
+      case "waiting_receipt":
+        return "bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700"
+      default:
+        return "bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700"
+    }
+  };
+
+  const getStatusIcon = (status: ProjectStatus) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircle size={18} className="text-green-600" />
+      case "receipt_rejected":
+        return <XCircle size={18} className="text-red-600" />
+      case "waiting_approval":
+        return <Clock size={18} className="text-yellow-600" />
+      case "waiting_receipt":
+        return <Timer size={18} className="text-purple-600" />
+      case "in_progress":
+        return <Zap size={18} className="text-blue-600" />
+      default:
+        return <FileText size={18} className="text-gray-600" />
+    }
+  };
+
+  const getTimelineColor = (status: ProjectStatus) => {
+    switch (status) {
+      case "completed":
+        return "border-green-400 dark:border-green-500 bg-green-100 dark:bg-green-900/30"
+      case "receipt_rejected":
+        return "border-red-400 dark:border-red-500 bg-red-100 dark:bg-red-900/30"
+      case "waiting_approval":
+        return "border-yellow-400 dark:border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30"
+      case "waiting_receipt":
+        return "border-purple-400 dark:border-purple-500 bg-purple-100 dark:bg-purple-900/30"
+      case "in_progress":
+        return "border-blue-400 dark:border-blue-500 bg-blue-100 dark:bg-blue-900/30"
+      default:
+        return "border-gray-400 dark:border-gray-500 bg-gray-100 dark:bg-gray-800"
+    }
+  };
 
   // Функция для проверки "просроченных" проектов (старше 7 дней без изменений)
   const isOverdue = (project: Project): boolean => {
@@ -525,36 +598,54 @@ function ActiveProjectsPageContent() {
     <div className="container mx-auto py-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <h1 className="text-3xl font-bold">Ваши сделки</h1>
-        <Button onClick={() => router.push("/dashboard/create-project")}>
-          Создать проект
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant={showHistory ? "outline" : "default"}
+            onClick={() => setShowHistory(false)}
+          >
+            <LayoutGrid size={16} className="mr-2" />
+            Проекты
+          </Button>
+          <Button
+            variant={showHistory ? "default" : "outline"}
+            onClick={() => setShowHistory(true)}
+          >
+            <History size={16} className="mr-2" />
+            История
+          </Button>
+          <Button onClick={() => router.push("/dashboard/create-project")}>
+            Создать проект
+          </Button>
+        </div>
       </div>
 
-      {/* Быстрые фильтры */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {quickFilters.map((filter) => {
-          const Icon = filter.icon;
-          const isActive = quickFilter === filter.id;
-          return (
-            <Button
-              key={filter.id}
-              variant={isActive ? "default" : "outline"}
-              size="sm"
-              onClick={() => setQuickFilter(isActive ? null : filter.id)}
-              className={cn(
-                "flex items-center gap-2",
-                !isActive && filter.color
-              )}
-            >
-              <Icon size={16} />
-              {filter.label}
-            </Button>
-          );
-        })}
-      </div>
+      {!showHistory && (
+        <>
+          {/* Быстрые фильтры */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {quickFilters.map((filter) => {
+              const Icon = filter.icon;
+              const isActive = quickFilter === filter.id;
+              return (
+                <Button
+                  key={filter.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setQuickFilter(isActive ? null : filter.id)}
+                  className={cn(
+                    "flex items-center gap-2",
+                    !isActive && filter.color
+                  )}
+                >
+                  <Icon size={16} />
+                  {filter.label}
+                </Button>
+              );
+            })}
+          </div>
 
-      {/* Основные фильтры и управление */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+          {/* Основные фильтры и управление */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
           <Input
@@ -603,11 +694,11 @@ function ActiveProjectsPageContent() {
           >
             <List size={16} />
           </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Отображение проектов */}
-      {sortedProjects.length === 0 ? (
+        {/* Отображение проектов */}
+        {sortedProjects.length === 0 ? (
         <Card className="text-center p-8">
           <CardContent>
             <p className="text-gray-500 mt-4">Проекты не найдены</p>
@@ -648,6 +739,236 @@ function ActiveProjectsPageContent() {
           )}
           </div>
         )}
+        </>
+      )}
+
+      {/* История проектов */}
+      {showHistory && (
+        <Tabs value={historyTab} onValueChange={(v) => setHistoryTab(v as 'user_history' | 'project_history')} className="w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <TabsList className="grid w-full sm:w-auto grid-cols-2">
+              <TabsTrigger value="user_history">
+                <Activity size={16} className="mr-2" />
+                История пользователя
+              </TabsTrigger>
+              <TabsTrigger value="project_history">
+                <FileText size={16} className="mr-2" />
+                По проектам
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Компактные фильтры */}
+            <div className="flex gap-2">
+              {(['all', 'completed', 'in_progress', 'waiting'] as const).map((filterType) => (
+                <Button
+                  key={filterType}
+                  variant={historyFilter === filterType ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setHistoryFilter(filterType)}
+                >
+                  {filterType === 'all' && 'Все'}
+                  {filterType === 'completed' && 'Завершены'}
+                  {filterType === 'in_progress' && 'В работе'}
+                  {filterType === 'waiting' && 'Ожидание'}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <TabsContent value="user_history" className="space-y-6">
+            {filteredHistory.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <History size={48} className="mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-500 text-lg">История пуста</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Начните создавать проекты, чтобы увидеть историю
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="relative">
+                    {/* Timeline линия */}
+                    <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-purple-200 to-blue-200 dark:from-blue-600 dark:via-purple-600 dark:to-blue-600" />
+
+                    <div className="space-y-6">
+                      {filteredHistory.map((item: any, index: number) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="relative flex items-start gap-6 group"
+                        >
+                          {/* Timeline точка */}
+                          <div className={cn(
+                            "relative z-10 flex-shrink-0 w-12 h-12 rounded-full border-4 flex items-center justify-center transition-all duration-300 group-hover:scale-110",
+                            getTimelineColor(item.status)
+                          )}>
+                            {getStatusIcon(item.status)}
+                          </div>
+
+                          {/* Карточка события */}
+                          <div className="flex-1 min-w-0">
+                            <Card className="transition-all duration-300 hover:shadow-md border-l-4 border-l-blue-500">
+                              <CardContent className="p-6">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-1">
+                                      {item.project?.name || "Неизвестный проект"}
+                                    </h4>
+                                    {item.project?.company && (
+                                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mb-2">
+                                        <Building2 size={16} />
+                                        <span className="font-medium text-gray-900 dark:text-gray-100">{item.project.company}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Badge variant="outline" className={cn("text-sm font-medium", getStatusColor(item.status))}>
+                                    {STATUS_LABELS[item.status as ProjectStatus]}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar size={14} />
+                                    {new Date(item.changed_at).toLocaleString('ru-RU')}
+                                  </div>
+                                  {item.changed_by && (
+                                    <div className="flex items-center gap-1">
+                                      <User size={14} />
+                                      {item.changed_by}
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-1">
+                                    <Star size={14} />
+                                    Шаг {item.step}/7
+                                  </div>
+                                </div>
+
+                                {item.comment && (
+                                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-3 rounded-lg">
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 italic">"{item.comment}"</p>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="project_history" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Список проектов */}
+              <Card className="lg:col-span-1">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <FileText size={20} className="text-green-600" />
+                    Проекты
+                  </h3>
+                  <div className="space-y-2">
+                    <Button
+                      variant={selectedProjectIdForHistory === null ? "default" : "outline"}
+                      className="w-full justify-start"
+                      size="sm"
+                      onClick={() => setSelectedProjectIdForHistory(null)}
+                    >
+                      Все проекты
+                    </Button>
+
+                    {projects.map((project) => (
+                      <Button
+                        key={project.id}
+                        variant={selectedProjectIdForHistory === project.id ? "default" : "outline"}
+                        className="w-full justify-start text-left"
+                        size="sm"
+                        onClick={() => setSelectedProjectIdForHistory(project.id)}
+                      >
+                        <div className="flex flex-col items-start overflow-hidden">
+                          <span className="font-medium text-sm truncate w-full">{project.name}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate w-full">{project.company}</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* История выбранного проекта */}
+              <Card className="lg:col-span-2">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <History size={20} className="text-purple-600" />
+                    {selectedProjectIdForHistory
+                      ? `История "${projects.find(p => p.id === selectedProjectIdForHistory)?.name}"`
+                      : "История всех проектов"
+                    }
+                  </h3>
+
+                  {filteredHistory.length === 0 ? (
+                    <div className="text-center py-12">
+                      <History size={40} className="mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-500">История пуста</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {filteredHistory.map((item: any) => (
+                        <Card key={item.id} className="border-l-4 border-l-purple-500">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-semibold">Шаг {item.step} из 7</h4>
+                                {item.previous_status && (
+                                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    <ArrowRight size={14} />
+                                    <span>
+                                      {STATUS_LABELS[item.previous_status as ProjectStatus]} → {STATUS_LABELS[item.status as ProjectStatus]}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <Badge variant="outline" className={cn("text-sm", getStatusColor(item.status))}>
+                                {STATUS_LABELS[item.status as ProjectStatus]}
+                              </Badge>
+                            </div>
+
+                            <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                              <div className="flex items-center gap-1">
+                                <Calendar size={14} />
+                                {new Date(item.changed_at).toLocaleString('ru-RU')}
+                              </div>
+                              {item.changed_by && (
+                                <div className="flex items-center gap-1">
+                                  <User size={14} />
+                                  {item.changed_by}
+                                </div>
+                              )}
+                            </div>
+
+                            {item.comment && (
+                              <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-3 rounded-lg">
+                                <p className="text-sm text-gray-700 dark:text-gray-300 italic">"{item.comment}"</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
 
       {/* Диалог подтверждения удаления */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
