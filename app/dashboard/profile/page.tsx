@@ -360,15 +360,17 @@ export default function ProfilePage() {
 
       const analysisResult = await analysisResponse.json()
 
-      console.log('📄 OCR API Response:', analysisResult)
+      console.log('📄 OCR API Response:', JSON.stringify(analysisResult, null, 2))
+      console.log('✅ Success:', analysisResult.success)
+      console.log('📊 Has Data:', !!analysisResult.data)
 
       // 4. Автозаполняем форму клиента
-      if (analysisResult.success && analysisResult.data) {
-        const ocrData = analysisResult.data
+      if (analysisResult.success && analysisResult.suggestions) {
+        const ocrData = analysisResult.suggestions
 
         setClientForm({
-          name: ocrData.name || '',
-          legal_name: ocrData.legalName || '',
+          name: ocrData.companyName || '',
+          legal_name: ocrData.companyName || '',
           inn: ocrData.inn || '',
           kpp: ocrData.kpp || '',
           ogrn: ocrData.ogrn || '',
@@ -378,8 +380,8 @@ export default function ProfilePage() {
           website: ocrData.website || '',
           bank_name: ocrData.bankName || '',
           bank_account: ocrData.bankAccount || '',
-          corr_account: ocrData.correspondentAccount || '',
-          bik: ocrData.bik || '',
+          corr_account: ocrData.bankCorrAccount || '',
+          bik: ocrData.bankBik || '',
           logo_url: ''
         })
 
