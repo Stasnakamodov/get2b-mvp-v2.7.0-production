@@ -465,25 +465,28 @@ function ActiveProjectsPageContent() {
             </div>
           </div>
           <div className="flex gap-2 ml-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => handleContinueProject(project)}
-              className="whitespace-nowrap"
-            >
-              <ArrowRight size={16} className="mr-1" />
-              Продолжить
-            </Button>
-            <Button 
-              variant="outline" 
+            {project.status !== "completed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleContinueProject(project)}
+                className="whitespace-nowrap"
+              >
+                <ArrowRight size={16} className="mr-1" />
+                Продолжить
+              </Button>
+            )}
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => handleShowProjectHistory(project)}
               className="whitespace-nowrap"
             >
               <History size={16} className="mr-1" />
               Подробнее
-            </Button>            <Button 
-              variant="outline" 
+            </Button>
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => handleDeleteProject(project)}
             >
@@ -564,23 +567,26 @@ function ActiveProjectsPageContent() {
                 {new Date(project.created_at).toLocaleDateString('ru-RU')}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleContinueProject(project)}
-                >
-                  <ArrowRight size={14} className="mr-1" />
-                  Продолжить
-                </Button>
-                <Button 
-                  variant="outline" 
+                {project.status !== "completed" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleContinueProject(project)}
+                  >
+                    <ArrowRight size={14} className="mr-1" />
+                    Продолжить
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => handleViewProjectDetails(project)}
                 >
                   <Eye size={14} className="mr-1" />
                   Подробнее
-                </Button>                <Button 
-                  variant="outline" 
+                </Button>
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => handleDeleteProject(project)}
                 >
@@ -1191,23 +1197,25 @@ function ActiveProjectsPageContent() {
           )}
           
           <DialogFooter className="gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setHistoryDialogOpen(false)}
             >
               Закрыть
             </Button>
-            <Button 
-              onClick={() => {
-                if (selectedProjectForHistory) {
-                  handleContinueProject(selectedProjectForHistory)
-                  setHistoryDialogOpen(false)
-                }
-              }}
-            >
-              <ArrowRight size={16} className="mr-1" />
-              Продолжить проект
-            </Button>
+            {selectedProjectForHistory?.status !== "completed" && (
+              <Button
+                onClick={() => {
+                  if (selectedProjectForHistory) {
+                    handleContinueProject(selectedProjectForHistory)
+                    setHistoryDialogOpen(false)
+                  }
+                }}
+              >
+                <ArrowRight size={16} className="mr-1" />
+                Продолжить проект
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
