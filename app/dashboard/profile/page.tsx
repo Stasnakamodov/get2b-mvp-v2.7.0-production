@@ -334,6 +334,9 @@ export default function ProfilePage() {
 
       const fileUrl = urlData.publicUrl
 
+      console.log('🔗 File URL:', fileUrl)
+      console.log('📝 File Type:', file.type)
+
       // 3. Отправляем на анализ в API
       const analysisResponse = await fetch('/api/document-analysis', {
         method: 'POST',
@@ -347,8 +350,12 @@ export default function ProfilePage() {
         })
       })
 
+      console.log('📡 Analysis Response Status:', analysisResponse.status)
+
       if (!analysisResponse.ok) {
-        throw new Error('Ошибка анализа документа')
+        const errorText = await analysisResponse.text()
+        console.error('❌ Analysis Error:', errorText)
+        throw new Error(`Ошибка анализа документа: ${analysisResponse.status}`)
       }
 
       const analysisResult = await analysisResponse.json()
