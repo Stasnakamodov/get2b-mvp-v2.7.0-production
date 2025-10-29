@@ -464,30 +464,32 @@ export default function ProfilePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ваши карточки</h1>
         <div className="flex gap-3">
-          <button
-            onClick={() => {
-              setEditingClient(null)
-              setClientForm({
-                name: '',
-                legal_name: '',
-                inn: '',
-                kpp: '',
-                ogrn: '',
-                legal_address: '',
-                email: '',
-                phone: '',
-                website: '',
-                bank_name: '',
-                bank_account: '',
-                corr_account: '',
-                bik: '',
-                logo_url: ''
-              })
-              setShowClientDropdown(!showClientDropdown)
-            }}
-            className="relative border-2 border-border text-foreground px-6 py-2 hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-wider text-sm font-medium flex items-center gap-2"
-          >
-            <Users className="h-4 w-4" /> Добавить клиента
+          <div className="relative">
+            <button
+              onClick={() => {
+                setEditingClient(null)
+                setClientForm({
+                  name: '',
+                  legal_name: '',
+                  inn: '',
+                  kpp: '',
+                  ogrn: '',
+                  legal_address: '',
+                  email: '',
+                  phone: '',
+                  website: '',
+                  bank_name: '',
+                  bank_account: '',
+                  corr_account: '',
+                  bik: '',
+                  logo_url: ''
+                })
+                setShowClientDropdown(!showClientDropdown)
+              }}
+              className="border-2 border-border text-foreground px-6 py-2 hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-wider text-sm font-medium flex items-center gap-2"
+            >
+              <Users className="h-4 w-4" /> Добавить клиента
+            </button>
 
             {/* Dropdown меню */}
             {showClientDropdown && (
@@ -549,7 +551,7 @@ export default function ProfilePage() {
                 </button>
               </motion.div>
             )}
-          </button>
+          </div>
           <button 
             onClick={() => {
               setEditingSupplier(null)
