@@ -353,6 +353,8 @@ export default function ProfilePage() {
 
       const analysisResult = await analysisResponse.json()
 
+      console.log('📄 OCR API Response:', analysisResult)
+
       // 4. Автозаполняем форму клиента
       if (analysisResult.success && analysisResult.data) {
         const ocrData = analysisResult.data
