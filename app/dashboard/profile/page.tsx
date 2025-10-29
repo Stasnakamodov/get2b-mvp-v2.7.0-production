@@ -1052,7 +1052,7 @@ export default function ProfilePage() {
                   type="submit"
                   className="bg-blue-600 text-white px-6 py-2 hover:bg-blue-700 transition-all text-sm font-medium uppercase tracking-wider"
                     >
-                  {editingClient ? 'Обновить' : isOcrData ? 'Предпросмотр данных' : 'Сохранить'}
+                  {editingClient ? 'Обновить' : isOcrData ? 'Создать профиль' : 'Сохранить'}
                     </button>
               </div>
             </form>
