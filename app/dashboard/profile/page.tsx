@@ -320,7 +320,7 @@ export default function ProfilePage() {
       const fileName = `ocr_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('company-logos')
+        .from('project-files')
         .upload(fileName, file)
 
       if (uploadError) {
@@ -329,7 +329,7 @@ export default function ProfilePage() {
 
       // 2. Получаем публичную ссылку
       const { data: urlData } = supabase.storage
-        .from('company-logos')
+        .from('project-files')
         .getPublicUrl(fileName)
 
       const fileUrl = urlData.publicUrl
