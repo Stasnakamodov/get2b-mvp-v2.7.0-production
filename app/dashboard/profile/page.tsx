@@ -265,7 +265,7 @@ export default function ProfilePage() {
 
       // Попытка загрузки в Supabase Storage
       const { data, error } = await supabase.storage
-        .from('client-logos')
+        .from('company-logos')
         .upload(fileName, file)
 
       if (error) {
@@ -277,7 +277,7 @@ export default function ProfilePage() {
       } else {
         // Получаем публичный URL
         const { data: urlData } = supabase.storage
-          .from('client-logos')
+          .from('company-logos')
           .getPublicUrl(fileName)
         
         setClientForm(prev => ({ ...prev, logo_url: urlData.publicUrl }))
@@ -320,7 +320,7 @@ export default function ProfilePage() {
       const fileName = `ocr_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('client-logos')
+        .from('company-logos')
         .upload(fileName, file)
 
       if (uploadError) {
@@ -329,7 +329,7 @@ export default function ProfilePage() {
 
       // 2. Получаем публичную ссылку
       const { data: urlData } = supabase.storage
-        .from('client-logos')
+        .from('company-logos')
         .getPublicUrl(fileName)
 
       const fileUrl = urlData.publicUrl
