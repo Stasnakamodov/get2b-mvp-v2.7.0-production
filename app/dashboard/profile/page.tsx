@@ -64,6 +64,12 @@ export default function ProfilePage() {
   // Состояния для загрузки логотипа
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [logoInputRef, setLogoInputRef] = useState<HTMLInputElement | null>(null)
+
+  // Состояния для OCR
+  const [showOcrUploader, setShowOcrUploader] = useState(false)
+  const [ocrAnalyzing, setOcrAnalyzing] = useState(false)
+  const [ocrError, setOcrError] = useState<string | null>(null)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   
   // Состояния для подтверждения удаления
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -279,6 +285,104 @@ export default function ProfilePage() {
   const openLogoFileDialog = () => {
     if (logoInputRef) {
       logoInputRef.click()
+    }
+  }
+
+  // Функция обработки OCR загрузки файла
+  const handleOcrFileUpload = async (file: File) => {
+    if (!userId) return
+
+    setOcrAnalyzing(true)
+    setOcrError(null)
+    setUploadedFile(file)
+
+    try {
+      // 1. Загружаем файл в Supabase Storage
+      const fileExt = file.name.split('.').pop()
+      const fileName = `ocr_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('client-logos')
+        .upload(fileName, file)
+
+      if (uploadError) {
+        throw new Error(`Ошибка загрузки файла: ${uploadError.message}`)
+      }
+
+      // 2. Получаем публичную ссылку
+      const { data: urlData } = supabase.storage
+        .from('client-logos')
+        .getPublicUrl(fileName)
+
+      const fileUrl = urlData.publicUrl
+
+      // 3. Отправляем на анализ в API
+      const analysisResponse = await fetch('/api/document-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileUrl: fileUrl,
+          fileType: file.type,
+          documentType: 'company_card'
+        })
+      })
+
+      if (!analysisResponse.ok) {
+        throw new Error('Ошибка анализа документа')
+      }
+
+      const analysisResult = await analysisResponse.json()
+
+      // 4. Автозаполняем форму клиента
+      if (analysisResult.success && analysisResult.data) {
+        const ocrData = analysisResult.data
+
+        setClientForm({
+          name: ocrData.name || '',
+          legal_name: ocrData.legalName || '',
+          inn: ocrData.inn || '',
+          kpp: ocrData.kpp || '',
+          ogrn: ocrData.ogrn || '',
+          legal_address: ocrData.address || '',
+          email: ocrData.email || '',
+          phone: ocrData.phone || '',
+          website: ocrData.website || '',
+          bank_name: ocrData.bankName || '',
+          bank_account: ocrData.bankAccount || '',
+          corr_account: ocrData.correspondentAccount || '',
+          bik: ocrData.bik || '',
+          logo_url: ''
+        })
+
+        // Закрываем OCR загрузчик и открываем форму
+        setShowOcrUploader(false)
+        setShowClientEditor(true)
+      } else {
+        throw new Error(analysisResult.error || 'Не удалось извлечь данные из документа')
+      }
+    } catch (error: any) {
+      console.error('Ошибка OCR обработки:', error)
+      setOcrError(error.message || 'Произошла ошибка при обработке документа')
+    } finally {
+      setOcrAnalyzing(false)
+    }
+  }
+
+  // Обработчик drag & drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      await handleOcrFileUpload(files[0])
     }
   }
 
@@ -963,8 +1067,7 @@ export default function ProfilePage() {
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   setShowClientMethodSelector(false)
-                  // TODO: Открыть OCR загрузчик
-                  alert('OCR загрузка - будет реализовано')
+                  setShowOcrUploader(true)
                 }}
                 className="border-2 border-orange-500 bg-orange-50 dark:bg-orange-900/20 p-8 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all duration-300 group"
               >
@@ -985,6 +1088,107 @@ export default function ProfilePage() {
                 </div>
               </motion.button>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Модальное окно OCR загрузчика */}
+      {showOcrUploader && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="max-w-2xl w-full p-8 bg-card border-2 border-border"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-foreground uppercase tracking-wider">
+                Загрузка карточки компании
+              </h2>
+              <button
+                onClick={() => {
+                  setShowOcrUploader(false)
+                  setOcrError(null)
+                  setUploadedFile(null)
+                }}
+                className="border-2 border-border text-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-all text-lg font-bold"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Drag & Drop зона */}
+            <div
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              className="border-2 border-dashed border-orange-500 bg-orange-50 dark:bg-orange-900/10 p-12 text-center hover:bg-orange-100 dark:hover:bg-orange-900/20 transition-all duration-300 cursor-pointer"
+            >
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleOcrFileUpload(file)
+                }}
+                className="hidden"
+                id="ocr-file-input"
+              />
+
+              {ocrAnalyzing ? (
+                <div className="space-y-4">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 mx-auto"></div>
+                  <p className="text-lg font-semibold text-orange-700 dark:text-orange-400">
+                    Анализируем документ...
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Yandex Vision обрабатывает карточку компании
+                  </p>
+                </div>
+              ) : (
+                <label htmlFor="ocr-file-input" className="cursor-pointer space-y-4 block">
+                  <div className="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center mx-auto">
+                    <Eye className="h-10 w-10 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-orange-700 dark:text-orange-400">
+                    Перетащите файл сюда
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    или нажмите для выбора файла
+                  </p>
+                  <div className="text-sm text-gray-500 dark:text-gray-500 space-y-1">
+                    <p>Поддерживаемые форматы:</p>
+                    <p className="font-mono">PDF, JPG, PNG, XLSX, DOCX</p>
+                  </div>
+                </label>
+              )}
+            </div>
+
+            {/* Информация о поддерживаемых документах */}
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded">
+              <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                📄 Поддерживаемые документы:
+              </h4>
+              <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
+                <li>• Карточки компаний РФ</li>
+                <li>• Свидетельства о регистрации</li>
+                <li>• Договоры с реквизитами</li>
+                <li>• Банковские документы</li>
+              </ul>
+            </div>
+
+            {/* Упоминание Yandex Vision */}
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
+              <Shield className="h-4 w-4 text-orange-500" />
+              <span>Powered by Yandex Vision OCR</span>
+            </div>
+
+            {/* Ошибка */}
+            {ocrError && (
+              <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded">
+                <p className="text-red-700 dark:text-red-400 font-semibold">❌ Ошибка:</p>
+                <p className="text-red-600 dark:text-red-500 text-sm mt-1">{ocrError}</p>
+              </div>
+            )}
           </motion.div>
         </div>
       )}
