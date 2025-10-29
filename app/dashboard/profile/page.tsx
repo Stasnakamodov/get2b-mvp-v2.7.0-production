@@ -70,6 +70,7 @@ export default function ProfilePage() {
   const [ocrAnalyzing, setOcrAnalyzing] = useState(false)
   const [ocrError, setOcrError] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [isOcrData, setIsOcrData] = useState(false) // Флаг: данные получены через OCR
   
   // Состояния для подтверждения удаления
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -174,6 +175,7 @@ export default function ProfilePage() {
       
       setShowClientEditor(false)
       setEditingClient(null)
+      setIsOcrData(false) // Сбрасываем флаг OCR
       setClientForm({
         name: '',
         legal_name: '',
@@ -190,7 +192,7 @@ export default function ProfilePage() {
         bik: '',
         logo_url: ''
       })
-      
+
       loadProfiles()
     } catch (error) {
       console.error('Ошибка сохранения клиента:', error)
@@ -217,6 +219,7 @@ export default function ProfilePage() {
       bik: client.bik || '',
       logo_url: client.logo_url || ''
     })
+    setIsOcrData(false) // Редактирование существующего - НЕ OCR
     setShowClientEditor(true)
   }
 
@@ -373,6 +376,7 @@ export default function ProfilePage() {
 
         // Закрываем OCR загрузчик и открываем форму
         setShowOcrUploader(false)
+        setIsOcrData(true) // Помечаем, что данные из OCR
         setShowClientEditor(true)
       } else {
         throw new Error(analysisResult.error || 'Не удалось извлечь данные из документа')
@@ -504,6 +508,7 @@ export default function ProfilePage() {
                 <button
                   onClick={() => {
                     setShowClientDropdown(false)
+                    setIsOcrData(false) // Ручной ввод - НЕ OCR
                     setShowClientEditor(true)
                   }}
                   className="w-full p-4 border-b-2 border-border hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 text-left group"
@@ -1036,7 +1041,7 @@ export default function ProfilePage() {
                   type="submit"
                   className="bg-blue-600 text-white px-6 py-2 hover:bg-blue-700 transition-all text-sm font-medium uppercase tracking-wider"
                     >
-                  {editingClient ? 'Обновить' : 'Сохранить'}
+                  {editingClient ? 'Обновить' : isOcrData ? 'Предпросмотр данных' : 'Сохранить'}
                     </button>
               </div>
             </form>
