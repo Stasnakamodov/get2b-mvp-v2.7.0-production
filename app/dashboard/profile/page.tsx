@@ -37,7 +37,7 @@ export default function ProfilePage() {
   const [showAccreditationModal, setShowAccreditationModal] = useState(false)
   const [accreditingSupplier, setAccreditingSupplier] = useState<any>(null)
   const [showClientEditor, setShowClientEditor] = useState(false)
-  const [showClientMethodSelector, setShowClientMethodSelector] = useState(false)
+  const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [editingClient, setEditingClient] = useState<any>(null)
   const [editingSupplier, setEditingSupplier] = useState<any>(null)
   const [showKonturEniCheck, setShowKonturEniCheck] = useState(false)
@@ -95,6 +95,21 @@ export default function ProfilePage() {
       loadProfiles()
     }
   }, [userId])
+
+  // Закрытие dropdown при клике вне его
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showClientDropdown) {
+        const target = event.target as HTMLElement
+        if (!target.closest('button')) {
+          setShowClientDropdown(false)
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showClientDropdown])
 
   const loadProfiles = async () => {
     if (!userId) return
@@ -468,11 +483,72 @@ export default function ProfilePage() {
                 bik: '',
                 logo_url: ''
               })
-              setShowClientMethodSelector(true)
+              setShowClientDropdown(!showClientDropdown)
             }}
-            className="border-2 border-border text-foreground px-6 py-2 hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-wider text-sm font-medium flex items-center gap-2"
+            className="relative border-2 border-border text-foreground px-6 py-2 hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-wider text-sm font-medium flex items-center gap-2"
           >
             <Users className="h-4 w-4" /> Добавить клиента
+
+            {/* Dropdown меню */}
+            {showClientDropdown && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full left-0 mt-2 w-80 bg-card border-2 border-border shadow-lg z-50"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Вариант 1: Заполнить вручную */}
+                <button
+                  onClick={() => {
+                    setShowClientDropdown(false)
+                    setShowClientEditor(true)
+                  }}
+                  className="w-full p-4 border-b-2 border-border hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 text-left group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                      <Plus className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider text-sm mb-1">
+                        Заполнить вручную
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Ввести все данные компании самостоятельно через форму
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Вариант 2: Загрузить карточку (OCR) */}
+                <button
+                  onClick={() => {
+                    setShowClientDropdown(false)
+                    setShowOcrUploader(true)
+                  }}
+                  className="w-full p-4 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200 text-left group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                      <Eye className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider text-sm mb-1">
+                        Загрузить карточку
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-1">
+                        Автоматически извлечь данные из карточки компании с помощью Yandex Vision OCR
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+                        <Shield className="h-3 w-3" />
+                        <span>Powered by Yandex Vision</span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </motion.div>
+            )}
           </button>
           <button 
             onClick={() => {
@@ -1016,81 +1092,6 @@ export default function ProfilePage() {
         />
       )}
 
-      {/* Выдвижная плашка выбора метода создания клиента */}
-      {showClientMethodSelector && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="max-w-2xl w-full p-8 bg-card border-2 border-border"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-foreground uppercase tracking-wider">
-                Выберите способ создания профиля клиента
-              </h2>
-              <button
-                onClick={() => setShowClientMethodSelector(false)}
-                className="border-2 border-border text-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-all text-lg font-bold"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Вариант 1: Заполнить вручную */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setShowClientMethodSelector(false)
-                  setShowClientEditor(true)
-                }}
-                className="border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-8 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-300 group"
-              >
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Plus className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
-                    Заполнить вручную
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Ввести все данные компании самостоятельно через форму
-                  </p>
-                </div>
-              </motion.button>
-
-              {/* Вариант 2: Загрузить карточку (OCR) */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setShowClientMethodSelector(false)
-                  setShowOcrUploader(true)
-                }}
-                className="border-2 border-orange-500 bg-orange-50 dark:bg-orange-900/20 p-8 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all duration-300 group"
-              >
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Eye className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-orange-700 dark:text-orange-400 uppercase tracking-wider">
-                    Загрузить карточку
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Автоматически извлечь данные из карточки компании с помощью Yandex Vision OCR
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-orange-600 dark:text-orange-500">
-                    <Shield className="h-4 w-4" />
-                    <span>Powered by Yandex Vision</span>
-                  </div>
-                </div>
-              </motion.button>
-            </div>
-          </motion.div>
-        </div>
-      )}
 
       {/* Модальное окно OCR загрузчика */}
       {showOcrUploader && (
