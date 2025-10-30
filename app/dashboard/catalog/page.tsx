@@ -466,6 +466,50 @@ export default function CatalogPage() {
   const [cart, setCart] = useState<any[]>([])
   const [showCart, setShowCart] = useState(false)
   const [activeSupplier, setActiveSupplier] = useState<string | null>(null) // Активный поставщик в корзине
+  const [cartLoaded, setCartLoaded] = useState(false) // Флаг загрузки корзины из localStorage
+
+  // Загружаем корзину из localStorage при монтировании
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('catalog_cart')
+      const savedSupplier = localStorage.getItem('catalog_active_supplier')
+
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart)
+          setCart(parsedCart)
+          console.log('✅ Корзина загружена из localStorage:', parsedCart.length, 'товаров')
+        } catch (error) {
+          console.error('❌ Ошибка загрузки корзины из localStorage:', error)
+        }
+      }
+
+      if (savedSupplier) {
+        setActiveSupplier(savedSupplier)
+      }
+
+      setCartLoaded(true)
+    }
+  }, [])
+
+  // Сохраняем корзину в localStorage при каждом изменении
+  useEffect(() => {
+    if (cartLoaded && typeof window !== 'undefined') {
+      localStorage.setItem('catalog_cart', JSON.stringify(cart))
+      console.log('💾 Корзина сохранена в localStorage:', cart.length, 'товаров')
+    }
+  }, [cart, cartLoaded])
+
+  // Сохраняем активного поставщика в localStorage
+  useEffect(() => {
+    if (cartLoaded && typeof window !== 'undefined') {
+      if (activeSupplier) {
+        localStorage.setItem('catalog_active_supplier', activeSupplier)
+      } else {
+        localStorage.removeItem('catalog_active_supplier')
+      }
+    }
+  }, [activeSupplier, cartLoaded])
 
   // Инициализация выбора шагов для эхо карточки
   const initializeStepsSelection = (supplierKey: string) => {
