@@ -18,6 +18,7 @@ import {
   Trash2,
   XCircle,
   AlertCircle,
+  ShoppingCart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -165,6 +166,7 @@ function DashboardPageContent() {
   const router = useRouter()
   const FINAL_STEP = 7; // Количество шагов в проекте
   const [templateRole, setTemplateRole] = useState<'client' | 'supplier'>('client');
+  const [cartItemsCount, setCartItemsCount] = useState(0)
 
   // Добавляем состояние для диагностики
   const [debugInfo, setDebugInfo] = useState<{
@@ -180,6 +182,40 @@ function DashboardPageContent() {
     projectsError: null,
     templatesLoaded: false
   });
+
+  // Загружаем количество товаров в корзине из localStorage
+  useEffect(() => {
+    const loadCartCount = () => {
+      if (typeof window !== 'undefined') {
+        const savedCart = localStorage.getItem('catalog_cart')
+        if (savedCart) {
+          try {
+            const cart = JSON.parse(savedCart)
+            const totalItems = cart.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
+            setCartItemsCount(totalItems)
+          } catch (error) {
+            console.error('❌ Ошибка загрузки корзины:', error)
+            setCartItemsCount(0)
+          }
+        } else {
+          setCartItemsCount(0)
+        }
+      }
+    }
+
+    // Загружаем при монтировании
+    loadCartCount()
+
+    // Обновляем при изменении localStorage (например, из другой вкладки)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'catalog_cart') {
+        loadCartCount()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
 
   useEffect(() => {
     // Загружаем проекты из Supabase
@@ -374,12 +410,32 @@ function DashboardPageContent() {
         className="flex justify-between items-center mb-8"
       >
         <h1 className="text-3xl font-bold text-foreground">Ваши сделки</h1>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button onClick={handleCreateProjectClick} className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-300">
-              <Plus size={16} />
-              Новый проект
-            </Button>
-        </motion.div>
+        <div className="flex items-center gap-3">
+          {/* Кнопка корзины */}
+          {cartItemsCount > 0 && (
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                onClick={() => router.push('/dashboard/catalog')}
+                variant="outline"
+                className="relative flex items-center gap-2 border-2 border-green-500 text-green-600 hover:bg-green-50 shadow-md hover:shadow-lg transition-all duration-300"
+              >
+                <ShoppingCart size={16} />
+                Корзина
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-md">
+                  {cartItemsCount}
+                </span>
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Кнопка нового проекта */}
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button onClick={handleCreateProjectClick} className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-300">
+                <Plus size={16} />
+                Новый проект
+              </Button>
+          </motion.div>
+        </div>
       </motion.div>
 
       {/* Секция активных проектов */}
