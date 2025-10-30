@@ -9,6 +9,7 @@ import { CATEGORY_CERTIFICATIONS } from '@/components/catalog-categories-and-cer
 import { supabase } from '@/lib/supabaseClient'
 import { AddSupplierModal } from './components/AddSupplierModal'
 import InlineCategoryList from '@/components/catalog/InlineCategoryList'
+import SubcategoryList from '@/components/catalog/SubcategoryList'
 import ProductGridByCategory from '@/components/catalog/ProductGridByCategory'
 import type { CatalogCategory } from '@/lib/types'
 
@@ -458,6 +459,7 @@ export default function CatalogPage() {
 
   // 🎯 СОСТОЯНИЕ КАТЕГОРИЙ И КОРЗИНЫ
   const [selectedCategoryData, setSelectedCategoryData] = useState<any>(null)
+  const [selectedSubcategoryData, setSelectedSubcategoryData] = useState<any>(null)
   // Убрали showCategorySelector - больше не нужно модальное окно
   
   // 🛒 Состояние корзины
@@ -1642,7 +1644,20 @@ export default function CatalogPage() {
   // 🎯 ФУНКЦИИ ДЛЯ РЕЖИМА КАТЕГОРИЙ
   const handleCategorySelect = (category: CatalogCategory) => {
     setSelectedCategoryData(category)
-    // Убрали закрытие модального окна - теперь просто выбираем категорию
+    setSelectedSubcategoryData(null) // Сбрасываем подкатегорию при выборе новой категории
+  }
+
+  const handleSubcategorySelect = (subcategory: any) => {
+    setSelectedSubcategoryData(subcategory)
+  }
+
+  const handleBackToCategories = () => {
+    setSelectedCategoryData(null)
+    setSelectedSubcategoryData(null)
+  }
+
+  const handleBackToSubcategories = () => {
+    setSelectedSubcategoryData(null)
   }
 
   // 🛒 ФУНКЦИИ КОРЗИНЫ
@@ -2007,7 +2022,7 @@ export default function CatalogPage() {
           // 🎯 Режим категорий
           <div className="space-y-6">
             {!selectedCategoryData ? (
-              // Показываем категории прямо на странице
+              // УРОВЕНЬ 1: Показываем категории
               <div>
                 <div className="mb-6">
                   <div>
@@ -2023,41 +2038,61 @@ export default function CatalogPage() {
                       <p className="text-gray-600">Загружается авторизация...</p>
                     </div>
                   ) : (
-                    <InlineCategoryList 
+                    <InlineCategoryList
                       onCategorySelect={handleCategorySelect}
                       selectedRoom={selectedRoom}
                     />
                   )}
                 </div>
               </div>
+            ) : !selectedSubcategoryData ? (
+              // УРОВЕНЬ 2: Показываем подкатегории выбранной категории
+              <SubcategoryList
+                category={selectedCategoryData}
+                onSubcategorySelect={handleSubcategorySelect}
+                onBack={handleBackToCategories}
+                selectedRoom={selectedRoom}
+              />
             ) : (
-              // Показываем товары выбранной категории
+              // УРОВЕНЬ 3: Показываем товары выбранной подкатегории
               <div>
                 {/* Хлебные крошки и заголовок */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => setSelectedCategoryData(null)}
+                      onClick={handleBackToSubcategories}
                       className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
                     >
                       <ArrowLeft className="w-4 h-4" />
-                      Назад к категориям
+                      Назад к подкатегориям
                     </button>
                     <div className="w-px h-6 bg-gray-300"></div>
                     <h2 className="text-xl font-medium text-gray-800">
-                      {selectedCategoryData.icon} {selectedCategoryData.name}
+                      {selectedSubcategoryData.icon} {selectedSubcategoryData.name}
                     </h2>
                     <span className="text-sm text-gray-500">
-                      ({selectedCategoryData.products_count} товаров)
+                      ({selectedSubcategoryData.products_count || 0} товаров)
                     </span>
                   </div>
-                  
-                  {/* Кнопка создания проекта убрана - теперь в корзине */}
+
+                  {/* Хлебные крошки: Категория / Подкатегория */}
+                  <div className="text-sm text-gray-500">
+                    <span
+                      onClick={handleBackToCategories}
+                      className="cursor-pointer hover:text-gray-800 transition-colors"
+                    >
+                      {selectedCategoryData.name}
+                    </span>
+                    {' / '}
+                    <span className="font-medium text-gray-900">
+                      {selectedSubcategoryData.name}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Сетка товаров */}
                 <ProductGridByCategory
-                  selectedCategory={selectedCategoryData?.name || selectedCategoryData?.category || ''}
+                  selectedCategory={selectedSubcategoryData?.name || selectedSubcategoryData?.category || ''}
                   token={authToken}
                   onAddToCart={addToCart}
                   cart={cart}

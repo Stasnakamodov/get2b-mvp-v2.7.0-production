@@ -188,22 +188,31 @@ export default function InlineCategoryList({
             : "space-y-3"
           }>
             {filteredCategories.map((category) => {
-              // Декоративные подкатегории с эмодзи (как вы просили)
-              const getDecorativeSubcategories = (categoryName: string) => {
-                const subcategories: { [key: string]: string[] } = {
-                  'Автотовары': ['🔧 Запчасти', '🚗 Аксессуары', '🛢️ Масла'],
-                  'Дом и быт': ['🪑 Мебель', '🎨 Декор', '🏠 Бытовая техника'],
-                  'Здоровье и медицина': ['💊 Препараты', '🏥 Оборудование', '🩹 Расходники'],
-                  'Продукты питания': ['🥬 Свежие продукты', '🥫 Консервы', '🥤 Напитки'],
-                  'Промышленность': ['⚙️ Станки', '🔨 Инструменты', '🏭 Материалы'],
-                  'Строительство': ['🧱 Стройматериалы', '🔨 Инструменты', '🔩 Крепеж'],
-                  'Текстиль и одежда': ['🧵 Ткани', '👕 Одежда', '👟 Обувь'],
-                  'Электроника': ['💻 Компьютеры', '📱 Телефоны', '🔌 Компоненты']
+              // Получаем РЕАЛЬНЫЕ подкатегории из БД (level = 1, parent_id = category.id)
+              let realSubcategories = categories.filter((cat: any) =>
+                cat.parent_id === category.id && cat.level === 1
+              )
+
+              // ВРЕМЕННЫЙ WORKAROUND: Если нет подкатегорий (PostgREST cache не обновлён)
+              if (realSubcategories.length === 0) {
+                const tempSubcats: { [key: string]: string[] } = {
+                  'Электроника': ['📱 Смартфоны', '💻 Компьютеры', '🏠 Бытовая техника'],
+                  'Автотовары': ['🧴 Автохимия', '🔧 Автозапчасти', '🛞 Шины'],
+                  'Промышленность': ['⚙️ Станки', '🔨 Инструменты', '⚡ Электротехника'],
+                  'Здоровье и медицина': ['🏥 Медизделия', '💊 Фармацевтика', '🩺 Оборудование'],
+                  'Текстиль и одежда': ['🧵 Ткани', '👕 Одежда', '🦺 Спецодежда'],
+                  'Строительство': ['🧱 Стройматериалы', '🔨 Инструменты', '🚿 Сантехника'],
+                  'Продукты питания': ['🥤 Напитки', '🌾 Бакалея', '🥫 Консервы'],
+                  'Дом и быт': ['🍽️ Посуда', '🪑 Мебель', '🎨 Декор']
                 }
-                return subcategories[categoryName] || ['📦 Товары', '🛠️ Услуги', '📋 Материалы']
+                const tempNames = tempSubcats[category.name] || []
+                realSubcategories = tempNames.map((name, idx) => ({
+                  id: `temp-${category.name}-${idx}`,
+                  name: name.split(' ').slice(1).join(' '),
+                  icon: name.split(' ')[0]
+                }))
               }
 
-              const subcats = getDecorativeSubcategories(category.name)
               // Реальный счетчик товаров из базы данных
               const productCount = category.productCount || 0
               
@@ -257,14 +266,21 @@ export default function InlineCategoryList({
                           </div>
                         </div>
                         
-                        {/* Подкатегории с эмодзи */}
-                        <div className="space-y-1.5 ml-1">
-                          {subcats.map((subcat, idx) => (
-                            <div key={idx} className="flex items-center text-sm text-gray-600 hover:text-gray-800 transition-colors">
-                              <span className="mr-2">{subcat.split(' ')[0]}</span>
-                              <span className="text-gray-600">{subcat.split(' ').slice(1).join(' ')}</span>
-                            </div>
-                          ))}
+                        {/* РЕАЛЬНЫЕ подкатегории из БД */}
+                        <div className="space-y-1.5 ml-1 mt-2">
+                          {realSubcategories.length > 0 ? (
+                            realSubcategories.slice(0, 3).map((subcat: any) => (
+                              <div key={subcat.id} className="flex items-center text-sm text-gray-600 hover:text-gray-800 transition-colors">
+                                <span className="mr-2">{subcat.icon || '📦'}</span>
+                                <span className="text-gray-600">{subcat.name}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-gray-500">Нет подкатегорий</p>
+                          )}
+                          {realSubcategories.length > 3 && (
+                            <p className="text-xs text-gray-500 mt-1">+{realSubcategories.length - 3} ещё</p>
+                          )}
                         </div>
                       </div>
                     </>
@@ -277,11 +293,18 @@ export default function InlineCategoryList({
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 text-base">{category.name}</h4>
                           <div className="flex items-center space-x-4 mt-1">
-                            {subcats.map((subcat, idx) => (
-                              <span key={idx} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
-                                {subcat}
-                              </span>
-                            ))}
+                            {realSubcategories.length > 0 ? (
+                              realSubcategories.slice(0, 3).map((subcat: any) => (
+                                <span key={subcat.id} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                                  {subcat.icon || '📦'} {subcat.name}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-500">Нет подкатегорий</span>
+                            )}
+                            {realSubcategories.length > 3 && (
+                              <span className="text-xs text-gray-500">+{realSubcategories.length - 3}</span>
+                            )}
                           </div>
                         </div>
                       </div>
