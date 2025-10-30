@@ -1868,7 +1868,16 @@ export default function CatalogPage() {
       }
       
       console.log('✅ Корзина сохранена с ID:', savedCart.id)
-      
+
+      // Очищаем корзину и localStorage после успешного сохранения
+      setCart([])
+      setActiveSupplier(null)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('catalog_cart')
+        localStorage.removeItem('catalog_active_supplier')
+        console.log('🗑️ [CATALOG] localStorage очищен после создания проекта')
+      }
+
       // Переходим к созданию проекта с ID корзины
       router.push(`/dashboard/create-project?from_cart=true&cart_id=${savedCart.id}`)
       

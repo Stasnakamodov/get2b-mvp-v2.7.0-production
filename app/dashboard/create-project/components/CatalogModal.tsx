@@ -495,12 +495,35 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
     setAuthToken(session?.access_token || null)
   }
 
-  // Получение токена при открытии
+  // Загружаем корзину из localStorage при открытии модального окна
   useEffect(() => {
-    if (open) {
+    if (open && typeof window !== 'undefined') {
+      // Загружаем токен
       getAuthToken()
+
+      // Загружаем корзину из localStorage
+      const savedCart = localStorage.getItem('catalog_cart')
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart)
+          setCart(parsedCart)
+          console.log('✅ [CATALOG MODAL] Корзина загружена из localStorage:', parsedCart.length, 'товаров')
+        } catch (error) {
+          console.error('❌ [CATALOG MODAL] Ошибка загрузки корзины из localStorage:', error)
+        }
+      }
     }
   }, [open])
+
+  // Сохраняем корзину в localStorage при каждом изменении
+  useEffect(() => {
+    if (open && typeof window !== 'undefined') {
+      localStorage.setItem('catalog_cart', JSON.stringify(cart))
+      if (cart.length > 0) {
+        console.log('💾 [CATALOG MODAL] Корзина сохранена в localStorage:', cart.length, 'товаров')
+      }
+    }
+  }, [cart, open])
 
   // Диагностика состояний
   useEffect(() => {
@@ -1123,6 +1146,12 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
 
   const clearCart = () => {
     setCart([])
+    // Также очищаем localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('catalog_cart')
+      localStorage.removeItem('catalog_active_supplier')
+      console.log('🗑️ [CATALOG MODAL] Корзина и localStorage очищены')
+    }
   }
 
   const getTotalItems = () => {
@@ -2259,6 +2288,15 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                       console.log('🚨🚨🚨 [CART] Вызываем onAddProducts с корзиной:', productsToAdd.length, 'товаров')
                       onAddProducts(productsToAdd)
                       console.log('✅ [CART] onAddProducts вызван из корзины с товарами:', productsToAdd.length)
+
+                      // Очищаем корзину и localStorage после успешного добавления
+                      clearCart()
+                      if (typeof window !== 'undefined') {
+                        localStorage.removeItem('catalog_cart')
+                        localStorage.removeItem('catalog_active_supplier')
+                        console.log('🗑️ [CATALOG MODAL] localStorage очищен после добавления в проект')
+                      }
+
                       onClose()
                     }}
                     className="w-full bg-green-600 text-white py-3 hover:bg-green-700 transition-colors font-medium uppercase tracking-wider text-sm"
