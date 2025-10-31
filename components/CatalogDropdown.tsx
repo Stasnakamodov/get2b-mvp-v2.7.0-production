@@ -91,8 +91,8 @@ export default function CatalogDropdown() {
 
       {/* Выпадающее меню */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 overflow-hidden"
-          style={{ width: '800px' }}
+        <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden"
+          style={{ width: '800px', zIndex: 9999 }}
         >
           {loading ? (
             <div className="p-8 text-center">
