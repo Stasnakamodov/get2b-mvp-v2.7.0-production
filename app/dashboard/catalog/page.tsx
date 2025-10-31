@@ -20,6 +20,10 @@ export default function CatalogPage() {
   const [supabaseError, setSupabaseError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(true)
 
+  // Состояния для динамических категорий из API
+  const [apiCategories, setApiCategories] = useState<any[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(false)
+
   // Проверка подключения к Supabase при загрузке
   useEffect(() => {
     const checkSupabaseConnection = async () => {
@@ -225,8 +229,6 @@ export default function CatalogPage() {
           if (category) {
             console.log('✅ [URL] Категория найдена, открываем товары')
             setSelectedCategoryData(category as CatalogCategory)
-            // Переключаемся в режим просмотра товаров категории
-            setMode('categories')
           } else {
             console.warn('⚠️ [URL] Категория не найдена:', categoryParam)
           }
@@ -568,10 +570,6 @@ export default function CatalogPage() {
       }
     }))
   }
-
-  // Состояния для динамических категорий из API
-  const [apiCategories, setApiCategories] = useState<any[]>([])
-  const [loadingCategories, setLoadingCategories] = useState(false)
 
   // Состояние для модального окна добавления поставщика
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false)
