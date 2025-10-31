@@ -205,6 +205,39 @@ export default function CatalogPage() {
     loadCategoriesFromAPI() // Добавляем загрузку категорий
   }, [])
 
+  // Обработка URL параметров для автоматического открытия категории
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const categoryParam = params.get('category')
+    const viewParam = params.get('view')
+
+    if (categoryParam && viewParam === 'products') {
+      console.log('🎯 [URL] Автоматически открываем категорию:', categoryParam)
+
+      // Ждем загрузки категорий
+      const checkAndSelectCategory = setInterval(() => {
+        if (apiCategories.length > 0) {
+          clearInterval(checkAndSelectCategory)
+
+          // Находим категорию по имени
+          const category = apiCategories.find(cat => cat.name === categoryParam)
+
+          if (category) {
+            console.log('✅ [URL] Категория найдена, открываем товары')
+            setSelectedCategoryData(category as CatalogCategory)
+            // Переключаемся в режим просмотра товаров категории
+            setMode('categories')
+          } else {
+            console.warn('⚠️ [URL] Категория не найдена:', categoryParam)
+          }
+        }
+      }, 100)
+
+      // Очистка через 5 секунд на случай если категории не загрузились
+      setTimeout(() => clearInterval(checkAndSelectCategory), 5000)
+    }
+  }, [apiCategories])
+
   // Функция загрузки товаров поставщика
   const loadSupplierProducts = async (supplierId: string, supplierType: string = 'user') => {
     setLoadingProducts(true)

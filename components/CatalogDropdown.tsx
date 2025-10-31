@@ -305,9 +305,10 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
         const productCategory = firstProduct.category
 
         console.log('🎯 Переходим в категорию:', productCategory)
+        console.log('📦 Найдено товаров:', data.products.length)
 
-        // Перенаправляем в каталог с этой категорией
-        router.push(`/dashboard/catalog?category=${encodeURIComponent(productCategory)}`)
+        // Перенаправляем в каталог с этой категорией и флагом для показа товаров
+        router.push(`/dashboard/catalog?category=${encodeURIComponent(productCategory)}&view=products`)
         setIsOpen(false)
       } else {
         // Если ничего не найдено, показываем dropdown с предложением
