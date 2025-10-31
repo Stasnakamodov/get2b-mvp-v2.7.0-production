@@ -85,47 +85,61 @@ export class UrlParserService {
    * Парсинг Open Graph метаданных
    */
   private async parseOpenGraph(url: string): Promise<Partial<ParsedProductMetadata>> {
-    const options = {
-      url,
-      timeout: 10000,
-      fetchOptions: {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      }
-    }
-
-    const { result, error } = await ogs(options)
-
-    if (error) {
-      throw new Error(`Open Graph error: ${error}`)
-    }
-
-    return {
-      title: result.ogTitle || result.twitterTitle || '',
-      description: result.ogDescription || result.twitterDescription || '',
-      imageUrl: result.ogImage?.[0]?.url || result.twitterImage?.[0]?.url || ''
-    }
+    // Пропускаем Open Graph, сразу идем к HTML парсингу
+    // так как маркетплейсы часто блокируют OG парсеры
+    throw new Error('Skipping OG, using HTML fallback')
   }
 
   /**
    * Fallback парсинг HTML если Open Graph не работает
    */
   private async parseHtml(url: string, marketplace: string): Promise<Partial<ParsedProductMetadata>> {
+    console.log('🌐 [URL Parser] Загружаем HTML напрямую:', url)
+
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      redirect: 'follow'
     })
+
+    console.log('📡 [URL Parser] HTTP статус:', response.status)
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
 
     const html = await response.text()
+    console.log('📄 [URL Parser] HTML получен, размер:', html.length, 'байт')
+
     const $ = cheerio.load(html)
 
-    // Разные стратегии для разных маркетплейсов
+    // Выводим первые мета-теги для отладки
+    const ogTitle = $('meta[property="og:title"]').attr('content')
+    const ogDesc = $('meta[property="og:description"]').attr('content')
+    console.log('🏷️ [URL Parser] og:title:', ogTitle?.substring(0, 50))
+    console.log('🏷️ [URL Parser] og:description:', ogDesc?.substring(0, 50))
+
+    // Сначала пробуем универсальный парсинг Open Graph из HTML
+    const ogData = this.parseOGFromHTML($ as any)
+
+    if (ogData.title && ogData.description) {
+      console.log('✅ [URL Parser] Данные из OG тегов в HTML получены')
+      return ogData
+    }
+
+    // Если OG не сработал, используем специфичные парсеры
+    console.log('⚠️ [URL Parser] OG теги неполные, используем специфичный парсер для', marketplace)
+
     switch (marketplace) {
       case 'wildberries':
         return this.parseWildberries($ as any)
@@ -137,6 +151,23 @@ export class UrlParserService {
         return this.parseYandexMarket($ as any)
       default:
         return this.parseGeneric($ as any)
+    }
+  }
+
+  /**
+   * Парсинг Open Graph тегов из HTML
+   */
+  private parseOGFromHTML($: any): Partial<ParsedProductMetadata> {
+    return {
+      title: $('meta[property="og:title"]').attr('content') ||
+             $('meta[name="twitter:title"]').attr('content') || '',
+      description: $('meta[property="og:description"]').attr('content') ||
+                   $('meta[name="twitter:description"]').attr('content') ||
+                   $('meta[name="description"]').attr('content') || '',
+      imageUrl: $('meta[property="og:image"]').attr('content') ||
+                $('meta[name="twitter:image"]').attr('content') || '',
+      price: $('meta[property="og:price:amount"]').attr('content') ||
+             $('meta[property="product:price:amount"]').attr('content')
     }
   }
 
