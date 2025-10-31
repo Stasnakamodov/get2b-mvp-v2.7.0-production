@@ -22,6 +22,7 @@ import {
   Package,
   AlertTriangle,
   Sparkles,
+  History,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -198,6 +199,13 @@ function DashboardPageContent() {
       icon: Sparkles,
       color: "text-blue-600 bg-blue-50 border-blue-200",
       statuses: [], // Логика отдельная - созданные за последние 24 часа
+    },
+    {
+      id: "recent",
+      label: "Последние",
+      icon: History,
+      color: "text-purple-600 bg-purple-50 border-purple-200",
+      statuses: [], // Логика отдельная - последние 5 проектов
     }
   ];
 
@@ -443,6 +451,11 @@ function DashboardPageContent() {
         const createdDate = new Date(p.created_at);
         return createdDate > oneDayAgo;
       });
+    }
+
+    // "Последние" - последние 5 проектов по дате создания
+    if (filter.id === "recent") {
+      return projectsList.slice(0, 5);
     }
 
     return projectsList;
