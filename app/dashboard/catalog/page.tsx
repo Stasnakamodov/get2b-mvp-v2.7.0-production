@@ -227,8 +227,35 @@ export default function CatalogPage() {
           const category = apiCategories.find(cat => cat.name === categoryParam)
 
           if (category) {
-            console.log('✅ [URL] Категория найдена, открываем товары')
-            setSelectedCategoryData(category as CatalogCategory)
+            console.log('✅ [URL] Категория найдена:', category.name)
+
+            // Загружаем подкатегории для автоматического показа товаров
+            const loadSubcategoriesAndSelectFirst = async () => {
+              try {
+                console.log('📂 [URL] Загружаем подкатегории...')
+                const response = await fetch(`/api/catalog/categories/${category.id}/subcategories`)
+                const data = await response.json()
+
+                if (data.subcategories && data.subcategories.length > 0) {
+                  console.log('✅ [URL] Подкатегории загружены:', data.subcategories.length)
+                  // Устанавливаем категорию с подкатегориями
+                  setSelectedCategoryData({ ...category, subcategories: data.subcategories })
+                  // Автоматически выбираем первую подкатегорию для показа товаров
+                  setSelectedSubcategoryData(data.subcategories[0])
+                  console.log('🎯 [URL] Автоматически выбрана подкатегория:', data.subcategories[0].name)
+                } else {
+                  console.warn('⚠️ [URL] У категории нет подкатегорий')
+                  // Если нет подкатегорий, показываем саму категорию
+                  setSelectedCategoryData(category as CatalogCategory)
+                }
+              } catch (error) {
+                console.error('❌ [URL] Ошибка загрузки подкатегорий:', error)
+                // В случае ошибки просто показываем категорию
+                setSelectedCategoryData(category as CatalogCategory)
+              }
+            }
+
+            loadSubcategoriesAndSelectFirst()
           } else {
             console.warn('⚠️ [URL] Категория не найдена:', categoryParam)
           }
