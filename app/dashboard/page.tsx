@@ -183,18 +183,21 @@ function DashboardPageContent() {
       label: "Требует внимания",
       icon: AlertTriangle,
       color: "text-orange-600 bg-orange-50 border-orange-200",
+      statuses: ["waiting_approval", "waiting_receipt", "receipt_rejected"],
     },
     {
       id: "overdue",
       label: "Просрочены",
       icon: AlertCircle,
       color: "text-red-600 bg-red-50 border-red-200",
+      statuses: [], // Логика отдельная - проверка по дате
     },
     {
       id: "new",
       label: "Новые",
       icon: Sparkles,
       color: "text-blue-600 bg-blue-50 border-blue-200",
+      statuses: [], // Логика отдельная - созданные за последние 24 часа
     }
   ];
 
@@ -410,21 +413,74 @@ function DashboardPageContent() {
     tap: { scale: 0.95 },
   }
 
+  // Функция для фильтрации проектов по быстрым фильтрам
+  const applyQuickFilter = (projectsList: Project[]) => {
+    if (!quickFilter) return projectsList;
+
+    const filter = quickFilters.find(f => f.id === quickFilter);
+    if (!filter) return projectsList;
+
+    // "Требует внимания" - по статусам
+    if (filter.id === "needs_attention" && filter.statuses.length > 0) {
+      return projectsList.filter((p) => filter.statuses.includes(p.status));
+    }
+
+    // "Просрочены" - проекты старше 7 дней, которые не завершены
+    if (filter.id === "overdue") {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return projectsList.filter((p) => {
+        const createdDate = new Date(p.created_at);
+        return createdDate < sevenDaysAgo && p.status !== "completed";
+      });
+    }
+
+    // "Новые" - созданные за последние 24 часа
+    if (filter.id === "new") {
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      return projectsList.filter((p) => {
+        const createdDate = new Date(p.created_at);
+        return createdDate > oneDayAgo;
+      });
+    }
+
+    return projectsList;
+  };
+
   // Логика: всегда показывать 3 проекта — приоритет незакрытым, добивать закрытыми
   const notClosedProjects = projects ? projects.filter((p) => p.status !== "completed") : [];
   const closedProjects = projects ? projects.filter((p) => p.status === "completed") : [];
+
+  // Применяем быстрый фильтр к проектам
+  const filteredProjects = quickFilter ? applyQuickFilter(projects || []) : projects || [];
+
   let visibleProjects = [];
-  if (notClosedProjects.length >= 3) {
-    visibleProjects = notClosedProjects.slice(0, 3);
+  if (quickFilter) {
+    // Если активен фильтр, показываем все отфильтрованные проекты
+    visibleProjects = filteredProjects;
   } else {
-    visibleProjects = [
-      ...notClosedProjects,
-      ...closedProjects.slice(0, 3 - notClosedProjects.length)
-    ];
+    // Иначе используем старую логику с приоритетом незакрытых
+    const filteredNotClosed = filteredProjects.filter((p) => p.status !== "completed");
+    const filteredClosed = filteredProjects.filter((p) => p.status === "completed");
+    if (filteredNotClosed.length >= 3) {
+      visibleProjects = filteredNotClosed.slice(0, 3);
+    } else {
+      visibleProjects = [
+        ...filteredNotClosed,
+        ...filteredClosed.slice(0, 3 - filteredNotClosed.length)
+      ];
+    }
   }
+
   const [showAll, setShowAll] = useState(false);
-  const showButton = projects && projects.length > 3;
-  const allVisible = showAll ? projects : visibleProjects;
+  const showButton = filteredProjects && filteredProjects.length > 3 && !quickFilter;
+  const allVisible = showAll ? filteredProjects : visibleProjects;
+
+  // Сброс showAll при изменении фильтра
+  useEffect(() => {
+    setShowAll(false);
+  }, [quickFilter]);
 
   // Обработчик для кнопки "Новый проект" с учётом рефакторинга
   const handleCreateProjectClick = async () => {
