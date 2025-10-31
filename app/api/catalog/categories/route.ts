@@ -43,12 +43,33 @@ export async function GET(request: NextRequest) {
     console.log(`✅ [API] Загружено ${rootCategories?.length || 0} корневых категорий`);
     console.log(`✅ [API] Загружено ${subcategories?.length || 0} подкатегорий`);
 
+    // Подсчитываем количество товаров для каждой подкатегории
+    const subcategoriesWithCounts = await Promise.all(
+      (subcategories || []).map(async (sub) => {
+        const { count, error } = await supabase
+          .from("catalog_verified_products")
+          .select("*", { count: 'exact', head: true })
+          .eq('subcategory_id', sub.id);
+
+        if (error) {
+          console.error(`❌ [API] Ошибка подсчёта товаров для ${sub.name}:`, error);
+        }
+
+        return {
+          ...sub,
+          products_count: count || 0
+        };
+      })
+    );
+
+    console.log(`✅ [API] Подсчитано товаров для ${subcategoriesWithCounts.length} подкатегорий`);
+
     // Если нужно, добавляем подкатегории к корневым категориям
     let categoriesWithSubcategories = rootCategories;
     if (includeSubcategories) {
       categoriesWithSubcategories = rootCategories.map(category => ({
         ...category,
-        subcategories: subcategories?.filter(sub => sub.category_id === category.id) || []
+        subcategories: subcategoriesWithCounts?.filter(sub => sub.category_id === category.id) || []
       }));
     }
 
