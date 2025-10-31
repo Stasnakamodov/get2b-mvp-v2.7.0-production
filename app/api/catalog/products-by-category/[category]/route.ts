@@ -41,7 +41,7 @@ export async function GET(
 
     // Функция get_products_by_category сама определит, подкатегория это или корневая категория
     // Вызываем функцию get_products_by_category
-    const { data: products, error } = await supabase.rpc('get_products_by_category', {
+    const { data: rawData, error } = await supabase.rpc('get_products_by_category', {
       category_name: categoryFilter,
       user_id_param: currentUserId,
       search_query: searchQuery,
@@ -49,7 +49,28 @@ export async function GET(
       offset_param: offset
     })
 
-    console.log('🔍 [API] Первый товар из БД:', products?.[0])
+    console.log('🔍 [API] RAW DATA from RPC:', typeof rawData, Array.isArray(rawData) ? `Array[${rawData.length}]` : rawData)
+
+    // Функция возвращает JSONB array напрямую через Supabase JS client
+    let products = []
+
+    if (Array.isArray(rawData)) {
+      // Supabase JS client возвращает массив напрямую
+      products = rawData
+    } else if (rawData && typeof rawData === 'string') {
+      // Если это строка, парсим JSON
+      products = JSON.parse(rawData)
+    } else if (rawData === null || rawData === undefined) {
+      // Если null/undefined, пустой массив
+      products = []
+    } else {
+      // Неожиданный формат
+      console.error('❌ [API] Неожиданный формат данных:', typeof rawData, rawData)
+      products = []
+    }
+
+    console.log('🔍 [API] Parsed products:', products?.length, 'товаров')
+    console.log('🔍 [API] Первый товар из БД:', products?.[0] ? `${products[0].product_name} (${products[0].category_name})` : 'нет товаров')
 
     if (error) {
       console.error('❌ [API] Ошибка получения товаров категории:', error)

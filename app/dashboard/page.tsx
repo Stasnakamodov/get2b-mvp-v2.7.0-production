@@ -19,6 +19,7 @@ import {
   XCircle,
   AlertCircle,
   ShoppingCart,
+  Package,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -168,6 +169,8 @@ function DashboardPageContent() {
   const FINAL_STEP = 7; // Количество шагов в проекте
   const [templateRole, setTemplateRole] = useState<'client' | 'supplier'>('client');
   const [cartItemsCount, setCartItemsCount] = useState(0)
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  const [cartItems, setCartItems] = useState<any[]>([])
 
   // Добавляем состояние для диагностики
   const [debugInfo, setDebugInfo] = useState<{
@@ -194,12 +197,15 @@ function DashboardPageContent() {
             const cart = JSON.parse(savedCart)
             const totalItems = cart.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
             setCartItemsCount(totalItems)
+            setCartItems(cart)
           } catch (error) {
             console.error('❌ Ошибка загрузки корзины:', error)
             setCartItemsCount(0)
+            setCartItems([])
           }
         } else {
           setCartItemsCount(0)
+          setCartItems([])
         }
       }
     }
@@ -422,7 +428,10 @@ function DashboardPageContent() {
 
         {/* Строка поиска по каталогу с выпадающим меню и корзиной - растягивается на всю оставшуюся ширину */}
         <motion.div whileHover={{ scale: 1.002 }} className="flex-1 min-w-0">
-          <CatalogDropdown cartItemsCount={cartItemsCount} />
+          <CatalogDropdown
+            cartItemsCount={cartItemsCount}
+            onCartClick={() => setIsCartOpen(true)}
+          />
         </motion.div>
       </motion.div>
 
@@ -805,6 +814,127 @@ function DashboardPageContent() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Боковая панель корзины */}
+      {isCartOpen && (
+        <>
+          {/* Затемнение фона */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setIsCartOpen(false)}
+          />
+
+          {/* Панель корзины справа */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-50 flex flex-col"
+          >
+            {/* Header корзины */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="h-6 w-6 text-green-600" />
+                <h2 className="text-xl font-bold">Корзина</h2>
+                <Badge variant="secondary">{cartItemsCount}</Badge>
+              </div>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <XCircle className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Контент корзины */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {cartItems.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  Корзина пуста
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {cartItems.map((item, index) => (
+                    <div key={index} className="flex gap-4 p-4 border rounded-lg hover:shadow-md transition-shadow">
+                      {/* Изображение товара */}
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-20 h-20 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
+                          <Package className="h-8 w-8 text-gray-400" />
+                        </div>
+                      )}
+
+                      {/* Информация о товаре */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm truncate">{item.name}</h3>
+                        {item.supplier_name && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Поставщик: {item.supplier_name}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-sm text-gray-600">
+                            Количество: {item.quantity}
+                          </span>
+                          {item.price && (
+                            <span className="font-semibold text-green-600">
+                              {(item.price * item.quantity).toLocaleString('ru-RU')} ₽
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Кнопка удаления */}
+                      <button
+                        onClick={() => {
+                          const updatedCart = cartItems.filter((_, i) => i !== index)
+                          localStorage.setItem('catalog_cart', JSON.stringify(updatedCart))
+                          setCartItems(updatedCart)
+                          const totalItems = updatedCart.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
+                          setCartItemsCount(totalItems)
+                          window.dispatchEvent(new Event('storage'))
+                        }}
+                        className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer с кнопками */}
+            <div className="border-t p-6 space-y-3">
+              <Button
+                onClick={async () => {
+                  setIsCartOpen(false)
+                  await router.push('/dashboard/catalog')
+                }}
+                className="w-full"
+                variant="outline"
+              >
+                Продолжить покупки
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsCartOpen(false)
+                  handleCreateProjectClick()
+                }}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                Начать проект
+              </Button>
+            </div>
+          </motion.div>
+        </>
+      )}
     </div>
   )
 }
