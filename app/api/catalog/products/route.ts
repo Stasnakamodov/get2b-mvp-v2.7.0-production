@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const in_stock = searchParams.get("in_stock");
     const supplier_type = searchParams.get("supplier_type") || "user"; // "user" или "verified"
+    const search = searchParams.get("search"); // Поисковый запрос
+    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined; // Лимит результатов
 
     let userId: string | null = null;
 
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log("🔍 [DEBUG] Параметры запроса товаров:", { supplier_id, category, in_stock, supplier_type, userId });
+    console.log("🔍 [DEBUG] Параметры запроса товаров:", { supplier_id, category, in_stock, supplier_type, userId, search, limit });
 
     // Определяем таблицу на основе типа поставщика
     const tableName = supplier_type === "verified" ? "catalog_verified_products" : "catalog_user_products";
@@ -68,6 +70,16 @@ export async function GET(request: NextRequest) {
     // Для пользовательских товаров добавляем фильтр по user_id
     if (supplier_type === "user") {
       query = query.eq("user_id", userId);
+    }
+
+    // Поиск по тексту (в названии и описании)
+    if (search && search.trim()) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    // Ограничение количества результатов
+    if (limit) {
+      query = query.limit(limit);
     }
 
     const { data, error } = await query;
