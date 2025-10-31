@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 import { CATEGORY_CERTIFICATIONS } from "@/components/catalog-categories-and-certifications";
 
-// GET: Получение всех категорий с иерархией (Старая архитектура: catalog_categories + catalog_subcategories)
+// GET: Получение всех категорий с иерархией (Unified архитектура: catalog_categories с parent_id, без level)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const includeSubcategories = searchParams.get('includeSubcategories') !== 'false';
 
-    // Загружаем корневые категории из catalog_categories
-    const { data: categories, error: categoriesError } = await supabase
+    // ПРАВИЛЬНАЯ АРХИТЕКТУРА: Используем отдельные таблицы
+    // catalog_categories - корневые категории (8 штук)
+    // catalog_subcategories - подкатегории (33 штуки)
+
+    // Загружаем корневые категории
+    const { data: rootCategories, error: categoriesError } = await supabase
       .from("catalog_categories")
       .select("*")
       .order("name");
@@ -22,35 +26,36 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log(`✅ [API] Загружено ${categories?.length || 0} корневых категорий`);
+    // Загружаем подкатегории
+    const { data: subcategories, error: subcategoriesError } = await supabase
+      .from("catalog_subcategories")
+      .select("*")
+      .order("name");
 
-    // Если нужно, загружаем подкатегории из catalog_subcategories
-    let categoriesWithSubcategories = categories || [];
+    if (subcategoriesError) {
+      console.error("❌ [API] Ошибка загрузки подкатегорий:", subcategoriesError);
+      return NextResponse.json({
+        success: false,
+        error: subcategoriesError.message
+      }, { status: 500 });
+    }
+
+    console.log(`✅ [API] Загружено ${rootCategories?.length || 0} корневых категорий`);
+    console.log(`✅ [API] Загружено ${subcategories?.length || 0} подкатегорий`);
+
+    // Если нужно, добавляем подкатегории к корневым категориям
+    let categoriesWithSubcategories = rootCategories;
     if (includeSubcategories) {
-      const { data: subcategories, error: subcategoriesError } = await supabase
-        .from("catalog_subcategories")
-        .select("*")
-        .order("name");
-
-      if (subcategoriesError) {
-        console.error("❌ [API] Ошибка загрузки подкатегорий:", subcategoriesError);
-      } else {
-        console.log(`✅ [API] Загружено ${subcategories?.length || 0} подкатегорий`);
-
-        // Добавляем подкатегории к категориям
-        categoriesWithSubcategories = categories.map(category => ({
-          ...category,
-          subcategories: subcategories?.filter(sub => sub.category_id === category.id) || []
-        }));
-      }
+      categoriesWithSubcategories = rootCategories.map(category => ({
+        ...category,
+        subcategories: subcategories?.filter(sub => sub.category_id === category.id) || []
+      }));
     }
 
     // Статистика
     const stats = {
-      total_categories: categories?.length || 0,
-      total_subcategories: includeSubcategories
-        ? categoriesWithSubcategories.reduce((sum, c) => sum + (c.subcategories?.length || 0), 0)
-        : 0,
+      total_categories: rootCategories?.length || 0,
+      total_subcategories: subcategories?.length || 0,
     };
 
     return NextResponse.json({
