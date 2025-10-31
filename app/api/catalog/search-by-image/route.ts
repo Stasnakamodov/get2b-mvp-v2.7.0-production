@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getYandexVisionService } from "@/lib/services/YandexVisionService";
+import { getYandexGPTService } from "@/lib/services/YandexGPTService";
 
 /**
  * POST /api/catalog/search-by-image
- * Поиск товаров по изображению с использованием Yandex Vision Classification
+ * Поиск товаров по изображению с использованием:
+ * - Yandex Vision Classification (категоризация)
+ * - Yandex Vision OCR (распознавание текста)
+ * - YandexGPT (умный анализ и генерация ключевых слов)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -42,22 +46,43 @@ export async function POST(request: NextRequest) {
       console.log("⚠️ [IMAGE SEARCH] OCR не удался:", error);
     }
 
-    // Шаг 3: Формируем поисковые запросы
-    // Комбинируем метки классификации и распознанный текст
+    // Шаг 3: YandexGPT - умный анализ товара
+    const gptService = getYandexGPTService();
     const topLabels = labels
       .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 3)
+      .slice(0, 5)
       .map(label => label.name);
 
-    // Добавляем слова из OCR (фильтруем короткие слова и числа)
+    console.log("🤖 [IMAGE SEARCH] Запускаем YandexGPT для умного анализа...");
+    const gptAnalysis = await gptService.analyzeProductImage(
+      image,
+      ocrText,
+      topLabels
+    );
+
+    console.log("🎯 [IMAGE SEARCH] YandexGPT результат:", {
+      brand: gptAnalysis.brand,
+      category: gptAnalysis.category,
+      keywords: gptAnalysis.keywords
+    });
+
+    // Шаг 4: Формируем поисковые запросы
+    // Комбинируем ВСЕ источники данных
     const ocrWords = ocrText
       .split(/\s+/)
       .filter(word => word.length > 2 && !/^\d+$/.test(word))
-      .slice(0, 5); // Берем первые 5 значимых слов
+      .slice(0, 5);
 
-    const searchTerms = [...topLabels, ...ocrWords].filter(Boolean);
+    // Объединяем все ключевые слова
+    const searchTerms = [
+      ...topLabels.slice(0, 3),           // Топ-3 метки из классификации
+      ...ocrWords,                         // Слова из OCR
+      gptAnalysis.brand,                   // Бренд от GPT
+      gptAnalysis.category,                // Категория от GPT
+      ...gptAnalysis.keywords.slice(0, 10) // Топ-10 ключевых слов от GPT
+    ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); // Убираем дубликаты
 
-    console.log("🔍 [IMAGE SEARCH] Поисковые термины:", searchTerms);
+    console.log("🔍 [IMAGE SEARCH] Финальные поисковые термины:", searchTerms);
 
     // Импортируем supabase для поиска товаров
     const { supabase } = await import("@/lib/supabaseClient");
@@ -70,6 +95,11 @@ export async function POST(request: NextRequest) {
         labels,
         description,
         ocrText,
+        gptAnalysis: {
+          brand: gptAnalysis.brand,
+          category: gptAnalysis.category,
+          description: gptAnalysis.description
+        },
         products: [],
         searchQuery: "Не удалось определить товар"
       });
@@ -102,6 +132,11 @@ export async function POST(request: NextRequest) {
       labels,
       description,
       ocrText,
+      gptAnalysis: {
+        brand: gptAnalysis.brand,
+        category: gptAnalysis.category,
+        description: gptAnalysis.description
+      },
       products: products || [],
       searchQuery: searchTerms.join(", ")
     });
