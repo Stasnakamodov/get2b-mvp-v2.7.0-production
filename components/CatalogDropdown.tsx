@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronRight, X, Search, ShoppingCart, Camera, Upload, Image as ImageIcon } from 'lucide-react'
+import { ChevronRight, X, Search, ShoppingCart, Camera, Upload, Image as ImageIcon, Globe } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface Category {
@@ -34,8 +34,13 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
   const [placeholder, setPlaceholder] = useState('Каталог Get2b')
   const [isRequestFormOpen, setIsRequestFormOpen] = useState(false)
   const [isImageSearchOpen, setIsImageSearchOpen] = useState(false)
+  const [isUrlSearchOpen, setIsUrlSearchOpen] = useState(false)
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [searchUrl, setSearchUrl] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [showNoResults, setShowNoResults] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -259,6 +264,32 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
     // Здесь будет логика поиска похожих товаров
   }
 
+  const handleUrlSearch = async () => {
+    if (!searchUrl.trim()) {
+      alert('Пожалуйста, введите ссылку')
+      return
+    }
+
+    setIsSearching(true)
+    setSearchResults([])
+    setShowNoResults(false)
+
+    try {
+      // TODO: Реализовать API для поиска товара по URL
+      // Пока имитируем поиск
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
+      // Имитация пустого результата
+      setSearchResults([])
+      setShowNoResults(true)
+    } catch (error) {
+      console.error('Ошибка поиска:', error)
+      alert('Произошла ошибка при поиске')
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
   const renderDropdown = () => {
     if (!isOpen || !mounted || !buttonRef.current) return null
 
@@ -392,8 +423,20 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
             placeholder={placeholder}
             onClick={() => setIsOpen(true)}
             readOnly
-            className="w-full pl-10 pr-24 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer hover:border-blue-400 transition-colors"
+            className="w-full pl-10 pr-32 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer hover:border-blue-400 transition-colors"
           />
+
+          {/* Кнопка глобуса (планетка) */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsUrlSearchOpen(true)
+            }}
+            className="absolute right-20 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+            title="Поиск по ссылке из интернета"
+          >
+            <Globe className="h-5 w-5 text-purple-600" />
+          </button>
 
           {/* Кнопка камеры справа (вплотную к корзине слева) */}
           <button
@@ -712,6 +755,149 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
                   >
                     Найти похожие товары
                   </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {/* Модальное окно поиска по ссылке */}
+      {isUrlSearchOpen && mounted && createPortal(
+        <>
+          {/* Затемнение фона */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            onClick={() => {
+              setIsUrlSearchOpen(false)
+              setSearchUrl('')
+              setSearchResults([])
+              setShowNoResults(false)
+            }}
+          />
+
+          {/* Модальное окно */}
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div
+              className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
+                <div className="flex items-center gap-3">
+                  <Globe className="h-6 w-6 text-purple-600" />
+                  <h2 className="text-2xl font-bold">Поиск товара по ссылке</h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsUrlSearchOpen(false)
+                    setSearchUrl('')
+                    setSearchResults([])
+                    setShowNoResults(false)
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="h-6 w-6 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-6">
+                <p className="text-gray-600">
+                  Вставьте ссылку на товар из любого интернет-магазина, и мы найдём похожие товары в нашем каталоге или предложим найти поставщика
+                </p>
+
+                {/* Поле ввода URL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ссылка на товар *
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/product/12345"
+                    value={searchUrl}
+                    onChange={(e) => setSearchUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isSearching) {
+                        handleUrlSearch()
+                      }
+                    }}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-lg"
+                    disabled={isSearching}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Поддерживаются ссылки с Wildberries, Ozon, AliExpress и других маркетплейсов
+                  </p>
+                </div>
+
+                {/* Кнопка поиска */}
+                {!showNoResults && (
+                  <button
+                    onClick={handleUrlSearch}
+                    disabled={isSearching || !searchUrl.trim()}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSearching ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Ищем товар...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-5 w-5" />
+                        Найти похожие товары
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Результаты поиска - если не найдено */}
+                {showNoResults && (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8">
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                        <Search className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          Похожих товаров не найдено
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                          К сожалению, мы не нашли похожих товаров в нашем каталоге
+                        </p>
+                      </div>
+
+                      {/* Предложение найти поставщика */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-900 mb-3">
+                          <strong>Не беда!</strong> Мы можем найти для вас поставщика этого товара
+                        </p>
+                        <button
+                          onClick={() => {
+                            setIsUrlSearchOpen(false)
+                            setIsRequestFormOpen(true)
+                            setSearchUrl('')
+                            setShowNoResults(false)
+                          }}
+                          className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                        >
+                          Оставить заявку на поиск поставщика
+                        </button>
+                      </div>
+
+                      {/* Кнопка попробовать снова */}
+                      <button
+                        onClick={() => {
+                          setSearchUrl('')
+                          setShowNoResults(false)
+                        }}
+                        className="text-purple-600 hover:text-purple-700 font-medium text-sm"
+                      >
+                        ← Попробовать другую ссылку
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
