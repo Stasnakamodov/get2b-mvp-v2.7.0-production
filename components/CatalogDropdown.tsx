@@ -39,7 +39,6 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
   const [isDragging, setIsDragging] = useState(false)
   const [searchUrl, setSearchUrl] = useState('')
   const [isSearching, setIsSearching] = useState(false)
-  const [searchResults, setSearchResults] = useState<any[]>([])
   const [showNoResults, setShowNoResults] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
@@ -330,20 +329,58 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
     }
 
     setIsSearching(true)
-    setSearchResults([])
     setShowNoResults(false)
 
     try {
-      // TODO: Реализовать API для поиска товара по URL
-      // Пока имитируем поиск
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      console.log('🔗 [URL SEARCH] Начинаем поиск по URL:', searchUrl)
 
-      // Имитация пустого результата
-      setSearchResults([])
-      setShowNoResults(true)
+      // Вызываем наш API для поиска по URL
+      const response = await fetch('/api/catalog/search-by-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: searchUrl })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка поиска')
+      }
+
+      console.log('✅ [URL SEARCH] Результаты получены:', data)
+
+      // Если товары найдены
+      if (data.products && data.products.length > 0) {
+        console.log('🎯 [URL SEARCH] Найдено товаров:', data.products.length)
+
+        // Сохраняем результаты
+        setProductSearchResults(data.products)
+        setSearchQuery(data.metadata.title || '')
+
+        // Закрываем модальное окно URL поиска
+        setIsUrlSearchOpen(false)
+        setSearchUrl('')
+
+        // Получаем категорию первого найденного товара
+        const firstProduct = data.products[0]
+        const productCategory = firstProduct.category
+
+        console.log('📂 [URL SEARCH] Переходим в категорию:', productCategory)
+
+        // Перенаправляем в каталог с этой категорией и флагом для показа товаров
+        router.push(`/dashboard/catalog?category=${encodeURIComponent(productCategory)}&view=products`)
+        setIsOpen(false)
+      } else {
+        // Если ничего не найдено
+        console.log('⚠️ [URL SEARCH] Товары не найдены')
+        setShowNoResults(true)
+      }
     } catch (error) {
-      console.error('Ошибка поиска:', error)
-      alert('Произошла ошибка при поиске')
+      console.error('❌ [URL SEARCH] Ошибка поиска:', error)
+      alert(`Произошла ошибка при поиске: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      setShowNoResults(true)
     } finally {
       setIsSearching(false)
     }
@@ -979,7 +1016,6 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
             onClick={() => {
               setIsUrlSearchOpen(false)
               setSearchUrl('')
-              setSearchResults([])
               setShowNoResults(false)
             }}
           />
@@ -1000,7 +1036,6 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
                   onClick={() => {
                     setIsUrlSearchOpen(false)
                     setSearchUrl('')
-                    setSearchResults([])
                     setShowNoResults(false)
                   }}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
