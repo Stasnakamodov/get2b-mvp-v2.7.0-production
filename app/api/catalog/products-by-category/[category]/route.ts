@@ -37,7 +37,26 @@ export async function GET(
     }
 
     // Определяем категорию для запроса (null для "all")
-    const categoryFilter = category === 'all' ? null : category
+    let categoryFilter = category === 'all' ? null : category
+
+    // Проверяем, является ли переданная категория подкатегорией
+    // Если да - находим родительскую категорию
+    if (categoryFilter) {
+      const { data: subcategory, error: subcategoryError } = await supabase
+        .from('catalog_subcategories')
+        .select('id, name, category_id, catalog_categories!inner(name)')
+        .eq('name', categoryFilter)
+        .single()
+
+      if (!subcategoryError && subcategory) {
+        // Это подкатегория - используем имя родительской категории
+        const parentCategory = (subcategory as any).catalog_categories?.name
+        console.log(`🔍 [API] "${categoryFilter}" - это подкатегория. Родительская категория: "${parentCategory}"`)
+        categoryFilter = parentCategory
+      } else {
+        console.log(`🔍 [API] "${categoryFilter}" - это корневая категория`)
+      }
+    }
 
     // Вызываем функцию get_products_by_category
     const { data: products, error } = await supabase.rpc('get_products_by_category', {
