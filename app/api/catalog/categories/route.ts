@@ -26,57 +26,70 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Загружаем подкатегории
-    const { data: subcategories, error: subcategoriesError } = await supabase
-      .from("catalog_subcategories")
-      .select("*")
-      .order("name");
+    console.log(`✅ [API] Загружено ${rootCategories?.length || 0} корневых категорий`);
 
-    if (subcategoriesError) {
-      console.error("❌ [API] Ошибка загрузки подкатегорий:", subcategoriesError);
-      return NextResponse.json({
-        success: false,
-        error: subcategoriesError.message
-      }, { status: 500 });
+    // ОПТИМИЗАЦИЯ: Загружаем подкатегории ТОЛЬКО если нужно
+    let subcategories = null;
+    if (includeSubcategories) {
+      const { data, error: subcategoriesError } = await supabase
+        .from("catalog_subcategories")
+        .select("*")
+        .order("name");
+
+      if (subcategoriesError) {
+        console.error("❌ [API] Ошибка загрузки подкатегорий:", subcategoriesError);
+        return NextResponse.json({
+          success: false,
+          error: subcategoriesError.message
+        }, { status: 500 });
+      }
+
+      subcategories = data;
     }
 
-    console.log(`✅ [API] Загружено ${rootCategories?.length || 0} корневых категорий`);
-    console.log(`✅ [API] Загружено ${subcategories?.length || 0} подкатегорий`);
-
-    // Подсчитываем количество товаров для каждой подкатегории
-    const subcategoriesWithCounts = await Promise.all(
-      (subcategories || []).map(async (sub) => {
-        const { count, error } = await supabase
-          .from("catalog_verified_products")
-          .select("*", { count: 'exact', head: true })
-          .eq('subcategory_id', sub.id);
-
-        if (error) {
-          console.error(`❌ [API] Ошибка подсчёта товаров для ${sub.name}:`, error);
-        }
-
-        return {
-          ...sub,
-          products_count: count || 0
-        };
-      })
-    );
-
-    console.log(`✅ [API] Подсчитано товаров для ${subcategoriesWithCounts.length} подкатегорий`);
-
-    // Если нужно, добавляем подкатегории к корневым категориям
+    // ОПТИМИЗАЦИЯ: Загружаем подкатегории ТОЛЬКО если запрошено
     let categoriesWithSubcategories = rootCategories;
+    let totalSubcategories = 0;
+
     if (includeSubcategories) {
+      console.log(`✅ [API] Загружено ${subcategories?.length || 0} подкатегорий`);
+
+      // Подсчитываем количество товаров для каждой подкатегории
+      const subcategoriesWithCounts = await Promise.all(
+        (subcategories || []).map(async (sub) => {
+          const { count, error } = await supabase
+            .from("catalog_verified_products")
+            .select("*", { count: 'exact', head: true })
+            .eq('subcategory_id', sub.id);
+
+          if (error) {
+            console.error(`❌ [API] Ошибка подсчёта товаров для ${sub.name}:`, error);
+          }
+
+          return {
+            ...sub,
+            products_count: count || 0
+          };
+        })
+      );
+
+      console.log(`✅ [API] Подсчитано товаров для ${subcategoriesWithCounts.length} подкатегорий`);
+
+      // Добавляем подкатегории к корневым категориям
       categoriesWithSubcategories = rootCategories.map(category => ({
         ...category,
         subcategories: subcategoriesWithCounts?.filter(sub => sub.category_id === category.id) || []
       }));
+
+      totalSubcategories = subcategories?.length || 0;
+    } else {
+      console.log(`⚡ [API] БЫСТРАЯ ЗАГРУЗКА: Подкатегории пропущены (includeSubcategories=false)`);
     }
 
     // Статистика
     const stats = {
       total_categories: rootCategories?.length || 0,
-      total_subcategories: subcategories?.length || 0,
+      total_subcategories: totalSubcategories,
     };
 
     return NextResponse.json({

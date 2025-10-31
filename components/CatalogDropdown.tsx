@@ -25,6 +25,7 @@ export default function CatalogDropdown() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false)
   const [mounted, setMounted] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLDivElement>(null)
@@ -35,7 +36,7 @@ export default function CatalogDropdown() {
     setMounted(true)
   }, [])
 
-  // Загружаем категории при открытии
+  // ОПТИМИЗАЦИЯ: Загружаем ТОЛЬКО категории при открытии (быстро!)
   useEffect(() => {
     if (isOpen && categories.length === 0) {
       loadCategories()
@@ -65,22 +66,55 @@ export default function CatalogDropdown() {
     }
   }, [isOpen])
 
+  // ОПТИМИЗАЦИЯ: Загружаем только категории БЕЗ подкатегорий (быстро!)
   const loadCategories = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/catalog/categories')
+      const response = await fetch('/api/catalog/categories?includeSubcategories=false')
       const data = await response.json()
 
       if (data.categories) {
         setCategories(data.categories)
         if (data.categories.length > 0) {
-          setSelectedCategory(data.categories[0])
+          // Загружаем подкатегории для первой категории
+          loadSubcategories(data.categories[0])
         }
       }
     } catch (error) {
       console.error('Ошибка загрузки категорий:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // НОВАЯ ФУНКЦИЯ: Ленивая загрузка подкатегорий для конкретной категории
+  const loadSubcategories = async (category: Category) => {
+    try {
+      setLoadingSubcategories(true)
+      setSelectedCategory(category)
+
+      // Если подкатегории уже загружены, не загружаем повторно
+      if (category.subcategories && category.subcategories.length > 0) {
+        setLoadingSubcategories(false)
+        return
+      }
+
+      const response = await fetch(`/api/catalog/categories/${category.id}/subcategories`)
+      const data = await response.json()
+
+      if (data.subcategories) {
+        // Обновляем категорию с загруженными подкатегориями
+        setCategories(prev => prev.map(cat =>
+          cat.id === category.id
+            ? { ...cat, subcategories: data.subcategories }
+            : cat
+        ))
+        setSelectedCategory({ ...category, subcategories: data.subcategories })
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки подкатегорий:', error)
+    } finally {
+      setLoadingSubcategories(false)
     }
   }
 
@@ -118,7 +152,7 @@ export default function CatalogDropdown() {
                 {categories.map((category) => (
                   <button
                     key={category.id}
-                    onClick={() => setSelectedCategory(category)}
+                    onClick={() => loadSubcategories(category)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between transition-colors ${
                       selectedCategory?.id === category.id
                         ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
@@ -136,7 +170,12 @@ export default function CatalogDropdown() {
 
               {/* Правая панель - Подкатегории */}
               <div className="w-2/3 p-6 overflow-y-auto">
-                {selectedCategory ? (
+                {loadingSubcategories ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                    <p className="text-gray-600 text-sm">Загрузка подкатегорий...</p>
+                  </div>
+                ) : selectedCategory ? (
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
                       {selectedCategory.icon} {selectedCategory.name}
