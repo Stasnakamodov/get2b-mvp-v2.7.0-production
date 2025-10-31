@@ -175,6 +175,143 @@ export class YandexGPTService {
   }
 
   /**
+   * Анализирует товар по метаданным с маркетплейса (для поиска по URL)
+   */
+  async analyzeProductFromMetadata(title: string, description: string, marketplace?: string): Promise<ProductAnalysis> {
+    try {
+      // Если нет API ключа, возвращаем базовый анализ
+      if (!this.apiKey || !this.folderId) {
+        console.log('⚠️ YandexGPT: API недоступен, используем базовый анализ метаданных');
+        return this.fallbackMetadataAnalysis(title, description);
+      }
+
+      console.log('🤖 [URL Search] YandexGPT: Анализируем товар с маркетплейса...');
+      console.log('📝 Входные данные:', { title, marketplace });
+
+      // Формируем промпт для анализа метаданных
+      const prompt = this.buildMetadataAnalysisPrompt(title, description, marketplace);
+
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Api-Key ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'X-Data-Center': 'ru-central1',
+        },
+        body: JSON.stringify({
+          modelUri: `gpt://${this.folderId}/yandexgpt/latest`,
+          completionOptions: {
+            stream: false,
+            temperature: 0.3,
+            maxTokens: 1000
+          },
+          messages: [{
+            role: "user",
+            text: prompt
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ YandexGPT API ошибка:', response.status, errorText);
+        return this.fallbackMetadataAnalysis(title, description);
+      }
+
+      const data = await response.json();
+      console.log('✅ [URL Search] YandexGPT: Ответ получен');
+
+      const gptResponse = data.result?.alternatives?.[0]?.message?.text || '';
+      const analysis = this.parseGPTResponse(gptResponse);
+
+      console.log('🎯 [URL Search] YandexGPT результат:', analysis);
+      return analysis;
+
+    } catch (error) {
+      console.error('❌ [URL Search] YandexGPT ошибка:', error);
+      return this.fallbackMetadataAnalysis(title, description);
+    }
+  }
+
+  /**
+   * Формирует промпт для анализа товара по метаданным
+   */
+  private buildMetadataAnalysisPrompt(title: string, description: string, marketplace?: string): string {
+    return `Ты - эксперт по товарам и помогаешь найти аналоги товара в каталоге.
+
+ВХОДНЫЕ ДАННЫЕ:
+- Название товара: "${title}"
+- Описание: "${description.substring(0, 500)}"
+${marketplace ? `- Маркетплейс: ${marketplace}` : ''}
+
+ЗАДАЧА:
+Проанализируй товар и создай ключевые слова для поиска аналогов в каталоге.
+
+ТРЕБОВАНИЯ:
+1. Определи бренд товара (если есть)
+2. Определи категорию (Автозапчасти, Электроника, Инструменты, Строительство и т.д.)
+3. Извлеки характеристики (цвет, размер, материал, модель)
+4. Создай ключевые слова НА РУССКОМ И АНГЛИЙСКОМ
+5. Добавь синонимы и связанные термины
+6. Формат ответа - строго JSON без дополнительного текста
+
+ФОРМАТ ОТВЕТА:
+{
+  "brand": "название бренда или null",
+  "category": "категория товара",
+  "productType": "конкретный тип товара",
+  "keywords": ["ключевое1", "ключевое2", "ключевое3", "ключевое4", "ключевое5"],
+  "description": "краткое описание для поиска"
+}
+
+ПРИМЕРЫ:
+1. "Тормозные диски Brembo GT передние" →
+{
+  "brand": "Brembo",
+  "category": "Автозапчасти",
+  "productType": "Тормозные диски",
+  "keywords": ["Brembo", "Брембо", "тормозные диски", "brake disc", "GT", "передние", "тормоза", "суппорт"],
+  "description": "Передние тормозные диски Brembo GT"
+}
+
+2. "Перфоратор Bosch GBH 2-28" →
+{
+  "brand": "Bosch",
+  "category": "Инструменты",
+  "productType": "Перфоратор",
+  "keywords": ["Bosch", "Бош", "перфоратор", "hammer drill", "GBH", "дрель", "электроинструмент"],
+  "description": "Перфоратор Bosch GBH 2-28"
+}
+
+ОТВЕТ (только JSON, без markdown):`;
+  }
+
+  /**
+   * Fallback анализ метаданных если YandexGPT недоступен
+   */
+  private fallbackMetadataAnalysis(title: string, description: string): ProductAnalysis {
+    console.log('🔄 [URL Search] Используем базовый анализ метаданных (без GPT)');
+
+    // Извлекаем потенциальный бренд (заглавные слова в начале)
+    const words = title.split(/\s+/).filter(w => w.length > 2);
+    const capitalizedWords = words.filter(w => /^[A-ZА-Я][a-zа-я]+/.test(w));
+    const brand = capitalizedWords[0] || null;
+
+    // Базовые ключевые слова из названия и описания
+    const titleWords = title.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    const descWords = description.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 10);
+    const keywords = [...new Set([...titleWords, ...descWords])];
+
+    return {
+      brand,
+      category: null,
+      productType: null,
+      keywords: keywords.slice(0, 10),
+      description: title
+    };
+  }
+
+  /**
    * Fallback анализ если YandexGPT недоступен
    */
   private fallbackAnalysis(ocrText: string, labels: string[]): ProductAnalysis {
