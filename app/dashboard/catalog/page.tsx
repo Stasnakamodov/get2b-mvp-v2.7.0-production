@@ -213,8 +213,60 @@ export default function CatalogPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const categoryParam = params.get('category')
+    const subcategoryParam = params.get('subcategory')
     const viewParam = params.get('view')
 
+    // ВАРИАНТ 1: Клик на подкатегорию в дропдауне (передается category ID + subcategory ID)
+    if (categoryParam && subcategoryParam && !viewParam) {
+      console.log('🎯 [URL] Открываем подкатегорию по ID:', { categoryParam, subcategoryParam })
+
+      const checkAndSelectSubcategory = setInterval(() => {
+        if (apiCategories.length > 0) {
+          clearInterval(checkAndSelectSubcategory)
+
+          // Находим категорию по ID
+          const category = apiCategories.find(cat => cat.id === categoryParam)
+
+          if (category) {
+            console.log('✅ [URL] Категория найдена по ID:', category.name)
+
+            // Загружаем подкатегории и находим нужную
+            const loadAndSelectSubcategory = async () => {
+              try {
+                console.log('📂 [URL] Загружаем подкатегории для поиска...')
+                const response = await fetch(`/api/catalog/categories/${category.id}/subcategories`)
+                const data = await response.json()
+
+                if (data.subcategories && data.subcategories.length > 0) {
+                  // Находим подкатегорию по ID
+                  const subcategory = data.subcategories.find((sub: any) => sub.id === subcategoryParam)
+
+                  if (subcategory) {
+                    console.log('✅ [URL] Подкатегория найдена:', subcategory.name)
+                    setSelectedCategoryData({ ...category, subcategories: data.subcategories })
+                    setSelectedSubcategoryData(subcategory)
+                    console.log('🎯 [URL] Открыты товары подкатегории:', subcategory.name)
+                  } else {
+                    console.warn('⚠️ [URL] Подкатегория не найдена по ID:', subcategoryParam)
+                  }
+                }
+              } catch (error) {
+                console.error('❌ [URL] Ошибка загрузки подкатегорий:', error)
+              }
+            }
+
+            loadAndSelectSubcategory()
+          } else {
+            console.warn('⚠️ [URL] Категория не найдена по ID:', categoryParam)
+          }
+        }
+      }, 100)
+
+      setTimeout(() => clearInterval(checkAndSelectSubcategory), 5000)
+      return // Выходим, чтобы не обрабатывать второй вариант
+    }
+
+    // ВАРИАНТ 2: Поиск по изображению (передается category NAME + view=products)
     if (categoryParam && viewParam === 'products') {
       console.log('🎯 [URL] Автоматически открываем категорию:', categoryParam)
 
