@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronRight, X, Package } from 'lucide-react'
+import { ChevronRight, X, Search, ShoppingCart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from './ui/button'
 
@@ -20,20 +20,93 @@ interface Subcategory {
   products_count?: number
 }
 
-export default function CatalogDropdown() {
+interface CatalogDropdownProps {
+  cartItemsCount?: number
+}
+
+export default function CatalogDropdown({ cartItemsCount = 0 }: CatalogDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadingSubcategories, setLoadingSubcategories] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [placeholder, setPlaceholder] = useState('Каталог Get2b')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
+  const shortText = 'Каталог Get2b'
+  const fullText = 'Найдите свои товары в Каталоге Get2b или оставьте заявку что-бы мы нашли нужного поставщика товара'
+
   // Ensure we're mounted (for portal)
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Анимация печатающегося текста каждые 2 минуты
+  useEffect(() => {
+    let typingInterval: NodeJS.Timeout
+    let erasingInterval: NodeJS.Timeout
+    let cycleTimeout: NodeJS.Timeout
+
+    const typeText = () => {
+      let currentIndex = shortText.length
+      setPlaceholder(shortText)
+
+      typingInterval = setInterval(() => {
+        if (currentIndex < fullText.length) {
+          currentIndex++
+          setPlaceholder(fullText.substring(0, currentIndex))
+        } else {
+          clearInterval(typingInterval)
+          // Держим полный текст 5 секунд, затем стираем
+          setTimeout(() => {
+            eraseText()
+          }, 5000)
+        }
+      }, 50) // Скорость печати: 50ms на символ
+    }
+
+    const eraseText = () => {
+      let currentIndex = fullText.length
+
+      erasingInterval = setInterval(() => {
+        if (currentIndex > shortText.length) {
+          // Стираем до "Каталог Get2B"
+          currentIndex--
+          setPlaceholder(fullText.substring(0, currentIndex))
+        } else if (currentIndex > 0) {
+          // Продолжаем стирать "Каталог Get2B" до пустоты
+          currentIndex--
+          setPlaceholder(fullText.substring(0, currentIndex))
+        } else {
+          // Дошли до пустоты
+          clearInterval(erasingInterval)
+          setPlaceholder('')
+
+          // Через 300ms появляется "Каталог Get2B" слева
+          setTimeout(() => {
+            setPlaceholder(shortText)
+            // Запускаем следующий цикл через 2 минуты
+            cycleTimeout = setTimeout(() => {
+              typeText()
+            }, 120000) // 2 минуты = 120000ms
+          }, 300)
+        }
+      }, 30) // Скорость стирания: 30ms на символ (быстрее)
+    }
+
+    // Запускаем первый цикл через 45 секунд после загрузки
+    cycleTimeout = setTimeout(() => {
+      typeText()
+    }, 45000) // 45 секунд = 45000ms
+
+    return () => {
+      clearInterval(typingInterval)
+      clearInterval(erasingInterval)
+      clearTimeout(cycleTimeout)
+    }
   }, [])
 
   // ОПТИМИЗАЦИЯ: Загружаем ТОЛЬКО категории при открытии (быстро!)
@@ -231,16 +304,34 @@ export default function CatalogDropdown() {
 
   return (
     <div className="relative flex-1">
-      {/* Строка поиска по каталогу */}
+      {/* Строка поиска по каталогу с корзиной */}
       <div ref={buttonRef} className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
         <input
           type="text"
-          placeholder="Каталог Get2b"
+          placeholder={placeholder}
           onClick={() => setIsOpen(true)}
           readOnly
-          className="w-full px-4 py-2 pr-10 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer hover:border-blue-400 transition-colors"
+          className="w-full pl-10 pr-12 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer hover:border-blue-400 transition-colors"
         />
-        <Package className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+
+        {/* Кнопка корзины справа внутри строки поиска */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            router.push('/dashboard/catalog')
+          }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <div className="relative">
+            <ShoppingCart className="h-5 w-5 text-green-600" />
+            {cartItemsCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-md">
+                {cartItemsCount}
+              </span>
+            )}
+          </div>
+        </button>
       </div>
 
       {/* Выпадающее меню через портал */}

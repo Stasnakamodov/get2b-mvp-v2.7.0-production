@@ -420,26 +420,9 @@ function DashboardPageContent() {
             </Button>
         </motion.div>
 
-        {/* Кнопка корзины */}
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-          <Button
-            onClick={() => router.push('/dashboard/catalog')}
-            variant="ghost"
-            size="icon"
-            className="relative h-10 w-10 flex-shrink-0"
-          >
-            <ShoppingCart className="h-6 w-6 text-green-600" />
-            {cartItemsCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-md">
-                {cartItemsCount}
-              </span>
-            )}
-          </Button>
-        </motion.div>
-
-        {/* Строка поиска по каталогу с выпадающим меню - растягивается на всю оставшуюся ширину */}
+        {/* Строка поиска по каталогу с выпадающим меню и корзиной - растягивается на всю оставшуюся ширину */}
         <motion.div whileHover={{ scale: 1.002 }} className="flex-1 min-w-0">
-          <CatalogDropdown />
+          <CatalogDropdown cartItemsCount={cartItemsCount} />
         </motion.div>
       </motion.div>
 
