@@ -260,12 +260,57 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
     reader.readAsDataURL(file)
   }
 
-  const handleImageSearch = () => {
-    // TODO: Реализовать поиск по изображению в каталоге
-    console.log('Поиск по изображению:', uploadedImage)
-    setIsImageSearchOpen(false)
-    setUploadedImage(null)
-    // Здесь будет логика поиска похожих товаров
+  const handleImageSearch = async () => {
+    if (!uploadedImage) {
+      alert('Пожалуйста, загрузите изображение')
+      return
+    }
+
+    setIsSearching(true)
+    setProductSearchResults([])
+
+    try {
+      // Убираем префикс data:image/...;base64,
+      const base64Image = uploadedImage.split(',')[1] || uploadedImage
+
+      // Отправляем изображение на анализ
+      const response = await fetch('/api/catalog/search-by-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: base64Image })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка поиска')
+      }
+
+      console.log('✅ Результаты поиска по изображению:', data)
+
+      // Сохраняем результаты
+      setProductSearchResults(data.products || [])
+      setSearchQuery(data.searchQuery || data.description || '')
+
+      // Закрываем модальное окно загрузки изображения
+      setIsImageSearchOpen(false)
+      setUploadedImage(null)
+
+      // Открываем выпадающее меню с результатами
+      setIsOpen(true)
+
+      // Если ничего не найдено
+      if (!data.products || data.products.length === 0) {
+        alert(`Определено: ${data.description}\n\nТовары не найдены. Попробуйте другое изображение или оставьте заявку.`)
+      }
+    } catch (error) {
+      console.error('Ошибка поиска по изображению:', error)
+      alert('Произошла ошибка при поиске. Попробуйте снова.')
+    } finally {
+      setIsSearching(false)
+    }
   }
 
   const handleUrlSearch = async () => {
@@ -895,9 +940,17 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
                 {uploadedImage && (
                   <button
                     onClick={handleImageSearch}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+                    disabled={isSearching}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Найти похожие товары
+                    {isSearching ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Анализируем изображение...
+                      </>
+                    ) : (
+                      'Найти похожие товары'
+                    )}
                   </button>
                 )}
               </div>

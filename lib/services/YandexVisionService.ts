@@ -21,6 +21,74 @@ export class YandexVisionService {
   }
 
   /**
+   * Классифицирует объекты на изображении (определяет что изображено)
+   */
+  async classifyImage(imageBase64: string): Promise<{
+    labels: Array<{ name: string; confidence: number }>;
+    description: string;
+  }> {
+    try {
+      console.log('🔍 YandexVision: начинаем классификацию изображения');
+
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Api-Key ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'X-Data-Center': 'ru-central1',
+        },
+        body: JSON.stringify({
+          folderId: this.folderId,
+          analyzeSpecs: [{
+            content: imageBase64,
+            features: [{
+              type: 'CLASSIFICATION',
+              classificationConfig: {
+                model: 'quality'
+              }
+            }]
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Yandex Vision API ошибка: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ YandexVision: классификация завершена');
+      console.log('📄 Ответ от Yandex Vision API:', JSON.stringify(data, null, 2));
+
+      // Извлекаем классификацию
+      const classification = data.results?.[0]?.results?.[0]?.classification;
+      const labels = classification?.properties?.map((prop: any) => ({
+        name: prop.name,
+        confidence: prop.probability
+      })) || [];
+
+      // Создаем описание на основе меток с высокой уверенностью
+      const topLabels = labels
+        .filter((label: any) => label.confidence > 0.3)
+        .slice(0, 5)
+        .map((label: any) => label.name);
+
+      const description = topLabels.join(', ');
+
+      console.log('🏷️ Найденные категории:', labels);
+      console.log('📝 Описание:', description);
+
+      return {
+        labels,
+        description
+      };
+    } catch (error) {
+      console.error('❌ YandexVision классификация ошибка:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Распознает текст из изображения
    */
   async recognizeText(imageUrl: string): Promise<string> {
