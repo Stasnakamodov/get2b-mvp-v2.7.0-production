@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronRight, X, Package } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from './ui/button'
@@ -24,8 +25,15 @@ export default function CatalogDropdown() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [loading, setLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+
+  // Ensure we're mounted (for portal)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Загружаем категории при открытии
   useEffect(() => {
@@ -37,7 +45,12 @@ export default function CatalogDropdown() {
   // Закрытие при клике вне
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false)
         setSelectedCategory(null)
       }
@@ -77,23 +90,22 @@ export default function CatalogDropdown() {
     setSelectedCategory(null)
   }
 
-  return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Кнопка Каталог */}
-      <Button
-        onClick={() => setIsOpen(!isOpen)}
-        variant="default"
-        className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 flex items-center gap-2"
-      >
-        <Package className="h-5 w-5" />
-        Каталог
-      </Button>
+  const renderDropdown = () => {
+    if (!isOpen || !mounted || !buttonRef.current) return null
 
-      {/* Выпадающее меню */}
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden"
-          style={{ width: '800px', zIndex: 9999 }}
-        >
+    const buttonRect = buttonRef.current.getBoundingClientRect()
+
+    return createPortal(
+      <div
+        ref={dropdownRef}
+        className="fixed bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden"
+        style={{
+          width: '800px',
+          zIndex: 999999,
+          top: `${buttonRect.bottom + 8}px`,
+          left: `${buttonRect.left}px`
+        }}
+      >
           {loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
@@ -166,15 +178,34 @@ export default function CatalogDropdown() {
             </div>
           )}
 
-          {/* Кнопка закрытия */}
-          <button
-            onClick={() => setIsOpen(false)}
-            className="absolute top-3 right-3 p-1 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
-        </div>
-      )}
+        {/* Кнопка закрытия */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="absolute top-3 right-3 p-1 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X className="h-5 w-5 text-gray-500" />
+        </button>
+      </div>,
+      document.body
+    )
+  }
+
+  return (
+    <div className="relative flex-1">
+      {/* Строка поиска по каталогу */}
+      <div ref={buttonRef} className="relative">
+        <input
+          type="text"
+          placeholder="Каталог Get2b"
+          onClick={() => setIsOpen(true)}
+          readOnly
+          className="w-full px-4 py-2 pr-10 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer hover:border-blue-400 transition-colors"
+        />
+        <Package className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+      </div>
+
+      {/* Выпадающее меню через портал */}
+      {renderDropdown()}
     </div>
   )
 }

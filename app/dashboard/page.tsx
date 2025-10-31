@@ -408,40 +408,39 @@ function DashboardPageContent() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex justify-between items-center mb-8"
+        className="flex items-center gap-3 mb-8"
       >
-        <h1 className="text-3xl font-bold text-foreground">Ваши сделки</h1>
-        <div className="flex items-center gap-3">
-          {/* Выпадающий каталог */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <CatalogDropdown />
-          </motion.div>
+        <h1 className="text-3xl font-bold text-foreground whitespace-nowrap">Ваши сделки</h1>
 
-          {/* Кнопка корзины */}
-          {cartItemsCount > 0 && (
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                onClick={() => router.push('/dashboard/catalog')}
-                variant="outline"
-                className="relative flex items-center gap-2 border-2 border-green-500 text-green-600 hover:bg-green-50 shadow-md hover:shadow-lg transition-all duration-300"
-              >
-                <ShoppingCart size={16} />
-                Корзина
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-md">
-                  {cartItemsCount}
-                </span>
-              </Button>
-            </motion.div>
-          )}
+        {/* Кнопка нового проекта */}
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button onClick={handleCreateProjectClick} className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-300 whitespace-nowrap">
+              <Plus size={16} />
+              Новый проект
+            </Button>
+        </motion.div>
 
-          {/* Кнопка нового проекта */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button onClick={handleCreateProjectClick} className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-300">
-                <Plus size={16} />
-                Новый проект
-              </Button>
-          </motion.div>
-        </div>
+        {/* Кнопка корзины */}
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <Button
+            onClick={() => router.push('/dashboard/catalog')}
+            variant="ghost"
+            size="icon"
+            className="relative h-10 w-10 flex-shrink-0"
+          >
+            <ShoppingCart className="h-6 w-6 text-green-600" />
+            {cartItemsCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-md">
+                {cartItemsCount}
+              </span>
+            )}
+          </Button>
+        </motion.div>
+
+        {/* Строка поиска по каталогу с выпадающим меню - растягивается на всю оставшуюся ширину */}
+        <motion.div whileHover={{ scale: 1.002 }} className="flex-1 min-w-0">
+          <CatalogDropdown />
+        </motion.div>
       </motion.div>
 
       {/* Секция активных проектов */}
