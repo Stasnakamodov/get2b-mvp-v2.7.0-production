@@ -432,10 +432,10 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
               e.stopPropagation()
               setIsUrlSearchOpen(true)
             }}
-            className="absolute right-20 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="absolute right-20 top-1/2 -translate-y-1/2 p-1.5 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 rounded-full transition-all shadow-md hover:shadow-lg"
             title="Поиск по ссылке из интернета"
           >
-            <Globe className="h-5 w-5 text-purple-600" />
+            <Globe className="h-5 w-5 text-white" />
           </button>
 
           {/* Кнопка камеры справа (вплотную к корзине слева) */}
@@ -836,7 +836,7 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
                   <button
                     onClick={handleUrlSearch}
                     disabled={isSearching || !searchUrl.trim()}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isSearching ? (
                       <>
