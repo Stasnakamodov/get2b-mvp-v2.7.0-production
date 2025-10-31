@@ -29,6 +29,7 @@ import ProjectTimeline from "@/components/ui/ProjectTimeline"
 import { useDeleteTemplate } from "./create-project/hooks/useDeleteTemplate"
 import { useRouter } from "next/navigation"
 import { useProjectTemplates } from "./create-project/hooks/useSaveTemplate"
+import CatalogDropdown from "@/components/CatalogDropdown"
 
 // Типы для проектов
 interface Project {
@@ -411,6 +412,11 @@ function DashboardPageContent() {
       >
         <h1 className="text-3xl font-bold text-foreground">Ваши сделки</h1>
         <div className="flex items-center gap-3">
+          {/* Выпадающий каталог */}
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <CatalogDropdown />
+          </motion.div>
+
           {/* Кнопка корзины */}
           {cartItemsCount > 0 && (
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
