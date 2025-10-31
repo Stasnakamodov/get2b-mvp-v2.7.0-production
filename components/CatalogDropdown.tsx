@@ -298,11 +298,20 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
       setIsImageSearchOpen(false)
       setUploadedImage(null)
 
-      // Открываем выпадающее меню с результатами
-      setIsOpen(true)
+      // Если товары найдены
+      if (data.products && data.products.length > 0) {
+        // Получаем категорию первого найденного товара
+        const firstProduct = data.products[0]
+        const productCategory = firstProduct.category
 
-      // Если ничего не найдено
-      if (!data.products || data.products.length === 0) {
+        console.log('🎯 Переходим в категорию:', productCategory)
+
+        // Перенаправляем в каталог с этой категорией
+        router.push(`/dashboard/catalog?category=${encodeURIComponent(productCategory)}`)
+        setIsOpen(false)
+      } else {
+        // Если ничего не найдено, показываем dropdown с предложением
+        setIsOpen(true)
         alert(`Определено: ${data.description}\n\nТовары не найдены. Попробуйте другое изображение или оставьте заявку.`)
       }
     } catch (error) {
