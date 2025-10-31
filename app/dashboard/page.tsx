@@ -416,8 +416,6 @@ function DashboardPageContent() {
         transition={{ duration: 0.5 }}
         className="flex items-center gap-3 mb-8"
       >
-        <h1 className="text-3xl font-bold text-foreground whitespace-nowrap">Ваши сделки</h1>
-
         {/* Кнопка нового проекта */}
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button onClick={handleCreateProjectClick} className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-300 whitespace-nowrap">
@@ -438,7 +436,7 @@ function DashboardPageContent() {
       {/* Секция активных проектов */}
       <motion.div initial="hidden" animate="visible" variants={containerVariants} className="mb-12">
         <motion.div variants={itemVariants} className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-foreground">Ваши сделки</h2>
+          <h1 className="text-3xl font-bold text-foreground whitespace-nowrap">Ваши сделки</h1>
           <motion.div whileHover="hover" whileTap="tap" variants={buttonVariants}>
             <Link href="/dashboard/active-projects">
               <Button variant="outline" className="flex items-center gap-1">
