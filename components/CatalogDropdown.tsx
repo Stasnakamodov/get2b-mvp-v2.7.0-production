@@ -41,9 +41,13 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [showNoResults, setShowNoResults] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [productSearchResults, setProductSearchResults] = useState<any[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
 
   const shortText = 'Каталог Get2b'
@@ -290,10 +294,64 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
     }
   }
 
+  // Поиск товаров по тексту
+  const handleSearchQueryChange = (value: string) => {
+    setSearchQuery(value)
+
+    // Очищаем предыдущий таймаут
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    // Если поле пустое, очищаем результаты
+    if (!value.trim()) {
+      setProductSearchResults([])
+      return
+    }
+
+    // Запускаем поиск с debounce 500ms
+    searchTimeoutRef.current = setTimeout(async () => {
+      await searchProducts(value)
+    }, 500)
+  }
+
+  const searchProducts = async (query: string) => {
+    if (!query.trim()) return
+
+    setSearchLoading(true)
+    try {
+      // Используем существующий API для поиска товаров
+      const response = await fetch(`/api/catalog/products?search=${encodeURIComponent(query)}&supplier_type=verified&limit=20`)
+      const data = await response.json()
+
+      if (data.products) {
+        setProductSearchResults(data.products)
+      } else {
+        setProductSearchResults([])
+      }
+    } catch (error) {
+      console.error('Ошибка поиска товаров:', error)
+      setProductSearchResults([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  const handleProductClick = (product: any) => {
+    // Переходим на страницу каталога с поиском
+    router.push(`/dashboard/catalog?search=${encodeURIComponent(searchQuery)}`)
+    setIsOpen(false)
+    setSearchQuery('')
+    setProductSearchResults([])
+  }
+
   const renderDropdown = () => {
     if (!isOpen || !mounted || !buttonRef.current) return null
 
     const buttonRect = buttonRef.current.getBoundingClientRect()
+
+    // Если есть поисковый запрос, показываем результаты поиска
+    const showSearchResults = searchQuery.trim().length > 0
 
     return createPortal(
       <div
@@ -306,7 +364,87 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
           left: `${buttonRect.left}px`
         }}
       >
-          {loading ? (
+          {showSearchResults ? (
+            // Панель результатов поиска
+            <div className="p-6" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Результаты поиска: "{searchQuery}"
+              </h3>
+
+              {searchLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                  <p className="text-gray-600 text-sm">Поиск товаров...</p>
+                </div>
+              ) : productSearchResults.length > 0 ? (
+                <div className="space-y-3">
+                  {productSearchResults.map((product) => (
+                    <button
+                      key={product.id}
+                      onClick={() => handleProductClick(product)}
+                      className="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                    >
+                      <div className="flex gap-4">
+                        {product.image_url && (
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-20 h-20 object-cover rounded"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 group-hover:text-blue-700 mb-1">
+                            {product.name}
+                          </h4>
+                          {product.description && (
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {product.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-2">
+                            {product.price && (
+                              <span className="text-sm font-semibold text-green-600">
+                                {product.price} ₽
+                              </span>
+                            )}
+                            {product.supplier_name && (
+                              <span className="text-xs text-gray-500">
+                                • {product.supplier_name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                  <div className="pt-4 border-t">
+                    <button
+                      onClick={() => {
+                        router.push(`/dashboard/catalog?search=${encodeURIComponent(searchQuery)}`)
+                        setIsOpen(false)
+                      }}
+                      className="w-full px-4 py-2 text-blue-600 hover:text-blue-700 font-medium text-sm hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      Смотреть все результаты →
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">Товары не найдены</p>
+                  <button
+                    onClick={() => {
+                      setIsOpen(false)
+                      setIsRequestFormOpen(true)
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                  >
+                    Оставить заявку на поиск
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
               <p className="text-gray-600">Загрузка каталога...</p>
@@ -420,10 +558,16 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
 
           <input
             type="text"
-            placeholder={placeholder}
-            onClick={() => setIsOpen(true)}
-            readOnly
-            className="w-full pl-10 pr-32 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer hover:border-blue-400 transition-colors"
+            placeholder={searchQuery ? '' : placeholder}
+            value={searchQuery}
+            onChange={(e) => {
+              handleSearchQueryChange(e.target.value)
+              if (!isOpen) setIsOpen(true)
+            }}
+            onFocus={() => {
+              if (!searchQuery) setIsOpen(true)
+            }}
+            className="w-full pl-10 pr-32 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 hover:border-blue-400 transition-colors"
           />
 
           {/* Кнопка глобуса (планетка) */}
