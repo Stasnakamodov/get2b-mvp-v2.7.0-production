@@ -2084,19 +2084,17 @@ export default function CatalogPage() {
                   </div>
                 </div>
                 {/* Встроенный список категорий */}
-                <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
-                  {authLoading ? (
-                    <div className="p-8 text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-gray-600">Загружается авторизация...</p>
-                    </div>
-                  ) : (
-                    <InlineCategoryList
-                      onCategorySelect={handleCategorySelect}
-                      selectedRoom={selectedRoom}
-                    />
-                  )}
-                </div>
+                {authLoading ? (
+                  <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Загружается авторизация...</p>
+                  </div>
+                ) : (
+                  <InlineCategoryList
+                    onCategorySelect={handleCategorySelect}
+                    selectedRoom={selectedRoom}
+                  />
+                )}
               </div>
             ) : !selectedSubcategoryData ? (
               // УРОВЕНЬ 2: Показываем подкатегории выбранной категории
