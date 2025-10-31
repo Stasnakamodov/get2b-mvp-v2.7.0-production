@@ -89,17 +89,31 @@ export class YandexVisionService {
   }
 
   /**
-   * Распознает текст из изображения
+   * Распознает текст из изображения (по URL)
    */
   async recognizeText(imageUrl: string): Promise<string> {
     try {
       console.log('🔍 YandexVision: начинаем распознавание текста');
-      
+
       // Скачиваем изображение и конвертируем в base64
       const imageResponse = await fetch(imageUrl);
       const imageBuffer = await imageResponse.arrayBuffer();
       const base64Image = Buffer.from(imageBuffer).toString('base64');
-      
+
+      return await this.recognizeTextFromBase64(base64Image);
+    } catch (error) {
+      console.error('❌ YandexVision ошибка:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Распознает текст из изображения (из base64)
+   */
+  async recognizeTextFromBase64(imageBase64: string): Promise<string> {
+    try {
+      console.log('🔍 YandexVision: начинаем распознавание текста из base64');
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
@@ -110,7 +124,7 @@ export class YandexVisionService {
         body: JSON.stringify({
           folderId: this.folderId,
           analyzeSpecs: [{
-            content: base64Image,
+            content: imageBase64,
             features: [{
               type: 'TEXT_DETECTION',
               textDetectionConfig: {
@@ -128,7 +142,6 @@ export class YandexVisionService {
 
       const data = await response.json();
       console.log('✅ YandexVision: изображение распознано успешно');
-      console.log('📄 Ответ от Yandex Vision API:', JSON.stringify(data, null, 2));
 
       // Извлекаем текст из результатов
       const text = data.results?.[0]?.results?.[0]?.textDetection?.pages?.[0]?.blocks
@@ -140,7 +153,7 @@ export class YandexVisionService {
 
       return text;
     } catch (error) {
-      console.error('❌ YandexVision ошибка:', error);
+      console.error('❌ YandexVision OCR ошибка:', error);
       throw error;
     }
   }
