@@ -20,6 +20,8 @@ import {
   AlertCircle,
   ShoppingCart,
   Package,
+  AlertTriangle,
+  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -31,6 +33,7 @@ import { useDeleteTemplate } from "./create-project/hooks/useDeleteTemplate"
 import { useRouter } from "next/navigation"
 import { useProjectTemplates } from "./create-project/hooks/useSaveTemplate"
 import CatalogDropdown from "@/components/CatalogDropdown"
+import { cn } from "@/lib/utils"
 
 // Типы для проектов
 interface Project {
@@ -171,6 +174,29 @@ function DashboardPageContent() {
   const [cartItemsCount, setCartItemsCount] = useState(0)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [cartItems, setCartItems] = useState<any[]>([])
+  const [quickFilter, setQuickFilter] = useState<string | null>(null)
+
+  // Быстрые фильтры
+  const quickFilters = [
+    {
+      id: "needs_attention",
+      label: "Требует внимания",
+      icon: AlertTriangle,
+      color: "text-orange-600 bg-orange-50 border-orange-200",
+    },
+    {
+      id: "overdue",
+      label: "Просрочены",
+      icon: AlertCircle,
+      color: "text-red-600 bg-red-50 border-red-200",
+    },
+    {
+      id: "new",
+      label: "Новые",
+      icon: Sparkles,
+      color: "text-blue-600 bg-blue-50 border-blue-200",
+    }
+  ];
 
   // Добавляем состояние для диагностики
   const [debugInfo, setDebugInfo] = useState<{
@@ -437,14 +463,40 @@ function DashboardPageContent() {
       <motion.div initial="hidden" animate="visible" variants={containerVariants} className="mb-12">
         <motion.div variants={itemVariants} className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-foreground whitespace-nowrap">Ваши сделки</h1>
-          <motion.div whileHover="hover" whileTap="tap" variants={buttonVariants}>
-            <Link href="/dashboard/active-projects">
-              <Button variant="outline" className="flex items-center gap-1">
-                Все сделки
-                <ChevronRight size={16} />
-              </Button>
-            </Link>
-          </motion.div>
+
+          {/* Быстрые фильтры и кнопка "Все сделки" */}
+          <div className="flex items-center gap-2">
+            {/* Быстрые фильтры */}
+            {quickFilters.map((filter) => {
+              const Icon = filter.icon;
+              const isActive = quickFilter === filter.id;
+              return (
+                <Button
+                  key={filter.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setQuickFilter(isActive ? null : filter.id)}
+                  className={cn(
+                    "flex items-center gap-2",
+                    !isActive && filter.color
+                  )}
+                >
+                  <Icon size={16} />
+                  {filter.label}
+                </Button>
+              );
+            })}
+
+            {/* Кнопка "Все сделки" */}
+            <motion.div whileHover="hover" whileTap="tap" variants={buttonVariants}>
+              <Link href="/dashboard/active-projects">
+                <Button variant="outline" className="flex items-center gap-1">
+                  Все сделки
+                  <ChevronRight size={16} />
+                </Button>
+              </Link>
+            </motion.div>
+          </div>
         </motion.div>
 
         <div className="space-y-8">
