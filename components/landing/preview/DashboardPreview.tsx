@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { Search } from "lucide-react"
 import { CatalogSearchBar } from "./CatalogSearchBar"
 import { ProjectTemplates } from "./ProjectTemplates"
 import { ProjectStatistics } from "./ProjectStatistics"
@@ -70,6 +71,17 @@ export function DashboardPreview({
 
           {/* Stats Cards Row - 4 Cards (как в дашборде) */}
           <ProjectStatistics stats={projectStats} />
+
+          {/* Кнопка "Не нашли товар?" */}
+          <div className="mt-4">
+            <button
+              onClick={() => onTutorialOpen('request-product')}
+              className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+            >
+              <Search className="h-5 w-5" />
+              Не нашли товар? Мы поможем найти!
+            </button>
+          </div>
         </div>
       </div>
 

@@ -63,7 +63,7 @@ export interface FAQItem {
 
 // ==================== TUTORIAL ====================
 
-export type TutorialType = 'cart' | 'globe' | 'camera' | 'new-project' | 'catalog'
+export type TutorialType = 'cart' | 'globe' | 'camera' | 'new-project' | 'catalog' | 'request-product'
 
 export interface TutorialContent {
   title: string
