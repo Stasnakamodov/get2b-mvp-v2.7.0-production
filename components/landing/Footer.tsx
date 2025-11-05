@@ -1,6 +1,6 @@
 import React from 'react'
 import { Mail } from 'lucide-react'
-import { Logo } from '@/components/Logo'
+import { Logo } from '@/components/logo'
 
 /**
  * Footer компонент для landing page
