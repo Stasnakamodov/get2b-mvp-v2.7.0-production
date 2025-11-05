@@ -1,6 +1,7 @@
 import React from 'react'
 import type { Project } from '@/types/landing'
 import { getCorrectStepForCard, getProjectStatusLabel, toRoman } from '@/lib/utils/projectHelpers'
+import { Sparkles } from 'lucide-react'
 
 const projectSteps = [
   { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }
@@ -8,13 +9,14 @@ const projectSteps = [
 
 interface ProjectCardProps {
   project: Project
+  onClick?: () => void
 }
 
 /**
  * Карточка проекта для dashboard preview
  * Отображает название, сумму, статус и прогресс по 7 шагам
  */
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, onClick }: ProjectCardProps) {
   const step = getCorrectStepForCard(project)
   const { color, text, Icon } = getProjectStatusLabel(step, String(project.status), project.receipts)
 
@@ -73,11 +75,31 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mt-3">
-        <div className="px-3 py-1.5 border border-white/10 rounded-lg hover:border-white/20 transition-all">
+        <button
+          onClick={onClick}
+          className="px-3 py-1.5 border border-white/10 rounded-lg hover:border-white/20 transition-all cursor-pointer hover:bg-white/5"
+        >
           <span className="text-sm text-gray-300">Подробнее</span>
-        </div>
-        <div className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg hover:shadow-xl transition-all">
-          <span className="text-sm text-white font-medium">Следующий шаг</span>
+        </button>
+        <div className="relative group">
+          <div className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg hover:shadow-xl transition-all cursor-pointer">
+            <span className="text-sm text-white font-medium">Следующий шаг</span>
+          </div>
+          {/* Тултип */}
+          <div className="absolute bottom-full right-0 mb-2 w-72 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+            <div className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-xs rounded-lg p-3 shadow-xl border border-white/20">
+              <div className="flex items-start gap-2">
+                <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5 text-yellow-300" />
+                <div>
+                  <div className="font-semibold mb-1">Работайте в удобном темпе</div>
+                  <div className="text-white/90">
+                    Проходите все этапы проекта когда удобно — закрывайте и возвращайтесь в любое время.
+                    Мы уведомим вас, когда начнётся новый этап или потребуется ваше участие.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

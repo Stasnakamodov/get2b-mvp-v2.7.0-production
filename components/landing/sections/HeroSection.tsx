@@ -1,14 +1,27 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { DashboardPreview } from "../preview/DashboardPreview"
 import { useTutorial } from "@/hooks/landing/useTutorial"
 
+// Список стран для анимации
+const countries = ["Китая", "Турции", "стран ЕАЭС"]
+
 export function HeroSection() {
   const { isOpen, type, openTutorial, closeTutorial } = useTutorial()
+  const [countryIndex, setCountryIndex] = useState(0)
+
+  // Автоматическая смена стран каждые 3 секунды
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountryIndex((prev) => (prev + 1) % countries.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <section className="relative min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-950 to-black overflow-hidden z-10">
@@ -26,13 +39,22 @@ export function HeroSection() {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-6xl mb-16"
         >
-          <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-2 mb-8">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-300 font-light">Платёжный агент нового поколения</span>
-          </div>
-
           <h1 className="text-[64px] md:text-[96px] leading-[0.92] font-light tracking-tight text-white mb-8">
-            Закупки из Китая{" "}
+            Закупки из{" "}
+            <span className="inline-block min-w-[280px] md:min-w-[420px]">
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={countryIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  className="inline-block"
+                >
+                  {countries[countryIndex]}
+                </motion.span>
+              </AnimatePresence>
+            </span>
             <span className="block mt-2 font-normal bg-gradient-to-r from-blue-400 via-purple-400 to-orange-400 bg-clip-text text-transparent">
               под ключ
             </span>
@@ -50,7 +72,7 @@ export function HeroSection() {
               </Button>
             </Link>
             <Link href="/dashboard/create-project">
-              <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/5 text-base px-8 py-6 h-auto rounded-full font-light backdrop-blur-sm">
+              <Button size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black text-base px-8 py-6 h-auto rounded-full font-light transition-all">
                 Создать закупку
               </Button>
             </Link>

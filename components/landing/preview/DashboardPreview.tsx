@@ -1,14 +1,16 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { CatalogSearchBar } from "./CatalogSearchBar"
 import { ProjectTemplates } from "./ProjectTemplates"
 import { ProjectStatistics } from "./ProjectStatistics"
 import { ProjectCard } from "@/components/landing/cards/ProjectCard"
 import { TutorialModal } from "../tutorial/TutorialModal"
+import { ProjectDetailsModal } from "./ProjectDetailsModal"
 import { useProjectStats } from "@/hooks/landing/useProjectStats"
 import { mockProjects } from "@/data/landing/mockData"
-import type { TutorialType } from "@/types/landing"
+import type { TutorialType, Project } from "@/types/landing"
 
 interface DashboardPreviewProps {
   onTutorialOpen: (type: TutorialType) => void
@@ -27,6 +29,20 @@ export function DashboardPreview({
   const displayProjects = mockProjects
   const projectStats = useProjectStats(displayProjects)
 
+  // State for project details modal
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false)
+
+  const handleProjectClick = (project: Project) => {
+    setSelectedProject(project)
+    setIsProjectModalOpen(true)
+  }
+
+  const handleProjectModalClose = () => {
+    setIsProjectModalOpen(false)
+    setSelectedProject(null)
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -40,6 +56,13 @@ export function DashboardPreview({
           isOpen={tutorialIsOpen}
           type={tutorialType}
           onClose={onTutorialClose}
+        />
+
+        {/* Project Details Modal */}
+        <ProjectDetailsModal
+          isOpen={isProjectModalOpen}
+          project={selectedProject}
+          onClose={handleProjectModalClose}
         />
         {/* Mock browser bar */}
         <div className="flex items-center gap-2 px-4 py-3 bg-white/5 border-b border-white/10">
@@ -61,7 +84,11 @@ export function DashboardPreview({
           {/* Project Cards - показываем до 2 проектов */}
           <div className="space-y-3 mb-4">
             {displayProjects.slice(0, 2).map((proj) => (
-              <ProjectCard key={proj.id} project={proj} />
+              <ProjectCard
+                key={proj.id}
+                project={proj}
+                onClick={() => handleProjectClick(proj)}
+              />
             ))}
           </div>
 

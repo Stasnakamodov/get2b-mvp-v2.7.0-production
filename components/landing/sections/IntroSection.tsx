@@ -15,7 +15,7 @@ export function IntroSection() {
           className="max-w-4xl mb-20"
         >
           <h2 className="text-[56px] md:text-[80px] leading-[0.95] font-light tracking-tight text-black mb-6">
-            Мы — <span className="font-normal">платёжный агент</span>
+            Мы - <span className="font-normal">сервис агент нового поколения</span>
           </h2>
           <p className="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
             Не просто CRM. Мы берём деньги от вас и переводим поставщику легально.
@@ -50,7 +50,7 @@ export function IntroSection() {
                 <Shield className="w-12 h-12 text-white" />
               </div>
               <div className="text-base font-normal text-black mb-1">Get2B</div>
-              <div className="text-sm text-gray-600 font-light">Платёжный агент</div>
+              <div className="text-sm text-gray-600 font-light">Сервис агент</div>
             </div>
 
             {/* Arrow */}
