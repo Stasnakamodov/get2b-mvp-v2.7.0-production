@@ -9,7 +9,7 @@ import { DashboardPreview } from "../preview/DashboardPreview"
 import { useTutorial } from "@/hooks/landing/useTutorial"
 
 // Список стран для анимации
-const countries = ["Китая", "Турции", "стран ЕАЭС"]
+const countries = ["Китая", "Турции", "ЕАЭС"]
 
 export function HeroSection() {
   const { isOpen, type, openTutorial, closeTutorial } = useTutorial()

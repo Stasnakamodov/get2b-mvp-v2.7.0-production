@@ -28,7 +28,6 @@
 import { Header } from "@/components/landing/Header"
 import { Footer } from "@/components/landing/Footer"
 import { HeroSection } from "@/components/landing/sections/HeroSection"
-import { IntroSection } from "@/components/landing/sections/IntroSection"
 import { CatalogSection } from "@/components/landing/sections/CatalogSection"
 import { ProcessSection } from "@/components/landing/sections/ProcessSection"
 import { BenefitsSection } from "@/components/landing/sections/BenefitsSection"
@@ -44,9 +43,6 @@ export default function LandingPage() {
 
       {/* Hero Section with Dashboard Preview */}
       <HeroSection />
-
-      {/* Intro Section - Payment Agent Explanation */}
-      <IntroSection />
 
       {/* Catalog Section - 10,000+ Products */}
       <CatalogSection />
