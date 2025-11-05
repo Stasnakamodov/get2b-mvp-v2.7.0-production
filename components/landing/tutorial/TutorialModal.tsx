@@ -25,7 +25,7 @@ export function TutorialModal({ isOpen, type, onClose }: TutorialModalProps) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.3 }}
-      className="absolute inset-0 bg-black/40 backdrop-blur-md z-50 p-8 overflow-y-auto"
+      className="absolute inset-0 bg-gradient-to-br from-zinc-900/98 to-black/98 backdrop-blur-md z-50 p-8 overflow-y-auto"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Close button */}
