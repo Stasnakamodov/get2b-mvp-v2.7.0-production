@@ -20,72 +20,74 @@ export function TutorialModal({ isOpen, type, onClose }: TutorialModalProps) {
   const IconComponent = content.icon
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.3 }}
-      className="absolute inset-0 bg-gradient-to-br from-zinc-900/98 to-black/98 backdrop-blur-md z-50 p-8 overflow-y-auto"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+    // ТОЧНО КАК КОРЗИНА: fixed inset-0 + overlay + centered modal
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+        className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
       >
-        <X className="w-5 h-5 text-gray-400" />
-      </button>
-
-      {/* Content */}
-      <div className="max-w-2xl mx-auto">
-        {/* Icon & Title */}
-        <div className="flex items-start gap-4 mb-6">
-          <div className={`p-4 rounded-2xl bg-gradient-to-br ${content.color}`}>
-            <IconComponent className="w-8 h-8 text-white" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-2xl font-semibold text-white mb-2">
-              {content.title}
-            </h3>
-            <p className="text-gray-400 text-base">
-              {content.description}
-            </p>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="space-y-3 mb-6">
-          {content.features.map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10"
+        {/* Header - КАК У КОРЗИНЫ */}
+        <div className="p-6 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-xl bg-gradient-to-br ${content.color}`}>
+                <IconComponent className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">{content.title}</h2>
+                <p className="text-sm text-gray-600 mt-0.5">{content.description}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
             >
-              <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-              <span className="text-gray-300 text-sm">{feature}</span>
-            </motion.div>
-          ))}
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
-        {/* CTA */}
-        <div className="flex gap-3">
-          <Link href="/dashboard/catalog" className="flex-1">
-            <Button className={`w-full bg-gradient-to-r ${content.color} hover:opacity-90 text-white`}>
-              Попробовать сейчас
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="border-white/20 text-white hover:bg-white/5"
-          >
-            Закрыть
-          </Button>
+        {/* Content - КАК СПИСОК ТОВАРОВ В КОРЗИНЕ */}
+        <div className="p-6 max-h-[50vh] overflow-y-auto">
+          <div className="space-y-3">
+            {content.features.map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">{feature}</span>
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </div>
-    </motion.div>
+
+        {/* Footer - КАК У КОРЗИНЫ */}
+        <div className="p-6 border-t bg-gray-50">
+          <div className="flex gap-3">
+            <Link href="/dashboard/catalog" className="flex-1">
+              <Button className={`w-full bg-gradient-to-r ${content.color} hover:opacity-90 text-white h-12`}>
+                Попробовать сейчас
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="border-gray-300 text-gray-700 hover:bg-gray-100 h-12 px-6"
+            >
+              Закрыть
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
   )
 }
