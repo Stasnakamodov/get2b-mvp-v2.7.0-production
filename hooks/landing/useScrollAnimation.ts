@@ -4,7 +4,7 @@ import type { UseScrollAnimationReturn } from '@/types/landing'
 
 /**
  * Хук для анимаций при скролле
- * TODO: Реализовать в Фазе 4
+ * Используется в landing page для триггера анимаций при появлении элемента в viewport
  */
 export function useScrollAnimation(): UseScrollAnimationReturn {
   const ref = useRef<HTMLDivElement>(null)
