@@ -84,18 +84,19 @@ export function TutorialModal({ isOpen, type, onClose }: TutorialModalProps) {
         {/* Footer - ТЕМНАЯ ТЕМА */}
         <div className="p-6 border-t border-white/10 bg-zinc-900/50">
           <div className="flex gap-3">
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="border-white/20 hover:border-white/30 text-white hover:bg-white/10 h-12 px-6"
+            >
+              Закрыть
+            </Button>
             <Link href="/dashboard/catalog" className="flex-1">
-              <Button className={`w-full bg-gradient-to-r ${content.color} hover:opacity-90 text-white h-12`}>
+              <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white h-12">
                 Попробовать сейчас
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <button
-              onClick={onClose}
-              className="h-12 px-6 border border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white rounded-md font-medium transition-colors"
-            >
-              Закрыть
-            </button>
           </div>
         </div>
       </motion.div>
