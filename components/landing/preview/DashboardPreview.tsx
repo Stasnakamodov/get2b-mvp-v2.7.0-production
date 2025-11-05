@@ -5,8 +5,8 @@ import { CatalogSearchBar } from "./CatalogSearchBar"
 import { ProjectTemplates } from "./ProjectTemplates"
 import { ProjectStatistics } from "./ProjectStatistics"
 import { ProjectCard } from "@/components/landing/cards/ProjectCard"
-import { useProjects } from "@/hooks/landing/useProjects"
 import { useProjectStats } from "@/hooks/landing/useProjectStats"
+import { mockProjects } from "@/data/landing/mockData"
 import type { TutorialType } from "@/types/landing"
 
 interface DashboardPreviewProps {
@@ -14,7 +14,8 @@ interface DashboardPreviewProps {
 }
 
 export function DashboardPreview({ onTutorialOpen }: DashboardPreviewProps) {
-  const { displayProjects } = useProjects()
+  // Use mock projects for landing page preview
+  const displayProjects = mockProjects
   const projectStats = useProjectStats(displayProjects)
 
   return (
