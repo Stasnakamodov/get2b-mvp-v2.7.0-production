@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Get2b - Поиск товаров от поставщиков",
+  "version": "1.0.0",
+  "description": "Найдите похожие товары у проверенных поставщиков B2B на платформе Get2b",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*.ozon.ru/*",
+    "https://*.wildberries.ru/*",
+    "https://*.aliexpress.ru/*",
+    "https://*.aliexpress.com/*",
+    "https://market.yandex.ru/*",
+    "https://*.sbermegamarket.ru/*",
+    "http://localhost:3000/*",
+    "http://localhost:3002/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.ozon.ru/*",
+        "https://*.wildberries.ru/*",
+        "https://*.aliexpress.ru/*",
+        "https://*.aliexpress.com/*",
+        "https://market.yandex.ru/*",
+        "https://*.sbermegamarket.ru/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

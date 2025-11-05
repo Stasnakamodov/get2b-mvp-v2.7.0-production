@@ -38,14 +38,19 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [searchUrl, setSearchUrl] = useState('')
+  const [searchHtml, setSearchHtml] = useState('')
+  const [urlSearchTab, setUrlSearchTab] = useState<'url' | 'html'>('url')
   const [isSearching, setIsSearching] = useState(false)
   const [showNoResults, setShowNoResults] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
   const [productSearchResults, setProductSearchResults] = useState<any[]>([])
+  const [isOzonMethodModalOpen, setIsOzonMethodModalOpen] = useState(false)
+  const [ozonUrl, setOzonUrl] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const screenshotInputRef = useRef<HTMLInputElement>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
 
@@ -259,6 +264,20 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
     reader.readAsDataURL(file)
   }
 
+  // Обработчик выбора скриншота Ozon
+  const handleOzonScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files[0]) {
+      handleImageUpload(files[0])
+      // Закрываем модалку выбора метода
+      setIsOzonMethodModalOpen(false)
+      setOzonUrl('')
+      setIsUrlSearchOpen(false)
+      // Открываем модалку поиска по изображению
+      setIsImageSearchOpen(true)
+    }
+  }
+
   const handleImageSearch = async () => {
     if (!uploadedImage) {
       alert('Пожалуйста, загрузите изображение')
@@ -328,6 +347,14 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
       return
     }
 
+    // Проверяем, это ссылка на Ozon?
+    if (searchUrl.toLowerCase().includes('ozon.ru')) {
+      console.log('🎯 [URL SEARCH] Обнаружен Ozon - показываем модалку выбора метода')
+      setOzonUrl(searchUrl)
+      setIsOzonMethodModalOpen(true)
+      return
+    }
+
     setIsSearching(true)
     setShowNoResults(false)
 
@@ -379,7 +406,26 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
       }
     } catch (error) {
       console.error('❌ [URL SEARCH] Ошибка поиска:', error)
-      alert(`Произошла ошибка при поиске: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка'
+
+      // Если это защищенный маркетплейс - показываем специальное сообщение
+      if (errorMessage.includes('защиту от автоматического парсинга')) {
+        alert(
+          '🛡️ Этот маркетплейс защищен от автоматического парсинга.\n\n' +
+          '💡 Решение:\n' +
+          '1. Скопируйте название товара со страницы маркетплейса\n' +
+          '2. Используйте обычную строку поиска каталога\n' +
+          '3. Система найдет похожие товары у наших поставщиков'
+        )
+
+        // Закрываем модальное окно URL поиска
+        setIsUrlSearchOpen(false)
+        setSearchUrl('')
+      } else {
+        alert(`Произошла ошибка при поиске: ${errorMessage}`)
+      }
+
       setShowNoResults(true)
     } finally {
       setIsSearching(false)
@@ -1141,6 +1187,216 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {/* Модальное окно выбора метода для Ozon */}
+      {isOzonMethodModalOpen && mounted && createPortal(
+        <>
+          {/* Затемнение фона */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            onClick={() => {
+              setIsOzonMethodModalOpen(false)
+              setOzonUrl('')
+            }}
+          />
+
+          {/* Модальное окно */}
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div
+              className="bg-white rounded-lg shadow-2xl max-w-3xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-6 border-b bg-gradient-to-r from-orange-50 to-red-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">⚠️</span>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Ozon использует защиту</h2>
+                      <p className="text-sm text-gray-600 mt-1">Выберите удобный способ поиска</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsOzonMethodModalOpen(false)
+                      setOzonUrl('')
+                    }}
+                    className="p-2 hover:bg-white/50 rounded-full transition-colors"
+                  >
+                    <X className="h-6 w-6 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    <strong>Важно:</strong> Ozon блокирует автоматический парсинг с помощью Cloudflare защиты.
+                    <br />
+                    Но есть два простых решения! 👇
+                  </p>
+                </div>
+
+                {/* Способ 1: Скриншот (рекомендуется) */}
+                <div className="border-2 border-green-200 rounded-lg p-6 bg-gradient-to-br from-green-50 to-emerald-50 hover:border-green-400 transition-all">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+                        <Camera className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-lg font-bold text-gray-900">Способ 1: Скриншот</h3>
+                        <span className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                          РЕКОМЕНДУЕМ
+                        </span>
+                      </div>
+                      <p className="text-gray-700 mb-3 text-sm">
+                        Сделайте скриншот страницы товара на Ozon — наш AI распознает всё автоматически!
+                      </p>
+
+                      <div className="bg-white/70 rounded-lg p-4 mb-3 space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-600 font-bold">1.</span>
+                          <span className="text-gray-700">
+                            Откройте <a href={ozonUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">товар на Ozon</a> в браузере
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-600 font-bold">2.</span>
+                          <span className="text-gray-700">Сделайте скриншот (Cmd+Shift+4 на Mac, Win+Shift+S на Windows)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-600 font-bold">3.</span>
+                          <span className="text-gray-700">Загрузите скриншот ниже</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 mb-4 text-xs">
+                        <div className="bg-white/70 rounded-lg p-2 text-center">
+                          <div className="font-bold text-green-600">⏱️ 15 сек</div>
+                          <div className="text-gray-600">Быстро</div>
+                        </div>
+                        <div className="bg-white/70 rounded-lg p-2 text-center">
+                          <div className="font-bold text-green-600">💰 0.50₽</div>
+                          <div className="text-gray-600">Дёшево</div>
+                        </div>
+                        <div className="bg-white/70 rounded-lg p-2 text-center">
+                          <div className="font-bold text-green-600">✨ 90%</div>
+                          <div className="text-gray-600">Точность</div>
+                        </div>
+                      </div>
+
+                      <input
+                        ref={screenshotInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleOzonScreenshotSelect}
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => screenshotInputRef.current?.click()}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                      >
+                        <Camera className="w-5 h-5" />
+                        Загрузить скриншот Ozon
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Способ 2: Ручной ввод */}
+                <div className="border-2 border-gray-200 rounded-lg p-6 bg-gray-50 hover:border-gray-300 transition-all">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                        <Search className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Способ 2: Ручной поиск</h3>
+                      <p className="text-gray-700 mb-3 text-sm">
+                        Скопируйте название товара с Ozon и вставьте в обычную строку поиска
+                      </p>
+
+                      <div className="bg-white rounded-lg p-4 mb-3 space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-600 font-bold">1.</span>
+                          <span className="text-gray-700">
+                            Откройте <a href={ozonUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">товар на Ozon</a>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-600 font-bold">2.</span>
+                          <span className="text-gray-700">Скопируйте название товара (Ctrl+C / Cmd+C)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-600 font-bold">3.</span>
+                          <span className="text-gray-700">Вставьте в строку поиска каталога</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 mb-4 text-xs">
+                        <div className="bg-white rounded-lg p-2 text-center">
+                          <div className="font-bold text-blue-600">⏱️ 30 сек</div>
+                          <div className="text-gray-600">Чуть дольше</div>
+                        </div>
+                        <div className="bg-white rounded-lg p-2 text-center">
+                          <div className="font-bold text-blue-600">💰 0₽</div>
+                          <div className="text-gray-600">Бесплатно</div>
+                        </div>
+                        <div className="bg-white rounded-lg p-2 text-center">
+                          <div className="font-bold text-blue-600">✨ 100%</div>
+                          <div className="text-gray-600">Точность</div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setIsOzonMethodModalOpen(false)
+                          setIsUrlSearchOpen(false)
+                          setOzonUrl('')
+                          setSearchUrl('')
+                          window.open(ozonUrl, '_blank')
+                        }}
+                        className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Globe className="w-5 h-5" />
+                        Открыть Ozon в новой вкладке
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Дополнительная информация */}
+                <div className="bg-gray-100 rounded-lg p-4 text-sm text-gray-700">
+                  <p>
+                    <strong>💡 Совет:</strong> Скриншот работает для ЛЮБОГО защищенного сайта (DNS-Shop, М.Видео и т.д.)
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t bg-gray-50 flex justify-end">
+                <button
+                  onClick={() => {
+                    setIsOzonMethodModalOpen(false)
+                    setOzonUrl('')
+                  }}
+                  className="px-6 py-2 text-gray-700 hover:bg-gray-200 font-medium rounded-lg transition-colors"
+                >
+                  Закрыть
+                </button>
               </div>
             </div>
           </div>

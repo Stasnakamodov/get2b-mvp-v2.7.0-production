@@ -12,6 +12,8 @@
 
 import ogs from 'open-graph-scraper'
 import * as cheerio from 'cheerio'
+import { getBrowserParserService } from './BrowserParserService'
+import { getPlaywrightParserService } from './PlaywrightParserService'
 
 export interface ParsedProductMetadata {
   title: string
@@ -27,7 +29,7 @@ export interface ParsedProductMetadata {
 
 export class UrlParserService {
   /**
-   * Основной метод парсинга - пробует Open Graph, потом HTML fallback
+   * Основной метод парсинга - пробует разные методы с fallback
    */
   async parseProductUrl(url: string): Promise<ParsedProductMetadata> {
     console.log('🔍 [URL Parser] Начинаем парсинг:', url)
@@ -36,6 +38,41 @@ export class UrlParserService {
     const marketplace = this.detectMarketplace(url)
     console.log('🏪 [URL Parser] Определен маркетплейс:', marketplace)
 
+    // Для защищенных маркетплейсов используем Playwright
+    const protectedMarketplaces = ['ozon', 'wildberries', 'aliexpress']
+
+    if (protectedMarketplaces.includes(marketplace)) {
+      console.log('🛡️ [URL Parser] Защищенный маркетплейс - используем Playwright')
+
+      try {
+        // Сначала пробуем Playwright (самый надежный)
+        const playwrightParser = getPlaywrightParserService()
+
+        if (await playwrightParser.isAvailable()) {
+          const data = await playwrightParser.parseWithPlaywright(url)
+          console.log('✅ [URL Parser] Playwright парсинг успешен')
+          return data
+        }
+
+        // Fallback на Puppeteer если Playwright недоступен
+        console.log('⚠️ [URL Parser] Playwright недоступен, пробуем Puppeteer')
+        const browserParser = getBrowserParserService()
+        const data = await browserParser.parseWithBrowser(url)
+        console.log('✅ [URL Parser] Puppeteer парсинг успешен')
+        return data
+
+      } catch (error) {
+        console.error('❌ [URL Parser] Браузерный парсинг не удался:', error)
+
+        // Fallback на сообщение об ошибке
+        throw new Error(
+          `Не удалось автоматически распарсить ${marketplace.toUpperCase()}. ` +
+          `Попробуйте скопировать название товара и использовать обычный поиск.`
+        )
+      }
+    }
+
+    // Для остальных сайтов пробуем обычный HTTP
     try {
       // Сначала пробуем Open Graph
       const ogData = await this.parseOpenGraph(url)
@@ -77,7 +114,16 @@ export class UrlParserService {
       }
     } catch (error) {
       console.error('❌ [URL Parser] Ошибка парсинга HTML:', error)
-      throw new Error(`Не удалось распарсить URL: ${url}`)
+
+      // Последняя попытка - браузерный парсинг
+      console.log('🔄 [URL Parser] Пробуем браузерный парсинг как последний fallback')
+      try {
+        const browserParser = getBrowserParserService()
+        return await browserParser.parseWithBrowser(url)
+      } catch (browserError) {
+        console.error('❌ [URL Parser] Все методы парсинга не удались')
+        throw new Error(`Не удалось распарсить URL: ${url}`)
+      }
     }
   }
 

@@ -29,6 +29,7 @@ import {
   Camera,
   Globe,
   Search,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -109,6 +110,10 @@ function getProjectStatusLabel(step: number, status: string, receipts?: string) 
 export default function LandingPage() {
   const [openFaqItem, setOpenFaqItem] = useState<number | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
+  const [tutorialModal, setTutorialModal] = useState<{
+    isOpen: boolean
+    type: 'cart' | 'globe' | 'camera' | 'new-project' | 'catalog' | null
+  }>({ isOpen: false, type: null })
 
   // Mock проекты для preview (если реальных нет)
   const mockProjects: Project[] = [
@@ -344,6 +349,75 @@ export default function LandingPage() {
     displayProjects.filter((p) => ["rejected", "receipt_rejected"].includes(p.status)).length
   , [displayProjects])
 
+  // Контент для интерактивных туториалов
+  const tutorialContent = {
+    cart: {
+      title: "🛒 Умная корзина для закупок",
+      description: "Ваша персональная корзина для товаров из каталога Get2b",
+      features: [
+        "Добавляйте товары из каталога 10,000+ позиций",
+        "Корзина автоматически создаёт проект с документами",
+        "Все заградительные документы готовятся на каждом шаге",
+        "Контракты, инвойсы, декларации - всё под ключ",
+        "История закупок и повторные заказы в 1 клик"
+      ],
+      icon: ShoppingCart,
+      color: "from-blue-500 to-blue-600"
+    },
+    globe: {
+      title: "🌐 Поиск по ссылке",
+      description: "Найдите товар на любом маркетплейсе - мы найдём поставщика",
+      features: [
+        "Вставьте ссылку с Ozon, Wildberries, AliExpress",
+        "Наш AI найдёт аналог у проверенного поставщика",
+        "Получите цену от производителя без наценки",
+        "Мы проверим поставщика и подготовим документы",
+        "Экономия до 50% от розничной цены"
+      ],
+      icon: Globe,
+      color: "from-purple-500 to-blue-500"
+    },
+    camera: {
+      title: "📸 Поиск по фото",
+      description: "Сфотографируйте товар - найдём такой же в Китае",
+      features: [
+        "Загрузите фото товара или сделайте скриншот",
+        "AI распознает товар и найдёт производителя",
+        "Поиск среди 10,000+ позиций каталога",
+        "Подбор аналогов с похожими характеристиками",
+        "Быстрый старт закупки в 1 клик"
+      ],
+      icon: Camera,
+      color: "from-pink-500 to-orange-500"
+    },
+    'new-project': {
+      title: "✨ Создание проекта",
+      description: "Запуск новой закупки за 7 простых шагов",
+      features: [
+        "Выберите компанию из сохранённых карточек",
+        "Добавьте товары из каталога или корзины",
+        "Укажите сумму и способ оплаты",
+        "Мы подготовим все документы автоматически",
+        "Отслеживайте прогресс в реальном времени"
+      ],
+      icon: Plus,
+      color: "from-blue-500 to-blue-600"
+    },
+    catalog: {
+      title: "📦 Каталог Get2b",
+      description: "10,000+ товаров от проверенных поставщиков",
+      features: [
+        "Электроника, мебель, одежда, косметика",
+        "Актуальные цены с курсом валют",
+        "Фото, описания, характеристики товаров",
+        "Рейтинги поставщиков и отзывы клиентов",
+        "Добавление в корзину или сразу в проект"
+      ],
+      icon: ShoppingCart,
+      color: "from-green-500 to-emerald-600"
+    }
+  }
+
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
       {/* HEADER - Transparent for dark hero */}
@@ -395,7 +469,7 @@ export default function LandingPage() {
       </header>
 
       {/* HERO SECTION - FLEAVA INSPIRED PREMIUM */}
-      <section className="relative min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-950 to-black overflow-hidden">
+      <section className="relative min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-950 to-black overflow-hidden z-10">
         {/* Subtle grid pattern background */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
 
@@ -446,9 +520,83 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="relative"
+            className="relative z-[70]"
           >
             <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
+              {/* Tutorial Panel внутри dashboard preview */}
+              {tutorialModal.isOpen && tutorialModal.type && (() => {
+                const content = tutorialContent[tutorialModal.type]
+                const IconComponent = content.icon
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute inset-0 bg-gradient-to-br from-zinc-900/98 to-black/98 backdrop-blur-md z-50 p-8 overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Close button */}
+                    <button
+                      onClick={() => setTutorialModal({ isOpen: false, type: null })}
+                      className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+                    >
+                      <X className="w-5 h-5 text-gray-400" />
+                    </button>
+
+                    {/* Content */}
+                    <div className="max-w-2xl mx-auto">
+                      {/* Icon & Title */}
+                      <div className="flex items-start gap-4 mb-6">
+                        <div className={`p-4 rounded-2xl bg-gradient-to-br ${content.color}`}>
+                          <IconComponent className="w-8 h-8 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-semibold text-white mb-2">
+                            {content.title}
+                          </h3>
+                          <p className="text-gray-400 text-base">
+                            {content.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      <div className="space-y-3 mb-6">
+                        {content.features.map((feature, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10"
+                          >
+                            <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-gray-300 text-sm">{feature}</span>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* CTA */}
+                      <div className="flex gap-3">
+                        <Link href="/dashboard/catalog" className="flex-1">
+                          <Button className={`w-full bg-gradient-to-r ${content.color} hover:opacity-90 text-white`}>
+                            Попробовать сейчас
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          onClick={() => setTutorialModal({ isOpen: false, type: null })}
+                          className="border-white/20 text-white hover:bg-white/5"
+                        >
+                          Закрыть
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })()}
               {/* Mock browser bar */}
               <div className="flex items-center gap-2 px-4 py-3 bg-white/5 border-b border-white/10">
                 <div className="flex gap-1.5">
@@ -465,10 +613,13 @@ export default function LandingPage() {
               <div className="aspect-[16/10] bg-gradient-to-br from-zinc-900/90 to-black/90 p-6 overflow-y-auto">
                 {/* Top Bar: Новый проект + Поиск (как в дашборде) */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg text-white text-sm font-medium flex items-center gap-2 shadow-lg">
+                  <button
+                    onClick={() => setTutorialModal({ isOpen: true, type: 'new-project' })}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg text-white text-sm font-medium flex items-center gap-2 shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all cursor-pointer"
+                  >
                     <Plus size={16} />
                     Новый проект
-                  </div>
+                  </button>
                   <div className="flex-1 relative">
                     <div className="bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -480,21 +631,24 @@ export default function LandingPage() {
                       />
                       {/* Кнопка глобуса - поиск по ссылке */}
                       <button
-                        className="absolute right-20 top-1/2 -translate-y-1/2 p-1.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-md"
+                        onClick={() => setTutorialModal({ isOpen: true, type: 'globe' })}
+                        className="absolute right-20 top-1/2 -translate-y-1/2 p-1.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-md hover:from-purple-600 hover:to-blue-600 transition-all cursor-pointer"
                         title="Поиск по ссылке из интернета"
                       >
                         <Globe className="w-4 h-4 text-white" />
                       </button>
                       {/* Кнопка камеры - поиск по изображению */}
                       <button
-                        className="absolute right-11 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-colors"
+                        onClick={() => setTutorialModal({ isOpen: true, type: 'camera' })}
+                        className="absolute right-11 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
                         title="Поиск по изображению"
                       >
                         <Camera className="w-4 h-4 text-blue-400" />
                       </button>
                       {/* Кнопка корзины */}
                       <button
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-colors"
+                        onClick={() => setTutorialModal({ isOpen: true, type: 'cart' })}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
                         title="Корзина"
                       >
                         <div className="relative">
@@ -1196,6 +1350,14 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Tutorial Overlay - затемнение всего кроме dashboard preview */}
+      {tutorialModal.isOpen && tutorialModal.type && (
+        <div
+          className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm"
+          onClick={() => setTutorialModal({ isOpen: false, type: null })}
+        />
+      )}
     </div>
   )
 }
