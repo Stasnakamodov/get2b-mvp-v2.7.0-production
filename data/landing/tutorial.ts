@@ -75,7 +75,7 @@ export const tutorialContent: Record<TutorialType, TutorialContent> = {
       'Не нашли товар? Отправьте запрос - мы найдём поставщика!',
     ],
     icon: ShoppingCart,
-    color: 'from-green-500 to-emerald-600',
+    color: 'from-orange-500 to-orange-600',
   },
   'request-product': {
     title: '🔍 Запрос на поиск товара',
