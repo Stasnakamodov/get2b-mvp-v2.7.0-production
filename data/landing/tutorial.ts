@@ -72,6 +72,7 @@ export const tutorialContent: Record<TutorialType, TutorialContent> = {
       'Фото, описания, характеристики товаров',
       'Рейтинги поставщиков и отзывы клиентов',
       'Добавление в корзину или сразу в проект',
+      'Не нашли товар? Отправьте запрос - мы найдём поставщика!',
     ],
     icon: ShoppingCart,
     color: 'from-green-500 to-emerald-600',
