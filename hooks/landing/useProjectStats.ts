@@ -23,6 +23,11 @@ export function useProjectStats(projects: Project[]): ProjectStats {
   , [projects])
 
   return {
+    active: activeProjects,
+    pending: pendingProjects,
+    completed: completedProjects,
+    rejected: rejectedProjects,
+    // Legacy aliases
     activeProjects,
     pendingProjects,
     completedProjects,

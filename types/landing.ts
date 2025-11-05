@@ -90,6 +90,11 @@ export interface Template {
 // ==================== STATS ====================
 
 export interface ProjectStats {
+  active: number
+  pending: number
+  completed: number
+  rejected: number
+  // Legacy aliases for backwards compatibility
   activeProjects: number
   pendingProjects: number
   completedProjects: number
@@ -100,6 +105,7 @@ export interface ProjectStats {
 
 export interface UseProjectsReturn {
   projects: Project[]
+  displayProjects: Project[]
   loading: boolean
   error: Error | null
 }
@@ -114,4 +120,17 @@ export interface UseTutorialReturn {
 export interface UseScrollAnimationReturn {
   ref: React.RefObject<HTMLDivElement | null>
   isInView: boolean
+}
+
+// ==================== COMPONENT PROPS ====================
+
+export interface FadeInSectionProps {
+  children: React.ReactNode
+  delay?: number
+  className?: string
+}
+
+export interface FAQItemType {
+  question: string
+  answer: string
 }

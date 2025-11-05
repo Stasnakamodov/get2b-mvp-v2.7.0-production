@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { UseProjectsReturn } from '@/types/landing'
+import type { UseProjectsReturn, Project } from '@/types/landing'
 import { supabase } from '@/lib/supabaseClient'
 
 /**
@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
  * Используется в landing page для отображения dashboard preview
  */
 export function useProjects(): UseProjectsReturn {
-  const [projects, setProjects] = useState([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
@@ -44,5 +44,10 @@ export function useProjects(): UseProjectsReturn {
     fetchProjects()
   }, [])
 
-  return { projects, loading, error }
+  return {
+    projects,
+    displayProjects: projects, // Same as projects for now
+    loading,
+    error
+  }
 }
