@@ -9,7 +9,7 @@ import { TutorialModal } from "../tutorial/TutorialModal"
 import { useTutorial } from "@/hooks/landing/useTutorial"
 
 export function HeroSection() {
-  const { tutorialModal, openTutorial, closeTutorial } = useTutorial()
+  const { isOpen, type, openTutorial, closeTutorial } = useTutorial()
 
   return (
     <section className="relative min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-950 to-black overflow-hidden z-10">
@@ -62,8 +62,8 @@ export function HeroSection() {
         <div className="relative">
           <DashboardPreview onTutorialOpen={openTutorial} />
           <TutorialModal
-            isOpen={tutorialModal.isOpen}
-            type={tutorialModal.type}
+            isOpen={isOpen}
+            type={type}
             onClose={closeTutorial}
           />
         </div>
