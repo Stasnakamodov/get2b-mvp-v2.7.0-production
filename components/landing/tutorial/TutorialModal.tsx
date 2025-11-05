@@ -67,7 +67,9 @@ export function TutorialModal({ isOpen, type, onClose }: TutorialModalProps) {
                     isRequestFeature ? 'bg-blue-50 border-blue-200' : ''
                   }`}
                 >
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                    isRequestFeature ? 'text-orange-500' : 'text-green-500'
+                  }`} />
                   <span className={`text-sm ${isRequestFeature ? 'text-blue-700 font-semibold' : 'text-gray-700'}`}>
                     {feature}
                   </span>
