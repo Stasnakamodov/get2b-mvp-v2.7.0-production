@@ -5,15 +5,24 @@ import { CatalogSearchBar } from "./CatalogSearchBar"
 import { ProjectTemplates } from "./ProjectTemplates"
 import { ProjectStatistics } from "./ProjectStatistics"
 import { ProjectCard } from "@/components/landing/cards/ProjectCard"
+import { TutorialModal } from "../tutorial/TutorialModal"
 import { useProjectStats } from "@/hooks/landing/useProjectStats"
 import { mockProjects } from "@/data/landing/mockData"
 import type { TutorialType } from "@/types/landing"
 
 interface DashboardPreviewProps {
   onTutorialOpen: (type: TutorialType) => void
+  tutorialIsOpen: boolean
+  tutorialType: TutorialType | null
+  onTutorialClose: () => void
 }
 
-export function DashboardPreview({ onTutorialOpen }: DashboardPreviewProps) {
+export function DashboardPreview({
+  onTutorialOpen,
+  tutorialIsOpen,
+  tutorialType,
+  onTutorialClose
+}: DashboardPreviewProps) {
   // Use mock projects for landing page preview
   const displayProjects = mockProjects
   const projectStats = useProjectStats(displayProjects)
@@ -26,6 +35,12 @@ export function DashboardPreview({ onTutorialOpen }: DashboardPreviewProps) {
       className="relative z-[70]"
     >
       <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
+        {/* Tutorial Modal - INSIDE the dashboard preview */}
+        <TutorialModal
+          isOpen={tutorialIsOpen}
+          type={tutorialType}
+          onClose={onTutorialClose}
+        />
         {/* Mock browser bar */}
         <div className="flex items-center gap-2 px-4 py-3 bg-white/5 border-b border-white/10">
           <div className="flex gap-1.5">

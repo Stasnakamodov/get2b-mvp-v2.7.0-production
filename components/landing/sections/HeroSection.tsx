@@ -5,7 +5,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { DashboardPreview } from "../preview/DashboardPreview"
-import { TutorialModal } from "../tutorial/TutorialModal"
 import { useTutorial } from "@/hooks/landing/useTutorial"
 
 export function HeroSection() {
@@ -59,14 +58,12 @@ export function HeroSection() {
         </motion.div>
 
         {/* Dashboard preview with tutorial modal */}
-        <div className="relative">
-          <DashboardPreview onTutorialOpen={openTutorial} />
-          <TutorialModal
-            isOpen={isOpen}
-            type={type}
-            onClose={closeTutorial}
-          />
-        </div>
+        <DashboardPreview
+          onTutorialOpen={openTutorial}
+          tutorialIsOpen={isOpen}
+          tutorialType={type}
+          onTutorialClose={closeTutorial}
+        />
       </div>
 
       {/* Scroll indicator */}
