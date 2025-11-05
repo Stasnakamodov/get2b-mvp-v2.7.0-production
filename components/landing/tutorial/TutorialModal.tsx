@@ -90,13 +90,12 @@ export function TutorialModal({ isOpen, type, onClose }: TutorialModalProps) {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Button
+            <button
               onClick={onClose}
-              variant="outline"
-              className="border-white/20 text-gray-300 hover:bg-white/10 hover:text-white h-12 px-6"
+              className="h-12 px-6 border border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white rounded-md font-medium transition-colors"
             >
               Закрыть
-            </Button>
+            </button>
           </div>
         </div>
       </motion.div>
