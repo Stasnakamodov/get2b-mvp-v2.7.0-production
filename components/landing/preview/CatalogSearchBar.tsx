@@ -23,7 +23,8 @@ export function CatalogSearchBar({ onTutorialOpen }: CatalogSearchBarProps) {
           <input
             type="text"
             placeholder="Каталог Get2b"
-            className="w-full pl-10 pr-32 py-2 bg-transparent text-sm text-white placeholder-gray-400 focus:outline-none"
+            onClick={() => onTutorialOpen('catalog')}
+            className="w-full pl-10 pr-32 py-2 bg-transparent text-sm text-white placeholder-gray-400 focus:outline-none cursor-pointer"
             readOnly
           />
           {/* Кнопка глобуса - поиск по ссылке */}
