@@ -54,18 +54,26 @@ export function TutorialModal({ isOpen, type, onClose }: TutorialModalProps) {
         {/* Content - КАК СПИСОК ТОВАРОВ В КОРЗИНЕ */}
         <div className="p-6 max-h-[50vh] overflow-y-auto">
           <div className="space-y-3">
-            {content.features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">{feature}</span>
-              </motion.div>
-            ))}
+            {content.features.map((feature, index) => {
+              const isRequestFeature = feature.includes('Не нашли товар')
+
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors ${
+                    isRequestFeature ? 'bg-blue-50 border-blue-200' : ''
+                  }`}
+                >
+                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className={`text-sm ${isRequestFeature ? 'text-blue-700 font-semibold' : 'text-gray-700'}`}>
+                    {feature}
+                  </span>
+                </motion.div>
+              )
+            })}
           </div>
         </div>
 
