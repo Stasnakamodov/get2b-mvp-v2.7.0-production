@@ -61,7 +61,7 @@ export function HeroSection() {
           </h1>
 
           <p className="text-xl md:text-2xl text-gray-400 max-w-3xl leading-relaxed font-light mb-12">
-            Каталог 10,000+ товаров · Легальные переводы · Документы для таможни · CRM система
+            Каталог 10,000+ товаров · Собственная B2B сеть · CRM система · Заградительные документы на всех этапах проекта
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-20">
@@ -71,7 +71,7 @@ export function HeroSection() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/dashboard/create-project">
+            <Link href="/login">
               <Button size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black text-base px-8 py-6 h-auto rounded-full font-light transition-all">
                 Создать закупку
               </Button>

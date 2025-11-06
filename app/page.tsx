@@ -29,6 +29,7 @@ import { Header } from "@/components/landing/Header"
 import { Footer } from "@/components/landing/Footer"
 import { HeroSection } from "@/components/landing/sections/HeroSection"
 import { CatalogSection } from "@/components/landing/sections/CatalogSection"
+import { MarketplacesSection } from "@/components/landing/sections/MarketplacesSection"
 import { ProcessSection } from "@/components/landing/sections/ProcessSection"
 import { BenefitsSection } from "@/components/landing/sections/BenefitsSection"
 import { CRMSection } from "@/components/landing/sections/CRMSection"
@@ -46,6 +47,9 @@ export default function LandingPage() {
 
       {/* Catalog Section - 10,000+ Products */}
       <CatalogSection />
+
+      {/* Marketplaces Section - Running logos */}
+      <MarketplacesSection />
 
       {/* Process Section - 7 Steps */}
       <ProcessSection />
