@@ -35,8 +35,8 @@ export function CatalogSection() {
                 <div key={i} className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-sm font-normal text-white mb-0.5">{item.title}</div>
-                    <div className="text-sm text-gray-500 font-light">{item.desc}</div>
+                    <div className="text-base font-normal text-white mb-1">{item.title}</div>
+                    <div className="text-sm text-gray-300 font-light">{item.desc}</div>
                   </div>
                 </div>
               ))}
@@ -57,16 +57,16 @@ export function CatalogSection() {
             transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="relative"
           >
-            <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-xl">
+            <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-xl scale-110">
               {/* Catalog preview */}
-              <div className="p-6 space-y-3">
+              <div className="p-8 space-y-4">
                 {[
-                  { cat: "Электроника", items: "2,347 товаров", color: "blue", image: "/images/categories/electronics.jpg", overlay: "bg-black/40" },
-                  { cat: "Мебель", items: "1,892 товара", color: "orange", image: "/images/categories/furniture.png", overlay: "bg-black/40" },
-                  { cat: "Одежда", items: "3,156 товаров", color: "purple", image: "/images/categories/clothing.png", overlay: "bg-black/40" },
-                  { cat: "Строительство", items: "1,423 товара", color: "green", image: "/images/categories/construction.png", overlay: "bg-black/40" },
+                  { cat: "Электроника", items: "2,347 товаров", color: "blue", image: "/images/categories/electronics.jpg", overlay: "bg-black/0" },
+                  { cat: "Мебель", items: "1,892 товара", color: "orange", image: "/images/categories/furniture.png", overlay: "bg-black/0" },
+                  { cat: "Одежда", items: "3,156 товаров", color: "purple", image: "/images/categories/clothing.png", overlay: "bg-black/0" },
+                  { cat: "Строительство", items: "1,423 товара", color: "green", image: "/images/categories/construction.png", overlay: "bg-black/0" },
                 ].map((item, i) => (
-                  <div key={i} className="relative border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all group h-32">
+                  <div key={i} className="relative border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all group h-40">
                     {/* Background Image */}
                     <Image
                       src={item.image}
@@ -76,15 +76,15 @@ export function CatalogSection() {
                     />
 
                     {/* Dark overlay */}
-                    <div className={`absolute inset-0 ${item.overlay} group-hover:bg-black/50 transition-colors`}></div>
+                    <div className={`absolute inset-0 ${item.overlay} group-hover:bg-black/10 transition-colors`}></div>
 
                     {/* Content */}
                     <div className="relative flex items-center justify-between p-6 h-full">
                       <div>
-                        <div className="text-base font-normal text-white mb-1">{item.cat}</div>
-                        <div className="text-sm text-gray-300 font-light">{item.items}</div>
+                        <div className="text-lg font-semibold text-white mb-1">{item.cat}</div>
+                        <div className="text-sm text-gray-200 font-light">{item.items}</div>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-white/60 group-hover:text-white transition-colors" />
+                      <ArrowRight className="w-5 h-5 text-white/80 group-hover:text-white transition-colors" />
                     </div>
                   </div>
                 ))}
