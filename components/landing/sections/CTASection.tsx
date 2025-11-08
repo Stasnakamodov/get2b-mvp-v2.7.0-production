@@ -38,7 +38,7 @@ export function CTASection() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/dashboard/create-project">
+              <Link href="/login">
                 <Button
                   size="lg"
                   className="bg-transparent border border-white/20 text-white hover:bg-white/5 text-base px-8 py-6 h-auto rounded-full font-light backdrop-blur-sm"

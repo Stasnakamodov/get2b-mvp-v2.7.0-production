@@ -81,7 +81,7 @@ export function PresentationViewer({ presentationId, onClose }: { presentationId
           "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Снимок%20экрана%202025-03-04%20в%2011.56.45-uiwOoCBxWvBI7HkOqjVtYj2f4r2Wa1.png",
       },
       {
-        title: "Таможенное оформление",
+        title: "Заградительное оформление",
         description: "Полное сопровождение документации",
         image:
           "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Снимок%20экрана%202025-03-04%20в%2011.57.19-BbSstkk0Ge7os0LW1OW1hfmgjNoxdW.png",
@@ -169,7 +169,7 @@ export function PresentationViewer({ presentationId, onClose }: { presentationId
                   {activeTab === "suppliers" &&
                     "Прямое взаимодействие с производителями и поставщиками из Китая, проверка надежности и репутации партнеров."}
                   {activeTab === "logistics" &&
-                    "Оптимизация маршрутов доставки, контроль сроков и качества перевозки грузов, таможенное оформление."}
+                    "Оптимизация маршрутов доставки, контроль сроков и качества перевозки грузов, заградительное оформление."}
                   {activeTab === "analytics" &&
                     "Детальные отчеты и статистика по всем операциям, анализ эффективности и рекомендации по оптимизации процессов."}
                 </p>

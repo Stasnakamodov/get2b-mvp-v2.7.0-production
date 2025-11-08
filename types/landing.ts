@@ -38,12 +38,25 @@ export interface ProjectStatusLabel {
 
 // ==================== PROCESS STEPS ====================
 
+export interface ProcessStepField {
+  label: string
+  required?: boolean
+  description?: string
+}
+
+export interface ProcessStepSection {
+  title: string
+  fields: ProcessStepField[]
+}
+
 export interface ProcessStep {
   number: string
   title: string
   description: string
   time: string
   icon: LucideIcon
+  details?: string
+  sections?: ProcessStepSection[]
 }
 
 // ==================== BENEFITS ====================

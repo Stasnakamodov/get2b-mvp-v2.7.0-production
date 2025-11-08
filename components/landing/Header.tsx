@@ -47,7 +47,7 @@ export function Header() {
               Каталог
             </Button>
           </Link>
-          <Link href="/dashboard/create-project">
+          <Link href="/login">
             <Button size="sm" className="bg-white text-black hover:bg-gray-100 rounded-full">
               Создать закупку
               <ArrowRight className="ml-2 h-3 w-3" />

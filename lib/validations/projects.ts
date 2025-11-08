@@ -209,7 +209,7 @@ export const Step3LogisticsSchema = z.object({
     .max(100)
     .optional(),
   
-  // Таможенное оформление
+  // Заградительное оформление
   customs_clearance_included: z.boolean().default(false),
   customs_broker: z.string().max(255).optional(),
   
