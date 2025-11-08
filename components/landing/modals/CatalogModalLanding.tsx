@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { X, ChevronLeft, Star, MapPin, Package, ShoppingCart } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 // Типы данных
 interface Category {
@@ -13,6 +14,14 @@ interface Category {
   description: string
   productsCount: number
   suppliersCount: number
+}
+
+interface CategoryProduct {
+  id: string
+  product_name: string
+  image_url?: string
+  price?: string
+  currency?: string
 }
 
 interface Supplier {
@@ -213,6 +222,88 @@ const mockSuppliers: { [key: string]: Supplier[] } = {
   ]
 }
 
+// Компонент крутящихся изображений товаров
+function RotatingProductImages({ categoryName }: { categoryName: string }) {
+  const [products, setProducts] = useState<CategoryProduct[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(categoryName)}?limit=5`)
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.products?.length > 0) {
+            // Фильтруем товары с изображениями
+            const productsWithImages = data.products.filter((p: CategoryProduct) => p.image_url)
+            setProducts(productsWithImages.slice(0, 5))
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch products:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [categoryName])
+
+  // Автоматическая смена товаров каждые 2 секунды
+  useEffect(() => {
+    if (products.length === 0) return
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % products.length)
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [products.length])
+
+  if (isLoading || products.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="relative w-full h-32 overflow-hidden rounded-lg mb-3">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentIndex}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.5 }}
+          className="absolute inset-0 flex items-center justify-center bg-white"
+        >
+          <img
+            src={products[currentIndex].image_url}
+            alt={products[currentIndex].product_name}
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Индикаторы */}
+      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+        {products.map((_, idx) => (
+          <div
+            key={idx}
+            className={`w-1.5 h-1.5 rounded-full transition-all ${
+              idx === currentIndex ? 'bg-orange-500 w-3' : 'bg-white/50'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
@@ -288,9 +379,14 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
                 <button
                   key={category.id}
                   onClick={() => handleCategoryClick(category)}
-                  className="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-200 hover:border-orange-400 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:scale-105"
+                  className="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-200 hover:border-orange-400 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg hover:scale-105"
                 >
-                  <div className="text-5xl mb-3">{category.icon}</div>
+                  {/* Крутящиеся изображения товаров */}
+                  <RotatingProductImages categoryName={category.name} />
+
+                  {/* Иконка категории */}
+                  <div className="text-4xl mb-2 text-center">{category.icon}</div>
+
                   <h3 className="text-base font-bold text-gray-900 mb-2">{category.name}</h3>
                   <p className="text-xs text-gray-600 mb-3 line-clamp-2">{category.description}</p>
                   <div className="flex items-center justify-between text-xs text-gray-500">
