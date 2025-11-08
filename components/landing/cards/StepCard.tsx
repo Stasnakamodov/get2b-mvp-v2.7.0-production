@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Loader, CheckCircle, X as XIcon } from 'lucide-react'
+import { CatalogModalLanding } from '@/components/landing/modals/CatalogModalLanding'
 
 interface StepCardProps {
   step: ProcessStep
@@ -24,12 +25,22 @@ export function StepCard({ step, index }: StepCardProps) {
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const Icon = step.icon
 
-  // OCR states
+  // OCR states for Step 1 (Company Data)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [ocrError, setOcrError] = useState<string>('')
   const [extractedData, setExtractedData] = useState<any>(null)
   const [showDragDrop, setShowDragDrop] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+
+  // OCR states for Step 2 (Invoice/Specification)
+  const [isAnalyzingInvoice, setIsAnalyzingInvoice] = useState(false)
+  const [invoiceOcrError, setInvoiceOcrError] = useState<string>('')
+  const [extractedInvoiceData, setExtractedInvoiceData] = useState<any>(null)
+  const [showInvoiceDragDrop, setShowInvoiceDragDrop] = useState(false)
+  const [isInvoiceDragging, setIsInvoiceDragging] = useState(false)
+
+  // Catalog modal state for Step 2
+  const [showCatalogModal, setShowCatalogModal] = useState(false)
 
   // Form states
   const [formData, setFormData] = useState({
@@ -188,6 +199,85 @@ export function StepCard({ step, index }: StepCardProps) {
       alert('Ошибка отправки заявки. Попробуйте еще раз.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // Обработчик загрузки и анализа инвойса/Excel для Step 2
+  const handleInvoiceFileUpload = async (file: File) => {
+    setShowInvoiceDragDrop(false)
+    setIsAnalyzingInvoice(true)
+    setInvoiceOcrError('')
+    setExtractedInvoiceData(null)
+
+    try {
+      // Конвертируем файл в base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      // Отправляем на анализ с documentType='invoice'
+      const response = await fetch('/api/document-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileUrl: base64,
+          fileType: file.type,
+          documentType: 'invoice'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Ошибка анализа документа')
+      }
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Не удалось извлечь данные')
+      }
+
+      // Сохраняем извлеченные данные
+      setExtractedInvoiceData(result.suggestions)
+      console.log('📊 Данные инвойса извлечены:', result.suggestions)
+
+    } catch (error) {
+      console.error('Ошибка OCR инвойса:', error)
+      setInvoiceOcrError(error instanceof Error ? error.message : 'Ошибка анализа документа')
+    } finally {
+      setIsAnalyzingInvoice(false)
+    }
+  }
+
+  // Обработчик клика на кнопку "Загрузить Excel"
+  const handleInvoiceUploadClick = () => {
+    setShowInvoiceDragDrop(true)
+  }
+
+  // Обработчик клика на drag-and-drop зону инвойса
+  const handleInvoiceDragDropClick = () => {
+    document.getElementById('invoice-file-input')?.click()
+  }
+
+  // Обработчики drag-and-drop для инвойса
+  const handleInvoiceDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsInvoiceDragging(true)
+  }
+
+  const handleInvoiceDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsInvoiceDragging(false)
+  }
+
+  const handleInvoiceDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsInvoiceDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      handleInvoiceFileUpload(file)
     }
   }
 
@@ -465,6 +555,7 @@ export function StepCard({ step, index }: StepCardProps) {
                         className="bg-blue-50 border border-blue-200 rounded-lg p-3 cursor-pointer transition-all hover:shadow-md hover:scale-105"
                         onMouseEnter={() => handleMouseEnter('catalog')}
                         onMouseLeave={handleMouseLeave}
+                        onClick={() => setShowCatalogModal(true)}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -482,6 +573,7 @@ export function StepCard({ step, index }: StepCardProps) {
                         className="bg-orange-50 border border-orange-200 rounded-lg p-3 cursor-pointer transition-all hover:shadow-md hover:scale-105"
                         onMouseEnter={() => handleMouseEnter('excel')}
                         onMouseLeave={handleMouseLeave}
+                        onClick={handleInvoiceUploadClick}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
@@ -532,7 +624,132 @@ export function StepCard({ step, index }: StepCardProps) {
                     {/* Область с описанием */}
                     <div className="min-h-[200px]">
                       <AnimatePresence mode="wait">
-                        {hoveredMethod && specificationMethodDescriptions[hoveredMethod as keyof typeof specificationMethodDescriptions] ? (
+                        {/* Analyzing status */}
+                        {isAnalyzingInvoice ? (
+                          <motion.div
+                            key="analyzing-invoice"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-blue-50 border border-blue-200 rounded-lg p-5"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Loader className="w-5 h-5 text-blue-600 animate-spin" />
+                              <span className="text-blue-800 font-medium">Анализируем инвойс...</span>
+                            </div>
+                            <p className="text-sm text-blue-600 mt-2">Извлекаем товары и реквизиты поставщика</p>
+                          </motion.div>
+                        ) : extractedInvoiceData ? (
+                          // Success with extracted invoice data
+                          <motion.div
+                            key="success-invoice"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-green-50 border border-green-200 rounded-lg p-5 space-y-3"
+                          >
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-5 h-5 text-green-600" />
+                              <span className="text-green-800 font-medium">Данные успешно извлечены!</span>
+                            </div>
+                            <div className="text-sm text-green-700 space-y-1">
+                              {extractedInvoiceData.items && extractedInvoiceData.items.length > 0 && (
+                                <p>• Найдено товаров: {extractedInvoiceData.items.length}</p>
+                              )}
+                              {extractedInvoiceData.invoiceInfo?.number && (
+                                <p>• Номер инвойса: {extractedInvoiceData.invoiceInfo.number}</p>
+                              )}
+                              {extractedInvoiceData.invoiceInfo?.totalAmount && (
+                                <p>• Сумма: {extractedInvoiceData.invoiceInfo.totalAmount} {extractedInvoiceData.invoiceInfo.currency || ''}</p>
+                              )}
+                            </div>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-3">
+                              <div className="flex items-start gap-2">
+                                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div className="text-sm text-blue-800">
+                                  <p className="font-semibold mb-1">Товары готовы к добавлению</p>
+                                  <p className="leading-relaxed">Данные извлечены из инвойса и готовы к добавлению в спецификацию проекта. Зарегистрируйтесь, чтобы продолжить!</p>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ) : invoiceOcrError ? (
+                          // Error status
+                          <motion.div
+                            key="error-invoice"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-red-50 border border-red-200 rounded-lg p-5"
+                          >
+                            <div className="flex items-center gap-2">
+                              <XIcon className="w-5 h-5 text-red-600" />
+                              <span className="text-red-800 font-medium">Ошибка анализа</span>
+                            </div>
+                            <p className="text-sm text-red-600 mt-2">{invoiceOcrError}</p>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setInvoiceOcrError('')
+                                handleInvoiceUploadClick()
+                              }}
+                              className="w-full mt-3"
+                            >
+                              Попробовать снова
+                            </Button>
+                          </motion.div>
+                        ) : showInvoiceDragDrop ? (
+                          // Drag and Drop zone for invoice
+                          <motion.div
+                            key="dragdrop-invoice"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="relative"
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setShowInvoiceDragDrop(false)
+                              }}
+                              className="absolute -top-2 -right-2 z-10 w-8 h-8 bg-white border-2 border-orange-300 rounded-full flex items-center justify-center hover:bg-orange-50 transition-colors shadow-md"
+                            >
+                              <XIcon className="w-4 h-4 text-orange-600" />
+                            </button>
+                            <div
+                              className={`bg-gradient-to-br ${isInvoiceDragging ? 'from-orange-100 to-orange-50 border-orange-400' : 'from-orange-50 to-orange-25 border-orange-200'} rounded-lg p-8 border-2 border-dashed transition-all cursor-pointer hover:border-orange-300 hover:shadow-lg`}
+                              onClick={handleInvoiceDragDropClick}
+                              onDragOver={handleInvoiceDragOver}
+                              onDragLeave={handleInvoiceDragLeave}
+                              onDrop={handleInvoiceDrop}
+                            >
+                              <div className="flex flex-col items-center gap-4 text-center">
+                                <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center">
+                                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <h4 className="text-lg font-bold text-orange-900 mb-2">
+                                    {isInvoiceDragging ? 'Отпустите файл для загрузки' : 'Перетащите инвойс сюда'}
+                                  </h4>
+                                  <p className="text-sm text-orange-700 mb-1">
+                                    или нажмите для выбора файла
+                                  </p>
+                                  <p className="text-xs text-orange-600">
+                                    Excel (.xlsx, .xls), PDF, изображения (макс. 10 МБ)
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ) : hoveredMethod && specificationMethodDescriptions[hoveredMethod as keyof typeof specificationMethodDescriptions] ? (
                           <motion.div
                             key="description"
                             initial={{ opacity: 0, y: -10 }}
@@ -564,8 +781,55 @@ export function StepCard({ step, index }: StepCardProps) {
                               </div>
                             </div>
                           </motion.div>
-                        ) : null}
+                        ) : (
+                          <motion.div
+                            key="default-info"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-200"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="text-2xl">🚀</div>
+                              <div className="space-y-3">
+                                <div>
+                                  <h4 className="text-base font-bold text-blue-900 mb-2">Никакой рутины — только автоматизация</h4>
+                                  <p className="text-sm text-blue-800 leading-relaxed">
+                                    Забудьте про ручной ввод! Выбирайте товары из нашего каталога проверенных GET2B-поставщиков, загружайте готовые Excel-таблицы или просто присылайте инвойсы из Китая и Турции — даже на китайском или турецком языке. Мы всё распознаем и заполним автоматически.
+                                  </p>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2 text-xs text-blue-700">
+                                    <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="font-medium">Экономия до 90% времени на заполнение спецификаций</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-blue-700">
+                                    <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="font-medium">Не нашли нужный товар? Найдём поставщика — заполните форму!</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
                       </AnimatePresence>
+
+                      {/* Hidden file input for invoice */}
+                      <input
+                        id="invoice-file-input"
+                        type="file"
+                        accept=".xlsx,.xls,.pdf,.jpg,.jpeg,.png,.docx"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleInvoiceFileUpload(file)
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1134,7 +1398,7 @@ export function StepCard({ step, index }: StepCardProps) {
                       <div>
                         <div className="text-base font-semibold text-gray-900 mb-2">Зачем это нужно?</div>
                         <p className="text-base text-gray-600 leading-relaxed">
-                          Выберите товары из нашего каталога на GET2B или загрузите готовую спецификацию в формате Excel. Укажите артикулы, количество, размеры и другие параметры товаров. Система автоматически рассчитает общую стоимость закупки с учётом актуальных курсов валют.
+                          Данные для контрактов и заградительных документов при импорте товаров из Китая и Турции.
                         </p>
                       </div>
                     </div>
@@ -1145,6 +1409,14 @@ export function StepCard({ step, index }: StepCardProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Catalog Modal for Step 2 */}
+      {step.number === '02' && (
+        <CatalogModalLanding
+          open={showCatalogModal}
+          onClose={() => setShowCatalogModal(false)}
+        />
+      )}
     </React.Fragment>
   )
 }
