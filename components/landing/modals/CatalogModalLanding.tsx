@@ -262,15 +262,15 @@ function ProductsCarousel() {
   }
 
   return (
-    <div className="border-t border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100 p-4">
-      <h3 className="text-sm font-bold text-gray-900 mb-3">🔥 Популярные товары в каталоге GET2B</h3>
+    <div className="border-t border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100 p-3">
+      <h3 className="text-xs font-bold text-gray-900 mb-2">🔥 Популярные товары</h3>
 
       {/* Анимированная карусель */}
       <div className="relative overflow-hidden">
         <motion.div
-          className="flex gap-3"
+          className="flex gap-2"
           animate={{
-            x: [0, -(products.length * 120)]
+            x: [0, -(products.length * 90)]
           }}
           transition={{
             x: {
@@ -285,7 +285,7 @@ function ProductsCarousel() {
           {[...products, ...products].map((product, idx) => (
             <div
               key={idx}
-              className="flex-shrink-0 w-28 h-28 bg-white rounded-lg border border-orange-200 p-2 hover:shadow-md transition-shadow"
+              className="flex-shrink-0 w-20 h-20 bg-white rounded-lg border border-orange-200 p-1.5 hover:shadow-md transition-shadow"
             >
               <img
                 src={product.image_url}
@@ -378,12 +378,12 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
                 <button
                   key={category.id}
                   onClick={() => handleCategoryClick(category)}
-                  className="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-200 hover:border-orange-400 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:scale-105"
+                  className="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-200 hover:border-orange-400 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg hover:scale-105 flex flex-col items-center"
                 >
-                  <div className="text-5xl mb-3">{category.icon}</div>
-                  <h3 className="text-base font-bold text-gray-900 mb-2">{category.name}</h3>
-                  <p className="text-xs text-gray-600 mb-3 line-clamp-2">{category.description}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="text-4xl mb-2">{category.icon}</div>
+                  <h3 className="text-sm font-bold text-gray-900 mb-1 text-center">{category.name}</h3>
+                  <p className="text-xs text-gray-600 mb-2 line-clamp-2 text-center">{category.description}</p>
+                  <div className="flex items-center justify-between text-xs text-gray-500 w-full">
                     <span>{category.suppliersCount} пост.</span>
                     <span>{category.productsCount} тов.</span>
                   </div>
