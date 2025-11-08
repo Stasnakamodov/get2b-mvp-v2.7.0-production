@@ -329,7 +329,7 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden p-0">
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0">
         {/* Хедер */}
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white">
           <div className="flex items-center justify-between">
@@ -370,7 +370,7 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
         </div>
 
         {/* Контент */}
-        <div className="overflow-y-auto p-6" style={{ maxHeight: 'calc(85vh - 120px)' }}>
+        <div className="overflow-y-auto p-6" style={{ maxHeight: 'calc(95vh - 200px)' }}>
           {!selectedCategory ? (
             // Сетка категорий
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
