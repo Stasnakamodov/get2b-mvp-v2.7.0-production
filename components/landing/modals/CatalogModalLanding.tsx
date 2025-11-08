@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { X, ChevronLeft, Star, MapPin, Package, ShoppingCart } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 // Типы данных
 interface Category {
@@ -222,26 +222,31 @@ const mockSuppliers: { [key: string]: Supplier[] } = {
   ]
 }
 
-// Компонент крутящихся изображений товаров
-function RotatingProductImages({ categoryName }: { categoryName: string }) {
+// Компонент горизонтальной карусели товаров
+function ProductsCarousel() {
   const [products, setProducts] = useState<CategoryProduct[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(categoryName)}?limit=5`)
+        // Загружаем товары из разных категорий
+        const categories = ['Электроника', 'Текстиль и одежда', 'Автотовары']
+        const allProducts: CategoryProduct[] = []
 
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success && data.products?.length > 0) {
-            // Фильтруем товары с изображениями
-            const productsWithImages = data.products.filter((p: CategoryProduct) => p.image_url)
-            setProducts(productsWithImages.slice(0, 5))
+        for (const category of categories) {
+          const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(category)}?limit=10`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success && data.products?.length > 0) {
+              const productsWithImages = data.products.filter((p: any) => p.image_url)
+              allProducts.push(...productsWithImages)
+            }
           }
         }
+
+        setProducts(allProducts.slice(0, 20))
       } catch (error) {
         console.error('Failed to fetch products:', error)
       } finally {
@@ -250,55 +255,49 @@ function RotatingProductImages({ categoryName }: { categoryName: string }) {
     }
 
     fetchProducts()
-  }, [categoryName])
-
-  // Автоматическая смена товаров каждые 2 секунды
-  useEffect(() => {
-    if (products.length === 0) return
-
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % products.length)
-    }, 2000)
-
-    return () => clearInterval(interval)
-  }, [products.length])
+  }, [])
 
   if (isLoading || products.length === 0) {
     return null
   }
 
   return (
-    <div className="relative w-full h-32 overflow-hidden rounded-lg mb-3">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.5 }}
-          className="absolute inset-0 flex items-center justify-center bg-white"
-        >
-          <img
-            src={products[currentIndex].image_url}
-            alt={products[currentIndex].product_name}
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-            }}
-          />
-        </motion.div>
-      </AnimatePresence>
+    <div className="border-t border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100 p-4">
+      <h3 className="text-sm font-bold text-gray-900 mb-3">🔥 Популярные товары в каталоге GET2B</h3>
 
-      {/* Индикаторы */}
-      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-        {products.map((_, idx) => (
-          <div
-            key={idx}
-            className={`w-1.5 h-1.5 rounded-full transition-all ${
-              idx === currentIndex ? 'bg-orange-500 w-3' : 'bg-white/50'
-            }`}
-          />
-        ))}
+      {/* Анимированная карусель */}
+      <div className="relative overflow-hidden">
+        <motion.div
+          className="flex gap-3"
+          animate={{
+            x: [0, -(products.length * 120)]
+          }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: "loop",
+              duration: products.length * 3,
+              ease: "linear"
+            }
+          }}
+        >
+          {/* Дублируем товары для бесшовной карусели */}
+          {[...products, ...products].map((product, idx) => (
+            <div
+              key={idx}
+              className="flex-shrink-0 w-28 h-28 bg-white rounded-lg border border-orange-200 p-2 hover:shadow-md transition-shadow"
+            >
+              <img
+                src={product.image_url}
+                alt={product.product_name}
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            </div>
+          ))}
+        </motion.div>
       </div>
     </div>
   )
@@ -379,14 +378,9 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
                 <button
                   key={category.id}
                   onClick={() => handleCategoryClick(category)}
-                  className="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-200 hover:border-orange-400 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg hover:scale-105"
+                  className="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-200 hover:border-orange-400 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:scale-105"
                 >
-                  {/* Крутящиеся изображения товаров */}
-                  <RotatingProductImages categoryName={category.name} />
-
-                  {/* Иконка категории */}
-                  <div className="text-4xl mb-2 text-center">{category.icon}</div>
-
+                  <div className="text-5xl mb-3">{category.icon}</div>
                   <h3 className="text-base font-bold text-gray-900 mb-2">{category.name}</h3>
                   <p className="text-xs text-gray-600 mb-3 line-clamp-2">{category.description}</p>
                   <div className="flex items-center justify-between text-xs text-gray-500">
@@ -527,6 +521,9 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
             </div>
           )}
         </div>
+
+        {/* Горизонтальная карусель товаров */}
+        <ProductsCarousel />
       </DialogContent>
     </Dialog>
   )
