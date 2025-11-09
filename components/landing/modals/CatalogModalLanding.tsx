@@ -223,30 +223,43 @@ const mockSuppliers: { [key: string]: Supplier[] } = {
 }
 
 // Компонент горизонтальной карусели товаров
-function ProductsCarousel() {
-  const [products, setProducts] = useState<CategoryProduct[]>([])
+function ProductsCarousel({ onProductClick }: { onProductClick: (product: any) => void }) {
+  const [products, setProducts] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setIsLoading(true)
-        // Загружаем товары из разных категорий
-        const categories = ['Электроника', 'Текстиль и одежда', 'Автотовары']
+        // Загружаем товары из ВСЕХ категорий
         const allProducts: CategoryProduct[] = []
 
-        for (const category of categories) {
-          const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(category)}?limit=10`)
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success && data.products?.length > 0) {
-              const productsWithImages = data.products.filter((p: any) => p.image_url)
-              allProducts.push(...productsWithImages)
-            }
+        const response = await fetch(`/api/catalog/products-by-category/all?limit=100`)
+        if (response.ok) {
+          const data = await response.json()
+          console.log('🔍 Загружено товаров из API:', data.products?.length)
+
+          if (data.success && data.products?.length > 0) {
+            // Фильтруем товары с валидными изображениями более строго
+            const productsWithImages = data.products.filter((p: any) => {
+              if (!p.image_url || typeof p.image_url !== 'string') return false
+              const url = p.image_url.trim().toLowerCase()
+              if (url.length === 0) return false
+              if (url.includes('placeholder')) return false
+              if (url.includes('example.com')) return false
+              // Проверяем что это похоже на URL изображения
+              if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) return false
+              return true
+            })
+
+            console.log('✅ Товаров с валидными изображениями:', productsWithImages.length)
+            allProducts.push(...productsWithImages)
           }
         }
 
-        setProducts(allProducts.slice(0, 20))
+        // Берем случайные товары для разнообразия
+        const shuffled = allProducts.sort(() => Math.random() - 0.5)
+        setProducts(shuffled.slice(0, 40))
       } catch (error) {
         console.error('Failed to fetch products:', error)
       } finally {
@@ -257,45 +270,67 @@ function ProductsCarousel() {
     fetchProducts()
   }, [])
 
-  if (isLoading || products.length === 0) {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const card = e.currentTarget.closest('[data-card-id]')
+    if (card) {
+      (card as HTMLElement).style.display = 'none'
+    }
+  }
+
+  // Не показываем карусель если загружается или слишком мало товаров
+  if (isLoading) return null
+  if (products.length < 5) {
+    console.log('⚠️ Недостаточно товаров для карусели:', products.length)
     return null
   }
 
   return (
-    <div className="border-t border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100 p-3">
-      <h3 className="text-xs font-bold text-gray-900 mb-2">🔥 Популярные товары</h3>
+    <div className="flex-shrink-0 border-t border-gray-100 bg-white py-4 px-6">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-lg">🔥</span>
+        <h3 className="text-sm font-medium text-gray-900">Популярные товары</h3>
+        <span className="text-xs text-gray-400">• {products.length}</span>
+      </div>
 
       {/* Анимированная карусель */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden -mx-6 px-6">
         <motion.div
-          className="flex gap-2"
+          className="flex gap-4"
           animate={{
-            x: [0, -(products.length * 90)]
+            x: [0, -(products.length * 160)]
           }}
           transition={{
             x: {
               repeat: Infinity,
               repeatType: "loop",
-              duration: products.length * 3,
+              duration: products.length * 3.5,
               ease: "linear"
             }
           }}
+          style={{ pointerEvents: 'auto' }}
         >
           {/* Дублируем товары для бесшовной карусели */}
           {[...products, ...products].map((product, idx) => (
-            <div
+            <button
               key={idx}
-              className="flex-shrink-0 w-20 h-20 bg-white rounded-lg border border-orange-200 p-1.5 hover:shadow-md transition-shadow"
+              type="button"
+              data-card-id={`product-${idx}`}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('🔥 Клик на товар:', product.product_name)
+                onProductClick(product)
+              }}
+              className="flex-shrink-0 w-36 h-36 rounded-lg overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer"
             >
               <img
                 src={product.image_url}
                 alt={product.product_name}
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                }}
+                className="w-full h-full object-cover pointer-events-none"
+                loading="eager"
+                onError={handleImageError}
               />
-            </div>
+            </button>
           ))}
         </motion.div>
       </div>
@@ -306,35 +341,102 @@ function ProductsCarousel() {
 export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
+  const [realSuppliers, setRealSuppliers] = useState<any[]>([])
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false)
 
-  const handleCategoryClick = (category: Category) => {
+  const handleCategoryClick = async (category: Category) => {
     setSelectedCategory(category)
+    await loadSuppliersForCategory(category.name)
+  }
+
+  const loadSuppliersForCategory = async (categoryName: string) => {
+    try {
+      setLoadingSuppliers(true)
+      console.log('📦 Загружаем поставщиков для категории:', categoryName)
+
+      const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(categoryName)}?limit=100`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Получены данные:', data)
+
+        if (data.success && data.suppliers?.length > 0) {
+          // Адаптируем данные из API к формату компонента
+          const adaptedSuppliers = data.suppliers.map((s: any) => ({
+            id: s.supplier_id,
+            name: s.supplier_name || 'Поставщик',
+            companyName: s.supplier_company_name || '',
+            country: s.supplier_country || '',
+            city: s.supplier_city || '',
+            rating: s.supplier_rating || 0,
+            reviewsCount: s.supplier_reviews || 0,
+            projectsCount: s.supplier_projects || 0,
+            description: s.room_description || `Поставщик категории "${categoryName}"`,
+            products: (s.products || []).map((p: any) => ({
+              id: p.id,
+              name: p.product_name || p.item_name || 'Товар',
+              price: p.price || '0',
+              currency: p.currency || '¥',
+              minOrder: p.min_order || '1 шт',
+              image: p.image_url || ''
+            }))
+          }))
+
+          setRealSuppliers(adaptedSuppliers)
+          console.log('✅ Загружено поставщиков:', adaptedSuppliers.length)
+        } else {
+          setRealSuppliers([])
+          console.log('⚠️ Поставщиков не найдено')
+        }
+      }
+    } catch (error) {
+      console.error('❌ Ошибка загрузки поставщиков:', error)
+      setRealSuppliers([])
+    } finally {
+      setLoadingSuppliers(false)
+    }
+  }
+
+  const handleProductClick = (product: any) => {
+    console.log('🔍 Клик на товар из карусели:', product)
+    // Открываем детальную карточку товара
+    setSelectedProduct(product)
   }
 
   const handleBack = () => {
     if (selectedSupplier) {
       setSelectedSupplier(null)
+    } else if (selectedProduct) {
+      setSelectedProduct(null)
     } else if (selectedCategory) {
       setSelectedCategory(null)
+      setRealSuppliers([])
     }
   }
 
   const handleClose = () => {
     setSelectedCategory(null)
     setSelectedSupplier(null)
+    setSelectedProduct(null)
+    setRealSuppliers([])
     onClose()
   }
 
-  const currentSuppliers = selectedCategory ? mockSuppliers[selectedCategory.id] || [] : []
+  // Используем реальных поставщиков из API, если есть, иначе моковые данные
+  const currentSuppliers = realSuppliers.length > 0
+    ? realSuppliers
+    : selectedCategory
+    ? mockSuppliers[selectedCategory.id] || []
+    : []
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0">
-        {/* Хедер */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white">
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0 flex flex-col">
+        {/* Хедер - фиксированная высота */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {(selectedCategory || selectedSupplier) && (
+              {(selectedCategory || selectedSupplier || selectedProduct) && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -346,11 +448,19 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
               )}
               <div>
                 <h2 className="text-2xl font-bold mb-1">
-                  {selectedSupplier ? selectedSupplier.name : selectedCategory ? selectedCategory.name : 'Каталог GET2B'}
+                  {selectedSupplier
+                    ? selectedSupplier.name
+                    : selectedProduct
+                    ? selectedProduct.product_name
+                    : selectedCategory
+                    ? selectedCategory.name
+                    : 'Каталог GET2B'}
                 </h2>
                 <p className="text-orange-100 text-sm">
                   {selectedSupplier
                     ? `${selectedSupplier.city}, ${selectedSupplier.country}`
+                    : selectedProduct
+                    ? `${selectedProduct.category_name || selectedProduct.category} • ${selectedProduct.supplier_name || 'Поставщик'}`
                     : selectedCategory
                     ? `${selectedCategory.productsCount} товаров • ${selectedCategory.suppliersCount} поставщиков`
                     : 'Верифицированные поставщики из Китая и Турции'
@@ -369,9 +479,110 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
           </div>
         </div>
 
-        {/* Контент */}
-        <div className="overflow-y-auto p-6" style={{ maxHeight: 'calc(95vh - 200px)' }}>
-          {!selectedCategory ? (
+        {/* Контент - скроллящаяся область с flex-1 */}
+        <div className="flex-1 overflow-y-auto p-6 min-h-0">
+          {selectedProduct ? (
+            // Карточка выбранного товара
+            <div className="grid lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+              {/* Изображение товара - 2 колонки */}
+              <div className="lg:col-span-2">
+                <div className="sticky top-0 bg-gradient-to-br from-orange-50 to-white rounded-2xl p-8 border border-orange-200 shadow-sm">
+                  <div className="aspect-square flex items-center justify-center">
+                    <img
+                      src={selectedProduct.image_url}
+                      alt={selectedProduct.product_name}
+                      className="max-w-full max-h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Информация о товаре - 3 колонки */}
+              <div className="lg:col-span-3 space-y-6">
+                {/* Заголовок и описание */}
+                <div>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-3">
+                    {selectedProduct.product_name}
+                  </h3>
+                  {selectedProduct.description && (
+                    <p className="text-gray-600 text-lg leading-relaxed">
+                      {selectedProduct.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Цена - большой акцент */}
+                {selectedProduct.price && (
+                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 shadow-lg">
+                    <div className="flex items-baseline justify-between">
+                      <div>
+                        <p className="text-orange-100 text-sm font-medium mb-1">Цена</p>
+                        <p className="text-4xl font-bold text-white">
+                          {selectedProduct.price} <span className="text-2xl">{selectedProduct.currency || '¥'}</span>
+                        </p>
+                      </div>
+                      {selectedProduct.min_order && (
+                        <div className="text-right">
+                          <p className="text-orange-100 text-sm font-medium mb-1">Минимум</p>
+                          <p className="text-xl font-semibold text-white">{selectedProduct.min_order}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Детали товара в карточках */}
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedProduct.item_code && (
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 hover:border-orange-300 transition-colors">
+                      <p className="text-gray-500 text-xs font-medium mb-1">Артикул</p>
+                      <p className="font-mono text-sm font-semibold text-gray-900">{selectedProduct.item_code}</p>
+                    </div>
+                  )}
+
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 hover:border-orange-300 transition-colors">
+                    <p className="text-gray-500 text-xs font-medium mb-1">Категория</p>
+                    <p className="text-sm font-semibold text-gray-900">{selectedProduct.category_name || selectedProduct.category}</p>
+                  </div>
+
+                  {selectedProduct.supplier_name && (
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 hover:border-orange-300 transition-colors">
+                      <p className="text-gray-500 text-xs font-medium mb-1">Поставщик</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedProduct.supplier_name}</p>
+                    </div>
+                  )}
+
+                  {selectedProduct.supplier_country && (
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 hover:border-orange-300 transition-colors">
+                      <p className="text-gray-500 text-xs font-medium mb-1">Страна</p>
+                      <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                        <MapPin className="w-4 h-4 text-orange-500" />
+                        {selectedProduct.supplier_country}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Кнопка действия */}
+                <div className="space-y-3 pt-4">
+                  <Button
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white py-7 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    size="lg"
+                  >
+                    <ShoppingCart className="w-6 h-6 mr-2" />
+                    Добавить в проект
+                  </Button>
+
+                  <p className="text-center text-sm text-gray-500">
+                    Зарегистрируйтесь, чтобы добавить товар в проект
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : !selectedCategory ? (
             // Сетка категорий
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {categories.map((category) => (
@@ -393,7 +604,18 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
           ) : !selectedSupplier ? (
             // Список поставщиков категории
             <div className="space-y-4">
-              {currentSuppliers.length > 0 ? (
+              {loadingSuppliers ? (
+                // Индикатор загрузки
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
+                    Загружаем поставщиков...
+                  </h3>
+                  <p className="text-gray-600">
+                    Пожалуйста, подождите
+                  </p>
+                </div>
+              ) : currentSuppliers.length > 0 ? (
                 currentSuppliers.map((supplier) => (
                   <div
                     key={supplier.id}
@@ -479,8 +701,24 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
                       key={product.id}
                       className="bg-white border-2 border-gray-200 hover:border-orange-400 rounded-lg p-4 transition-all duration-200 hover:shadow-md"
                     >
-                      <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-3 flex items-center justify-center">
-                        <Package className="w-12 h-12 text-gray-400" />
+                      <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                        {product.image ? (
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              const target = e.currentTarget
+                              target.style.display = 'none'
+                              const parent = target.parentElement
+                              if (parent) {
+                                parent.innerHTML = '<svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>'
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Package className="w-12 h-12 text-gray-400" />
+                        )}
                       </div>
                       <h4 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
                         {product.name}
@@ -522,8 +760,8 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
           )}
         </div>
 
-        {/* Горизонтальная карусель товаров */}
-        <ProductsCarousel />
+        {/* Горизонтальная карусель товаров - фиксированная высота */}
+        <ProductsCarousel onProductClick={handleProductClick} />
       </DialogContent>
     </Dialog>
   )
