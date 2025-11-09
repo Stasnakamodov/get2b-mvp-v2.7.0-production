@@ -715,37 +715,57 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
               </div>
             )
           ) : !selectedSubcategory ? (
-            // УРОВЕНЬ 2: Сетка подкатегорий выбранной категории
+            // УРОВЕНЬ 2: Сетка подкатегорий выбранной категории (дизайн как в основном каталоге)
             <div>
               <h3 className="text-lg font-bold text-gray-900 mb-4">
                 Разделы категории ({selectedCategory.subcategories?.length || 0})
               </h3>
               {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {selectedCategory.subcategories.map((subcategory) => (
-                    <button
+                    <div
                       key={subcategory.id}
+                      className="group relative border border-gray-200 rounded-xl p-5 cursor-pointer transition-all duration-300 hover:border-orange-400 hover:shadow-lg bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-white"
                       onClick={() => handleSubcategoryClick(subcategory)}
-                      className="bg-white border-2 border-gray-200 hover:border-orange-400 rounded-lg p-4 transition-all duration-200 hover:shadow-md text-left group"
                     >
-                      <div className="flex items-center gap-3 mb-2">
-                        {subcategory.icon && (
-                          <span className="text-2xl">{subcategory.icon}</span>
+                      {/* Счетчик товаров в правом верхнем углу */}
+                      <div className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
+                        {subcategory.products_count || 0}
+                      </div>
+
+                      <div className="text-left">
+                        {/* Иконка и название */}
+                        <div className="flex items-start mb-3">
+                          <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center mr-3 shadow-md flex-shrink-0">
+                            <span className="text-2xl">{subcategory.icon || '📦'}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 text-base leading-tight mb-1 group-hover:text-gray-800">
+                              {subcategory.name}
+                            </h3>
+                            {subcategory.description && (
+                              <p className="text-xs text-gray-500 line-clamp-2">
+                                {subcategory.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Полный путь */}
+                        {subcategory.full_path && (
+                          <p className="text-xs text-gray-400 mt-2 truncate">
+                            {subcategory.full_path}
+                          </p>
                         )}
-                        <h4 className="text-sm font-semibold text-gray-900 group-hover:text-orange-600 flex-1">
-                          {subcategory.name}
-                        </h4>
+
+                        {/* Кнопка просмотра */}
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <p className="text-xs text-gray-500">
+                            Нажмите для просмотра товаров
+                          </p>
+                        </div>
                       </div>
-                      {subcategory.description && (
-                        <p className="text-xs text-gray-500 mb-2 line-clamp-2">
-                          {subcategory.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500">{subcategory.products_count} товаров</span>
-                        <ChevronLeft className="w-4 h-4 rotate-180 text-gray-400 group-hover:text-orange-600" />
-                      </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               ) : (
