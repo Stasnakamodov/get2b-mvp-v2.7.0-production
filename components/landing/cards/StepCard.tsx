@@ -835,6 +835,119 @@ export function StepCard({ step, index }: StepCardProps) {
                 </div>
               </div>
             </div>
+          ) : step.number === '03' ? (
+            // STEP 3: Receipt Upload (Пополнение агента)
+            <div className="p-10 bg-gradient-to-br from-emerald-50 to-teal-50">
+              <div className="max-w-4xl mx-auto space-y-8">
+                {/* Заголовок */}
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4">Пополнение агента</h2>
+                  <p className="text-xl text-gray-600 leading-relaxed">
+                    {step.details || 'Загрузите чек или подтверждение оплаты'}
+                  </p>
+                </div>
+
+                {/* Процесс */}
+                <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-emerald-200">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                      </svg>
+                    </div>
+                    Как это работает?
+                  </h3>
+
+                  <div className="space-y-6">
+                    {/* Шаг 1 */}
+                    <div className="flex gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                        1
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2">Переведите деньги</h4>
+                        <p className="text-gray-600 leading-relaxed">
+                          Переведите необходимую сумму на расчётный счёт нашей компании согласно выставленному счёту. Мы работаем по схеме агентского договора.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Шаг 2 */}
+                    <div className="flex gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                        2
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2">Загрузите чек</h4>
+                        <p className="text-gray-600 leading-relaxed mb-3">
+                          После перевода загрузите подтверждение оплаты в конструкторе проектов:
+                        </p>
+                        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <div>
+                              <div className="font-bold text-emerald-900">Поддерживаемые форматы:</div>
+                              <div className="text-sm text-emerald-700">PDF, JPG, PNG</div>
+                            </div>
+                          </div>
+                          <div className="text-sm text-emerald-800 space-y-1">
+                            <p>• Банковская выписка</p>
+                            <p>• Скриншот платежа из мобильного банка</p>
+                            <p>• Любой документ, подтверждающий перевод</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Шаг 3 */}
+                    <div className="flex gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 bg-purple-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                        3
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2">Получите подтверждение</h4>
+                        <p className="text-gray-600 leading-relaxed">
+                          После проверки чека мы подтвердим получение средств и перейдём к оплате поставщику. Вы получите уведомление в личном кабинете.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Важная информация */}
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <h4 className="font-bold text-blue-900 mb-2">Безопасность и прозрачность</h4>
+                      <p className="text-blue-800 leading-relaxed">
+                        Мы работаем по схеме агентского договора, что обеспечивает полную прозрачность и безопасность сделки. Все операции фиксируются в системе, и вы всегда можете отследить статус в личном кабинете.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="text-center pt-4">
+                  <Button
+                    onClick={() => setIsOpen(false)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 h-auto text-lg rounded-xl"
+                  >
+                    Понятно, начнём работу
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           ) : (
             // STEP 1: Left/Right layout (vertical split)
             <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[700px]">
