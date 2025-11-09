@@ -339,7 +339,7 @@ function ProductsCarousel({ onProductClick }: { onProductClick: (product: any) =
 }
 
 export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps) {
-  const [viewMode, setViewMode] = useState<'products' | 'suppliers'>('suppliers')
+  const [viewMode, setViewMode] = useState<'products' | 'suppliers'>('products')
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
