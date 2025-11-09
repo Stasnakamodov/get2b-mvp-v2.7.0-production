@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { X, ChevronLeft, Star, MapPin, Package, ShoppingCart } from 'lucide-react'
+import { ChevronLeft, Star, MapPin, Package, ShoppingCart, Grid3x3, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 // Типы данных
@@ -339,15 +339,64 @@ function ProductsCarousel({ onProductClick }: { onProductClick: (product: any) =
 }
 
 export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps) {
+  const [viewMode, setViewMode] = useState<'products' | 'suppliers'>('suppliers')
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
   const [realSuppliers, setRealSuppliers] = useState<any[]>([])
   const [loadingSuppliers, setLoadingSuppliers] = useState(false)
+  const [categoryProducts, setCategoryProducts] = useState<any[]>([])
+  const [loadingProducts, setLoadingProducts] = useState(false)
 
   const handleCategoryClick = async (category: Category) => {
     setSelectedCategory(category)
-    await loadSuppliersForCategory(category.name)
+
+    // В режиме поставщиков загружаем поставщиков
+    if (viewMode === 'suppliers') {
+      await loadSuppliersForCategory(category.name)
+    }
+    // В режиме товаров загружаем товары категории
+    else if (viewMode === 'products') {
+      await loadCategoryProducts(category.name)
+    }
+  }
+
+  const loadCategoryProducts = async (categoryName: string) => {
+    try {
+      setLoadingProducts(true)
+      console.log('📦 Загружаем товары категории:', categoryName)
+
+      const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(categoryName)}?limit=100`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Получены товары:', data)
+
+        if (data.success && data.products?.length > 0) {
+          // Фильтруем товары с валидными изображениями
+          const productsWithValidImages = data.products.filter((p: any) => {
+            if (!p.image_url || typeof p.image_url !== 'string') return false
+            const url = p.image_url.trim().toLowerCase()
+            if (url.length === 0) return false
+            if (url.includes('placeholder')) return false
+            if (url.includes('example.com')) return false
+            // Проверяем что это похоже на URL изображения
+            if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) return false
+            return true
+          })
+
+          console.log('✅ Товаров с валидными изображениями:', productsWithValidImages.length, 'из', data.products.length)
+          setCategoryProducts(productsWithValidImages)
+        } else {
+          setCategoryProducts([])
+          console.log('⚠️ Товаров не найдено')
+        }
+      }
+    } catch (error) {
+      console.error('❌ Ошибка загрузки товаров:', error)
+      setCategoryProducts([])
+    } finally {
+      setLoadingProducts(false)
+    }
   }
 
   const loadSuppliersForCategory = async (categoryName: string) => {
@@ -411,6 +460,7 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
     } else if (selectedCategory) {
       setSelectedCategory(null)
       setRealSuppliers([])
+      setCategoryProducts([])
     }
   }
 
@@ -419,6 +469,7 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
     setSelectedSupplier(null)
     setSelectedProduct(null)
     setRealSuppliers([])
+    setCategoryProducts([])
     onClose()
   }
 
@@ -468,14 +519,34 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              className="text-white hover:bg-white/20"
-            >
-              <X className="w-5 h-5" />
-            </Button>
+
+            {/* Переключатель режимов - только на главной странице */}
+            {!selectedCategory && !selectedSupplier && !selectedProduct && (
+              <div className="flex gap-2 bg-white/10 rounded-lg p-1 w-[320px]">
+                <button
+                  onClick={() => setViewMode('products')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-colors ${
+                    viewMode === 'products'
+                      ? 'bg-white text-orange-600 font-semibold'
+                      : 'text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                  Товары
+                </button>
+                <button
+                  onClick={() => setViewMode('suppliers')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-colors ${
+                    viewMode === 'suppliers'
+                      ? 'bg-white text-orange-600 font-semibold'
+                      : 'text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  Поставщики
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -602,8 +673,84 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
               ))}
             </div>
           ) : !selectedSupplier ? (
-            // Список поставщиков категории
-            <div className="space-y-4">
+            // Список поставщиков ИЛИ товаров категории - в зависимости от режима
+            viewMode === 'products' ? (
+              // Режим товаров - показываем товары категории
+              <div>
+                {loadingProducts ? (
+                  // Индикатор загрузки
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                      Загружаем товары...
+                    </h3>
+                    <p className="text-gray-600">
+                      Пожалуйста, подождите
+                    </p>
+                  </div>
+                ) : categoryProducts.length > 0 ? (
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">
+                      Товары категории ({categoryProducts.length})
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {categoryProducts.map((product) => (
+                        <button
+                          key={product.id}
+                          onClick={() => setSelectedProduct(product)}
+                          className="bg-white border-2 border-gray-200 hover:border-orange-400 rounded-lg p-4 transition-all duration-200 hover:shadow-md text-left"
+                        >
+                          <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                            <img
+                              src={product.image_url}
+                              alt={product.product_name}
+                              className="w-full h-full object-contain"
+                              loading="lazy"
+                              onError={(e) => {
+                                console.log('❌ Ошибка загрузки изображения:', product.image_url)
+                                const target = e.currentTarget
+                                target.style.display = 'none'
+                              }}
+                            />
+                          </div>
+                          <h4 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
+                            {product.product_name}
+                          </h4>
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="font-bold text-orange-600">
+                              {product.price} {product.currency || '¥'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {product.supplier_name || 'Поставщик'}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">📦</div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      Товары не найдены
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      В этой категории пока нет товаров
+                    </p>
+                    <Button
+                      onClick={() => setSelectedCategory(null)}
+                      variant="outline"
+                      className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-2" />
+                      Вернуться к категориям
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Режим поставщиков - показываем список поставщиков
+              <div className="space-y-4">
               {loadingSuppliers ? (
                 // Индикатор загрузки
                 <div className="text-center py-12">
@@ -683,6 +830,7 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
                 </div>
               )}
             </div>
+            )
           ) : (
             // Товары выбранного поставщика
             <div className="space-y-6">
