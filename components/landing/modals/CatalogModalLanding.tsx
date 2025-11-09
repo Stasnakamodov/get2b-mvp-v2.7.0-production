@@ -14,6 +14,17 @@ interface Category {
   description: string
   productsCount: number
   suppliersCount: number
+  subcategories?: Subcategory[]  // Добавляем поддержку подкатегорий
+}
+
+interface Subcategory {
+  id: string
+  name: string
+  icon?: string
+  description?: string
+  category_id: string
+  products_count: number
+  full_path?: string
 }
 
 interface CategoryProduct {
@@ -51,73 +62,7 @@ interface CatalogModalLandingProps {
   onClose: () => void
 }
 
-// Данные категорий
-const categories: Category[] = [
-  {
-    id: '1',
-    name: 'Автотовары',
-    icon: '🚗',
-    description: 'Автомобильные запчасти и аксессуары',
-    productsCount: 1250,
-    suppliersCount: 45
-  },
-  {
-    id: '2',
-    name: 'Электроника',
-    icon: '📱',
-    description: 'Электронные устройства и компоненты',
-    productsCount: 2340,
-    suppliersCount: 78
-  },
-  {
-    id: '3',
-    name: 'Дом и быт',
-    icon: '🏠',
-    description: 'Товары для дома и быта',
-    productsCount: 1890,
-    suppliersCount: 56
-  },
-  {
-    id: '4',
-    name: 'Здоровье и медицина',
-    icon: '⚕️',
-    description: 'Медицинское оборудование и товары для здоровья',
-    productsCount: 980,
-    suppliersCount: 34
-  },
-  {
-    id: '5',
-    name: 'Продукты питания',
-    icon: '🍎',
-    description: 'Пищевая продукция и ингредиенты',
-    productsCount: 1560,
-    suppliersCount: 67
-  },
-  {
-    id: '6',
-    name: 'Промышленность',
-    icon: '🏭',
-    description: 'Промышленное оборудование и материалы',
-    productsCount: 3450,
-    suppliersCount: 92
-  },
-  {
-    id: '7',
-    name: 'Строительство',
-    icon: '🏗️',
-    description: 'Строительные материалы и инструменты',
-    productsCount: 2780,
-    suppliersCount: 81
-  },
-  {
-    id: '8',
-    name: 'Текстиль и одежда',
-    icon: '👕',
-    description: 'Текстильная продукция и одежда',
-    productsCount: 4120,
-    suppliersCount: 103
-  }
-]
+// Статический массив категорий удален - теперь загружаем из API
 
 // Примеры поставщиков для демонстрации
 const mockSuppliers: { [key: string]: Supplier[] } = {
@@ -340,24 +285,86 @@ function ProductsCarousel({ onProductClick }: { onProductClick: (product: any) =
 
 export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps) {
   const [viewMode, setViewMode] = useState<'products' | 'suppliers'>('products')
+
+  // Динамические категории из API
+  const [apiCategories, setApiCategories] = useState<Category[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(false)
+
+  // Навигация по уровням
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null)
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
+
+  // Данные
   const [realSuppliers, setRealSuppliers] = useState<any[]>([])
   const [loadingSuppliers, setLoadingSuppliers] = useState(false)
   const [categoryProducts, setCategoryProducts] = useState<any[]>([])
   const [loadingProducts, setLoadingProducts] = useState(false)
 
+  // Загрузка категорий из API при открытии модалки
+  useEffect(() => {
+    if (open) {
+      loadCategoriesFromAPI()
+    }
+  }, [open])
+
+  const loadCategoriesFromAPI = async () => {
+    try {
+      setLoadingCategories(true)
+      console.log('📦 [Landing Modal] Загружаем категории из API...')
+
+      const response = await fetch('/api/catalog/categories?includeSubcategories=true')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('✅ [Landing Modal] Данные категорий:', data)
+
+      if (data.success && data.categories && Array.isArray(data.categories)) {
+        // Преобразуем данные из API в формат Category
+        const categoriesWithStats = data.categories.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          icon: cat.icon || '📦',
+          description: cat.description || '',
+          productsCount: cat.subcategories?.reduce((sum: number, sub: any) => sum + (sub.products_count || 0), 0) || 0,
+          suppliersCount: 0, // TODO: добавить из API если нужно
+          subcategories: cat.subcategories || []
+        }))
+
+        setApiCategories(categoriesWithStats)
+        console.log(`✅ [Landing Modal] Загружено ${categoriesWithStats.length} категорий`)
+      } else {
+        console.warn('⚠️ [Landing Modal] Некорректная структура данных категорий')
+        setApiCategories([])
+      }
+    } catch (error) {
+      console.error('❌ [Landing Modal] Ошибка загрузки категорий:', error)
+      setApiCategories([])
+    } finally {
+      setLoadingCategories(false)
+    }
+  }
+
   const handleCategoryClick = async (category: Category) => {
+    console.log('🎯 [Landing Modal] Выбрана категория:', category.name)
+    // Просто показываем подкатегории - не загружаем данные сразу
     setSelectedCategory(category)
+  }
+
+  const handleSubcategoryClick = async (subcategory: Subcategory) => {
+    console.log('🎯 [Landing Modal] Выбрана подкатегория:', subcategory.name)
+    setSelectedSubcategory(subcategory)
 
     // В режиме поставщиков загружаем поставщиков
     if (viewMode === 'suppliers') {
-      await loadSuppliersForCategory(category.name)
+      await loadSuppliersForCategory(subcategory.name)
     }
-    // В режиме товаров загружаем товары категории
+    // В режиме товаров загружаем товары подкатегории
     else if (viewMode === 'products') {
-      await loadCategoryProducts(category.name)
+      await loadCategoryProducts(subcategory.name)
     }
   }
 
@@ -453,19 +460,26 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
   }
 
   const handleBack = () => {
-    if (selectedSupplier) {
-      setSelectedSupplier(null)
-    } else if (selectedProduct) {
+    if (selectedProduct) {
+      // С детальной карточки товара назад к списку товаров/подкатегории
       setSelectedProduct(null)
-    } else if (selectedCategory) {
-      setSelectedCategory(null)
+    } else if (selectedSupplier) {
+      // С поставщика назад к списку поставщиков/подкатегории
+      setSelectedSupplier(null)
+    } else if (selectedSubcategory) {
+      // С подкатегории назад к категории
+      setSelectedSubcategory(null)
       setRealSuppliers([])
       setCategoryProducts([])
+    } else if (selectedCategory) {
+      // С категории назад к списку категорий
+      setSelectedCategory(null)
     }
   }
 
   const handleClose = () => {
     setSelectedCategory(null)
+    setSelectedSubcategory(null)
     setSelectedSupplier(null)
     setSelectedProduct(null)
     setRealSuppliers([])
@@ -487,7 +501,7 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
         <div className="flex-shrink-0 bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {(selectedCategory || selectedSupplier || selectedProduct) && (
+              {(selectedCategory || selectedSubcategory || selectedSupplier || selectedProduct) && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -503,25 +517,39 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
                     ? selectedSupplier.name
                     : selectedProduct
                     ? selectedProduct.product_name
+                    : selectedSubcategory
+                    ? selectedSubcategory.name
                     : selectedCategory
                     ? selectedCategory.name
                     : 'Каталог GET2B'}
                 </h2>
                 <p className="text-orange-100 text-sm">
-                  {selectedSupplier
-                    ? `${selectedSupplier.city}, ${selectedSupplier.country}`
-                    : selectedProduct
-                    ? `${selectedProduct.category_name || selectedProduct.category} • ${selectedProduct.supplier_name || 'Поставщик'}`
-                    : selectedCategory
-                    ? `${selectedCategory.productsCount} товаров • ${selectedCategory.suppliersCount} поставщиков`
-                    : 'Верифицированные поставщики из Китая и Турции'
-                  }
+                  {selectedSupplier ? (
+                    `${selectedSupplier.city}, ${selectedSupplier.country}`
+                  ) : selectedProduct ? (
+                    `${selectedProduct.category_name || selectedProduct.category} • ${selectedProduct.supplier_name || 'Поставщик'}`
+                  ) : selectedSubcategory ? (
+                    // Breadcrumb для подкатегории
+                    <span className="flex items-center gap-2">
+                      <span>{selectedCategory?.name}</span>
+                      <ChevronLeft className="w-4 h-4 rotate-180" />
+                      <span>{selectedSubcategory.name}</span>
+                      {selectedSubcategory.products_count > 0 && (
+                        <span className="ml-2">• {selectedSubcategory.products_count} товаров</span>
+                      )}
+                    </span>
+                  ) : selectedCategory ? (
+                    // Информация о категории
+                    `${selectedCategory.subcategories?.length || 0} разделов • ${selectedCategory.productsCount} товаров`
+                  ) : (
+                    'Верифицированные поставщики из Китая и Турции'
+                  )}
                 </p>
               </div>
             </div>
 
             {/* Переключатель режимов - только на главной странице */}
-            {!selectedCategory && !selectedSupplier && !selectedProduct && (
+            {!selectedCategory && !selectedSubcategory && !selectedSupplier && !selectedProduct && (
               <div className="flex gap-2 bg-white/10 rounded-lg p-1 w-[320px]">
                 <button
                   onClick={() => setViewMode('products')}
@@ -654,28 +682,84 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
               </div>
             </div>
           ) : !selectedCategory ? (
-            // Сетка категорий
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category)}
-                  className="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-200 hover:border-orange-400 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg hover:scale-105 flex flex-col items-center"
-                >
-                  <div className="text-4xl mb-2">{category.icon}</div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-1 text-center">{category.name}</h3>
-                  <p className="text-xs text-gray-600 mb-2 line-clamp-2 text-center">{category.description}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-500 w-full">
-                    <span>{category.suppliersCount} пост.</span>
-                    <span>{category.productsCount} тов.</span>
-                  </div>
-                </button>
-              ))}
+            // УРОВЕНЬ 1: Сетка категорий (загружается из API)
+            loadingCategories ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Загружаем категории...</h3>
+                <p className="text-gray-600">Пожалуйста, подождите</p>
+              </div>
+            ) : apiCategories.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {apiCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryClick(category)}
+                    className="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-200 hover:border-orange-400 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg hover:scale-105 flex flex-col items-center"
+                  >
+                    <div className="text-4xl mb-2">{category.icon}</div>
+                    <h3 className="text-sm font-bold text-gray-900 mb-1 text-center">{category.name}</h3>
+                    <p className="text-xs text-gray-600 mb-2 line-clamp-2 text-center">{category.description}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500 w-full">
+                      <span>{category.subcategories?.length || 0} разд.</span>
+                      <span>{category.productsCount} тов.</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📦</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Категории не найдены</h3>
+                <p className="text-gray-600 mb-4">Попробуйте перезагрузить страницу</p>
+              </div>
+            )
+          ) : !selectedSubcategory ? (
+            // УРОВЕНЬ 2: Сетка подкатегорий выбранной категории
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                Разделы категории ({selectedCategory.subcategories?.length || 0})
+              </h3>
+              {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {selectedCategory.subcategories.map((subcategory) => (
+                    <button
+                      key={subcategory.id}
+                      onClick={() => handleSubcategoryClick(subcategory)}
+                      className="bg-white border-2 border-gray-200 hover:border-orange-400 rounded-lg p-4 transition-all duration-200 hover:shadow-md text-left group"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        {subcategory.icon && (
+                          <span className="text-2xl">{subcategory.icon}</span>
+                        )}
+                        <h4 className="text-sm font-semibold text-gray-900 group-hover:text-orange-600 flex-1">
+                          {subcategory.name}
+                        </h4>
+                      </div>
+                      {subcategory.description && (
+                        <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+                          {subcategory.description}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500">{subcategory.products_count} товаров</span>
+                        <ChevronLeft className="w-4 h-4 rotate-180 text-gray-400 group-hover:text-orange-600" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📦</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Нет разделов</h3>
+                  <p className="text-gray-600">В этой категории пока нет подкатегорий</p>
+                </div>
+              )}
             </div>
           ) : !selectedSupplier ? (
-            // Список поставщиков ИЛИ товаров категории - в зависимости от режима
+            // УРОВЕНЬ 3: Список поставщиков ИЛИ товаров подкатегории - в зависимости от режима
             viewMode === 'products' ? (
-              // Режим товаров - показываем товары категории
+              // Режим товаров - показываем товары подкатегории
               <div>
                 {loadingProducts ? (
                   // Индикатор загрузки
@@ -691,7 +775,7 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
                 ) : categoryProducts.length > 0 ? (
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-4">
-                      Товары категории ({categoryProducts.length})
+                      Товары: {selectedSubcategory?.name} ({categoryProducts.length})
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {categoryProducts.map((product) => (
