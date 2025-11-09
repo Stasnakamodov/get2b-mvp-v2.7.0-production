@@ -836,113 +836,171 @@ export function StepCard({ step, index }: StepCardProps) {
               </div>
             </div>
           ) : step.number === '03' ? (
-            // STEP 3: Receipt Upload (Пополнение агента)
-            <div className="p-10 bg-gradient-to-br from-emerald-50 to-teal-50">
-              <div className="max-w-4xl mx-auto space-y-8">
-                {/* Заголовок */}
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+            // STEP 3: Modern Fintech Receipt Upload Flow
+            <div className="relative overflow-hidden">
+              {/* Hero Section */}
+              <div className="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 px-10 py-16 text-white overflow-hidden">
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute inset-0" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px'}}></div>
+                </div>
+
+                <div className="relative max-w-4xl mx-auto text-center">
+                  <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium">Проверка за 15 минут</span>
                   </div>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-4">Пополнение агента</h2>
-                  <p className="text-xl text-gray-600 leading-relaxed">
-                    {step.details || 'Загрузите чек или подтверждение оплаты'}
+
+                  <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
+                    Подтвердите оплату
+                  </h2>
+                  <p className="text-xl text-blue-100 max-w-2xl mx-auto leading-relaxed">
+                    Загрузите чек — мы проверим и запустим процесс оплаты поставщику
                   </p>
                 </div>
+              </div>
 
-                {/* Процесс */}
-                <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-emerald-200">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              {/* Visual Timeline */}
+              <div className="px-10 py-12 bg-gray-50">
+                <div className="max-w-5xl mx-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+                    {/* Step 1 */}
+                    <div className="relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
+                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-wide">Шаг 1</div>
+                      <h3 className="text-base font-bold text-gray-900 mb-1">Оплатите счёт</h3>
+                      <p className="text-sm text-gray-600">Переведите средства любым способом</p>
+                    </div>
+
+                    {/* Step 2 - Active */}
+                    <div className="relative bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 shadow-md border-2 border-indigo-500">
+                      <div className="absolute -right-2 -top-2 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </div>
+                      <div className="text-xs font-bold text-indigo-600 mb-2 uppercase tracking-wide">Шаг 2 • Сейчас</div>
+                      <h3 className="text-base font-bold text-gray-900 mb-2">Загрузите чек</h3>
+                      <p className="text-sm text-gray-700 mb-3">Скриншот, PDF или фото</p>
+
+                      <div className="flex gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1 bg-white border border-indigo-200 rounded-md px-2 py-1 text-xs font-medium text-indigo-700">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/></svg>
+                          PDF
+                        </span>
+                        <span className="inline-flex items-center gap-1 bg-white border border-blue-200 rounded-md px-2 py-1 text-xs font-medium text-blue-700">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd"/></svg>
+                          JPG
+                        </span>
+                        <span className="inline-flex items-center gap-1 bg-white border border-purple-200 rounded-md px-2 py-1 text-xs font-medium text-purple-700">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd"/></svg>
+                          PNG
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow opacity-60">
+                      <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="text-xs font-bold text-green-600 mb-2 uppercase tracking-wide">Шаг 3</div>
+                      <h3 className="text-base font-bold text-gray-900 mb-1">Подтверждение</h3>
+                      <p className="text-sm text-gray-600">Переведём поставщику</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Examples */}
+              <div className="px-10 py-12 bg-white">
+                <div className="max-w-5xl mx-auto">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-8">Какие документы подходят</h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="flex gap-4 p-5 bg-gray-50 rounded-xl border border-gray-200">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900 text-sm mb-1">Банковская выписка</div>
+                        <div className="text-xs text-gray-600">PDF из интернет-банка</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 p-5 bg-gray-50 rounded-xl border border-gray-200">
+                      <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900 text-sm mb-1">Скриншот платежа</div>
+                        <div className="text-xs text-gray-600">Из мобильного банка</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 p-5 bg-gray-50 rounded-xl border border-gray-200">
+                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900 text-sm mb-1">Платёжное поручение</div>
+                        <div className="text-xs text-gray-600">С печатью банка</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trust Indicators */}
+              <div className="px-10 py-6 bg-gradient-to-br from-gray-50 to-blue-50/30 border-t border-gray-200">
+                <div className="max-w-5xl mx-auto">
+                  <div className="flex items-center justify-center gap-8 flex-wrap text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
+                      <span className="font-medium">Защищено</span>
                     </div>
-                    Как это работает?
-                  </h3>
-
-                  <div className="space-y-6">
-                    {/* Шаг 1 */}
-                    <div className="flex gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
-                        1
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">Переведите деньги</h4>
-                        <p className="text-gray-600 leading-relaxed">
-                          Переведите необходимую сумму на расчётный счёт нашей компании согласно выставленному счёту. Мы работаем по схеме агентского договора.
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <span className="font-medium">Зашифровано</span>
                     </div>
-
-                    {/* Шаг 2 */}
-                    <div className="flex gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
-                        2
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">Загрузите чек</h4>
-                        <p className="text-gray-600 leading-relaxed mb-3">
-                          После перевода загрузите подтверждение оплаты в конструкторе проектов:
-                        </p>
-                        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4">
-                          <div className="flex items-center gap-3 mb-3">
-                            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            <div>
-                              <div className="font-bold text-emerald-900">Поддерживаемые форматы:</div>
-                              <div className="text-sm text-emerald-700">PDF, JPG, PNG</div>
-                            </div>
-                          </div>
-                          <div className="text-sm text-emerald-800 space-y-1">
-                            <p>• Банковская выписка</p>
-                            <p>• Скриншот платежа из мобильного банка</p>
-                            <p>• Любой документ, подтверждающий перевод</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Шаг 3 */}
-                    <div className="flex gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 bg-purple-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
-                        3
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">Получите подтверждение</h4>
-                        <p className="text-gray-600 leading-relaxed">
-                          После проверки чека мы подтвердим получение средств и перейдём к оплате поставщику. Вы получите уведомление в личном кабинете.
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-medium">Проверка 15 мин</span>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Важная информация */}
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                    <div>
-                      <h4 className="font-bold text-blue-900 mb-2">Безопасность и прозрачность</h4>
-                      <p className="text-blue-800 leading-relaxed">
-                        Мы работаем по схеме агентского договора, что обеспечивает полную прозрачность и безопасность сделки. Все операции фиксируются в системе, и вы всегда можете отследить статус в личном кабинете.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <div className="text-center pt-4">
+              {/* CTA */}
+              <div className="px-10 py-8 bg-white border-t border-gray-200">
+                <div className="max-w-5xl mx-auto text-center">
                   <Button
                     onClick={() => setIsOpen(false)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 h-auto text-lg rounded-xl"
+                    className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-10 py-6 h-auto text-base rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-xl transition-all font-medium"
                   >
-                    Понятно, начнём работу
+                    Понятно, продолжим
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </div>
