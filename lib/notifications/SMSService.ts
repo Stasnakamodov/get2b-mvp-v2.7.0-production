@@ -17,9 +17,7 @@ export class SMSService {
     
     if (!this.isConfigured) {
       console.warn('⚠️ SMS.ru API_ID не настроен. SMS уведомления недоступны.')
-      console.log('💡 Получите API_ID на https://sms.ru/')
     } else {
-      console.log('✅ SMS сервис инициализирован')
     }
   }
 
@@ -91,7 +89,6 @@ export class SMSService {
 
       const result = await response.json()
 
-      console.log('📱 SMS.ru API ответ:', result)
 
       // Обрабатываем ответ
       if (result.status === 'OK') {

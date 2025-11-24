@@ -59,9 +59,7 @@ export default function SubcategoryList({
 
         if (currentCategory && currentCategory.subcategories) {
           subs = currentCategory.subcategories
-          console.log(`✅ [SubcategoryList] Найдено подкатегорий для ${category.name}:`, subs.length)
         } else {
-          console.log(`⚠️ [SubcategoryList] Подкатегории не найдены для ${category.name}`)
         }
       }
 

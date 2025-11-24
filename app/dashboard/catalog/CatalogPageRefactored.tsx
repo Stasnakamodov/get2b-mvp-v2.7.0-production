@@ -107,7 +107,6 @@ export default function CatalogPageRefactored() {
       const data = await response.json()
       
       if (data.suppliers) {
-        console.log('✅ Загружено пользовательских поставщиков:', data.suppliers.length)
         setRealSuppliers(data.suppliers)
       } else {
         console.warn('⚠️ Нет пользовательских поставщиков в ответе API')
@@ -128,7 +127,6 @@ export default function CatalogPageRefactored() {
       const data = await response.json()
       
       if (data.suppliers) {
-        console.log('✅ Загружено аккредитованных поставщиков:', data.suppliers.length)
         setVerifiedSuppliers(data.suppliers)
       } else {
         console.warn('⚠️ Нет аккредитованных поставщиков в ответе API')
@@ -176,7 +174,6 @@ export default function CatalogPageRefactored() {
       
       if (data.success && data.recommendations) {
         setRecommendations(data.recommendations)
-        console.log('✅ Рекомендации загружены:', data.recommendations)
       } else {
         setRecommendationsError('Не удалось получить рекомендации')
       }
@@ -194,7 +191,6 @@ export default function CatalogPageRefactored() {
   }, [])
 
   const handleStartProject = useCallback((supplier: Supplier) => {
-    console.log('🚀 Начинаем проект с поставщиком:', supplier.name)
     
     const params = new URLSearchParams({
       supplierId: supplier.id.toString(),
@@ -207,7 +203,6 @@ export default function CatalogPageRefactored() {
 
   const handleImportFromProjects = useCallback(() => {
     // TODO: Открыть модальное окно импорта эхо карточек
-    console.log('🔮 Импорт из проектов')
   }, [])
 
   const handleAddSupplier = useCallback(() => {

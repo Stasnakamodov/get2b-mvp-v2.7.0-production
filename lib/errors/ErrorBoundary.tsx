@@ -102,7 +102,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   handleReload = () => {
     // Убираем перезагрузку - пусть пользователь решает
-console.log('Error boundary caught error - user can refresh manually');
   };
 
   render() {

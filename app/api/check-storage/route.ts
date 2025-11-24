@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabaseClient";
 // GET: Проверка файлов в Supabase Storage
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 [STORAGE] Проверка файлов в Storage");
 
     const { searchParams } = new URL(request.url);
     const path = searchParams.get('path') || 'accreditation';
@@ -19,7 +18,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: bucketsError.message }, { status: 500 });
       }
 
-      console.log("✅ [STORAGE] Найдено buckets:", buckets?.length || 0);
 
       return NextResponse.json({
         success: true,
@@ -44,7 +42,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ [STORAGE] Найдено файлов:", files?.length || 0);
 
     // Получаем публичные URL для первых нескольких файлов
     const filesWithUrls = files?.slice(0, 5).map(file => {

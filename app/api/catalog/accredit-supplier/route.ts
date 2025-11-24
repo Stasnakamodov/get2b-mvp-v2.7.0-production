@@ -158,7 +158,6 @@ export async function POST(request: NextRequest) {
       // Не прерываем процесс, если Telegram недоступен
     }
 
-    console.log("✅ [API] Заявка на аккредитацию подана:", accreditationRequest.id);
     return NextResponse.json({ 
       message: "Заявка на аккредитацию успешно подана на рассмотрение менеджерам",
       accreditation_request: accreditationRequest,

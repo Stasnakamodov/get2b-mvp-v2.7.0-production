@@ -8,7 +8,6 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    console.log('🔍 Анализ структуры project_specifications...')
 
     // 1. Пробуем получить данные напрямую
     const { data: sampleData, error: sampleError } = await supabase

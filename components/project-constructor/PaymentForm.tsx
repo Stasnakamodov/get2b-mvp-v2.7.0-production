@@ -73,7 +73,6 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
 
             // Переходим к следующему этапу (анимация сделки)
             setCurrentStage(3)
-            console.log('✅ Чек одобрен - переходим к этапу 3')
           }
 
           if (data.status === 'receipt_rejected') {
@@ -124,7 +123,6 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
       console.error('❌ Ошибка загрузки чека:', error)
       setError("Ошибка загрузки чека: " + error.message)
     } finally {
-      console.log('🔍 Завершение загрузки, isUploading = false')
       setIsUploading(false)
     }
   }

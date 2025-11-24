@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
 
     // Для verified (оранжевая комната) авторизация НЕ ТРЕБУЕТСЯ
     if (supplier_type === "verified") {
-      console.log("🔓 [PUBLIC] Запрос к публичному каталогу verified, авторизация не требуется");
     } else {
       // Для user (синяя комната) требуется авторизация
       const authHeader = request.headers.get('authorization');
@@ -35,7 +34,6 @@ export async function GET(request: NextRequest) {
         }
         
         userId = user.id;
-        console.log("✅ [SECURITY] Авторизация успешна через токен, user_id:", userId);
       } else {
         // Fallback: пытаемся получить пользователя из сессии
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -48,11 +46,9 @@ export async function GET(request: NextRequest) {
         }
         
         userId = user.id;
-        console.log("✅ [SECURITY] Авторизация успешна через сессию, user_id:", userId);
       }
     }
 
-    console.log("🔍 [DEBUG] Параметры запроса товаров:", { supplier_id, category, in_stock, supplier_type, userId, search, limit });
 
     // Определяем таблицу на основе типа поставщика
     const tableName = supplier_type === "verified" ? "catalog_verified_products" : "catalog_user_products";
@@ -89,7 +85,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  console.log(`✅ [API] Товары загружены из ${tableName}:`, data?.length);
   return NextResponse.json({ products: data });
   } catch (error) {
     console.error("❌ [API] Критическая ошибка при получении товаров:", error);
@@ -142,7 +137,6 @@ export async function POST(request: NextRequest) {
     cleanProductData.category = supplier?.category || "Без категории";
   }
 
-  console.log(`🔧 [DEBUG] Сохраняем товар в ${tableName}:`, cleanProductData);
 
   const { data, error } = await supabase
     .from(tableName)
@@ -155,7 +149,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  console.log(`✅ [API] Товар создан в ${tableName}:`, data);
   return NextResponse.json({ product: data });
 }
 

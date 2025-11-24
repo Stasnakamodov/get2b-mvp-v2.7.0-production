@@ -51,12 +51,10 @@ class CurrencyService {
 
     // Проверяем кеш
     if (!forceRefresh && cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      console.log('📦 Курсы из кеша');
       return cached.data;
     }
 
     try {
-      console.log('🌐 Запрос курсов от ЦБ РФ...');
       const response = await this.fetchFromCBR();
       
       // Кешируем успешный результат
@@ -71,12 +69,10 @@ class CurrencyService {
       
       // Возвращаем кешированные данные если есть
       if (cached) {
-        console.log('⚠️ Используем устаревший кеш');
         return { ...cached.data, source: 'cache' };
       }
 
       // Fallback на статичные курсы
-      console.log('🔄 Используем резервные курсы');
       return this.getFallbackRates();
     }
   }
@@ -201,7 +197,6 @@ class CurrencyService {
    */
   clearCache(): void {
     this.cache.clear();
-    console.log('🧹 Кеш курсов очищен');
   }
 }
 

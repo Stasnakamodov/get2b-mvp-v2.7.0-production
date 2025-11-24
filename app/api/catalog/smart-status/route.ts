@@ -96,7 +96,6 @@ export async function GET() {
       results.status = "❌ Умный каталог не готов";
     }
 
-    console.log('🧠 [SMART CATALOG] Статус проверки:', results);
     return NextResponse.json(results);
 
   } catch (error) {

@@ -3,7 +3,6 @@ import * as XLSX from 'xlsx';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("📊 API /parse-proforma вызван");
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -68,12 +67,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log("✅ Файл проанализирован:", {
-      name: file.name,
-      rows: jsonData.length,
-      supplier: analysis.parsed.supplier,
-      itemsCount: analysis.parsed.items.length
-    });
 
     return NextResponse.json({
       success: true,

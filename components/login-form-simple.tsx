@@ -25,7 +25,6 @@ export function LoginFormSimple({ className, ...props }: React.ComponentPropsWit
     const email = (form.elements.namedItem("email") as HTMLInputElement)?.value
     const password = (form.elements.namedItem("password") as HTMLInputElement)?.value
     
-    console.log('[DEBUG] Attempting login...')
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
     
     setLoading(false)
@@ -33,7 +32,6 @@ export function LoginFormSimple({ className, ...props }: React.ComponentPropsWit
       console.error('[DEBUG] Login error:', signInError)
       setError(signInError.message)
     } else {
-      console.log('[DEBUG] Login successful!')
       
       // Проверяем наличие профиля у пользователя
       if (data.user) {

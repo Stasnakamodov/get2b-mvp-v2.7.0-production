@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 [API] Начинаем анализ структуры базы данных...");
 
     interface DatabaseAnalysis {
       tables: Record<string, any>;
@@ -45,7 +44,6 @@ export async function GET(request: NextRequest) {
       console.error("❌ [API] Ошибка получения списка таблиц:", tablesError);
     } else {
       analysis.tables = tables;
-      console.log("✅ [API] Получен список таблиц:", tables?.length);
     }
 
     // 2. Количество записей в основных таблицах
@@ -269,8 +267,6 @@ export async function GET(request: NextRequest) {
       analysisDate: new Date().toISOString()
     };
 
-    console.log("✅ [API] Анализ базы данных завершен");
-    console.log("📊 [API] Сводка:", analysis.summary);
 
     return NextResponse.json({
       success: true,

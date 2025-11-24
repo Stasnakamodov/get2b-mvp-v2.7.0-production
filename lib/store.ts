@@ -448,7 +448,6 @@ export const useProjectsStore = create<ProjectsState>()(
       version: 1,
       onRehydrateStorage: () => (state) => {
         if (state) {
-          console.log("State successfully restored from storage")
         }
       },
     },

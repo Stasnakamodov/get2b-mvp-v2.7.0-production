@@ -324,7 +324,6 @@ export const AccreditationModal: React.FC<AccreditationModalProps> = ({
 
       // Автоматически определяем разделитель (точка с запятой или запятая)
       const separator = lines[0].includes(';') ? ';' : ','
-      console.log('Обнаружен разделитель:', separator)
 
       const headers = lines[0].split(separator).map(h => h.trim().replace(/"/g, ''))
       const dataLines = lines.slice(1)
@@ -418,19 +417,6 @@ export const AccreditationModal: React.FC<AccreditationModalProps> = ({
         // Минимум 1 товар и у КАЖДОГО товара есть сертификаты
         const hasProducts = products.length >= 1
         const allHaveCertificates = products.every(p => p.certificates.length > 0)
-        
-        // Отладочная информация для диагностики
-        console.log('🔍 Диагностика шаг 2:', {
-          products_count: products.length,
-          has_products: hasProducts,
-          products_with_certificates: products.map(p => ({
-            name: p.name,
-            certificates_count: p.certificates.length,
-            certificateNames: p.certificateNames
-          })),
-          all_have_certificates: allHaveCertificates,
-          can_proceed: hasProducts && allHaveCertificates
-        })
         
         return hasProducts && allHaveCertificates
       case 3:

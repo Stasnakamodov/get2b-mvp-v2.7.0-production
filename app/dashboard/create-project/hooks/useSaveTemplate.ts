@@ -81,12 +81,10 @@ export function useProjectTemplates() {
   const [success, setSuccess] = useState(false);
 
   const fetchTemplates = React.useCallback(async () => {
-    console.log('🔄 [useProjectTemplates] Начинаем загрузку шаблонов...');
     setLoading(true);
     setError(null);
     
     try {
-      console.log('👤 [useProjectTemplates] Получаем пользователя...');
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user?.id) {
         console.error('❌ [useProjectTemplates] Ошибка получения пользователя:', userError);
@@ -95,9 +93,7 @@ export function useProjectTemplates() {
         return;
       }
       const user_id = userData.user.id;
-      console.log('✅ [useProjectTemplates] Пользователь получен:', user_id);
       
-      console.log('📋 [useProjectTemplates] Запрашиваем шаблоны из project_templates...');
       
       // Добавляем таймаут для запроса
       const timeoutPromise = new Promise((_, reject) => {
@@ -128,7 +124,6 @@ export function useProjectTemplates() {
         return;
       }
       
-      console.log('✅ [useProjectTemplates] Шаблоны загружены:', data?.length || 0);
       setTemplates(data || []);
       setLoading(false);
     } catch (err: any) {

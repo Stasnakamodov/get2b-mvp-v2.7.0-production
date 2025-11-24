@@ -69,7 +69,6 @@ export function useManagerCommunication({
             // Переходим к следующему этапу (анимация сделки)
             if (setCurrentStage) {
               setCurrentStage(3);
-              console.log('✅ Чек одобрен - переходим к этапу 3');
             }
           }
 
@@ -108,7 +107,6 @@ export function useManagerCommunication({
       });
 
       if (telegramResult.success) {
-        console.log("✅ Чек с кнопками одобрения отправлен менеджеру в Telegram:", telegramResult);
         return { success: true };
       } else {
         console.error("❌ Ошибка API при отправке чека:", telegramResult.error);
@@ -149,7 +147,6 @@ export function useManagerCommunication({
         }
       });
 
-      console.log('✅ Запрос менеджеру отправлен успешно');
 
       // Обновляем статус проекта на waiting_manager_receipt
       await supabase

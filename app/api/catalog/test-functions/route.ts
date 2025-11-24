@@ -156,7 +156,6 @@ export async function GET() {
       results.status = "❌ Не работает";
     }
 
-    console.log('🧠 [TEST FUNCTIONS] Результаты тестирования:', results);
     return NextResponse.json(results);
 
   } catch (error) {

@@ -64,7 +64,6 @@ const PaymentStep4Manager: React.FC<PaymentStep4ManagerProps> = ({
   // Загрузка доступных методов оплаты из данных поставщика
   useEffect(() => {
     if (supplierData?.payment_methods) {
-      console.log('🔍 [STEP 4] Загружены методы оплаты поставщика:', supplierData.payment_methods)
       setAvailableMethods(supplierData.payment_methods)
 
       // Автоматически выбираем первый доступный метод
@@ -79,7 +78,6 @@ const PaymentStep4Manager: React.FC<PaymentStep4ManagerProps> = ({
   // Загрузка эхо предложений
   useEffect(() => {
     if (echoSuggestions?.payment_methods) {
-      console.log('📊 [STEP 4] Найдены эхо предложения:', echoSuggestions.payment_methods)
       if (!data) {
         setAvailableMethods(echoSuggestions.payment_methods)
         onStepConfigChange('echo')

@@ -241,7 +241,6 @@ export function StepCard({ step, index }: StepCardProps) {
 
       // Сохраняем извлеченные данные
       setExtractedInvoiceData(result.suggestions)
-      console.log('📊 Данные инвойса извлечены:', result.suggestions)
 
     } catch (error) {
       console.error('Ошибка OCR инвойса:', error)

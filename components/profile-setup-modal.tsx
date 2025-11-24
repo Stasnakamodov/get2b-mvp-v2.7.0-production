@@ -31,7 +31,6 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
     setError(null)
 
     try {
-      console.log('[ProfileSetupModal] Creating client profile with data:', formData)
       
       const { data: clientProfile, error } = await supabase
         .from('client_profiles')
@@ -57,7 +56,6 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
 
       if (error) throw error
 
-      console.log('[ProfileSetupModal] Client profile created:', clientProfile)
 
       // Создаем запись в user_profiles для отслеживания
       const { error: userProfileError } = await supabase
@@ -97,13 +95,11 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
           bik: formData.bank_bik
         })
         
-        console.log('[ProfileSetupModal] Manager notification sent successfully')
       } catch (notificationError) {
         console.error('[ProfileSetupModal] Error sending manager notification:', notificationError)
         // Не прерываем создание профиля из-за ошибки уведомления
       }
 
-      console.log('[ProfileSetupModal] Profile setup completed successfully')
       onComplete()
       router.push('/dashboard')
     } catch (err: any) {
@@ -119,7 +115,6 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
     setError(null)
 
     try {
-      console.log('[ProfileSetupModal] Creating supplier profile with data:', formData)
       
       const { data: supplierProfile, error } = await supabase
         .from('supplier_profiles')
@@ -140,7 +135,6 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
 
       if (error) throw error
 
-      console.log('[ProfileSetupModal] Supplier profile created:', supplierProfile)
 
       // Создаем запись в user_profiles для отслеживания
       const { error: userProfileError } = await supabase
@@ -176,13 +170,11 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
           website: formData.website
         })
         
-        console.log('[ProfileSetupModal] Manager notification sent successfully')
       } catch (notificationError) {
         console.error('[ProfileSetupModal] Error sending manager notification:', notificationError)
         // Не прерываем создание профиля из-за ошибки уведомления
       }
 
-      console.log('[ProfileSetupModal] Profile setup completed successfully')
       onComplete()
       router.push('/dashboard')
     } catch (err: any) {
@@ -193,7 +185,6 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
     }
   }
 
-  console.log('[ProfileSetupModal] Render - isOpen:', isOpen, 'step:', step, 'userId:', userId)
 
   const handleClose = () => {
     if (onClose) {

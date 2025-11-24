@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 [API] Показываем все таблицы чата...");
 
     const chatTables = [
       // АКТИВНЫЕ ТАБЛИЦЫ (НЕ УДАЛЯТЬ!)
@@ -94,8 +93,6 @@ export async function GET(request: NextRequest) {
       analysisDate: new Date().toISOString()
     };
 
-    console.log("✅ [API] Анализ таблиц чата завершен");
-    console.log("📊 [API] Сводка:", analysis.summary);
 
     return NextResponse.json({
       success: true,

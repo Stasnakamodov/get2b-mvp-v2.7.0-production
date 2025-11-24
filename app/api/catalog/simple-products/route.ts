@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
     const search = searchParams.get('search')
     
-    console.log('📦 [API] Запрос товаров:', { categoryId, categoryKey, limit, offset, search })
 
     // Получаем ID категории по ключу если нужно
     let finalCategoryId = categoryId
@@ -126,7 +125,6 @@ export async function GET(request: NextRequest) {
 
     const executionTime = Date.now() - startTime
     
-    console.log(`✅ [API] Товары получены за ${executionTime}мс: ${allProducts.length} товаров`)
 
     return NextResponse.json({
       success: true,

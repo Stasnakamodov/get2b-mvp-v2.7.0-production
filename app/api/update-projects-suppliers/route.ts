@@ -3,7 +3,6 @@ import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 
 export async function POST() {
   try {
-    console.log('🔄 Обновляем проекты с данными о поставщиках...');
 
     // 1. Обновляем проект "in_progress" с поставщиком
     const { error: error1 } = await supabase
@@ -250,7 +249,6 @@ export async function POST() {
       return NextResponse.json({ error: 'Ошибка добавления реквизитов' }, { status: 500 });
     }
 
-    console.log('✅ Проекты успешно обновлены с данными о поставщиках!');
 
     return NextResponse.json({
       success: true,

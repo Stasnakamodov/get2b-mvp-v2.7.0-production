@@ -84,9 +84,6 @@ export async function GET(request: Request) {
       analysisDate: new Date().toISOString()
     }
 
-    console.log(`✅ Анализ категорий для пользователя ${userId}:`)
-    console.log(`📊 Основная категория: ${topCategory}`)
-    console.log(`📈 Топ категории:`, mainCategories.map(c => c.category))
 
     return NextResponse.json({
       success: true,

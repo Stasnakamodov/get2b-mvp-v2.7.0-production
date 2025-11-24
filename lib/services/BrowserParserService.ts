@@ -7,6 +7,9 @@
 
 import type { ParsedProductMetadata } from './UrlParserService'
 
+// Helper function for timeout
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
 export class BrowserParserService {
   /**
    * Парсинг через реальный браузер (обходит защиту маркетплейсов)
@@ -108,20 +111,20 @@ export class BrowserParserService {
 
       // Ждем немного чтобы JavaScript успел выполниться
       console.log('⏳ [Browser Parser] Ждем загрузки контента...')
-      await page.waitForTimeout(3000)
+      await sleep(3000)
 
       // Проверяем не попали ли мы на antibot страницу
       const pageTitle = await page.title()
       if (pageTitle.toLowerCase().includes('antibot') || pageTitle.toLowerCase().includes('challenge')) {
         console.log('🤖 [Browser Parser] Обнаружена antibot страница, ждем...')
         // Ждем дольше для прохождения проверки
-        await page.waitForTimeout(5000)
+        await sleep(5000)
 
         // Пробуем прокрутить страницу (эмуляция пользователя)
         await page.evaluate(() => {
           window.scrollTo(0, document.body.scrollHeight / 2)
         })
-        await page.waitForTimeout(2000)
+        await sleep(2000)
       }
 
       console.log('✅ [Browser Parser] Страница загружена')

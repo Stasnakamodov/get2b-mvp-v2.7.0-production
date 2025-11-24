@@ -11,8 +11,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const supplierId = id;
     const supplierData = await request.json();
     
-    console.log("🔧 [DEBUG PUT] Обновление профиля поставщика ID:", supplierId);
-    console.log("🔧 [DEBUG PUT] Данные для обновления:", JSON.stringify(supplierData, null, 2));
 
     // Валидация обязательных полей
     const requiredFields = ["name", "company_name", "category", "country"];
@@ -49,7 +47,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     delete updateData.user_id;
     delete updateData.created_at;
 
-    console.log("🔧 [DEBUG PUT] Данные для обновления в supplier_profiles:", JSON.stringify(updateData, null, 2));
 
     const { data, error } = await supabase
       .from("supplier_profiles")
@@ -64,7 +61,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ [API] Профиль поставщика обновлен:", data.id);
     return NextResponse.json({ profile: data });
 
   } catch (error) {
@@ -82,7 +78,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     
     const supplierId = id;
     
-    console.log("🔧 [DEBUG DELETE] Удаление профиля поставщика ID:", supplierId);
 
     // Проверяем, что профиль принадлежит пользователю
     const { data: existingProfile, error: checkError } = await supabase
@@ -110,7 +105,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ [API] Профиль поставщика удален:", supplierId);
     return NextResponse.json({ message: "Профиль поставщика удален" });
 
   } catch (error) {

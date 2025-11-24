@@ -3,7 +3,6 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin"
 
 export async function POST() {
   try {
-    console.log("Добавляем поля supplier_receipt_url и supplier_receipt_uploaded_at...")
     
     // Выполняем SQL запрос для добавления полей
     const { data, error } = await supabaseAdmin

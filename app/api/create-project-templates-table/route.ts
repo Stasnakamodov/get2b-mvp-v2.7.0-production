@@ -3,7 +3,6 @@ import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'
 
 export async function POST() {
   try {
-    console.log('🔧 Создаем таблицу project_templates...')
     
     // SQL для создания таблицы
     const createTableSQL = `
@@ -89,7 +88,6 @@ export async function POST() {
       }, { status: 500 })
     }
     
-    console.log('✅ Таблица project_templates создана успешно')
     
     return NextResponse.json({
       success: true,

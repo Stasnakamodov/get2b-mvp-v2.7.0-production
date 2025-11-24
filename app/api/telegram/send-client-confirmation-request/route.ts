@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
         data.client_confirmation_url,
         `Клиент загрузил подтверждение по проекту ${projectId}\nКомпания: ${companyName}\nEmail: ${email}`
       )
-      console.log("Ответ Telegram API:", telegramResponse)
     } catch (telegramError) {
       console.error("Ошибка отправки в Telegram:", telegramError)
       return NextResponse.json({ error: "Telegram error", details: String(telegramError) }, { status: 500 })

@@ -34,7 +34,6 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
       console.error('[addItem] Нет user_id! userData:', userData, 'error:', userError);
       return;
     }
-    console.log('[addItem] Вставка позиции', { projectId, user_id, item });
     setLoading(true);
     const { error, data } = await supabase
       .from('project_specifications')
@@ -44,7 +43,6 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
       setError(error.message);
       console.error('[addItem] Ошибка Supabase:', error, { projectId, user_id, item, role });
     } else {
-      console.log('[addItem] Успешно добавлено:', data);
     }
   };
 
@@ -62,10 +60,7 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
       return null;
     }
     
-    console.log('[addItems] Входные данные:', { projectId, user_id, role, itemsToAdd });
     const bulk = itemsToAdd.map(item => ({ ...item, project_id: projectId, role, user_id }));
-    console.log('[addItems] Подготовленные данные для вставки:', bulk);
-    console.log('[addItems] Первый элемент детально:', JSON.stringify(bulk[0], null, 2));
     
     setLoading(true);
     const { error, data } = await supabase
@@ -87,7 +82,6 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
       console.error('[addItems] Данные которые пытались вставить:', JSON.stringify(bulk, null, 2));
       return null;
     } else {
-      console.log('[addItems] Успешно добавлено:', data);
       // НЕ обновляем локальное состояние здесь, так как вызовем fetchSpecification после
       // Это предотвратит дублирование при последующем вызове fetchSpecification
       // Возвращаем id первой созданной спецификации (или массив id, если нужно)

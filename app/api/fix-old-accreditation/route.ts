@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log("🔧 [FIX-OLD-ACCREDITATION] Исправляем старую аккредитацию:", applicationId);
 
     // Получаем данные аккредитации
     const { data: application, error } = await supabaseService
@@ -49,7 +48,6 @@ export async function POST(request: NextRequest) {
       
       // Проверяем сертификаты
       if (product.certificates && product.certificates.length > 0 && (!product.certificates_info || product.certificates_info.length === 0)) {
-        console.log(`🔧 [FIX-OLD-ACCREDITATION] Исправляем сертификаты для товара ${i}:`, product.certificates);
         
         product.certificates_info = [];
         
@@ -70,7 +68,6 @@ export async function POST(request: NextRequest) {
                 type: 'image/jpeg', // Предполагаемый тип
                 public_url: urlData.publicUrl
               });
-              console.log(`✅ [FIX-OLD-ACCREDITATION] Добавлен public_url для сертификата:`, certName);
             } else {
               // Пробуем в новом бакете
               const { data: urlData2 } = supabaseService.storage
@@ -84,11 +81,9 @@ export async function POST(request: NextRequest) {
                   type: 'image/jpeg',
                   public_url: urlData2.publicUrl
                 });
-                console.log(`✅ [FIX-OLD-ACCREDITATION] Добавлен public_url для сертификата (новый бакет):`, certName);
               }
             }
           } catch (error) {
-            console.log(`⚠️ [FIX-OLD-ACCREDITATION] Не удалось найти сертификат:`, certName);
           }
         }
         
@@ -113,7 +108,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log("✅ [FIX-OLD-ACCREDITATION] Аккредитация исправлена");
     }
 
     return NextResponse.json({

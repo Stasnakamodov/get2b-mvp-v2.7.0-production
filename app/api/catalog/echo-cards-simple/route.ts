@@ -24,9 +24,6 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log('📋 [ECHO CARDS API] Загружаем эхо карточки для пользователя:', user_id);
-    console.log('📋 [ECHO CARDS API] Тип user_id:', typeof user_id, 'Длина:', user_id.length);
-    console.log('📋 [ECHO CARDS API] Полный URL запроса:', request.url);
 
     // Получаем все завершенные проекты пользователя с полными данными
     const { data: projects, error: projectsError } = await supabase
@@ -54,17 +51,6 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log('🔍 [ECHO CARDS API] Результат запроса проектов:', {
-      projects_count: projects?.length || 0,
-      projects: projects?.map(p => ({
-        id: p.id,
-        name: p.name,
-        status: p.status,
-        has_company_data: !!p.company_data,
-        company_name: p.company_data?.name
-      }))
-    });
-
     // Также проверим все проекты пользователя (без фильтров)
     const { data: allProjects, error: allProjectsError } = await supabase
       .from('projects')
@@ -72,17 +58,7 @@ export async function GET(request: Request) {
       .eq('user_id', user_id)
       .order('created_at', { ascending: false });
 
-    console.log('📊 [ECHO CARDS API] Все проекты пользователя:', {
-      total_projects: allProjects?.length || 0,
-      by_status: allProjects?.reduce((acc: Record<string, number>, p: Project) => {
-        acc[p.status] = (acc[p.status] || 0) + 1;
-        return acc;
-      }, {}),
-      with_company_data: allProjects?.filter(p => p.company_data?.name).length || 0
-    });
-
     if (!projects || projects.length === 0) {
-      console.log('ℹ️ [ECHO CARDS API] У пользователя нет завершенных проектов');
       return NextResponse.json({
         success: true,
         echo_cards: [],
@@ -101,11 +77,9 @@ export async function GET(request: Request) {
       });
     }
 
-    console.log(`✅ [ECHO CARDS API] Найдено ${projects.length} завершенных проектов`);
 
     // Получаем спецификации товаров для всех найденных проектов
     const projectIds = projects.map(p => p.id);
-    console.log('📦 [ECHO CARDS API] Загружаем спецификации для проектов:', projectIds.length);
 
     const { data: specifications, error: specsError } = await supabase
       .from('project_specifications')
@@ -127,7 +101,6 @@ export async function GET(request: Request) {
       console.error('⚠️ [ECHO CARDS API] Ошибка загрузки спецификаций:', specsError);
       // Продолжаем без товаров, не блокируем весь API
     } else {
-      console.log('📦 [ECHO CARDS API] Загружено спецификаций:', specifications?.length || 0);
     }
 
     // Группируем спецификации по project_id для быстрого доступа
@@ -224,7 +197,6 @@ export async function GET(request: Request) {
       };
     });
 
-    console.log(`🎉 [ECHO CARDS API] Создано ${echoCards.length} эхо карточек из реальных проектов`);
 
     return NextResponse.json({
       success: true,

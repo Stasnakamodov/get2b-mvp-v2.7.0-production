@@ -37,7 +37,6 @@ export default function HierarchicalCategorySelector({
       setLoading(true)
       setError(null)
 
-      console.log(`🌳 [HierarchicalSelector] Загружаем иерархические категории для ${selectedRoom} комнаты`)
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
@@ -62,7 +61,6 @@ export default function HierarchicalCategorySelector({
         throw new Error(data.error || 'Ошибка загрузки категорий')
       }
 
-      console.log(`✅ [HierarchicalSelector] Загружено категорий: ${data.categoryTrees.length}`)
       setCategoryTrees(data.categoryTrees)
 
     } catch (error) {
@@ -88,7 +86,6 @@ export default function HierarchicalCategorySelector({
   }, [categoryTrees, searchQuery])
 
   const handleSubcategoryClick = (subcategory: CatalogCategory, mainCategory: CatalogCategory) => {
-    console.log(`🎯 [HierarchicalSelector] Выбрана подкатегория: ${subcategory.name} из категории: ${mainCategory.name}`)
     // Добавляем информацию о пути для удобства
     const categoryWithPath = {
       ...subcategory,

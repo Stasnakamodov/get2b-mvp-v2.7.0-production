@@ -162,8 +162,6 @@ export const AddSupplierProvider = ({ children }: { children: ReactNode }) => {
 
   // УДАЛЕНО: консольные логи могут вызывать бесконечный цикл
   // useEffect(() => {
-  //   console.log("[AddSupplierContext] supplierData изменился:", supplierData);
-  //   console.log("[AddSupplierContext] Шаг/Макс шаг:", { currentStep, maxStepReached });
   // }, [supplierData, currentStep, maxStepReached]);
 
   // Валидация шага (оптимизировано с useCallback)

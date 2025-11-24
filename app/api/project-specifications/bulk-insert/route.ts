@@ -5,7 +5,6 @@ export async function POST(request: NextRequest) {
   try {
     const { projectId, items, role } = await request.json();
 
-    console.log('[bulk-insert] Получен запрос:', { projectId, itemsCount: items?.length, role });
 
     if (!projectId) {
       return NextResponse.json({ error: 'projectId обязателен' }, { status: 400 });
@@ -48,7 +47,6 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     }));
     
-    console.log('[bulk-insert] Подготовленные данные:', itemsToInsert);
     
     // Вставляем данные в базу
     const { data, error } = await supabase
@@ -61,7 +59,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
-    console.log('[bulk-insert] Успешно добавлено:', data);
     
     return NextResponse.json({ 
       success: true, 

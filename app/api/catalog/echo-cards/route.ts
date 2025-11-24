@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
     // ========================================
 
     // 1. ПРИОРИТЕТ 1: Получаем реквизиты поставщиков из project_requisites
-    console.log('🔍 [PRIORITY 1] Получаем реквизиты поставщиков из project_requisites для user_id:', userId)
     
     const { data: projectRequisites, error: projectRequisitesError } = await supabase
       .from('project_requisites')
@@ -30,10 +29,8 @@ export async function GET(request: NextRequest) {
       console.error('⚠️ Ошибка получения project_requisites (возможно таблица не существует):', projectRequisitesError)
     }
 
-    console.log('📋 Найдено реквизитов в project_requisites:', projectRequisites?.length || 0)
 
     // 2. ПРИОРИТЕТ 2: Получаем шаблоны реквизитов пользователя как fallback
-    console.log('🔍 [PRIORITY 2] Получаем банковские шаблоны для user_id:', userId)
     
     const { data: bankRequisites, error: bankError } = await supabase
       .from('bank_accounts')
@@ -71,12 +68,6 @@ export async function GET(request: NextRequest) {
       source: 'project_requisites' 
     }))
 
-    console.log('✅ Найдено реквизитов:', {
-      from_projects: allProjectRequisites.length,
-      from_templates: allTemplateRequisites.length,
-      total: allProjectRequisites.length + allTemplateRequisites.length
-    })
-
     // Если нет вообще никаких реквизитов - проверяем есть ли хотя бы обычные проекты
     const hasAnyRequisites = (allProjectRequisites.length + allTemplateRequisites.length) > 0
     if (!hasAnyRequisites) {
@@ -103,7 +94,6 @@ export async function GET(request: NextRequest) {
       }
       
       // Если есть проекты, но нет реквизитов - показываем fallback карточки
-      console.log('🔄 Нет реквизитов, но есть проекты - показываем fallback карточки')
     }
 
     // 2. Получаем ВСЕ проекты пользователя
@@ -166,7 +156,6 @@ export async function GET(request: NextRequest) {
 
     // 3. Получаем спецификации (товары) для найденных проектов  
     const projectIds = projects.map(p => p.id)
-    console.log('🔍 Загружаем спецификации для проектов:', projectIds)
     
     const { data: specifications, error: specificationsError } = await supabase
       .from('project_specifications')
@@ -181,9 +170,7 @@ export async function GET(request: NextRequest) {
       `)
       .in('project_id', projectIds)
     
-    console.log('📋 Найдено спецификаций (товаров):', specifications?.length || 0)
     if (specifications && specifications.length > 0) {
-      console.log('📦 Примеры товаров:', specifications.slice(0, 3))
     }
 
     if (specificationsError) {
@@ -248,7 +235,6 @@ export async function GET(request: NextRequest) {
       // НЕ ПОКАЗЫВАЕМ НЕПРАВИЛЬНЫЕ ДАННЫЕ КЛИЕНТА
       else {
         // Пропускаем проекты без реквизитов поставщика
-        console.log(`⚠️ Пропускаем проект ${project.name} - нет реквизитов поставщика`)
         return
       }
 
@@ -306,7 +292,6 @@ export async function GET(request: NextRequest) {
       }
 
       // Добавляем товары из спецификаций с полной информацией
-      console.log(`🛍️ Обрабатываем товары для проекта ${project.name}: найдено ${projectItems.length} товаров`)
       
       projectItems.forEach((item: any) => {
         const productName = item.item_name
@@ -327,14 +312,11 @@ export async function GET(request: NextRequest) {
             }
             
             stats.products_detailed.push(productInfo)
-            console.log(`➕ Добавлен товар: ${productName.trim()} (цена: ${item.price || 'без цены'}, картинка: ${item.image_url ? '✅' : '❌'})`)
           } else {
-            console.log(`⚠️ Товар уже существует: ${productName.trim()}`)
           }
         }
       })
       
-      console.log(`📦 Итого товаров у поставщика ${supplierKey}: ${stats.products_detailed.length}`)
     })
 
     // ========================================

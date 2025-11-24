@@ -161,7 +161,6 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
         ...(userSuppliers || []).map(s => ({ ...s, room_type: 'user' as const }))
       ];
 
-      console.log('🔍 [ProformaModal] Loaded suppliers:', allSuppliers.length);
       setSuppliers(allSuppliers);
       setFilteredSuppliers(allSuppliers);
     } catch (error) {
@@ -182,16 +181,13 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
     // Загружаем шаблоны поставщика
     try {
       setIsLoading(true);
-      console.log("🔍 Загружаем шаблоны для поставщика:", supplier.id);
 
       const response = await fetch(`/api/supplier-templates?supplierId=${supplier.id}&supplierType=${supplier.room_type}`);
       const data = await response.json();
 
       if (data.success) {
         setTemplates(data.templates);
-        console.log("✅ Загружено шаблонов:", data.templates.length);
       } else {
-        console.log("📭 Шаблоны не найдены для поставщика");
         setTemplates([]);
       }
     } catch (error) {

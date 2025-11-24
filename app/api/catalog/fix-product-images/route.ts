@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabaseClient";
 // POST: Исправление изображений у импортированных товаров
 export async function POST(request: NextRequest) {
   try {
-    console.log('🖼️ [API] Начинаем исправление изображений товаров');
 
     // Получаем все импортированные товары без изображений
     const { data: userProducts, error: productsError } = await supabase
@@ -27,7 +26,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: productsError.message }, { status: 500 });
     }
 
-    console.log(`📊 [API] Найдено товаров без изображений: ${userProducts?.length || 0}`);
 
     const results = [];
 
@@ -43,14 +41,12 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (verifiedError || !verifiedProducts || verifiedProducts.length === 0) {
-        console.log(`⚠️ [API] Товар не найден в оранжевой комнате: ${userProduct.name}`);
         continue;
       }
 
       const verifiedProduct = verifiedProducts[0]; // Берем первый найденный товар
 
       if (!verifiedProduct.images || verifiedProduct.images.length === 0) {
-        console.log(`⚠️ [API] У товара нет изображений в оранжевой комнате: ${userProduct.name}`);
         continue;
       }
 
@@ -73,7 +69,6 @@ export async function POST(request: NextRequest) {
           error: updateError.message
         });
       } else {
-        console.log(`✅ [API] Изображения обновлены для: ${userProduct.name}`);
         results.push({
           product: userProduct.name,
           success: true,
@@ -82,7 +77,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('🎉 [API] Исправление изображений завершено');
 
     return NextResponse.json({
       message: "Исправление изображений товаров завершено",

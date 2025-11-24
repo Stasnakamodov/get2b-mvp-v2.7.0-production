@@ -3,7 +3,6 @@ import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'
 
 export async function GET() {
   try {
-    console.log('🔍 Проверяем таблицу project_templates...')
     
     // Проверяем существование таблицы через pg_catalog.pg_tables
     const { data: tableExists, error: tableError } = await supabase
@@ -22,7 +21,6 @@ export async function GET() {
 
     const tableExistsResult = tableExists && tableExists.length > 0
 
-    console.log('📋 Таблица project_templates существует:', tableExistsResult)
 
     if (!tableExistsResult) {
       return NextResponse.json({
@@ -44,7 +42,6 @@ export async function GET() {
       }, { status: 500 })
     }
 
-    console.log('✅ Проверка завершена успешно')
 
     return NextResponse.json({
       success: true,

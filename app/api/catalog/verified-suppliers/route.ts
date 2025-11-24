@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabaseClient";
 // GET: Получение аккредитованных поставщиков Get2B (оранжевая комната)
 export async function GET(request: NextRequest) {
   try {
-    console.log("🚀 [API] Получение аккредитованных поставщиков");
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -32,7 +31,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      console.log("✅ [API] Аккредитованный поставщик загружен по ID:", data?.name);
       return NextResponse.json({ supplier: data });
     }
 
@@ -69,7 +67,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ [API] Аккредитованные поставщики загружены:", data?.length);
     return NextResponse.json({
       suppliers: data,
       total: data?.length || 0
@@ -123,7 +120,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ [API] Аккредитованный поставщик создан:", data.id);
     return NextResponse.json({ supplier: data });
 
   } catch (error) {
@@ -164,7 +160,6 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ [API] Аккредитованный поставщик обновлен:", data.id);
     return NextResponse.json({ supplier: data });
 
   } catch (error) {

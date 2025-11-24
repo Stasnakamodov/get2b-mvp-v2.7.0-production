@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 Creating temporary chat tables via insert...');
 
     // Попробуем создать тестовую запись в chat_rooms_temp
     const testRoomData = {
@@ -54,9 +53,6 @@ export async function POST(request: NextRequest) {
         .eq('id', '00000000-0000-0000-0000-000000000001');
     }
 
-    console.log('✅ Tables check completed');
-    console.log('📊 Room result:', roomResult);
-    console.log('📊 Message result:', messageResult);
 
     const tablesExist = {
       chat_rooms_temp: !roomError,

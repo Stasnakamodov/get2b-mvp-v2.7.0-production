@@ -152,7 +152,6 @@ export async function POST() {
       results.status = "❌ Функции не созданы";
     }
 
-    console.log('🧠 [CREATE FUNCTIONS] Результат:', results);
     return NextResponse.json(results);
 
   } catch (error) {

@@ -14,7 +14,6 @@ function deduplicateMessages(messages: ChatMessage[]): ChatMessage[] {
       seen.add(compositeKey);
       uniqueMessages.push(message);
     } else {
-      console.log(`🚫 Найден дубликат сообщения: ${message.id} (${message.content.substring(0, 30)}...)`);
     }
   }
   
@@ -104,7 +103,6 @@ export function useChatPolling({
           if (newMessagesHash !== lastMessagesHashRef.current) {
             // Если это первая загрузка - используем onMessagesUpdate
             if (lastMessagesRef.current.length === 0) {
-              console.log('🔄 Первичная загрузка через polling:', cleanMessages.length, 'сообщений');
               if (onMessagesUpdate) {
                 onMessagesUpdate(cleanMessages);
               }
@@ -118,12 +116,10 @@ export function useChatPolling({
               const newMessages = findNewMessages(lastMessagesRef.current, cleanMessages);
               
               if (newMessages.length > 0) {
-                console.log(`🔔 Обнаружено ${newMessages.length} новых сообщений через polling`);
                 
                 if (onNewMessage) {
                   // 🚨 Добавляем каждое новое сообщение по очереди
                   newMessages.forEach((msg: ChatMessage) => {
-                    console.log(`📨 Добавляем новое сообщение: ${msg.id} (${msg.content.substring(0, 30)}...)`);
                     onNewMessage(msg);
                   });
                 }
@@ -136,7 +132,6 @@ export function useChatPolling({
               }
               // Проверяем нужно ли полное обновление (изменения в существующих сообщениях)
               else if (cleanMessages.length !== lastMessagesRef.current.length) {
-                console.log('🔄 Полное обновление - изменилось количество сообщений');
                 if (onMessagesUpdate) {
                   onMessagesUpdate(cleanMessages);
                 }
@@ -147,12 +142,10 @@ export function useChatPolling({
               }
             }
           } else {
-            console.log('✅ Сообщения не изменились - пропускаем обновление');
           }
         } else {
           // Если сообщений нет - очищаем список
           if (lastMessagesRef.current.length > 0 && onMessagesUpdate) {
-            console.log('🗑️ Polling: комната пуста, очищаем сообщения');
             onMessagesUpdate([]);
           }
           lastMessageIdRef.current = null;
@@ -176,11 +169,9 @@ export function useChatPolling({
 
   // Запуск polling - ИСПРАВЛЕННАЯ ВЕРСИЯ
   const startPolling = useCallback(() => {
-    console.log(`🔄 startPolling для комнаты ${roomId} с интервалом ${pollingInterval}ms`);
     
     // 🛑 КРИТИЧНО: Останавливаем все предыдущие polling
     if (pollingTimeoutRef.current) {
-      console.log('🛑 Останавливаем предыдущий polling');
       clearTimeout(pollingTimeoutRef.current);
       pollingTimeoutRef.current = null;
     }
@@ -189,15 +180,12 @@ export function useChatPolling({
     isPollingRef.current = false;
 
     const poll = async () => {
-      console.log(`⏰ Polling tick для комнаты ${roomId}`);
       await pollForUpdates();
       
       // Проверяем что мы все еще должны продолжать polling
       if (enabled && roomId && !isPollingRef.current) {
-        console.log(`⏳ Планируем следующий polling через ${pollingInterval}ms`);
         pollingTimeoutRef.current = setTimeout(poll, pollingInterval);
       } else {
-        console.log(`🛑 Прекращаем polling: enabled=${enabled}, roomId=${roomId}, isPolling=${isPollingRef.current}`);
       }
     };
 
@@ -207,10 +195,8 @@ export function useChatPolling({
 
   // Остановка polling - ИСПРАВЛЕННАЯ ВЕРСИЯ
   const stopPolling = useCallback(() => {
-    console.log(`🛑 stopPolling для комнаты ${roomId}`);
     
     if (pollingTimeoutRef.current) {
-      console.log('🗑️ Очищаем активный таймер polling');
       clearTimeout(pollingTimeoutRef.current);
       pollingTimeoutRef.current = null;
     }
@@ -218,7 +204,6 @@ export function useChatPolling({
     // Устанавливаем флаг что polling остановлен
     isPollingRef.current = true; // true означает "уже обрабатывается/остановлен"
     
-    console.log('✅ Polling остановлен');
   }, [roomId]);
 
   // Ручное обновление
@@ -228,7 +213,6 @@ export function useChatPolling({
 
   // Запуск/остановка polling при изменении параметров - ИСПРАВЛЕННАЯ ВЕРСИЯ
   useEffect(() => {
-    console.log(`🔄 useEffect polling: enabled=${enabled}, roomId=${roomId}`);
     
     // ВСЕГДА сначала останавливаем предыдущий polling
     stopPolling();
@@ -236,15 +220,12 @@ export function useChatPolling({
     // Небольшая задержка чтобы убедиться что все очистилось
     const startTimeout = setTimeout(() => {
       if (enabled && roomId) {
-        console.log(`▶️ Запускаем polling для новой комнаты: ${roomId}`);
         startPolling();
       } else {
-        console.log(`⏸️ Polling отключен: enabled=${enabled}, roomId=${roomId}`);
       }
     }, 100);
 
     return () => {
-      console.log(`🧹 Cleanup polling для комнаты: ${roomId}`);
       clearTimeout(startTimeout);
       stopPolling();
     };
@@ -252,7 +233,6 @@ export function useChatPolling({
 
   // Сброс при изменении комнаты - ИСПРАВЛЕННАЯ ВЕРСИЯ
   useEffect(() => {
-    console.log(`🔄 Сброс кэша сообщений для комнаты: ${roomId}`);
     lastMessageIdRef.current = null;
     lastMessagesRef.current = []; // 🆕 Очищаем кэш сообщений
     lastMessagesHashRef.current = ''; // 🚀 НОВОЕ: очищаем хеш для умного сравнения
@@ -262,7 +242,6 @@ export function useChatPolling({
   // Cleanup при unmount - УСИЛЕННАЯ ВЕРСИЯ
   useEffect(() => {
     return () => {
-      console.log('🧹 FINAL cleanup useChatPolling при unmount');
       
       // Очищаем все таймеры и флаги
       if (pollingTimeoutRef.current) {

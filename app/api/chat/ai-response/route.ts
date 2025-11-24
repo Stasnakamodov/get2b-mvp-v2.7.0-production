@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🤖 AI API: Создаем пользовательское сообщение + AI ответ');
 
     // Получаем контекст комнаты
     const { data: room, error: roomError } = await supabase
@@ -52,7 +51,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('✅ Пользовательское сообщение создано:', userMessage.id);
 
     // Получаем историю сообщений для контекста (последние 10)
     const { data: recentMessages } = await supabase
@@ -97,7 +95,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('✅ AI сообщение создано:', aiMessage.id);
 
     return NextResponse.json({
       success: true,
@@ -249,8 +246,6 @@ async function generateBotHubAIResponse(
       stream: false
     };
 
-    console.log('🤖 Отправляем запрос в BotHub API...');
-    console.log('📝 System Prompt:', systemPrompt.substring(0, 200) + '...');
     
     const response = await fetch(BOTHUB_API_URL, {
       method: 'POST',
@@ -261,7 +256,6 @@ async function generateBotHubAIResponse(
       body: JSON.stringify(requestBody)
     });
 
-    console.log('📡 BotHub Response Status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -271,7 +265,6 @@ async function generateBotHubAIResponse(
     }
 
     const data = await response.json();
-    console.log('✅ Получен ответ от Claude через BotHub!');
 
     const aiContent = data.choices?.[0]?.message?.content || data.content || 'Извините, не смог сгенерировать ответ.';
     
@@ -291,8 +284,6 @@ async function generateBotHubAIResponse(
     console.error('📊 Request was:', userMessage);
     
     // Fallback с Get2B контекстом!
-    console.log('🔄 ПЕРЕХОД НА FALLBACK - BotHub недоступен!');
-    console.log('💬 User Message:', userMessage);
     return generateGet2BAIResponse(userMessage, context, userContext, recentMessages);
   }
 }
@@ -442,7 +433,6 @@ function generateGet2BAIResponse(
   const keywords_matched: string[] = [];
   let category = 'general';
   
-  console.log('🤖 FALLBACK AI: Processing user message:', userMessage);
 
   // 🎯 УМНАЯ ОБРАБОТКА ПРОИЗВОЛЬНЫХ ВОПРОСОВ
   
@@ -530,7 +520,6 @@ function generateGet2BAIResponse(
 
   // 5. УНИВЕРСАЛЬНЫЙ ОТВЕТ для всех остальных вопросов
   // Анализируем вопрос и даем релевантный ответ
-  console.log('🤖 FALLBACK: Generating universal response for:', userMessage);
   
   keywords_matched.push('универсальный_вопрос');
   category = 'universal';

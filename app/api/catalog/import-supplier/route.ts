@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
 
     // Если есть удаленный поставщик, восстанавливаем его
     if (deletedSupplier) {
-      console.log("🔄 [API] Восстанавливаем удаленного поставщика:", deletedSupplier.id);
       
       const { data: restoredSupplier, error: restoreError } = await supabase
         .from("catalog_user_suppliers")
@@ -85,7 +84,6 @@ export async function POST(request: NextRequest) {
       }
 
       // Восстанавливаем также товары поставщика
-      console.log("🔄 [API] Восстанавливаем товары поставщика:", restoredSupplier.id);
       const { data: restoredProducts, error: restoreProductsError } = await supabase
         .from("catalog_user_products")
         .update({ is_active: true })
@@ -96,13 +94,11 @@ export async function POST(request: NextRequest) {
       if (restoreProductsError) {
         console.warn("⚠️ [API] Ошибка восстановления товаров:", restoreProductsError);
       } else if (restoredProducts) {
-        console.log(`✅ [API] Восстановлено ${restoredProducts.length} товаров`);
       }
 
       // Если товары не восстановились (их не было), импортируем заново
       let insertedProducts = [];
       if (!restoredProducts || restoredProducts.length === 0) {
-        console.log("🔄 [API] Товары не найдены в архиве, импортируем заново...");
         
         const { data: verifiedProducts } = await supabase
           .from("catalog_verified_products")
@@ -131,14 +127,12 @@ export async function POST(request: NextRequest) {
 
           if (newInsertedProducts) {
             insertedProducts = newInsertedProducts;
-            console.log(`✅ [API] Импортировано ${insertedProducts.length} новых товаров`);
           }
         }
       }
 
       const totalProductsCount = (restoredProducts?.length || 0) + (insertedProducts?.length || 0);
       
-      console.log("✅ [API] Поставщик восстановлен:", restoredSupplier.id);
       return NextResponse.json({ 
         message: "Поставщик и товары восстановлены в ваш список",
         supplier: restoredSupplier,
@@ -191,7 +185,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Импортируем товары поставщика (если есть)
-    console.log(`🔍 [API] Ищем товары поставщика с ID: ${verified_supplier_id}`);
     let importedProducts = [];
     if (newSupplier) {
       // Получаем ВСЕ товары поставщика (убираем фильтр in_stock для корректного импорта)
@@ -200,16 +193,9 @@ export async function POST(request: NextRequest) {
         .select("*")
         .eq("supplier_id", verified_supplier_id);
 
-      console.log(`📦 [API] Найдено товаров в catalog_verified_products:`, verifiedProducts?.length || 0);
       
       if (productsError) {
         console.error(`❌ [API] Ошибка поиска товаров:`, productsError);
-      } else if (verifiedProducts && verifiedProducts.length > 0) {
-        console.log(`📦 [API] Товары для импорта:`, verifiedProducts.map(p => ({ 
-          name: p.name, 
-          in_stock: p.in_stock,
-          price: p.price 
-        })));
       }
 
       if (!productsError && verifiedProducts && verifiedProducts.length > 0) {
@@ -234,14 +220,12 @@ export async function POST(request: NextRequest) {
 
         if (!insertProductsError && insertedProducts) {
           importedProducts = insertedProducts;
-          console.log(`✅ [API] Импортировано ${insertedProducts.length} товаров`);
         } else {
           console.warn("⚠️ [API] Ошибка импорта товаров:", insertProductsError);
         }
       }
     }
 
-    console.log(`✅ [API] Поставщик импортирован для пользователя ${user.id}:`, newSupplier);
     
     return NextResponse.json({ 
       message: "Поставщик успешно импортирован в ваш личный список",

@@ -3,7 +3,6 @@ import { ChatBotService } from "@/lib/telegram/ChatBotService";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("⭐ [TELEGRAM] Отправка заявки на аккредитацию в Telegram");
 
     const {
       applicationId,
@@ -37,7 +36,6 @@ export async function POST(request: NextRequest) {
       legalDocumentsCount: legalDocumentsCount || 0
     });
 
-    console.log("✅ Заявка на аккредитацию отправлена в Telegram успешно");
     return NextResponse.json({ success: true, message: "Уведомление отправлено" });
 
   } catch (error) {

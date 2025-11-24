@@ -63,7 +63,6 @@ const RequisitesStep5Manager: React.FC<RequisitesStep5ManagerProps> = ({
   // Загрузка реквизитов из данных поставщика
   useEffect(() => {
     if (supplierData) {
-      console.log('🔍 [STEP 5] Загружены реквизиты поставщика:', supplierData)
 
       // Собираем все доступные реквизиты
       const requisites: any[] = []
@@ -116,7 +115,6 @@ const RequisitesStep5Manager: React.FC<RequisitesStep5ManagerProps> = ({
   // Загрузка эхо предложений
   useEffect(() => {
     if (echoSuggestions?.requisites) {
-      console.log('📊 [STEP 5] Найдены эхо предложения реквизитов:', echoSuggestions.requisites)
       if (!data) {
         setSelectedRequisites(echoSuggestions.requisites)
         handleRequisitesUpdate(echoSuggestions.requisites)
@@ -130,7 +128,6 @@ const RequisitesStep5Manager: React.FC<RequisitesStep5ManagerProps> = ({
     if (getStepData) {
       const step4Data = getStepData(4)
       if (step4Data?.primary_method && supplierData) {
-        console.log('🔄 [STEP 5] Синхронизация с выбранным методом оплаты:', step4Data.primary_method)
 
         // Фильтруем реквизиты в соответствии с выбранным методом
         const filteredRequisites = selectedRequisites.filter(req => {

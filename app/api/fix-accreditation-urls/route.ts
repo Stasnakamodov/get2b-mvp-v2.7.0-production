@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabaseClient";
 // POST: Исправление URL файлов в существующих заявках на аккредитацию
 export async function POST(request: NextRequest) {
   try {
-    console.log("🔧 [FIX] Исправление URL файлов в заявках на аккредитацию");
 
     const { searchParams } = new URL(request.url);
     const applicationId = searchParams.get('applicationId');
@@ -30,7 +29,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ [FIX] Найдено заявок:", applications?.length || 0);
 
     let fixedCount = 0;
     let errorCount = 0;
@@ -69,7 +67,6 @@ export async function POST(request: NextRequest) {
 }
 
 async function fixApplicationUrls(applicationId: string) {
-  console.log(`🔧 [FIX] Исправление заявки: ${applicationId}`);
 
   // Получаем заявку
   const { data: application, error } = await supabase
@@ -119,9 +116,7 @@ async function fixApplicationUrls(applicationId: string) {
                 public_url: urlData.publicUrl
               };
               hasChanges = true;
-              console.log(`✅ [FIX] Добавлен URL для изображения: ${image.name}`);
             } else {
-              console.log(`⚠️ [FIX] Не удалось получить URL для: ${fileName}`);
             }
           } catch (urlError) {
             console.error(`❌ [FIX] Ошибка получения URL для ${fileName}:`, urlError);
@@ -152,9 +147,7 @@ async function fixApplicationUrls(applicationId: string) {
                 public_url: urlData.publicUrl
               };
               hasChanges = true;
-              console.log(`✅ [FIX] Добавлен URL для сертификата: ${cert.name}`);
             } else {
-              console.log(`⚠️ [FIX] Не удалось получить URL для: ${fileName}`);
             }
           } catch (urlError) {
             console.error(`❌ [FIX] Ошибка получения URL для ${fileName}:`, urlError);
@@ -179,10 +172,8 @@ async function fixApplicationUrls(applicationId: string) {
       return { success: false, error: updateError.message };
     }
 
-    console.log(`✅ [FIX] Заявка ${applicationId} обновлена с URL файлов`);
     return { success: true, message: "URL файлов добавлены" };
   } else {
-    console.log(`ℹ️ [FIX] Заявка ${applicationId} не требует исправлений`);
     return { success: true, message: "Исправления не требуются" };
   }
 } 

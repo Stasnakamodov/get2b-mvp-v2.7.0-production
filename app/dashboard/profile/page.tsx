@@ -273,7 +273,6 @@ export default function ProfilePage() {
         // Fallback на Base64
         const base64 = await convertToBase64(file)
         setClientForm(prev => ({ ...prev, logo_url: base64 }))
-        console.log('✅ Логотип сохранен как Base64')
       } else {
         // Получаем публичный URL
         const { data: urlData } = supabase.storage
@@ -281,7 +280,6 @@ export default function ProfilePage() {
           .getPublicUrl(fileName)
         
         setClientForm(prev => ({ ...prev, logo_url: urlData.publicUrl }))
-        console.log('✅ Логотип загружен в Supabase Storage:', urlData.publicUrl)
       }
     } catch (error) {
       console.error('❌ Ошибка загрузки логотипа:', error)
@@ -289,7 +287,6 @@ export default function ProfilePage() {
       try {
         const base64 = await convertToBase64(file)
         setClientForm(prev => ({ ...prev, logo_url: base64 }))
-        console.log('✅ Логотип сохранен как Base64 (fallback)')
       } catch (base64Error) {
         console.error('❌ Ошибка конвертации в Base64:', base64Error)
         alert('Ошибка загрузки логотипа')
@@ -334,8 +331,6 @@ export default function ProfilePage() {
 
       const fileUrl = urlData.publicUrl
 
-      console.log('🔗 File URL:', fileUrl)
-      console.log('📝 File Type:', file.type)
 
       // 3. Отправляем на анализ в API
       const analysisResponse = await fetch('/api/document-analysis', {
@@ -350,7 +345,6 @@ export default function ProfilePage() {
         })
       })
 
-      console.log('📡 Analysis Response Status:', analysisResponse.status)
 
       if (!analysisResponse.ok) {
         const errorText = await analysisResponse.text()
@@ -360,9 +354,6 @@ export default function ProfilePage() {
 
       const analysisResult = await analysisResponse.json()
 
-      console.log('📄 OCR API Response:', JSON.stringify(analysisResult, null, 2))
-      console.log('✅ Success:', analysisResult.success)
-      console.log('📊 Has Data:', !!analysisResult.data)
 
       // 4. Автозаполняем форму клиента
       if (analysisResult.success && analysisResult.suggestions) {

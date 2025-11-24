@@ -414,8 +414,6 @@ export const AccreditationModalV2: React.FC<AccreditationModalV2Props> = ({
         images: p.imageNames || p.images
       }))
       
-      console.log('📦 [AccreditationModal] Товары для отправки:', productsToSend)
-      console.log('📦 [AccreditationModal] Количество товаров:', productsToSend.length)
       
       formData.append('products', JSON.stringify(productsToSend))
       formData.append('legal_confirmation', JSON.stringify(companyConfirmation))
@@ -447,7 +445,6 @@ export const AccreditationModalV2: React.FC<AccreditationModalV2Props> = ({
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
       const apiUrl = `${baseUrl}/api/catalog/submit-accreditation`;
       
-      console.log('🌐 [AccreditationModal] Отправляем запрос на:', apiUrl);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -461,7 +458,6 @@ export const AccreditationModalV2: React.FC<AccreditationModalV2Props> = ({
       }
 
       const result = await response.json()
-      console.log('✅ [AccreditationModal] Успешно:', result)
       
       onSuccess()
       onClose()

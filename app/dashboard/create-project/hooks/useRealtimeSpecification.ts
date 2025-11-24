@@ -30,7 +30,6 @@ export function useRealtimeSpecification(projectId: string | null, role: 'client
         'postgres_changes',
         { event: '*', schema: 'public', table: 'project_specifications', filter: `project_id=eq.${projectId},role=eq.${role}` },
         (payload) => {
-          console.log('[Realtime] payload:', payload);
           // Только если событие по нужной роли
           const newRow = payload.new as any;
           const oldRow = payload.old as any;

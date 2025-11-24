@@ -42,7 +42,6 @@ export default function SimpleCategorySelector({
       const data = await response.json()
 
       if (data.categories) {
-        console.log(`✅ [SimpleCategorySelector] Загружено категорий: ${data.categories.length}`)
         setCategories(data.categories)
       } else {
         throw new Error('Ошибка загрузки категорий')

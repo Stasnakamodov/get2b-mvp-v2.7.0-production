@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "table parameter required" }, { status: 400 });
     }
     
-    console.log(`🔍 [DIRECT] Запрос к таблице: ${table}, supplier_id: ${supplierId}`);
     
     let query = supabase.from(table).select("*");
     
@@ -27,7 +26,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
-    console.log(`✅ [DIRECT] Найдено записей в ${table}:`, data?.length || 0);
     
     return NextResponse.json(data || []);
     

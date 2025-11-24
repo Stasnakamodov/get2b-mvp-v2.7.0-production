@@ -274,7 +274,6 @@ function DashboardPageContent() {
           return;
         }
         if (!user) {
-          console.log("⚠️ [DASHBOARD] Пользователь не авторизован");
           setDebugInfo(prev => ({ ...prev, projectsError: 'Пользователь не авторизован' }));
           return;
         }
@@ -288,7 +287,6 @@ function DashboardPageContent() {
         setDebugInfo(prev => ({ ...prev, projectsLoaded: true }));
           
         if (!error && data) {
-          console.log("🔍 [DASHBOARD] Загруженные проекты из базы:", data);
           setProjects(data.map((p: any) => ({
             ...p,
             currentStep: p.current_step || 1,
@@ -330,7 +328,6 @@ function DashboardPageContent() {
   // Функция для создания проекта из шаблона
   const createProjectFromTemplate = async (templateId: string) => {
     // Здесь будет логика создания проекта из шаблона
-    console.log(`Создание проекта из шаблона ${templateId}`)
   }
 
   // Функция для удаления проекта

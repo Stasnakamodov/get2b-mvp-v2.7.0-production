@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("📊 [API] Получение статистики по категориям");
 
     // Получаем статистику по товарам в verified (оранжевая комната)
     const { data: verifiedStats, error: verifiedError } = await supabase
@@ -64,7 +63,6 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log(`✅ [API] Статистика по категориям:`, Object.keys(categoryCounts).length);
 
     return NextResponse.json({
       success: true,

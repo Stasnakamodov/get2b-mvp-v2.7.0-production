@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     
     const data = await response.json();
     
-    console.log('✅ [API] Поставщики загружены:', data.length);
     return NextResponse.json(data);
     
   } catch (error) {

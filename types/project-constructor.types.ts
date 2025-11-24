@@ -398,7 +398,18 @@ export const RequisitesDataSchema = z.union([
 export type RequisitesData = z.infer<typeof RequisitesDataSchema>
 
 // Extended RequisitesData with legacy fields
-export interface ExtendedRequisitesData extends RequisitesData {
+export interface ExtendedRequisitesData {
+  // Legacy schema fields (snake_case)
+  recipient_name?: string
+  recipient_inn?: string
+  recipient_kpp?: string
+  recipient_address?: string
+  recipient_bank_name?: string
+  recipient_account?: string
+  recipient_bik?: string
+  payment_purpose?: string
+
+  // Additional fields
   method?: string
   supplier?: string
   supplier_name?: string
@@ -426,6 +437,23 @@ export interface ExtendedRequisitesData extends RequisitesData {
   crypto_details?: any
   user_choice?: boolean
   auto_filled?: boolean
+
+  // Bank requisites schema fields
+  type?: 'bank' | 'p2p' | 'crypto'
+  bank?: string
+  account?: string
+  swift?: string
+  iban?: string
+
+  // P2P schema fields
+  card_number?: string
+  card_holder?: string
+  card_bank?: string
+
+  // Crypto schema fields
+  crypto_name?: string
+  crypto_address?: string
+  crypto_network?: string
 }
 
 // ========================================

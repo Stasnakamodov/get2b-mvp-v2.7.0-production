@@ -58,7 +58,6 @@ export class PushNotificationService {
 
     if (!vapidPublicKey || !vapidPrivateKey || !vapidEmail) {
       console.warn('⚠️ VAPID ключи не настроены. Push уведомления недоступны.')
-      console.log('💡 Для настройки используйте: npx web-push generate-vapid-keys')
       return
     }
 
@@ -69,7 +68,6 @@ export class PushNotificationService {
         vapidPrivateKey
       )
       this.isConfigured = true
-      console.log('✅ Web Push сервис инициализирован')
     } catch (error) {
       console.error('❌ Ошибка инициализации Web Push:', error)
     }
@@ -114,7 +112,6 @@ export class PushNotificationService {
         }
       )
 
-      console.log('✅ Push уведомление отправлено:', result.statusCode)
 
       return {
         success: true,

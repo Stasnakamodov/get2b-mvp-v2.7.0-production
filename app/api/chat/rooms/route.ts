@@ -72,10 +72,8 @@ export async function GET(request: NextRequest) {
 // POST: Создать новую комнату - УЛЬТРА-БЕЗОПАСНАЯ ВЕРСИЯ
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔍 DEBUG: Chat rooms POST called (ULTRA SAFE VERSION)');
     
     const body = await request.json();
-    console.log('🔍 DEBUG: Request body:', body);
     
     const { 
       name, 
@@ -85,7 +83,6 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!name || !user_id) {
-      console.log('❌ DEBUG: Missing required fields');
       return NextResponse.json(
         { error: "name and user_id are required" },
         { status: 400 }
@@ -94,7 +91,6 @@ export async function POST(request: NextRequest) {
 
     // ПРОВЕРЯЕМ UUID ФОРМАТЫ
     if (!isValidUUID(user_id)) {
-      console.log('❌ DEBUG: Invalid UUID format for user_id:', user_id);
       return NextResponse.json(
         { error: "Invalid user_id format - must be valid UUID" },
         { status: 400 }
@@ -102,7 +98,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (project_id && !isValidUUID(project_id)) {
-      console.log('❌ DEBUG: Invalid UUID format for project_id:', project_id);
       return NextResponse.json(
         { error: "Invalid project_id format - must be valid UUID" },
         { status: 400 }
@@ -121,7 +116,6 @@ export async function POST(request: NextRequest) {
         .single();
       
       if (existingRoom) {
-        console.log('ℹ️ DEBUG: Project room already exists, returning existing:', existingRoom.id);
         return NextResponse.json({
           success: true,
           room: existingRoom,
@@ -142,7 +136,6 @@ export async function POST(request: NextRequest) {
       roomData.project_id = project_id;
     }
 
-    console.log('🔍 DEBUG: Creating new room:', roomData);
 
     const { data: newRoom, error } = await supabase
       .from('chat_rooms')
@@ -158,7 +151,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('✅ DEBUG: Room created successfully:', newRoom.id);
 
     return NextResponse.json({
       success: true,
@@ -178,16 +170,13 @@ export async function POST(request: NextRequest) {
 // DELETE: Удалить комнату чата - ИСПРАВЛЕННАЯ ВЕРСИЯ
 export async function DELETE(request: NextRequest) {
   try {
-    console.log('🗑️ DEBUG: DELETE room called');
     
     const { searchParams } = new URL(request.url);
     const roomId = searchParams.get('room_id');
     const userId = searchParams.get('user_id');
 
-    console.log('🗑️ DEBUG: Parameters:', { roomId, userId });
 
     if (!roomId || !userId) {
-      console.log('❌ DEBUG: Missing required parameters');
       return NextResponse.json(
         { error: "room_id and user_id are required" },
         { status: 400 }
@@ -196,14 +185,12 @@ export async function DELETE(request: NextRequest) {
 
     // ПРОВЕРЯЕМ UUID ФОРМАТЫ
     if (!isValidUUID(roomId) || !isValidUUID(userId)) {
-      console.log('❌ DEBUG: Invalid UUID format');
       return NextResponse.json(
         { error: "Invalid UUID format" },
         { status: 400 }
       );
     }
 
-    console.log('🗑️ DEBUG: Starting room deletion process...');
 
     // ШАГ 1: Проверяем что комната существует и принадлежит пользователю
     const { data: existingRoom, error: checkError } = await supabase
@@ -214,18 +201,15 @@ export async function DELETE(request: NextRequest) {
       .single();
 
     if (checkError || !existingRoom) {
-      console.log('❌ DEBUG: Room not found or no access');
       return NextResponse.json(
         { error: "Room not found or you don't have permission to delete it" },
         { status: 404 }
       );
     }
 
-    console.log('✅ DEBUG: Room found:', existingRoom.name);
 
     // ШАГ 2: Безопасно удаляем сообщения (игнорируем ошибки)
     try {
-      console.log('🗑️ DEBUG: Deleting messages...');
       const { error: messagesError } = await supabase
         .from('chat_messages')
         .delete()
@@ -234,14 +218,12 @@ export async function DELETE(request: NextRequest) {
       if (messagesError) {
         console.warn('⚠️ DEBUG: Warning deleting messages (non-critical):', messagesError.message);
       } else {
-        console.log('✅ DEBUG: Messages deleted successfully');
       }
     } catch (msgError) {
       console.warn('⚠️ DEBUG: Non-critical error deleting messages:', msgError);
     }
 
     // ШАГ 3: Удаляем комнату 
-    console.log('🗑️ DEBUG: Deleting room...');
     const { error: roomError } = await supabase
       .from('chat_rooms')
       .delete()
@@ -256,7 +238,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    console.log('✅ DEBUG: Room deleted successfully:', existingRoom.name);
 
     return NextResponse.json({
       success: true,

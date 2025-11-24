@@ -5,7 +5,6 @@ export const useCatalogHandlers = (
   setShowCatalogModal: Dispatch<SetStateAction<boolean>>
 ) => {
   const handleAddProductsFromCatalog = () => {
-    console.log('🛒 Открытие полного каталога')
     setShowCatalogModal(true)
   }
 

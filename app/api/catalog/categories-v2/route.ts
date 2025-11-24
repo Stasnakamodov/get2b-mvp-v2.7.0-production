@@ -53,7 +53,6 @@ export async function GET(request: NextRequest) {
 
     const data = rawData || [];
 
-    console.log(`✅ [API v2] Категории загружены: ${data.length}`);
 
     // Построить дерево категорий
     let categoryTree: any[] = [];

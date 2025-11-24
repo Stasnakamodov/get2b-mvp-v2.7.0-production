@@ -5,7 +5,6 @@ import { ChatBotService } from "@/lib/telegram/ChatBotService";
 // POST: Отправка изображения из аккредитации в Telegram
 export async function POST(request: NextRequest) {
   try {
-    console.log("📤 [SEND-IMAGE] Отправка изображения из аккредитации в Telegram");
 
     const { searchParams } = new URL(request.url);
     const applicationId = searchParams.get('applicationId');
@@ -25,7 +24,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log("🔍 [SEND-IMAGE] Получаем данные заявки:", { applicationId, productIndex, imageIndex });
 
     // Получаем данные заявки
     const { data: application, error } = await supabase
@@ -69,7 +67,6 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    console.log("📷 [SEND-IMAGE] Найдено изображение:", image);
 
     if (!image.public_url) {
       return NextResponse.json({ 
@@ -81,7 +78,6 @@ export async function POST(request: NextRequest) {
       // Скачиваем файл из Supabase Storage
       const storagePath = `accreditation/${applicationId}/products/${productIndex}/images/${image.name}`;
       
-      console.log("📥 [SEND-IMAGE] Скачиваем файл:", storagePath);
       
       const { data: fileData, error: downloadError } = await supabase.storage
         .from('project-images')
@@ -95,7 +91,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log("✅ [SEND-IMAGE] Файл скачан, размер:", fileData.size);
 
       // Конвертируем в Buffer
       const buffer = Buffer.from(await fileData.arrayBuffer());
@@ -110,7 +105,6 @@ export async function POST(request: NextRequest) {
       const botToken = process.env.TELEGRAM_CHAT_BOT_TOKEN;
       const telegramUrl = `https://api.telegram.org/bot${botToken}/sendPhoto`;
 
-      console.log("📤 [SEND-IMAGE] Отправляем в Telegram...");
 
       const response = await fetch(telegramUrl, {
         method: 'POST',
@@ -127,7 +121,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log("✅ [SEND-IMAGE] Изображение отправлено успешно");
 
       return NextResponse.json({
         success: true,

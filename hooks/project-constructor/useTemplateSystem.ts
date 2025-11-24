@@ -44,11 +44,6 @@ export function useTemplateSystem({
       return null
     }
 
-    console.log('=== ДАННЫЕ ШАБЛОНА ДЛЯ СПЕЦИФИКАЦИИ ===')
-    console.log('template:', template)
-    console.log('template.items:', template.items)
-    console.log('template.specification:', template.specification)
-    console.log('template.data?.specification:', template.data?.specification)
 
     return {
       id: template.id,
@@ -83,10 +78,6 @@ export function useTemplateSystem({
    * Применить данные шаблона к конкретному шагу
    */
   const applyTemplateStep = (stepId: number, templateData: TemplateData) => {
-    console.log(`=== ПРИМЕНЕНИЕ ШАБЛОНА ДЛЯ ШАГА ${stepId} ===`)
-    console.log('templateData:', templateData)
-    console.log('templateData.data:', templateData.data)
-    console.log(`templateData.data[${stepId}]:`, templateData.data[stepId as keyof typeof templateData.data])
 
     if (templateData.data[stepId as keyof typeof templateData.data]) {
       // Применяем данные шаблона
@@ -101,11 +92,9 @@ export function useTemplateSystem({
       }))
       setSelectedSource(null)
       setTemplateStepSelection(null)
-      console.log(`✅ Применены данные шаблона для шага ${stepId}:`, stepData)
 
       // autoFillStepsFromSupplier удалена (для шаблонов не нужна)
     } else {
-      console.log(`❌ Нет данных шаблона для шага ${stepId}`)
     }
   }
 
@@ -171,7 +160,6 @@ export function useTemplateSystem({
 
       setSelectedSource(null)
       setTemplateStepSelection(null)
-      console.log(`Применены данные шаблона для всех шагов: ${templateStepSelection.availableSteps.join(', ')}`)
     }
   }
 

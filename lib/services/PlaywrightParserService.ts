@@ -17,13 +17,9 @@ export class PlaywrightParserService {
     let browser = null
 
     try {
-      // Динамический импорт Playwright-extra и Stealth
-      const { chromium } = await import('playwright-extra')
-      const StealthPlugin = (await import('puppeteer-extra-plugin-stealth')).default
-
-      // Подключаем stealth плагин
-      chromium.use(StealthPlugin())
-      console.log('🥷 [Playwright Parser] Stealth плагин активирован')
+      // Динамический импорт Playwright
+      const { chromium } = await import('playwright')
+      console.log('🎭 [Playwright Parser] Playwright импортирован')
 
       // Рандомизированные настройки для обхода детектирования
       const viewportOptions = this.getRandomViewport()
@@ -177,7 +173,13 @@ export class PlaywrightParserService {
       }
 
       return {
-        ...metadata,
+        title: metadata.title,
+        description: metadata.description || '',
+        price: metadata.price,
+        currency: metadata.currency,
+        imageUrl: metadata.imageUrl,
+        brand: metadata.brand,
+        category: metadata.category,
         marketplace: this.detectMarketplace(url),
         originalUrl: url
       }
@@ -395,15 +397,10 @@ export class PlaywrightParserService {
    */
   async isAvailable(): Promise<boolean> {
     try {
-      await import('playwright-extra')
+      await import('playwright')
       return true
     } catch {
-      try {
-        await import('playwright')
-        return true
-      } catch {
-        return false
-      }
+      return false
     }
   }
 }

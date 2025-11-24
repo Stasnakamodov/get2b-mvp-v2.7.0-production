@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabaseClient'
 
 export async function GET() {
   try {
-    console.log('[API] Checking profile tables...')
 
     interface TableCheckResults {
       [tableName: string]: {

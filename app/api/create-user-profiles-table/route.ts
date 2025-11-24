@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabaseClient'
 
 export async function POST() {
   try {
-    console.log('[API] Creating user_profiles table...')
 
     // SQL для создания таблицы user_profiles
     const createTableSQL = `

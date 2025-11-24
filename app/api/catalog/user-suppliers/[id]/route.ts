@@ -14,7 +14,6 @@ export async function GET(
   try {
     const supplierId = id
 
-    console.log('🔍 Получаем данные поставщика:', supplierId)
 
     // Получаем данные поставщика
     const { data: supplier, error: supplierError } = await supabase
@@ -47,7 +46,6 @@ export async function GET(
       catalog_user_products: products || []
     }
 
-    console.log('✅ Данные поставщика получены:', fullSupplier.name)
 
     return NextResponse.json({
       supplier: fullSupplier,

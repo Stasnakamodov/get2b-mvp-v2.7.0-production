@@ -3,10 +3,8 @@ import { sendTelegramMessage } from "@/lib/telegram"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("🔥 API /landing/submit-registration вызван")
 
     const formData = await request.json()
-    console.log("📦 Данные регистрации:", formData)
 
     // Validation
     if (!formData.name || !formData.inn || !formData.phone) {
@@ -51,11 +49,9 @@ export async function POST(request: NextRequest) {
 ⚡️ ТРЕБУЕТСЯ: Связаться с клиентом в течение 15 минут!
     `.trim()
 
-    console.log("📤 Отправляем в Telegram:", message.substring(0, 100) + "...")
 
     try {
       await sendTelegramMessage(message)
-      console.log("✅ Регистрация отправлена менеджеру")
     } catch (telegramError) {
       console.error("❌ Ошибка отправки в Telegram:", telegramError)
       // Don't fail the request if Telegram fails - we still want to return success

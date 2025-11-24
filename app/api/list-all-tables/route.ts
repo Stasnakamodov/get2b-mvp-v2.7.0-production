@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 [API] Получаем список всех таблиц...");
 
     const tables: any = {
       all: [],
@@ -98,8 +97,6 @@ export async function GET(request: NextRequest) {
       analysisDate: new Date().toISOString()
     };
 
-    console.log("✅ [API] Анализ таблиц завершен");
-    console.log("📊 [API] Сводка:", tables.summary);
 
     return NextResponse.json({
       success: true,

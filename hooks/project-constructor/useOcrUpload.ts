@@ -69,16 +69,12 @@ export function useOcrUpload({
   // ========================================
 
   const handleFileUpload = async (stepId: number, file: File) => {
-    console.log('🔥 [OCR] handleFileUpload ВЫЗВАН!', { stepId, fileName: file?.name, fileType: file?.type })
 
     // Сразу показываем индикатор загрузки
     setOcrAnalyzing(prev => ({ ...prev, [stepId]: true }))
     setOcrError(prev => ({ ...prev, [stepId]: '' }))
 
     try {
-      console.log(`🔍 Начинаем загрузку файла для шага ${stepId}:`, file.name)
-      console.log(`📄 Тип файла: ${file.type}`)
-      console.log(`📏 Размер файла: ${file.size} байт`)
 
       // Получаем токен авторизации
       const { data: { session } } = await supabase.auth.getSession()
@@ -88,7 +84,6 @@ export function useOcrUpload({
 
       // Определяем bucket для загрузки в зависимости от шага
       const bucket = bucketMap[stepId as keyof typeof bucketMap] || 'project-files'
-      console.log(`📦 Используем bucket: ${bucket}`)
 
       // Генерируем уникальное имя файла
       const date = generateFileDate()
@@ -102,16 +97,14 @@ export function useOcrUpload({
         date: ''
       })
 
-      console.log(`🔗 Публичный URL: ${fileUrl}`)
 
       // Сохраняем ссылку на файл
       setUploadedFiles(prev => ({ ...prev, [stepId]: fileUrl }))
 
       // Устанавливаем конфигурацию шага как upload
-      setStepConfigs(prev => ({ ...prev, [stepId]: 'upload' }))
+      setStepConfigs((prev: any) => ({ ...prev, [stepId]: 'upload' }))
 
       // 🔍 OCR АНАЛИЗ В ЗАВИСИМОСТИ ОТ ШАГА
-      console.log(`🔍 Начинаем OCR анализ для шага ${stepId}...`)
       if (stepId === 1) {
         // Анализ карточки компании
         await analyzeCompanyCard(fileUrl, file.type)
@@ -138,7 +131,6 @@ export function useOcrUpload({
     setOcrError(prev => ({ ...prev, [stepId]: '' }))
 
     try {
-      console.log("🔍 Начинаем анализ карточки компании...")
 
       // Добавляем таймаут для запроса
       const controller = new AbortController()
@@ -177,7 +169,6 @@ export function useOcrUpload({
 
       // Проверяем успешность анализа
       if (!analysisResult.success) {
-        console.log("⚠️ Анализ не удался:", analysisResult.error)
         setOcrError(prev => ({
           ...prev,
           [stepId]: analysisResult.error || 'Не удалось извлечь данные из документа'
@@ -187,14 +178,6 @@ export function useOcrUpload({
 
       const extractedData = analysisResult.suggestions
 
-      console.log("✅ Данные компании извлечены:", extractedData)
-      console.log("📊 Ключи в extractedData:", Object.keys(extractedData))
-      console.log("📊 extractedData.companyName:", extractedData.companyName)
-      console.log("📊 extractedData.inn:", extractedData.inn)
-      console.log("📊 extractedData.phone:", extractedData.phone)
-      console.log("📊 extractedData.email:", extractedData.email)
-      console.log("📊 extractedData.bankBik:", extractedData.bankBik)
-      console.log("📊 extractedData.bankCorrAccount:", extractedData.bankCorrAccount)
 
       // Сохраняем отладочные данные
       setOcrDebugData(prev => ({ ...prev, [stepId]: extractedData }))
@@ -223,20 +206,14 @@ export function useOcrUpload({
 
         if (hasData) {
           // Сохраняем извлеченные данные
-          setManualData(prev => ({ ...prev, [stepId]: companyData }))
-          console.log("✅ Данные компании автозаполнены:", companyData)
-          console.log("📊 Проверяем контактные данные:")
-          console.log("📊 companyData.phone:", companyData.phone)
-          console.log("📊 companyData.email:", companyData.email)
+          setManualData((prev: any) => ({ ...prev, [stepId]: companyData }))
 
           // ✅ ЗАКРЫВАЕМ МОДАЛ ТОЛЬКО ПРИ УСПЕШНОМ OCR
           setSelectedSource(null)
         } else {
-          console.log("⚠️ Данные извлечены, но все поля пустые")
           setOcrError(prev => ({ ...prev, [stepId]: 'Не удалось извлечь данные из документа' }))
         }
       } else {
-        console.log("⚠️ extractedData пустой или не содержит данных")
         setOcrError(prev => ({ ...prev, [stepId]: 'Не удалось извлечь данные из документа' }))
       }
     } catch (error) {
@@ -256,7 +233,6 @@ export function useOcrUpload({
     setOcrError(prev => ({ ...prev, [stepId]: '' }))
 
     try {
-      console.log("🔍 Начинаем анализ спецификации...")
 
       // Добавляем таймаут для запроса
       const controller = new AbortController()
@@ -296,18 +272,6 @@ export function useOcrUpload({
       const extractedData = analysisResult.suggestions
       const analysisText = analysisResult.extractedText
 
-      console.log("✅ Данные спецификации извлечены:", extractedData)
-      console.log("📊 Ключи в extractedData:", Object.keys(extractedData))
-      console.log("📊 extractedData.items:", extractedData.items)
-      console.log("📊 extractedData.invoiceInfo:", extractedData.invoiceInfo)
-      console.log("📊 extractedData.bankInfo:", extractedData.bankInfo)
-      console.log("📊 Детали извлеченных данных:")
-      console.log("   - invoiceInfo:", extractedData.invoiceInfo)
-      console.log("   - seller:", extractedData.invoiceInfo?.seller)
-      console.log("   - items count:", extractedData.items?.length || 0)
-      console.log("   - items:", extractedData.items)
-      console.log("   - bankInfo:", extractedData.bankInfo)
-      console.log("   - analysisText (первые 500 символов):", analysisText?.substring(0, 500))
 
       // Сохраняем отладочные данные
       setOcrDebugData(prev => ({ ...prev, [stepId]: extractedData }))
@@ -323,11 +287,9 @@ export function useOcrUpload({
           .trim()
       }
 
-      console.log("🏢 Поставщик из OCR:", supplierName)
 
       // 🔥 ПАТТЕРН 4: Извлекаем банковские реквизиты из инвойса
       const bankRequisites = extractBankRequisitesFromInvoice(extractedData, analysisText)
-      console.log("🏦 Извлеченные банковские реквизиты:", bankRequisites)
 
       // ПАТТЕРН 3: Автозаполнение спецификации извлеченными данными
       if (extractedData && extractedData.items && extractedData.items.length > 0) {
@@ -352,15 +314,10 @@ export function useOcrUpload({
           currency: extractedData.invoiceInfo?.currency || extractedData.currency || 'RUB'
         }
 
-        setManualData(prev => {
+        setManualData((prev: any) => {
           const newData = { ...prev, [stepId]: specificationData }
-          console.log("🔄 Обновляем manualData для шага", stepId)
-          console.log("📊 Новые данные:", newData)
-          console.log("📊 manualData после обновления:", newData)
           return newData
         })
-        console.log("✅ Спецификация автозаполнена:", specificationData)
-        console.log(`✅ Добавлено ${specificationItems.length} позиций на сумму ${specificationData.totalAmount} руб.`)
 
         // ✅ ПАТТЕРН 6: ЗАКРЫВАЕМ МОДАЛ ТОЛЬКО ПРИ УСПЕШНОМ OCR
         setSelectedSource(null)
@@ -379,8 +336,7 @@ export function useOcrUpload({
             currency: extractedData.invoiceInfo?.currency || extractedData.currency || 'RUB'
           }
 
-          setManualData(prev => ({ ...prev, [stepId]: specificationData }))
-          console.log("✅ Поставщик сохранен:", specificationData)
+          setManualData((prev: any) => ({ ...prev, [stepId]: specificationData }))
           setOcrError(prev => ({ ...prev, [stepId]: 'Найдена информация об инвойсе, но товары не извлечены. Добавьте позиции вручную.' }))
 
           // ✅ ЗАКРЫВАЕМ МОДАЛ ДАЖЕ ЕСЛИ НЕ ВСЕ ДАННЫЕ ИЗВЛЕЧЕНЫ (частичный успех)
@@ -391,7 +347,6 @@ export function useOcrUpload({
             suggestPaymentMethodAndRequisites(bankRequisites, supplierName)
           }
         } else {
-          console.log("⚠️ Товары не найдены в документе")
           setOcrError(prev => ({ ...prev, [stepId]: 'Не удалось извлечь товары из документа' }))
           // ❌ НЕ ЗАКРЫВАЕМ МОДАЛ при полном провале
         }
@@ -409,7 +364,6 @@ export function useOcrUpload({
   // ========================================
 
   const extractBankRequisitesFromInvoice = (extractedData: any, analysisText: string): BankRequisites => {
-    console.log("🏦 Начинаем извлечение банковских реквизитов из инвойса...")
 
     const requisites: BankRequisites = {
       bankName: '',
@@ -438,7 +392,6 @@ export function useOcrUpload({
         .replace(/\(Account Name\):\s*/i, '') // Убираем английский текст
         .replace(/^[^a-zA-Z0-9]*/, '') // Убираем символы в начале
         .trim()
-      console.log("🧹 Очищенное recipientName:", requisites.recipientName)
     }
 
     // 🔥 ПАТТЕРН 5: Если структурированные данные не найдены, ищем в тексте
@@ -456,7 +409,6 @@ export function useOcrUpload({
         const match = analysisText.match(pattern)
         if (match) {
           requisites.accountNumber = match[1]
-          console.log("✅ Найден номер счета:", requisites.accountNumber)
           break
         }
       }
@@ -469,7 +421,6 @@ export function useOcrUpload({
       requisites.recipientName
     )
 
-    console.log("🏦 Итоговые реквизиты:", requisites)
     return requisites
   }
 

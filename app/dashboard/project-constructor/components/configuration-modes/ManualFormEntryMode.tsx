@@ -103,11 +103,6 @@ export function ManualFormEntryMode({
       {/* Step 5 больше не использует форму напрямую - сначала 3 кубика выбора типа, затем форма */}
 
       {(() => {
-        console.log('🔍 [DEBUG ManualFormEntryMode Step 5]');
-        console.log('  - lastHoveredStep:', lastHoveredStep);
-        console.log('  - manualData[5]:', manualData[5]);
-        console.log('  - manualData[5]?.type:', manualData[5]?.type);
-        console.log('  - shouldShowForm:', lastHoveredStep === 5 && manualData[5]?.type);
         return null;
       })()}
 

@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
 
     // Режим 1: Парсинг по URL
     if (url && !html) {
-      console.log('🔗 [URL SEARCH] Режим: Парсинг по URL:', url)
 
       // Проверяем валидность URL
       const urlParser = getUrlParserService()
@@ -50,25 +49,18 @@ export async function POST(request: NextRequest) {
 
       if (claudeService.isAvailable()) {
         try {
-          console.log('🤖 [URL SEARCH] Пробуем Claude Web Fetch (AI парсинг)...')
           metadata = await claudeService.parseProductUrl(url)
-          console.log('✅ [URL SEARCH] Claude Web Fetch успешен!')
         } catch (claudeError) {
-          console.log('⚠️ [URL SEARCH] Claude Web Fetch не удался:',
-            claudeError instanceof Error ? claudeError.message : String(claudeError))
-          console.log('🔄 [URL SEARCH] Переключаемся на Playwright парсинг...')
 
           // Fallback на Playwright
           metadata = await urlParser.parseProductUrl(url)
         }
       } else {
-        console.log('⚠️ [URL SEARCH] Claude недоступен, используем Playwright')
         metadata = await urlParser.parseProductUrl(url)
       }
     }
     // Режим 2: Парсинг HTML кода (ОБХОДИТ ЗАЩИТУ!)
     else if (html) {
-      console.log('📄 [URL SEARCH] Режим: Парсинг HTML кода (размер:', html.length, 'байт)')
 
       const htmlParser = getHtmlParserService()
 
@@ -79,16 +71,9 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      console.log('📦 [URL SEARCH] Парсим метаданные из HTML...')
       metadata = htmlParser.parseHtmlCode(html)
     }
 
-    console.log('✅ [URL SEARCH] Метаданные получены:', {
-      title: metadata.title,
-      marketplace: metadata.marketplace,
-      hasDescription: !!metadata.description,
-      hasImage: !!metadata.imageUrl
-    })
 
     // Шаг 2: Формируем анализ (ключевые слова для поиска)
     // Если Claude уже проанализировал - используем его данные
@@ -97,7 +82,6 @@ export async function POST(request: NextRequest) {
 
     if (metadata.brand || metadata.category) {
       // Claude уже проанализировал товар
-      console.log('✅ [URL SEARCH] Используем анализ от Claude')
 
       // Извлекаем ключевые слова из названия и описания
       const titleWords = metadata.title?.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3) || []
@@ -110,7 +94,6 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Используем YandexGPT для анализа
-      console.log('🤖 [URL SEARCH] Анализируем через YandexGPT...')
       const gptService = getYandexGPTService()
       analysis = await gptService.analyzeProductFromMetadata(
         metadata.title,
@@ -119,7 +102,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('🎯 [URL SEARCH] Финальный анализ:', analysis)
 
     // Шаг 3: Формируем поисковые термины
     const searchTerms = [
@@ -132,7 +114,6 @@ export async function POST(request: NextRequest) {
       .filter((v, i, a) => a.indexOf(v) === i) // Убираем дубликаты
       .filter((term): term is string => typeof term === 'string') // TypeScript type guard
 
-    console.log('🔍 [URL SEARCH] Поисковые термины:', searchTerms)
 
     // Шаг 4: Ищем в базе данных
     let query = supabase
@@ -162,7 +143,6 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
-    console.log(`✅ [URL SEARCH] Найдено товаров: ${products?.length || 0}`)
 
     // Возвращаем результат
     return NextResponse.json({

@@ -24,8 +24,6 @@ export class HtmlParserService {
    * Парсинг HTML кода предоставленного пользователем
    */
   parseHtmlCode(html: string): ParsedHtmlMetadata {
-    console.log('🔍 [HTML Parser] Начинаем парсинг HTML кода')
-    console.log('📄 [HTML Parser] Размер HTML:', html.length, 'символов')
 
     const $ = cheerio.load(html)
 
@@ -38,10 +36,6 @@ export class HtmlParserService {
     const ogCurrency = $('meta[property="og:price:currency"]').attr('content') ||
                       $('meta[property="product:price:currency"]').attr('content')
 
-    console.log('🏷️ [HTML Parser] Open Graph теги:')
-    console.log('   og:title:', ogTitle?.substring(0, 50))
-    console.log('   og:description:', ogDesc?.substring(0, 50))
-    console.log('   og:price:', ogPrice, ogCurrency)
 
     // Fallback на Twitter Card
     const twitterTitle = $('meta[name="twitter:title"]').attr('content')
@@ -66,7 +60,6 @@ export class HtmlParserService {
         const priceText = $(selector).first().text().trim()
         if (priceText && /\d/.test(priceText)) {
           foundPrice = priceText
-          console.log(`💰 [HTML Parser] Найдена цена через selector "${selector}":`, priceText.substring(0, 30))
           break
         }
       }
@@ -85,11 +78,6 @@ export class HtmlParserService {
       marketplace
     }
 
-    console.log('✅ [HTML Parser] Парсинг завершен:')
-    console.log('   Title:', result.title.substring(0, 60))
-    console.log('   Description:', result.description.substring(0, 60))
-    console.log('   Price:', result.price, result.currency)
-    console.log('   Marketplace:', result.marketplace)
 
     if (!result.title || result.title === 'Товар без названия') {
       throw new Error('Не удалось извлечь название товара из HTML. Убедитесь что вы скопировали HTML код со страницы товара.')

@@ -24,9 +24,6 @@ export const isStepFilledByUser = (stepId: number, context: StepValidationContex
     const hasData = manualData[1] && Object.keys(manualData[1] || {}).length > 0
     const result = hasSource && hasData
 
-    console.log(`🔍 Шаг 1: hasSource=${hasSource}, hasData=${hasData}, результат=${result}`)
-    console.log(`🔍 stepConfigs[1]:`, stepConfigs[1])
-    console.log(`🔍 manualData[1]:`, manualData[1])
 
     return result
   }
@@ -37,9 +34,6 @@ export const isStepFilledByUser = (stepId: number, context: StepValidationContex
     const hasItems = manualData[2] && manualData[2].items && manualData[2].items.length > 0
     const result = hasSource && hasItems
 
-    console.log(`🔍 Шаг 2: hasSource=${hasSource}, hasItems=${hasItems}, результат=${result}`)
-    console.log(`🔍 stepConfigs[2]:`, stepConfigs[2])
-    console.log(`🔍 manualData[2]:`, manualData[2])
 
     return result
   }
@@ -49,7 +43,6 @@ export const isStepFilledByUser = (stepId: number, context: StepValidationContex
     // Проверяем receiptApprovalStatus (локальное состояние)
     const result = receiptApprovalStatus === 'approved' || receiptApprovalStatus === 'waiting'
 
-    console.log(`🔍 Шаг 3: receiptApprovalStatus=${receiptApprovalStatus}, результат=${result}`)
 
     return result
   }
@@ -58,7 +51,6 @@ export const isStepFilledByUser = (stepId: number, context: StepValidationContex
   if (stepId === 6) {
     const result = hasManagerReceipt
 
-    console.log(`🔍 Шаг 6: hasManagerReceipt=${hasManagerReceipt}, результат=${result}`)
 
     return result
   }
@@ -67,7 +59,6 @@ export const isStepFilledByUser = (stepId: number, context: StepValidationContex
   if (stepId === 7) {
     const result = !!clientReceiptUrl
 
-    console.log(`🔍 Шаг 7: clientReceiptUrl=${clientReceiptUrl}, результат=${result}`)
 
     return result
   }
@@ -89,8 +80,6 @@ export const isStepFilledByUser = (stepId: number, context: StepValidationContex
     // 3. ИЛИ есть данные в manualData
     const result = hasUserChoice || source || hasData
 
-    console.log(`🔍 Шаг ${stepId}: user_choice=${hasUserChoice}, source=${source}, hasData=${hasData}, результат=${result}`)
-    console.log(`🔍 manualData[${stepId}]:`, manualData[stepId])
     return result
   }
 

@@ -36,47 +36,35 @@ export class UniversalAIService {
    * 🧠 Процессинг инвойса с автоматическим fallback между AI провайдерами
    */
   async processInvoiceWithAI(ocrText: string, userId: string = 'invoice_parser'): Promise<ParsedInvoice> {
-    console.log("🤖 Запуск Universal AI для обработки инвойса...");
-    console.log("📄 Длина OCR текста:", ocrText.length);
 
     // 1. Пробуем Bot Hub AI (если доступен)
     if (process.env.BOTHUB_API_KEY) {
       try {
-        console.log("🔗 Пробуем Bot Hub AI...");
         const result = await botHubAIService.processInvoiceWithAI(ocrText, userId);
-        console.log("✅ Bot Hub AI успешно обработал инвойс!");
         return result;
       } catch (error) {
-        console.log("⚠️ Bot Hub AI недоступен, переходим к OpenAI...");
       }
     }
 
     // 2. Пробуем OpenAI (если есть ключ)
     if (process.env.OPENAI_API_KEY) {
       try {
-        console.log("🔗 Пробуем OpenAI API...");
         const result = await this.processWithOpenAI(ocrText);
-        console.log("✅ OpenAI успешно обработал инвойс!");
         return result;
       } catch (error) {
-        console.log("⚠️ OpenAI недоступен, переходим к Anthropic...");
       }
     }
 
     // 3. Пробуем Anthropic (если есть ключ)
     if (process.env.ANTHROPIC_API_KEY) {
       try {
-        console.log("🔗 Пробуем Anthropic API...");
         const result = await this.processWithAnthropic(ocrText);
-        console.log("✅ Anthropic успешно обработал инвойс!");
         return result;
       } catch (error) {
-        console.log("⚠️ Anthropic недоступен, используем regex fallback...");
       }
     }
 
     // 4. Fallback на regex парсинг
-    console.log("🔄 Все AI провайдеры недоступны, используем regex fallback...");
     return this.processWithRegexFallback(ocrText);
   }
 
@@ -217,7 +205,6 @@ ${ocrText}
    * 🔄 Regex fallback для случаев когда AI недоступен
    */
   private processWithRegexFallback(ocrText: string): ParsedInvoice {
-    console.log("🔧 Используем regex fallback для парсинга инвойса...");
 
     const result: ParsedInvoice = {
       items: [],
@@ -240,7 +227,6 @@ ${ocrText}
       result.invoiceInfo.totalAmount = totalMatch[1].replace(',', '.');
     }
 
-    console.log("✅ Regex fallback завершен:", result);
     return result;
   }
 
@@ -274,7 +260,6 @@ ${ocrText}
       try {
         results.botHub = await botHubAIService.testConnection();
       } catch (error) {
-        console.log("Bot Hub недоступен");
       }
     }
 
@@ -288,7 +273,6 @@ ${ocrText}
         });
         results.openai = response.ok;
       } catch (error) {
-        console.log("OpenAI недоступен");
       }
     }
 
@@ -310,7 +294,6 @@ ${ocrText}
         });
         results.anthropic = response.ok;
       } catch (error) {
-        console.log("Anthropic недоступен");
       }
     }
 

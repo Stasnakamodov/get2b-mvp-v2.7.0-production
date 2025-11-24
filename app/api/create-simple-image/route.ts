@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabaseClient";
 // POST: Создание простого тестового изображения
 export async function POST(request: NextRequest) {
   try {
-    console.log("🎨 [CREATE-SIMPLE-IMAGE] Создание простого тестового изображения");
 
     const { searchParams } = new URL(request.url);
     const applicationId = searchParams.get('applicationId') || '05fdf6bd-7f27-4e54-9b3f-485b938e7c33';
@@ -25,7 +24,6 @@ export async function POST(request: NextRequest) {
     // Конвертируем SVG в Buffer
     const buffer = Buffer.from(svgContent, 'utf-8');
     
-    console.log("✅ [CREATE-SIMPLE-IMAGE] SVG изображение создано, размер:", buffer.length);
 
     // Сохраняем в Storage
     const fileName = `test-svg-image-${Date.now()}.svg`;
@@ -52,7 +50,6 @@ export async function POST(request: NextRequest) {
       .from('project-images')
       .getPublicUrl(storagePath);
 
-    console.log("✅ [CREATE-SIMPLE-IMAGE] Изображение сохранено:", urlData.publicUrl);
 
     // Обновляем заявку с новым изображением
     const { data: application, error: appError } = await supabase
@@ -105,7 +102,6 @@ export async function POST(request: NextRequest) {
       if (updateError) {
         console.error("❌ [CREATE-SIMPLE-IMAGE] Ошибка обновления заявки:", updateError);
       } else {
-        console.log("✅ [CREATE-SIMPLE-IMAGE] Заявка обновлена с новым изображением");
       }
     }
 

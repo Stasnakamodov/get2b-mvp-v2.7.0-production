@@ -3,7 +3,6 @@ import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'
 
 export async function GET() {
   try {
-    console.log('🔍 Анализируем структуру базы данных...')
     
     interface DatabaseStructureResults {
       tables?: Array<{ table_name: string; table_type: string }>;
@@ -87,7 +86,6 @@ export async function GET() {
           }
         }
       } catch (error) {
-        console.log(`⚠️ Таблица ${tableName} не существует или недоступна`)
       }
     }
     
@@ -107,7 +105,6 @@ export async function GET() {
       results.foreignKeys = foreignKeys
     }
     
-    console.log('✅ Анализ структуры завершен')
     
     return NextResponse.json({
       success: true,

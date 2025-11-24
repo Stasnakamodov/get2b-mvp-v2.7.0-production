@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log(`🔄 [API] Запуск синхронизации каталога для пользователя ${user.id}`);
 
     // Запускаем синхронизацию поставщиков
     const { data: syncResult, error: syncError } = await supabase.rpc('sync_catalog_suppliers');
@@ -20,7 +19,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: syncError.message }, { status: 500 });
     }
 
-    console.log("✅ [API] Синхронизация каталога завершена:", syncResult);
 
     return NextResponse.json({
       message: "Синхронизация каталога успешно завершена",

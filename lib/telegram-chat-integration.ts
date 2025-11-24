@@ -41,7 +41,6 @@ export async function notifyManagersAboutChatMessage({
   projectName?: string;
   companyName?: string;
 }) {
-  console.log("🔄 ОБНОВЛЕНО: notifyManagersAboutChatMessage - использует новый ChatBotService");
 
   try {
     const service = getChatBotService();
@@ -54,7 +53,6 @@ export async function notifyManagersAboutChatMessage({
       companyName
     });
 
-    console.log("✅ Уведомление менеджерам отправлено через ChatBotService");
     return { success: true, messageId: result.result?.message_id };
   } catch (error) {
     console.error("❌ Ошибка отправки уведомления:", error);
@@ -83,7 +81,6 @@ export async function notifyManagersAboutNewMessage({
   companyName?: string;
   messageId?: string;
 }) {
-  console.log("🔧 ИСПРАВЛЕНИЕ: notifyManagersAboutNewMessage - используем notifyManagersAboutChatMessage");
 
   // Просто вызываем существующую функцию с теми же параметрами
   return await notifyManagersAboutChatMessage({
@@ -130,7 +127,6 @@ export async function addManagerMessageToChat({
       throw new Error(`Database error: ${error.message}`);
     }
 
-    console.log("✅ Сообщение менеджера добавлено в чат:", message.id);
     return { success: true, message };
 
   } catch (error) {
@@ -188,7 +184,6 @@ export async function assignManagerToProject({
       .single();
 
     if (existing) {
-      console.log("📋 Менеджер уже назначен на проект");
       return { success: true, existing: true };
     }
 
@@ -211,7 +206,6 @@ export async function assignManagerToProject({
       throw new Error(`Database error: ${error.message}`);
     }
 
-    console.log("✅ Менеджер назначен на проект:", assignment.id);
     return { success: true, assignment };
 
   } catch (error) {
@@ -234,7 +228,6 @@ export async function handleQuickReply({
   managerName?: string;
   managerTelegramId?: string;
 }) {
-  console.log("🔄 ОБНОВЛЕНО: handleQuickReply - использует новый ChatBotService");
 
   try {
     const service = getChatBotService();
@@ -297,7 +290,6 @@ export async function getProjectContextForChat(projectId: string) {
  * Показывает информацию в том же стиле что и уведомления в боте апрува
  */
 export async function sendProjectDetailsToTelegram(projectId: string, chatId?: string | number): Promise<void> {
-  console.log("📋 Отправляем детали проекта в Telegram:", projectId);
 
   try {
     // 🔍 Получаем полную информацию о проекте
@@ -477,7 +469,6 @@ export async function sendProjectDetailsToTelegram(projectId: string, chatId?: s
     const targetChatId = chatId || process.env.TELEGRAM_CHAT_ID!;
     await service.sendMessage(targetChatId, projectDetails);
 
-    console.log("✅ Детали проекта отправлены:", projectId);
 
   } catch (error) {
     console.error("❌ Ошибка отправки деталей проекта:", error);
@@ -515,7 +506,6 @@ export async function sendSystemMessageToChat({
       throw new Error(`Database error: ${error.message}`);
     }
 
-    console.log("✅ Системное сообщение отправлено в чат:", systemMessage.id);
     return { success: true, message: systemMessage };
 
   } catch (error) {

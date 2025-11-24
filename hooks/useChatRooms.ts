@@ -22,17 +22,14 @@ export function useChatRooms(userId?: string) {
   // Функция загрузки комнат - УЛЬТРА-БЕЗОПАСНАЯ ВЕРСИЯ
   const loadRooms = useCallback(async () => {
     if (!userId) {
-      console.log("⚠️ No userId provided, skipping loadRooms");
       return;
     }
 
-    console.log("📥 SAFE loadRooms called for userId:", userId);
     
     try {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔍 Attempting to fetch rooms...");
 
       const params = new URLSearchParams({
         user_id: userId
@@ -48,14 +45,12 @@ export function useChatRooms(userId?: string) {
       
       clearTimeout(timeoutId);
 
-      console.log("📡 Rooms API response status:", response.status);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log("📦 Rooms API data:", data);
 
       if (data.success) {
         // БЕЗОПАСНОЕ преобразование в ChatRoomWithStats
@@ -73,7 +68,6 @@ export function useChatRooms(userId?: string) {
         }));
 
         setRooms(safeRooms);
-        console.log("✅ Rooms loaded successfully:", safeRooms.length);
       } else {
         const errorMsg = data.error || 'Failed to load rooms';
         setError(errorMsg);
@@ -115,7 +109,6 @@ export function useChatRooms(userId?: string) {
         description: roomRequest.description || (roomRequest.room_type === 'ai' ? `AI комната: ${roomRequest.name.trim()}` : `Комната проекта: ${roomRequest.name.trim()}`)
       };
 
-      console.log('🏗️ SAFE Creating room:', roomData);
 
       const response = await fetch('/api/chat/rooms', {
         method: 'POST',
@@ -151,13 +144,10 @@ export function useChatRooms(userId?: string) {
           // Проверяем что комната еще не добавлена (защита от дублирования)
           const exists = prev.some(room => room.id === newRoomWithStats.id);
           if (exists) {
-            console.log('ℹ️ Room already exists in list, skipping add');
             return prev;
           }
-          console.log('✅ Adding new room to list:', data.room.name);
           return [newRoomWithStats, ...prev];
         });
-        console.log('✅ Room created successfully:', data.room.name);
         return data.room;
       } else {
         const errorMsg = data.error || 'Failed to create room';
@@ -302,7 +292,6 @@ export function useChatRooms(userId?: string) {
 
   // БЕЗОПАСНАЯ загрузка комнат при изменении пользователя
   useEffect(() => {
-    console.log("🔄 SAFE useChatRooms useEffect triggered for userId:", userId);
     if (userId) {
       // Задержка для предотвращения множественных вызовов
       const timeoutId = setTimeout(() => {
@@ -323,7 +312,6 @@ export function useChatRooms(userId?: string) {
     setError(null);
 
     try {
-      console.log('🗑️ SAFE Deleting room:', roomId);
 
       const params = new URLSearchParams({
         room_id: roomId,
@@ -350,7 +338,6 @@ export function useChatRooms(userId?: string) {
       // Удаляем комнату из локального состояния
       setRooms(prev => prev.filter(room => room.id !== roomId));
 
-      console.log('✅ Room deleted successfully:', data.deletedRoom?.name);
       
       return data.deletedRoom;
     } catch (error) {

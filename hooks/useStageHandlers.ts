@@ -10,14 +10,12 @@ export const useStageHandlers = (
 ) => {
   // Функция для подтверждения реквизитов
   const confirmRequisites = () => {
-    console.log('✅ Реквизиты подтверждены - показываем сводку этапа 2')
     setShowRequisitesConfirmationModal(false)
     setShowStage2SummaryModal(true)
   }
 
   // Функция для редактирования реквизитов
   const editRequisites = () => {
-    console.log('✏️ Редактирование реквизитов - открываем полную форму компании')
     setShowRequisitesConfirmationModal(false)
     // Открываем форму редактирования компании (полную форму)
     if (setSelectedSource && setEditingType) {

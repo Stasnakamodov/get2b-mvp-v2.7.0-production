@@ -18,8 +18,6 @@ export async function POST(req: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log("🔧 Настраиваем вебхук для менеджерского бота...")
-    console.log("📡 URL вебхука:", webhookUrl)
 
     // Устанавливаем вебхук
     const webhookResponse = await fetch(
@@ -50,8 +48,6 @@ export async function POST(req: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log("✅ Вебхук успешно установлен!")
-    console.log("📊 Ответ Telegram:", webhookData)
 
     // Получаем информацию о текущем вебхуке
     const infoResponse = await fetch(
@@ -61,7 +57,6 @@ export async function POST(req: NextRequest) {
     const infoData = await infoResponse.json()
     
     if (infoData.ok) {
-      console.log("📋 Информация о вебхуке:", infoData.result)
     }
 
     return NextResponse.json({
@@ -90,7 +85,6 @@ export async function GET() {
       }, { status: 500 })
     }
 
-    console.log("🔍 Проверяем текущий вебхук...")
 
     const infoResponse = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo`
@@ -106,7 +100,6 @@ export async function GET() {
       }, { status: 500 })
     }
 
-    console.log("📋 Текущая информация о вебхуке:", infoData.result)
 
     return NextResponse.json({
       success: true,

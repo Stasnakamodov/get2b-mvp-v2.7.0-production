@@ -111,7 +111,6 @@ export async function GET() {
         "Данные поставщиков не найдены"
     };
 
-    console.log('📊 [PROJECTS STRUCTURE] Анализ структуры:', results);
     return NextResponse.json(results);
 
   } catch (error) {

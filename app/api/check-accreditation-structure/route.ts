@@ -3,7 +3,6 @@ import { supabaseService } from "@/lib/supabaseServiceClient";
 
 export async function GET() {
   try {
-    console.log("🔍 [CHECK-ACCREDITATION-STRUCTURE] Проверяем структуру таблицы");
     
     // Получаем информацию о структуре таблицы
     const { data, error } = await supabaseService
@@ -40,7 +39,6 @@ export async function GET() {
       sample_data: sampleRecord
     };
 
-    console.log("✅ [CHECK-ACCREDITATION-STRUCTURE] Структура получена:", structure.columns);
 
     return NextResponse.json({
       success: true,

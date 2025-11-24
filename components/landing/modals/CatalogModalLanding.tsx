@@ -182,7 +182,6 @@ function ProductsCarousel({ onProductClick }: { onProductClick: (product: any) =
         const response = await fetch(`/api/catalog/products-by-category/all?limit=100`)
         if (response.ok) {
           const data = await response.json()
-          console.log('🔍 Загружено товаров из API:', data.products?.length)
 
           if (data.success && data.products?.length > 0) {
             // Фильтруем товары с валидными изображениями более строго
@@ -197,7 +196,6 @@ function ProductsCarousel({ onProductClick }: { onProductClick: (product: any) =
               return true
             })
 
-            console.log('✅ Товаров с валидными изображениями:', productsWithImages.length)
             allProducts.push(...productsWithImages)
           }
         }
@@ -225,7 +223,6 @@ function ProductsCarousel({ onProductClick }: { onProductClick: (product: any) =
   // Не показываем карусель если загружается или слишком мало товаров
   if (isLoading) return null
   if (products.length < 5) {
-    console.log('⚠️ Недостаточно товаров для карусели:', products.length)
     return null
   }
 
@@ -263,7 +260,6 @@ function ProductsCarousel({ onProductClick }: { onProductClick: (product: any) =
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('🔥 Клик на товар:', product.product_name)
                 onProductClick(product)
               }}
               className="flex-shrink-0 w-36 h-36 rounded-lg overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer"
@@ -312,7 +308,6 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
   const loadCategoriesFromAPI = async () => {
     try {
       setLoadingCategories(true)
-      console.log('📦 [Landing Modal] Загружаем категории из API...')
 
       const response = await fetch('/api/catalog/categories?includeSubcategories=true')
       if (!response.ok) {
@@ -320,7 +315,6 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
       }
 
       const data = await response.json()
-      console.log('✅ [Landing Modal] Данные категорий:', data)
 
       if (data.success && data.categories && Array.isArray(data.categories)) {
         // Преобразуем данные из API в формат Category
@@ -335,7 +329,6 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
         }))
 
         setApiCategories(categoriesWithStats)
-        console.log(`✅ [Landing Modal] Загружено ${categoriesWithStats.length} категорий`)
       } else {
         console.warn('⚠️ [Landing Modal] Некорректная структура данных категорий')
         setApiCategories([])
@@ -349,13 +342,11 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
   }
 
   const handleCategoryClick = async (category: Category) => {
-    console.log('🎯 [Landing Modal] Выбрана категория:', category.name)
     // Просто показываем подкатегории - не загружаем данные сразу
     setSelectedCategory(category)
   }
 
   const handleSubcategoryClick = async (subcategory: Subcategory) => {
-    console.log('🎯 [Landing Modal] Выбрана подкатегория:', subcategory.name)
     setSelectedSubcategory(subcategory)
 
     // В режиме поставщиков загружаем поставщиков
@@ -371,12 +362,10 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
   const loadCategoryProducts = async (categoryName: string) => {
     try {
       setLoadingProducts(true)
-      console.log('📦 Загружаем товары категории:', categoryName)
 
       const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(categoryName)}?limit=100`)
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ Получены товары:', data)
 
         if (data.success && data.products?.length > 0) {
           // Фильтруем товары с валидными изображениями
@@ -391,11 +380,9 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
             return true
           })
 
-          console.log('✅ Товаров с валидными изображениями:', productsWithValidImages.length, 'из', data.products.length)
           setCategoryProducts(productsWithValidImages)
         } else {
           setCategoryProducts([])
-          console.log('⚠️ Товаров не найдено')
         }
       }
     } catch (error) {
@@ -409,12 +396,10 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
   const loadSuppliersForCategory = async (categoryName: string) => {
     try {
       setLoadingSuppliers(true)
-      console.log('📦 Загружаем поставщиков для категории:', categoryName)
 
       const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(categoryName)}?limit=100`)
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ Получены данные:', data)
 
         if (data.success && data.suppliers?.length > 0) {
           // Адаптируем данные из API к формату компонента
@@ -439,10 +424,8 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
           }))
 
           setRealSuppliers(adaptedSuppliers)
-          console.log('✅ Загружено поставщиков:', adaptedSuppliers.length)
         } else {
           setRealSuppliers([])
-          console.log('⚠️ Поставщиков не найдено')
         }
       }
     } catch (error) {
@@ -454,7 +437,6 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
   }
 
   const handleProductClick = (product: any) => {
-    console.log('🔍 Клик на товар из карусели:', product)
     // Открываем детальную карточку товара
     setSelectedProduct(product)
   }
@@ -811,7 +793,6 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
                               className="w-full h-full object-contain"
                               loading="lazy"
                               onError={(e) => {
-                                console.log('❌ Ошибка загрузки изображения:', product.image_url)
                                 const target = e.currentTarget
                                 target.style.display = 'none'
                               }}

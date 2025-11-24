@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
             method.toLowerCase().includes('card') ? 'card' : 'bank'
     }));
     
-    console.log('✅ [API] Методы оплаты загружены:', methods.length);
     return NextResponse.json(methods);
     
   } catch (error) {

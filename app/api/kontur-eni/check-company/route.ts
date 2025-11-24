@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔍 [Kontur Eni] Начинаем проверку компании:', { inn, ogrn, name });
 
     // Запускаем проверку компании
     const result = await konturEniService.checkCompany({
@@ -32,12 +31,6 @@ export async function POST(request: NextRequest) {
       address,
     });
 
-    console.log('✅ [Kontur Eni] Проверка завершена:', {
-      checkId: result.checkId,
-      status: result.status,
-      totalRisks: result.summary?.totalRisks,
-      overallRisk: result.summary?.overallRisk,
-    });
 
     return NextResponse.json({
       success: true,
@@ -77,17 +70,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔍 [Kontur Eni] Получаем результаты проверки:', checkId);
 
     // Получаем результаты проверки
     const result = await konturEniService.getCheckResults(checkId);
 
-    console.log('✅ [Kontur Eni] Результаты получены:', {
-      checkId: result.checkId,
-      status: result.status,
-      totalRisks: result.summary?.totalRisks,
-      overallRisk: result.summary?.overallRisk,
-    });
 
     return NextResponse.json({
       success: true,

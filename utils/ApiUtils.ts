@@ -23,7 +23,6 @@ export const uploadFileToStorage = async (
   const cleanName = file.name.replace(/[^\w.-]+/g, '_').substring(0, 50)
   const filePath = `${folder}/${projectRequestId}/${date}_${cleanName}`
 
-  console.log(`📁 Путь файла: ${filePath}`)
 
   const { data, error } = await supabase.storage
     .from(bucket)
@@ -36,7 +35,6 @@ export const uploadFileToStorage = async (
     throw new Error(error.message)
   }
 
-  console.log("✅ Файл успешно загружен в Storage:", data)
 
   const { data: urlData } = supabase.storage
     .from(bucket)

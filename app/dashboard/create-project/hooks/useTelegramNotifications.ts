@@ -37,7 +37,6 @@ export function useTelegramNotifications() {
       if (invoiceType === 'upload' && invoiceFileUrl) {
         try {
           await sendTelegramDocumentClient(invoiceFileUrl, text);
-          console.log('✅ Документ инвойса отправлен в Telegram');
         } catch (documentError) {
           console.warn('⚠️ Не удалось отправить документ, отправляем ссылку:', documentError);
           try {
@@ -70,7 +69,6 @@ export function useTelegramNotifications() {
         }
       }
       // eslint-disable-next-line no-console
-      console.log('✅ Спецификация отправлена в Telegram');
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('❌ Ошибка отправки спецификации в Telegram:', error);

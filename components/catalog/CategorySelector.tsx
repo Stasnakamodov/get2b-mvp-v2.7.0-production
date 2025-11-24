@@ -32,7 +32,6 @@ export default function CategorySelector({ onCategorySelect, onClose, userId, au
       setLoading(true)
       setError(null)
 
-      console.log('📊 [CategorySelector] Загружаем категории товаров')
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
@@ -53,7 +52,6 @@ export default function CategorySelector({ onCategorySelect, onClose, userId, au
         throw new Error(data.error || 'Ошибка загрузки категорий')
       }
 
-      console.log(`✅ [CategorySelector] Загружено категорий: ${data.categories.length}`)
       setCategories(data.categories)
 
     } catch (error) {
@@ -91,7 +89,6 @@ export default function CategorySelector({ onCategorySelect, onClose, userId, au
   }, [categories, searchQuery, sortBy])
 
   const handleCategoryClick = (category: CatalogCategory) => {
-    console.log(`🎯 [CategorySelector] Выбрана категория: ${category.name || category.category}`)
     onCategorySelect(category)
   }
 

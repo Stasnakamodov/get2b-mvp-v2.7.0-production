@@ -110,7 +110,6 @@ export function AddSupplierContentOriginal({
         // Fallback на Base64
         const base64 = await convertToBase64(file)
         setSupplierData(prev => ({ ...prev, logo_url: base64 }))
-        console.log('✅ Логотип сохранен как Base64')
       } else {
         // Получаем публичный URL
         const { data: urlData } = supabase.storage
@@ -118,7 +117,6 @@ export function AddSupplierContentOriginal({
           .getPublicUrl(fileName)
         
         setSupplierData(prev => ({ ...prev, logo_url: urlData.publicUrl }))
-        console.log('✅ Логотип загружен в Supabase Storage:', urlData.publicUrl)
       }
     } catch (error) {
       console.error('❌ Ошибка загрузки логотипа:', error)
@@ -126,7 +124,6 @@ export function AddSupplierContentOriginal({
       try {
         const base64 = await convertToBase64(file)
         setSupplierData(prev => ({ ...prev, logo_url: base64 }))
-        console.log('✅ Логотип сохранен как Base64 (fallback)')
       } catch (base64Error) {
         console.error('❌ Ошибка конвертации в Base64:', base64Error)
         alert('Ошибка загрузки логотипа')
@@ -208,7 +205,6 @@ export function AddSupplierContentOriginal({
         is_active: true
       };
         apiEndpoint = '/api/profile/supplier-profiles';
-      console.log('💾 Сохраняем поставщика в supplier_profiles:', dataToSave);
 
       } else {
         // Для каталога пользователей - упрощенная структура для /api/catalog/user-suppliers
@@ -220,7 +216,6 @@ export function AddSupplierContentOriginal({
           is_active: true
         };
         apiEndpoint = '/api/catalog/user-suppliers';
-        console.log('💾 Сохраняем поставщика в catalog_user_suppliers:', dataToSave);
       }
 
       // Отправляем запрос на правильный endpoint
@@ -233,17 +228,12 @@ export function AddSupplierContentOriginal({
         : dataToSave;
       
       // Получаем токен авторизации для запроса
-      console.log('🔧 [DEBUG] Получаем сессию для авторизации...');
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         console.error('❌ [DEBUG] Нет активной сессии');
         throw new Error('Нет активной сессии для сохранения поставщика');
       }
       
-      console.log('✅ [DEBUG] Сессия найдена, токен:', session.access_token ? 'ЕСТЬ' : 'ОТСУТСТВУЕТ');
-      console.log('🔧 [DEBUG] Отправляем запрос на:', finalApiEndpoint);
-      console.log('🔧 [DEBUG] Метод:', method);
-      console.log('🔧 [DEBUG] Тело запроса:', JSON.stringify(requestBody, null, 2));
 
       const response = await fetch(finalApiEndpoint, {
         method: method,
@@ -254,8 +244,6 @@ export function AddSupplierContentOriginal({
         body: JSON.stringify(requestBody),
         });
         
-      console.log('📡 [DEBUG] Ответ получен, статус:', response.status);
-      console.log('📡 [DEBUG] Заголовки ответа:', Object.fromEntries(response.headers.entries()));
 
         if (!response.ok) {
         const errorText = await response.text();
@@ -263,11 +251,9 @@ export function AddSupplierContentOriginal({
       }
 
       const result = await response.json();
-      console.log('✅ Поставщик сохранен:', result);
 
       // Добавление товаров поставщика (только для каталога)
       if (targetTable === 'catalog_user_suppliers' && supplierData.products && supplierData.products.length > 0) {
-        console.log(`🔧 [DEBUG] Начинаем добавление ${supplierData.products.length} товаров`);
         let successCount = 0;
         let errorCount = 0;
         
@@ -287,7 +273,6 @@ export function AddSupplierContentOriginal({
             sku: (product as any).sku || null
           }
 
-          console.log(`🔧 [DEBUG] Сохраняем товар "${product.name}":`, productPayload);
 
           const productResponse = await fetch('/api/catalog/products', {
             method: 'POST',
@@ -303,12 +288,10 @@ export function AddSupplierContentOriginal({
             errorCount++;
           } else {
             const productResult = await productResponse.json();
-            console.log(`✅ Товар "${product.name}" добавлен:`, productResult.product?.id);
             successCount++;
           }
         }
         
-        console.log(`📊 [ИТОГО] Товары: ${successCount} успешно, ${errorCount} ошибок`);
       }
 
       // Показываем разные сообщения в зависимости от targetTable
@@ -912,7 +895,6 @@ export function AddSupplierContentOriginal({
                                 // Пробуем Base64 как fallback
                                       const base64 = await convertToBase64(file)
                                       validUrls.push(base64)
-                                console.log(`✅ Изображение ${i + 1} конвертировано в Base64`)
                                     } catch (error) {
                                 console.error(`❌ Ошибка конвертации изображения ${i + 1}:`, error)
                                     }
@@ -926,7 +908,6 @@ export function AddSupplierContentOriginal({
                                     )
                                     setSupplierData({ ...supplierData, products: updatedProducts })
                               
-                              console.log(`✅ Загружено ${validUrls.length} изображений для товара "${product.name}"`)
                                   }
                                 } catch (error) {
                             console.error('❌ Критическая ошибка при загрузке изображений:', error)

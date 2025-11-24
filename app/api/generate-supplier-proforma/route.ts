@@ -4,7 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("📊 API /generate-supplier-proforma вызван");
 
     const body = await request.json();
     const { projectId, supplierId, supplierData, specificationItems, templatePath } = body;
@@ -22,19 +21,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("🔍 Генерируем проформу для:", {
-      projectId,
-      supplierId,
-      supplierName: supplierData.name,
-      itemsCount: (specificationItems && specificationItems.length) || 0,
-      useTemplate: !!templatePath
-    });
 
     let workbook = new ExcelJS.Workbook();
 
     // Если есть шаблон - загружаем его, иначе создаем новый
     if (templatePath) {
-      console.log("📄 Загружаем шаблон через ExcelJS:", templatePath);
 
       // Загружаем шаблон из Storage
       const { data: templateData, error: templateError } = await supabase.storage
@@ -47,12 +38,10 @@ export async function POST(request: NextRequest) {
         workbook = new ExcelJS.Workbook();
         workbook.addWorksheet('Проформа');
       } else {
-        console.log("✅ Шаблон загружен, читаем через ExcelJS...");
         // Читаем шаблон с сохранением всех стилей и форматирования
         const arrayBuffer = await templateData.arrayBuffer();
         workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(arrayBuffer);
-        console.log("✅ ExcelJS: Шаблон загружен с сохранением форматирования");
       }
     } else {
       // Создаем новую рабочую книгу Excel
@@ -62,7 +51,6 @@ export async function POST(request: NextRequest) {
 
     // Если используем шаблон, заполняем данными Step2 с правилами
     if (templatePath && workbook.worksheets.length > 0) {
-      console.log("🔄 Заполняем шаблон данными из Step2 с правилами (ExcelJS)");
 
       // Получаем правила заполнения из БД
       const { data: templateRecord, error: templateError } = await supabase
@@ -74,7 +62,6 @@ export async function POST(request: NextRequest) {
 
       if (templateError || !templateRecord) {
         console.error("❌ Не удалось получить правила заполнения для шаблона:", templatePath);
-        console.log("🔄 Используем fallback к стандартной логике заполнения");
         // Fallback к старой логике без правил
         const worksheet = workbook.worksheets[0];
 
@@ -100,25 +87,21 @@ export async function POST(request: NextRequest) {
             priceCell.value = price;
             totalCell.value = total;
 
-            console.log(`📝 ExcelJS: Строка ${rowIndex} заполнена: ${item.item_name} - ${quantity} × ${price} = ${total}`);
           });
 
           // Итоговая сумма
           const totalCell = worksheet.getCell(26, 5); // E26
           totalCell.value = totalAmount;
 
-          console.log("✅ ExcelJS Fallback заполнение завершено, стили сохранены!");
         }
       } else {
 
       const rules = templateRecord.filling_rules;
-      console.log("📋 Используем правила заполнения ExcelJS:", rules);
 
       const worksheet = workbook.worksheets[0];
 
       // Заполняем шаблон по правилам
       if (specificationItems && specificationItems.length > 0) {
-        console.log("🎯 Заполняем шаблон товарами с применением правил");
 
         const maxItems = Math.min(
           specificationItems.length,
@@ -135,7 +118,6 @@ export async function POST(request: NextRequest) {
           // Вычисляем индекс строки: start_row - 1 + index (Excel rows 1-indexed, array 0-indexed)
           const rowIndex = (rules.start_row - 1) + index;
 
-          console.log(`📝 Заполняем строку ${rowIndex + 1} (правило: начало с ${rules.start_row})`);
 
           // Заполняем колонки согласно правилам (ExcelJS)
           const columns = rules.columns;
@@ -175,7 +157,6 @@ export async function POST(request: NextRequest) {
             unitCell.value = item.unit;
           }
 
-          console.log(`📝 Строка ${rowIndex + 1}: ${item.item_name} - ${quantity} × ${price} = ${total}`);
         });
 
         // Записываем итоговую сумму согласно правилам (ExcelJS)
@@ -184,7 +165,6 @@ export async function POST(request: NextRequest) {
           const totalCell = worksheet.getCell(rules.total_row, columnToNumber(rules.total_column));
           totalCell.value = totalAmount;
 
-          console.log(`💰 Итоговая сумма записана в ${rules.total_column}${rules.total_row}: ${totalAmount}`);
         }
 
         // Дополнительные правила заполнения
@@ -199,7 +179,6 @@ export async function POST(request: NextRequest) {
             const rubCell = worksheet.getCell(additionalRules.rub_total_row, columnToNumber(rubTotalColumn));
             rubCell.value = rubAmount;
 
-            console.log(`💱 Сумма в рублях: ${rubAmount.toFixed(2)} (курс ${additionalRules.exchange_rate})`);
           }
 
           // Дата генерации (ExcelJS)
@@ -217,11 +196,8 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        console.log(`✅ Заполнено товаров: ${maxItems}/${specificationItems.length}`);
-        console.log(`💰 Итого: ${totalAmount} ${rules.currency || 'USD'}`);
 
         if (specificationItems.length > maxItems) {
-          console.log(`⚠️ Превышено максимальное количество товаров. Показаны только первые ${maxItems} из ${specificationItems.length}`);
         }
 
         // Увеличиваем счетчик использования шаблона
@@ -229,11 +205,9 @@ export async function POST(request: NextRequest) {
       }
       }
 
-      console.log("✅ Шаблон заполнен данными из Step2");
 
     } else {
       // Создаем новую проформу с нуля
-      console.log("📝 Создаем новую проформу с нуля");
 
       // Заголовок проформы
       const currentDate = new Date().toLocaleDateString('ru-RU');
@@ -382,7 +356,6 @@ export async function POST(request: NextRequest) {
     const storagePath = `${supplierId}/${projectId}/${fileName}`;
 
     // Сохраняем в Supabase Storage
-    console.log("💾 Сохраняем проформу в Storage:", storagePath);
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('supplier-proformas')
       .upload(storagePath, excelBuffer, {
@@ -394,7 +367,6 @@ export async function POST(request: NextRequest) {
       console.error("❌ Ошибка загрузки в Storage:", uploadError);
       // Если загрузка не удалась, все равно возвращаем файл пользователю
     } else {
-      console.log("✅ Проформа сохранена в Storage:", uploadData);
     }
 
     // Возвращаем файл пользователю для скачивания

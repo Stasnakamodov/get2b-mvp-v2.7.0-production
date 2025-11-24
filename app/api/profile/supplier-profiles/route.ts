@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
       }, { status: 401 });
     }
     
-    console.log("✅ [SECURITY] Авторизация успешна, user_id:", user.id);
     
     const { data, error } = await supabase
       .from("supplier_profiles")
@@ -48,10 +47,8 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
     
-    console.log("✅ [SECURITY] Авторизация успешна, user_id:", user.id);
     
     const supplierData = await request.json();
-    console.log("🔧 [DEBUG POST] Получены данные профиля поставщика:", JSON.stringify(supplierData, null, 2));
 
     // Валидация обязательных полей
     const requiredFields = ["name", "company_name", "category", "country"];
@@ -88,7 +85,6 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     };
 
-    console.log("🔧 [DEBUG POST] Данные для вставки в supplier_profiles:", JSON.stringify(insertData, null, 2));
 
     const { data, error } = await supabase
       .from("supplier_profiles")
@@ -101,7 +97,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ [API] Профиль поставщика создан:", data.id);
     return NextResponse.json({ profile: data });
 
   } catch (error) {

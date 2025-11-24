@@ -8,7 +8,6 @@ const supabase = createClient(
 
 export async function POST() {
   try {
-    console.log('🔧 Создание bucket step3-supplier-receipts...')
     
     // Проверяем существует ли bucket
     const { data: buckets, error: listError } = await supabase.storage.listBuckets()
@@ -24,7 +23,6 @@ export async function POST() {
     const bucketExists = buckets?.some(bucket => bucket.name === 'step3-supplier-receipts')
     
     if (bucketExists) {
-      console.log('✅ Bucket step3-supplier-receipts уже существует')
       return NextResponse.json({ 
         success: true, 
         message: 'Bucket step3-supplier-receipts уже существует' 
@@ -46,7 +44,6 @@ export async function POST() {
       }, { status: 500 })
     }
     
-    console.log('✅ Bucket step3-supplier-receipts создан успешно')
     
     return NextResponse.json({ 
       success: true, 

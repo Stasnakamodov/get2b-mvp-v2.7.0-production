@@ -67,10 +67,10 @@ export class ClaudeWebFetchService {
         model: 'claude-haiku-4-20250514',
         max_tokens: 2048,
         tools: [{
-          type: 'web_fetch_20250910' as any,
+          type: 'web_fetch_20250910',
           name: 'web_fetch',
           max_uses: 3
-        }],
+        } as any],
         messages: [{
           role: 'user',
           content: this.buildPrompt(url)
@@ -84,7 +84,7 @@ export class ClaudeWebFetchService {
       console.log('✅ [Claude Web Fetch] Ответ получен')
 
       // Извлекаем текстовый контент из ответа
-      const textContent = response.content.find((block: any) => block.type === 'text')
+      const textContent = response.content.find((block: any) => block.type === 'text') as any
 
       if (!textContent || !textContent.text) {
         throw new Error('Claude не вернул текстовый ответ')
@@ -104,11 +104,11 @@ export class ClaudeWebFetchService {
       // Конвертируем в формат ParsedProductMetadata
       return {
         title: this.constructTitle(analysis),
-        description: analysis.description,
-        price: analysis.price,
-        currency: analysis.currency,
-        brand: analysis.brand,
-        category: analysis.category,
+        description: analysis.description ?? undefined,
+        price: analysis.price ?? undefined,
+        currency: analysis.currency ?? undefined,
+        brand: analysis.brand ?? undefined,
+        category: analysis.category ?? undefined,
         marketplace: this.detectMarketplace(url),
         originalUrl: url
       }
@@ -161,7 +161,7 @@ export class ClaudeWebFetchService {
         }]
       })
 
-      const textContent = response.content.find((block: any) => block.type === 'text')
+      const textContent = response.content.find((block: any) => block.type === 'text') as any
 
       if (!textContent || !textContent.text) {
         throw new Error('Claude не вернул текстовый ответ')
@@ -171,11 +171,11 @@ export class ClaudeWebFetchService {
 
       return {
         title: this.constructTitle(analysis),
-        description: analysis.description,
-        price: analysis.price,
-        currency: analysis.currency,
-        brand: analysis.brand,
-        category: analysis.category,
+        description: analysis.description ?? undefined,
+        price: analysis.price ?? undefined,
+        currency: analysis.currency ?? undefined,
+        brand: analysis.brand ?? undefined,
+        category: analysis.category ?? undefined,
         marketplace: this.detectMarketplace(url),
         originalUrl: url
       }

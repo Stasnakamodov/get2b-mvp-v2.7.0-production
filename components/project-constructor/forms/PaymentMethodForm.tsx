@@ -27,10 +27,8 @@ const PaymentMethodForm = ({ onSave, onCancel, initialData, getStepData }: Payme
   useEffect(() => {
     if (!supplier && !initialData?.supplier && getStepData) {
       const step2Data = getStepData(2);
-      console.log("🔍 Проверяем данные шага 2:", step2Data);
       if (step2Data?.supplier) {
         setSupplier(step2Data.supplier);
-        console.log("🏢 Автоматически получен поставщик из шага 2:", step2Data.supplier);
       }
     }
   }, [supplier, initialData?.supplier, getStepData]);
@@ -39,10 +37,8 @@ const PaymentMethodForm = ({ onSave, onCancel, initialData, getStepData }: Payme
   useEffect(() => {
     if (getStepData) {
       const step2Data = getStepData(2);
-      console.log("🔄 Проверяем обновление поставщика из шага 2:", step2Data);
       if (step2Data?.supplier && step2Data.supplier !== supplier) {
         setSupplier(step2Data.supplier);
-        console.log("🔄 Обновлен поставщик из шага 2:", step2Data.supplier);
       }
     }
   }, [getStepData, supplier]);
@@ -53,7 +49,6 @@ const PaymentMethodForm = ({ onSave, onCancel, initialData, getStepData }: Payme
       const step2Data = getStepData(2);
       if (step2Data?.supplier) {
         setSupplier(step2Data.supplier);
-        console.log("🚀 Принудительно установлен поставщик из шага 2:", step2Data.supplier);
       }
     }
   });

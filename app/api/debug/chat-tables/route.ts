@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function GET() {
   try {
-    console.log("🔍 Проверяем подключение к Supabase...");
 
     // 1. Проверка подключения
     const { data: connectionTest, error: connectionError } = await supabase
@@ -19,7 +18,6 @@ export async function GET() {
       });
     }
 
-    console.log("✅ Подключение к Supabase работает");
 
     // 2. Проверка существования таблиц чатов
     const chatTablesCheck = [];
@@ -37,7 +35,6 @@ export async function GET() {
       });
     }
 
-    console.log("📋 Результат проверки таблиц:", chatTablesCheck);
 
     // 3. Проверка функции get_user_chat_rooms
     let functionCheck = null;
@@ -51,7 +48,6 @@ export async function GET() {
       functionCheck = `❌ Функция get_user_chat_rooms недоступна: ${functionError.message}`;
     }
 
-    console.log("⚙️ Результат проверки функций:", functionCheck);
 
     // 4. Пробный запрос к таблице (если существует)
     let roomsTestResult = null;
@@ -66,7 +62,6 @@ export async function GET() {
       roomsTestResult = `❌ Таблица chat_rooms недоступна: ${roomsError.message}`;
     }
 
-    console.log("🏠 Результат проверки chat_rooms:", roomsTestResult);
 
     // 5. Тест создания комнаты (если таблицы есть)
     let createRoomTest = null;

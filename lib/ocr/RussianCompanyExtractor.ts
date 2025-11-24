@@ -36,9 +36,6 @@ export class RussianCompanyExtractor {
    * Основная функция извлечения данных компании
    */
   extractCompanyData(text: string): ExtractedCompanyData {
-    console.log('🔍 [RussianCompanyExtractor] Начинаем извлечение данных компании');
-    console.log('📄 [RussianCompanyExtractor] Длина текста:', text.length);
-    console.log('📄 [RussianCompanyExtractor] Первые 200 символов:', text.substring(0, 200));
 
     const results: Partial<ExtractedCompanyData> = {};
     
@@ -52,7 +49,6 @@ export class RussianCompanyExtractor {
     if (RUSSIAN_COMPANY_PATTERNS.legalName) {
       results.legalName = this.extractField(text, 'legalName', RUSSIAN_COMPANY_PATTERNS.legalName);
     } else {
-      console.log('⚠️ [RussianCompanyExtractor] legalName паттерны не найдены!');
     }
     results.bankName = this.extractField(text, 'bankName', RUSSIAN_COMPANY_PATTERNS.bankName);
     results.bankAccount = this.extractField(text, 'bankAccount', RUSSIAN_COMPANY_PATTERNS.bankAccount);
@@ -86,9 +82,6 @@ export class RussianCompanyExtractor {
 
     const overallConfidence = extractedFields > 0 ? Math.round(totalConfidence / extractedFields) : 0;
 
-    console.log('📊 [RussianCompanyExtractor] Результаты извлечения:');
-    console.log(`   - Извлечено полей: ${extractedFields}`);
-    console.log(`   - Общая уверенность: ${overallConfidence}%`);
 
     return {
       ...results,
@@ -125,7 +118,6 @@ export class RussianCompanyExtractor {
         const contextBonus = calculateContextBonus(match, fieldType);
         const confidence = Math.min(baseConfidence + contextBonus, 99);
 
-        console.log(`✅ [${fieldType}] Найдено: "${value}" (confidence: ${confidence}%)`);
 
         return {
           value,
@@ -137,10 +129,8 @@ export class RussianCompanyExtractor {
     }
 
     if (alternatives.length > 0) {
-      console.log(`⚠️ [${fieldType}] Найдены альтернативы, но не прошли валидацию:`, alternatives);
     }
 
-    console.log(`❌ [${fieldType}] Не найдено`);
     return undefined;
   }
 
@@ -225,7 +215,6 @@ export class RussianCompanyExtractor {
         
         // 🔥 ЗАЩИТА ОТ ЛОЖНОГО INN ИЗ ОГРН
         if (originalText && this.isInnFromOgrn(value, originalText)) {
-          console.log(`❌ [validateValue] Отклонён ложный INN из ОГРН: ${value}`);
           return false;
         }
         
@@ -267,7 +256,6 @@ export class RussianCompanyExtractor {
           value.toLowerCase().includes('проект') ||
           value.toLowerCase().includes('документ')
         )) {
-          console.log(`❌ [validateValue] Отклонён заголовок документа как название: ${value}`);
           return false;
         }
         
@@ -280,7 +268,6 @@ export class RussianCompanyExtractor {
         ];
         
         if (descriptivePatterns.some(pattern => pattern.test(value))) {
-          console.log(`❌ [validateValue] Отклонена описательная фраза как название: ${value}`);
           return false;
         }
         
@@ -300,14 +287,12 @@ export class RussianCompanyExtractor {
             value.includes('Учредительными') ||
             value.includes('соответствии с Учредительными документами') ||
             value.match(/^\s*\([^)]*\)\s*$/)) {
-          console.log(`❌ [validateValue] Отклонён описательный адрес: ${value}`);
           return false;
         }
         
         // Проверяем, что это похоже на реальный адрес (есть цифры или географические маркеры)
         const hasAddressMarkers = /\d{6}|город|г\.|обл\.|область|Российская\s+Федерация|ул\.|улица|пр\.|проспект|д\.|дом/.test(value);
         if (!hasAddressMarkers) {
-          console.log(`⚠️ [validateValue] Адрес без географических маркеров: ${value}`);
           return false;
         }
         
@@ -344,7 +329,6 @@ export class RussianCompanyExtractor {
     if (results.companyName && results.companyName.value.length < 10 && results.companyName.confidence < 80) {
       const betterName = this.findBetterCompanyName(text, results.companyName.value);
       if (betterName) {
-        console.log('🔄 [postProcess] Заменяем короткое название на лучшее:', betterName);
         results.companyName.value = betterName;
         results.companyName.confidence += 10;
       }
@@ -363,7 +347,6 @@ export class RussianCompanyExtractor {
    * 🔥 УЛУЧШЕННАЯ обработка формата ИНН/КПП
    */
   private handleInnKppFormat(results: Partial<ExtractedCompanyData>, text: string): void {
-    console.log('🔗 [handleInnKppFormat] Ищем формат ИНН/КПП в тексте...');
     
     // Расширенные паттерны для поиска ИНН/КПП - поддержка всех возможных форматов
     const innKppPatterns = [
@@ -390,17 +373,14 @@ export class RussianCompanyExtractor {
       const pattern = innKppPatterns[i];
       const matches = Array.from(text.matchAll(pattern));
       
-      console.log(`🔍 [handleInnKppFormat] Паттерн ${i + 1}: найдено ${matches.length} совпадений`);
       
       for (const match of matches) {
         const innValue = match[1];
         const kppValue = match[2];
         
-        console.log(`🔗 [handleInnKppFormat] Найден ИНН/КПП: ${innValue}/${kppValue}`);
         
         // Валидация найденных значений
         if (!/^\d{10}$/.test(innValue) || !/^\d{9}$/.test(kppValue)) {
-          console.log(`⚠️ [handleInnKppFormat] Неверный формат, пропускаем: ИНН=${innValue}, КПП=${kppValue}`);
           continue;
         }
         
@@ -411,9 +391,7 @@ export class RussianCompanyExtractor {
             confidence: 95, // Высокая уверенность для формата ИНН/КПП
             source: 'context'
           };
-          console.log('✅ [handleInnKppFormat] Извлечен ИНН из ИНН/КПП формата:', innValue);
         } else {
-          console.log(`💡 [handleInnKppFormat] ИНН уже найден с высокой уверенностью (${results.inn.confidence}%), сохраняем: ${results.inn.value}`);
         }
         
         // 🔥 ПРИОРИТЕТНАЯ ЗАМЕНА: Если КПП не найден отдельно или найден неправильно
@@ -423,11 +401,8 @@ export class RussianCompanyExtractor {
             confidence: 95, // Высокая уверенность для формата ИНН/КПП
             source: 'context'
           };
-          console.log('✅ [handleInnKppFormat] Извлечен КПП из ИНН/КПП формата:', kppValue);
         } else {
-          console.log(`💡 [handleInnKppFormat] КПП уже найден с высокой уверенностью (${results.kpp.confidence}%), но проверяем соответствие`);
           if (results.kpp.value !== kppValue) {
-            console.log(`🔄 [handleInnKppFormat] Заменяем КПП ${results.kpp.value} на ${kppValue} из формата ИНН/КПП`);
             results.kpp.value = kppValue;
             results.kpp.confidence = 95;
           }
@@ -441,9 +416,7 @@ export class RussianCompanyExtractor {
     }
     
     if (foundInnKpp) {
-      console.log('✅ [handleInnKppFormat] Успешно обработан формат ИНН/КПП');
     } else {
-      console.log('❌ [handleInnKppFormat] Формат ИНН/КПП не найден в тексте');
     }
   }
   
@@ -468,24 +441,20 @@ export class RussianCompanyExtractor {
       
       // Если после очистки остался слишком короткий или неинформативный текст, попробуем найти банк по контексту
       if (cleanName.length < 3 || cleanName === 'АО' || cleanName === 'ПАО' || cleanName === 'банка') {
-        console.log('⚠️ [cleanBankName] Слишком короткое название после очистки:', cleanName);
         
         // Попробуем найти банк по БИК или другим признакам
         if (results.bankBik) {
           const bikValue = results.bankBik.value;
           if (bikValue === '044525593') {
             cleanName = 'АЛЬФА-БАНК';
-            console.log('🔍 [cleanBankName] Определен банк по БИК 044525593: АЛЬФА-БАНК');
           } else if (bikValue === '044525225') {
             cleanName = 'ПАО Сбербанк';
-            console.log('🔍 [cleanBankName] Определен банк по БИК 044525225: ПАО Сбербанк');
           }
         }
         
         // Если всё ещё нет результата, оставляем оригинальный текст
         if (cleanName.length < 3) {
           cleanName = originalName;
-          console.log('🔄 [cleanBankName] Возвращаем оригинальное название');
         }
       }
       
@@ -499,7 +468,6 @@ export class RussianCompanyExtractor {
       }
       
       if (cleanName !== results.bankName.value) {
-        console.log('🧹 [postProcess] Очищено название банка:', results.bankName.value, '->', cleanName);
         results.bankName.value = cleanName;
         results.bankName.confidence = Math.min(results.bankName.confidence + 10, 95);
       }
@@ -529,7 +497,6 @@ export class RussianCompanyExtractor {
               confidence: 80,
               source: 'context'
             };
-            console.log('🔍 [postProcess] Найден пропущенный БИК:', bikValue);
             return;
           }
         }
@@ -568,7 +535,6 @@ export class RussianCompanyExtractor {
               confidence: 85,
               source: 'context'
             };
-            console.log('🔍 [postProcess] Найден пропущенный телефон:', results.phone.value);
             return;
           }
         }
@@ -649,7 +615,6 @@ export class RussianCompanyExtractor {
               confidence: 75,
               source: 'pattern'
             };
-            console.log('🏦 [postProcess] Найден расчетный счет:', accountNumber);
             break;
           }
         }
@@ -658,7 +623,6 @@ export class RussianCompanyExtractor {
 
     // 🔥 НОВОЕ: Если корреспондентский счет не найден, ищем дополнительно
     if (!results.corrAccount) {
-      console.log('🔍 [postProcess] Ищем корреспондентский счет дополнительными паттернами...');
       
       const corrAccountPatterns = [
         // Дополнительные паттерны для корреспондентского счета
@@ -689,7 +653,6 @@ export class RussianCompanyExtractor {
               confidence: 85,
               source: 'pattern'
             };
-            console.log('🏦 [postProcess] Найден корреспондентский счет:', corrAccountNumber);
             break;
           }
           
@@ -701,7 +664,6 @@ export class RussianCompanyExtractor {
               confidence: 70,
               source: 'pattern'
             };
-            console.log('🏦 [postProcess] Найден возможный корреспондентский счет:', corrAccountNumber);
             break;
           }
         }
@@ -711,7 +673,6 @@ export class RussianCompanyExtractor {
       }
       
       if (!results.corrAccount) {
-        console.log('❌ [postProcess] Корреспондентский счет не найден дополнительными паттернами');
       }
     }
   }
@@ -720,7 +681,6 @@ export class RussianCompanyExtractor {
    * 🔥 УЛУЧШЕННЫЙ МЕТОД: Проверяет, является ли INN ложным извлечением из ОГРН
    */
   private isInnFromOgrn(innCandidate: string, text: string): boolean {
-    console.log(`🔍 [isInnFromOgrn] Проверяем ИНН "${innCandidate}" на ложность из ОГРН`);
     
     // 🔥 ПРИОРИТЕТ 1: Сначала проверим, есть ли этот INN в ПРАВИЛЬНОМ контексте
     const innContextPatterns = [
@@ -733,7 +693,6 @@ export class RussianCompanyExtractor {
     let foundInCorrectContext = false;
     for (const pattern of innContextPatterns) {
       if (pattern.test(text)) {
-        console.log(`✅ [isInnFromOgrn] ИНН "${innCandidate}" найден в ПРАВИЛЬНОМ контексте - НЕ блокируем`);
         foundInCorrectContext = true;
         break;
       }
@@ -744,7 +703,6 @@ export class RussianCompanyExtractor {
       return false;
     }
     
-    console.log(`⚠️ [isInnFromOgrn] ИНН "${innCandidate}" НЕ найден в правильном контексте, проверяем на ложность из ОГРН...`);
     
     // 🔥 ПРИОРИТЕТ 2: Только если ИНН НЕ найден в правильном контексте, проверяем на ложность из ОГРН
     const ogrnPattern = /\d{13,15}/g;
@@ -766,17 +724,11 @@ export class RussianCompanyExtractor {
         const dateKeywords = /\bот\b|\bг\.?\b|\d{2}\.\d{2}\.\d{4}/i;
         
         if (ogrnKeywords.test(contextBefore) || ogrnKeywords.test(contextAfter) || dateKeywords.test(contextAfter)) {
-          console.log(`🔍 [isInnFromOgrn] Найден контекст ОГРН для "${innCandidate}"`);
-          console.log(`   ОГРН: ${ogrnNumber}`);
-          console.log(`   Контекст до: "${contextBefore}"`);
-          console.log(`   Контекст после: "${contextAfter}"`);
-          console.log(`   ❌ БЛОКИРУЕМ как ложный INN из ОГРН`);
           return true;
         }
       }
     }
     
-    console.log(`✅ [isInnFromOgrn] ИНН "${innCandidate}" не является ложным из ОГРН`);
     return false;
   }
 }

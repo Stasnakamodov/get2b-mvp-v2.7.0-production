@@ -97,12 +97,6 @@ export const SupplierCard = React.memo(function SupplierCard({
       <div className="flex items-start gap-6 mb-6">
         <div className="w-20 h-20 border-2 border-border flex items-center justify-center bg-muted flex-shrink-0">
           {(() => {
-            console.log(`🔍 DEBUG ${supplierName}:`, {
-              logo_url: supplier.logo_url,
-              hasUrl: !!supplier.logo_url,
-              urlLength: supplier.logo_url?.length || 0
-            });
-            
             if (supplier.logo_url) {
               return (
                 <img 
@@ -112,11 +106,9 @@ export const SupplierCard = React.memo(function SupplierCard({
                   onError={(e) => {
                     console.error(`❌ ОШИБКА ЗАГРУЗКИ ${supplierName}:`, supplier.logo_url);
                   }}
-                  onLoad={() => console.log(`✅ ЗАГРУЖЕН ${supplierName}`)}
                 />
               );
             } else {
-              console.log(`🚫 НЕТ URL для ${supplierName}`);
               return (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-400 to-red-600 text-white font-bold text-sm">
                   {supplierName.charAt(0).toUpperCase()}

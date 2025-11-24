@@ -86,7 +86,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    console.log(`✅ [API] Поставщик обновлен для пользователя ${user.id}:`, updatedSupplier);
     
     return NextResponse.json({ 
       message: "Данные поставщика успешно обновлены из оригинала",

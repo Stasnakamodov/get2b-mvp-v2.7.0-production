@@ -122,7 +122,6 @@ export default function AccreditSupplierPage() {
 
       try {
         setLoading(true);
-        console.log(`🔍 [DEBUG] Ищем поставщика ${supplierId} в профиле пользователя ${user.id}`);
 
         // 🔄 ИСПРАВЛЕНО: Ищем в supplier_profiles (профиль пользователя)
         const { data, error } = await supabase
@@ -132,7 +131,6 @@ export default function AccreditSupplierPage() {
           .eq('user_id', user.id)
           .maybeSingle();
 
-        console.log(`🔍 [DEBUG] Результат поиска в supplier_profiles:`, { data, error });
 
         if (error) {
           console.error('❌ [DEBUG] Ошибка Supabase:', error);
@@ -142,13 +140,11 @@ export default function AccreditSupplierPage() {
         }
 
         if (!data) {
-          console.log('❌ [DEBUG] Поставщик не найден в профиле пользователя');
           setError(`Поставщик не найден в ваших профилях`);
           setSupplier(null);
           return;
         }
 
-        console.log('✅ [DEBUG] Поставщик найден:', data);
         setSupplier(data);
         setError(null);
 

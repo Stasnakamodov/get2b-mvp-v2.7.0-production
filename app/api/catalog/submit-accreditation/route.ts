@@ -7,7 +7,6 @@ export async function POST(request: NextRequest) {
     // ВРЕМЕННО: Отключаем аутентификацию для тестирования
     const user = { id: "86cc190d-0c80-463b-b0df-39a25b22365f" };
     
-    console.log("🌟 [API] Подача заявки на аккредитацию (новая версия)");
 
     // Определяем тип контента
     const contentType = request.headers.get('content-type') || '';
@@ -41,13 +40,6 @@ export async function POST(request: NextRequest) {
     if (!profile_data) profile_data = {};
     if (!legal_confirmation) legal_confirmation = {};
 
-    console.log("📋 [API] Данные заявки:", { 
-      supplier_id, 
-      supplier_type, 
-      products_count: products.length,
-      has_profile_data: !!profile_data,
-      has_legal_confirmation: !!legal_confirmation
-    });
 
     // Валидация данных
     if (!supplier_id || !supplier_type) {
@@ -142,9 +134,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Получаем юридические документы
-      console.log("🔍 [API] Поиск юридических документов в FormData...");
       for (const [key, value] of formData!.entries()) {
-        console.log(`📝 [API] FormData поле: ${key} = ${value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value}`);
         
         if (key.startsWith('legal_doc_') && !key.includes('_type') && !key.includes('_name')) {
           const index = key.split('_')[2];
@@ -152,7 +142,6 @@ export async function POST(request: NextRequest) {
           const name = formData!.get(`legal_doc_${index}_name`) as string;
           const file = value as File;
           
-          console.log(`📄 [API] Найден юридический документ: index=${index}, type=${type}, name=${name}, file=${file.name}, size=${file.size}`);
           
           if (file && file.size > 0) {
             legalDocumentFiles.push({
@@ -164,9 +153,7 @@ export async function POST(request: NextRequest) {
               size: file.size,
               fileType: file.type
             });
-            console.log(`✅ [API] Юридический документ добавлен в список`);
           } else {
-            console.log(`⚠️ [API] Файл пустой или отсутствует: ${file.name}, size=${file.size}`);
           }
         }
       }
@@ -179,11 +166,6 @@ export async function POST(request: NextRequest) {
       legal_documents: legalDocumentFiles
     };
 
-    console.log("📁 [API] Файлы:", { 
-      product_images: productImageFiles.length,
-      certificates: certificateFiles.length, 
-      legal_docs: legalDocumentFiles.length 
-    });
 
     // Создаем заявку на аккредитацию (без файлов)
     const applicationData = {
@@ -251,7 +233,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log("✅ [API] Заявка на аккредитацию создана:", application.id);
 
     // Сохраняем файлы в Supabase Storage после создания заявки
     const savedFiles: any = {
@@ -261,7 +242,6 @@ export async function POST(request: NextRequest) {
     };
 
     if (formData) {
-      console.log("📁 [API] Сохраняем файлы в Supabase Storage...");
 
       // Сохраняем изображения товаров
       for (const imageFile of tempFiles.product_images) {
@@ -290,7 +270,6 @@ export async function POST(request: NextRequest) {
             public_url: urlData.publicUrl
           });
 
-          console.log("✅ [API] Изображение сохранено:", fileName);
         } catch (error) {
           console.error("❌ [API] Ошибка сохранения изображения:", error);
         }
@@ -323,7 +302,6 @@ export async function POST(request: NextRequest) {
             public_url: urlData.publicUrl
           });
 
-          console.log("✅ [API] Сертификат сохранен:", fileName);
         } catch (error) {
           console.error("❌ [API] Ошибка сохранения сертификата:", error);
         }
@@ -356,7 +334,6 @@ export async function POST(request: NextRequest) {
             public_url: urlData.publicUrl
           });
 
-          console.log("✅ [API] Документ сохранен:", fileName);
         } catch (error) {
           console.error("❌ [API] Ошибка сохранения документа:", error);
         }
@@ -405,7 +382,6 @@ export async function POST(request: NextRequest) {
       if (updateError) {
         console.error("❌ [API] Ошибка обновления заявки с URL файлов:", updateError);
       } else {
-        console.log("✅ [API] Заявка обновлена с URL файлов");
       }
     }
 
@@ -429,7 +405,6 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', supplier_id);
           
-        console.log("📝 [API] Обновлены поля профиля:", Object.keys(updatedFields));
       } else {
         // Если нет изменений в профиле, просто обновляем статус аккредитации
         await supabaseService

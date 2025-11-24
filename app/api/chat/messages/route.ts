@@ -78,10 +78,8 @@ export async function GET(request: NextRequest) {
 // POST: Отправить сообщение в комнату - ИСПРАВЛЕНО для менеджеров
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔍 DEBUG: Chat messages POST called (MANAGER SUPPORT VERSION)');
     
     const body = await request.json();
-    console.log('🔍 DEBUG: Request body:', body);
     
     const { 
       room_id, 
@@ -94,7 +92,6 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!room_id || !content) {
-      console.log('❌ DEBUG: Missing required fields');
       return NextResponse.json(
         { error: "room_id and content are required" },
         { status: 400 }
@@ -103,7 +100,6 @@ export async function POST(request: NextRequest) {
 
     // ПРОВЕРЯЕМ UUID ФОРМАТЫ
     if (!isValidUUID(room_id)) {
-      console.log('❌ DEBUG: Invalid UUID format for room_id:', room_id);
       return NextResponse.json(
         { error: "Invalid room_id format - must be valid UUID" },
         { status: 400 }
@@ -111,7 +107,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (sender_user_id && !isValidUUID(sender_user_id)) {
-      console.log('❌ DEBUG: Invalid UUID format for sender_user_id:', sender_user_id);
       return NextResponse.json(
         { error: "Invalid sender_user_id format - must be valid UUID" },
         { status: 400 }
@@ -119,7 +114,6 @@ export async function POST(request: NextRequest) {
     }
 
     // НЕ ПРОВЕРЯЕМ КОМНАТУ - ПРОСТО СОЗДАЕМ СООБЩЕНИЕ
-    console.log('🔍 DEBUG: Skipping room validation to avoid RLS issues');
 
     // Создаем сообщение НАПРЯМУЮ - ПОДДЕРЖКА МЕНЕДЖЕРОВ
     const messageData: any = {
@@ -142,22 +136,17 @@ export async function POST(request: NextRequest) {
         
         if (userExists) {
           messageData.sender_user_id = sender_user_id;
-          console.log('✅ DEBUG: Valid user_id added:', sender_user_id);
         } else {
-          console.log('⚠️ DEBUG: User not found, using null for sender_user_id');
         }
       } catch (error) {
-        console.log('⚠️ DEBUG: User check failed, using null for sender_user_id:', error);
       }
     }
 
     // 🔧 НОВОЕ: Добавляем поддержку sender_manager_id для менеджеров
     if (sender_type === 'manager' && sender_manager_id) {
       messageData.sender_manager_id = sender_manager_id;
-      console.log('✅ DEBUG: Manager ID added:', sender_manager_id);
     }
 
-    console.log('🔍 DEBUG: Creating message with manager support:', messageData);
 
     const { data: newMessage, error } = await supabase
       .from('chat_messages')
@@ -173,15 +162,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('✅ DEBUG: Message created successfully:', {
-      id: newMessage.id,
-      sender_type: newMessage.sender_type,
-      sender_manager_id: newMessage.sender_manager_id
-    });
 
     // 🔔 УВЕДОМЛЕНИЯ МЕНЕДЖЕРАМ для проектных комнат (только для пользователей)
     if (sender_type === 'user') {
-      console.log('🔍 DEBUG: Checking if need to notify managers...');
       
       try {
         // Получаем информацию о комнате
@@ -192,7 +175,6 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (room && room.room_type === 'project' && room.project_id) {
-          console.log('📨 DEBUG: This is a project room, notifying managers...');
           
           // Получаем информацию о проекте
           const { data: project, error: projectError } = await supabase
@@ -214,9 +196,7 @@ export async function POST(request: NextRequest) {
             messageId: newMessage.id
           });
           
-          console.log('✅ DEBUG: Managers notified about new message');
         } else {
-          console.log('ℹ️ DEBUG: Not a project room, skipping manager notification');
         }
       } catch (notifyError) {
         console.error('⚠️ DEBUG: Error notifying managers (non-critical):', notifyError);

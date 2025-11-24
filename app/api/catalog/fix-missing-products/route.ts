@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabaseClient";
 // POST: Исправление отсутствующих товаров у импортированных поставщиков
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 [API] Начинаем исправление отсутствующих товаров');
 
     // Получаем всех импортированных поставщиков без товаров
     const { data: importedSuppliers, error: suppliersError } = await supabase
@@ -24,12 +23,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: suppliersError.message }, { status: 500 });
     }
 
-    console.log(`📊 [API] Найдено импортированных поставщиков: ${importedSuppliers?.length || 0}`);
 
     const results = [];
 
     for (const supplier of importedSuppliers || []) {
-      console.log(`\n🔍 [API] Обработка поставщика: ${supplier.name}`);
 
       // Проверяем есть ли товары в синей комнате
       const { data: userProducts, error: userProductsError } = await supabase
@@ -44,7 +41,6 @@ export async function POST(request: NextRequest) {
       }
 
       if (userProducts && userProducts.length > 0) {
-        console.log(`✅ [API] У ${supplier.name} уже есть ${userProducts.length} товаров`);
         continue;
       }
 
@@ -60,11 +56,9 @@ export async function POST(request: NextRequest) {
       }
 
       if (!verifiedProducts || verifiedProducts.length === 0) {
-        console.log(`⚠️ [API] У ${supplier.name} нет товаров в оранжевой комнате`);
         continue;
       }
 
-      console.log(`📦 [API] Импортируем ${verifiedProducts.length} товаров для ${supplier.name}`);
 
       // Импортируем товары с изображениями
       const userProductsToInsert = verifiedProducts.map(product => ({
@@ -95,7 +89,6 @@ export async function POST(request: NextRequest) {
           error: insertError.message
         });
       } else {
-        console.log(`✅ [API] Успешно импортировано ${insertedProducts?.length || 0} товаров для ${supplier.name}`);
         results.push({
           supplier: supplier.name,
           success: true,
@@ -104,7 +97,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('🎉 [API] Исправление завершено');
 
     return NextResponse.json({
       message: "Исправление отсутствующих товаров завершено",

@@ -36,7 +36,6 @@ export async function GET(request: NextRequest) {
 
     // Если rpc не работает, пробуем альтернативный метод
     if (execError || !rawData) {
-      console.log("⚠️ [API Direct] RPC не сработал, используем резервный метод");
 
       // Загружаем через известную работающую таблицу
       const { data: fallbackData, error: fallbackError } = await supabase
@@ -79,7 +78,6 @@ export async function GET(request: NextRequest) {
         totalSuppliers: data?.reduce((sum: number, c: any) => sum + (c.suppliers_count || 0), 0) || 0,
       };
 
-      console.log("✅ [API Direct] Категории загружены (fallback):", filteredData?.length);
 
       return NextResponse.json({
         success: true,
@@ -99,7 +97,6 @@ export async function GET(request: NextRequest) {
       filteredData = data.filter((cat: any) => cat.level === levelNum);
     }
 
-    console.log("✅ [API Direct] Категории загружены:", filteredData?.length);
 
     // Построить дерево категорий
     let categoryTree: any[] = [];

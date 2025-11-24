@@ -140,6 +140,7 @@ export interface UseScrollAnimationReturn {
 export interface FadeInSectionProps {
   children: React.ReactNode
   delay?: number
+  duration?: number
   className?: string
 }
 

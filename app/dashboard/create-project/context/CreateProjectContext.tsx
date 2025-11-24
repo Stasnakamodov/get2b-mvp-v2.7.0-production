@@ -88,13 +88,8 @@ function ProjectProvider({ children }: { children: ReactNode }) {
   
   // Обертка с отладкой для setSupplierData
   const setSupplierData = useCallback((data: any) => {
-    console.log("🔥 [CONTEXT] setSupplierData вызвана с данными:", data);
-    console.log("🔥 [CONTEXT] Тип данных:", typeof data);
-    console.log("🔥 [CONTEXT] Ключи:", data ? Object.keys(data) : "NO DATA");
     if (data?.crypto_wallets) {
-      console.log("🔥 [CONTEXT] ✅ CRYPTO_WALLETS в данных:", data.crypto_wallets);
     } else {
-      console.log("🔥 [CONTEXT] ❌ НЕТ CRYPTO_WALLETS в данных");
     }
     setSupplierDataState(data);
   }, []);
@@ -128,7 +123,6 @@ function ProjectProvider({ children }: { children: ReactNode }) {
   
   // Функция для заполнения из эхо карточки
   const fillFromEchoCard = useCallback((echoCard: any, selectedSteps: any) => {
-    console.log("[fillFromEchoCard] Начинаем заполнение из эхо карточки:", { echoCard, selectedSteps });
     
     if (selectedSteps.step1 && echoCard.supplier_info) {
       setCompanyData({
@@ -149,11 +143,8 @@ function ProjectProvider({ children }: { children: ReactNode }) {
     }
     
     if (selectedSteps.step2 && echoCard.products) {
-      console.log("[fillFromEchoCard] Заполняем Step 2 товарами:", echoCard.products);
-      console.log("[fillFromEchoCard] Структура первого товара:", echoCard.products[0]);
       
       const mappedProducts = echoCard.products.map((product: any, index: number) => {
-        console.log(`[fillFromEchoCard] Обрабатываем товар ${index}:`, product);
         
         const mappedProduct = {
           name: product.item_name || product.name || "",
@@ -166,16 +157,13 @@ function ProjectProvider({ children }: { children: ReactNode }) {
           image_url: product.image_url || "",
         };
         
-        console.log(`[fillFromEchoCard] Преобразованный товар ${index}:`, mappedProduct);
         return mappedProduct;
       });
       
-      console.log("[fillFromEchoCard] Все преобразованные товары:", mappedProducts);
       setSpecificationItems(mappedProducts);
       
       // ВАЖНО: Сохраняем товары в базу данных для Step 2
       if (projectId) {
-        console.log("[fillFromEchoCard] Сохраняем товары в базу данных для projectId:", projectId);
         // Вызываем API для сохранения товаров в базу данных
         fetch('/api/project-specifications/bulk-insert', {
           method: 'POST',
@@ -189,21 +177,11 @@ function ProjectProvider({ children }: { children: ReactNode }) {
           }),
         }).then(response => response.json())
         .then(data => {
-          console.log("[fillFromEchoCard] Товары сохранены в БД:", data);
         })
         .catch(error => {
           console.error("[fillFromEchoCard] Ошибка сохранения товаров в БД:", error);
         });
-      } else {
-        console.log("[fillFromEchoCard] projectId еще не создан, товары будут сохранены позже");
       }
-    } else {
-      console.log("[fillFromEchoCard] Step 2 не заполняется:", { 
-        selectedSteps: selectedSteps.step2, 
-        hasProducts: !!echoCard.products,
-        productsCount: echoCard.products?.length,
-        echoCardKeys: echoCard ? Object.keys(echoCard) : 'echoCard is null'
-      });
     }
   }, [projectId, setCompanyData, setSpecificationItems])
 

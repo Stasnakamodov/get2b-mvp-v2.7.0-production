@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 [API] Начинаем упрощенный анализ базы данных...");
 
     const analysis: any = {
       data: {},
@@ -174,8 +173,6 @@ export async function GET(request: NextRequest) {
       analysisDate: new Date().toISOString()
     };
 
-    console.log("✅ [API] Упрощенный анализ базы данных завершен");
-    console.log("📊 [API] Сводка:", analysis.summary);
 
     return NextResponse.json({
       success: true,

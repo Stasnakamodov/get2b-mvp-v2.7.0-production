@@ -5,7 +5,6 @@ const isDebug = process.env.DEBUG === 'true'
 export const logger = {
   info: (message: string, ...args: any[]) => {
     if (isDev || isDebug) {
-      console.log(`ℹ️ [${new Date().toISOString()}]`, message, ...args)
     }
   },
 
@@ -25,7 +24,6 @@ export const logger = {
 
   success: (message: string, ...args: any[]) => {
     if (isDev || isDebug) {
-      console.log(`✅ [${new Date().toISOString()}]`, message, ...args)
     }
   }
 }

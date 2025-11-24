@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabaseClient";
 // POST: Отправка сертификата товара из аккредитации в Telegram
 export async function POST(request: NextRequest) {
   try {
-    console.log("📤 [SEND-CERTIFICATE] Отправка сертификата в Telegram");
 
     const { searchParams } = new URL(request.url);
     const applicationId = searchParams.get('applicationId');
@@ -24,7 +23,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log("🔍 [SEND-CERTIFICATE] Получаем данные заявки:", { applicationId, productIndex, certIndex });
 
     // Получаем данные заявки
     const { data: application, error } = await supabase
@@ -68,7 +66,6 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    console.log("📄 [SEND-CERTIFICATE] Найден сертификат:", certificate);
 
     if (!certificate.public_url) {
       return NextResponse.json({ 
@@ -89,7 +86,6 @@ export async function POST(request: NextRequest) {
       const [bucket, ...pathParts] = bucketAndPath.split('/');
       const storagePath = pathParts.join('/');
       
-      console.log("📥 [SEND-CERTIFICATE] Скачиваем файл из бакета:", bucket, "по пути:", storagePath);
       
       const { data: fileData, error: downloadError } = await supabase.storage
         .from(bucket)
@@ -103,7 +99,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log("✅ [SEND-CERTIFICATE] Файл скачан, размер:", fileData.size);
 
       // Конвертируем в Buffer
       const buffer = Buffer.from(await fileData.arrayBuffer());
@@ -122,7 +117,6 @@ export async function POST(request: NextRequest) {
       formData.append('document', new Blob([buffer]), certificate.name);
       formData.append('caption', `📄 Сертификат товара: ${product.name}\n\n📦 Товар: ${product.name}\n📋 Тип: ${certificate.type}\n📏 Размер: ${(certificate.size / 1024).toFixed(1)} KB`);
 
-      console.log("📤 [SEND-CERTIFICATE] Отправляем в Telegram...");
 
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
         method: 'POST',
@@ -139,7 +133,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log("✅ [SEND-CERTIFICATE] Сертификат отправлен успешно");
 
       return NextResponse.json({
         success: true,

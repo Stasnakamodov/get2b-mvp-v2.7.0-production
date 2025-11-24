@@ -3,10 +3,8 @@ import { sendTelegramMessage } from "@/lib/telegram"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("🔥 API /telegram/send-message вызван")
 
     const body = await request.json()
-    console.log("📦 Тело запроса:", body)
 
     const { text } = await body
 
@@ -15,9 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 })
     }
 
-    console.log("📤 Отправляем в Telegram:", text.substring(0, 100) + "...")
     await sendTelegramMessage(text)
-    console.log("✅ Отправлено успешно")
 
     return NextResponse.json({ success: true })
   } catch (error) {

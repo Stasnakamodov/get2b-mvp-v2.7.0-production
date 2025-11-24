@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabaseClient";
 // POST: Отправка файла из аккредитации как документа в Telegram
 export async function POST(request: NextRequest) {
   try {
-    console.log("📤 [SEND-DOCUMENT] Отправка файла как документа в Telegram");
 
     const { searchParams } = new URL(request.url);
     const applicationId = searchParams.get('applicationId');
@@ -24,7 +23,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log("🔍 [SEND-DOCUMENT] Получаем данные заявки:", { applicationId, productIndex, imageIndex });
 
     // Получаем данные заявки
     const { data: application, error } = await supabase
@@ -68,7 +66,6 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    console.log("📷 [SEND-DOCUMENT] Найдено изображение:", image);
 
     if (!image.public_url) {
       return NextResponse.json({ 
@@ -89,7 +86,6 @@ export async function POST(request: NextRequest) {
       const [bucket, ...pathParts] = bucketAndPath.split('/');
       const storagePath = pathParts.join('/');
       
-      console.log("📥 [SEND-DOCUMENT] Скачиваем файл из бакета:", bucket, "по пути:", storagePath);
       
       const { data: fileData, error: downloadError } = await supabase.storage
         .from(bucket)
@@ -103,7 +99,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log("✅ [SEND-DOCUMENT] Файл скачан, размер:", fileData.size);
 
       // Конвертируем в Buffer
       const buffer = Buffer.from(await fileData.arrayBuffer());
@@ -118,7 +113,6 @@ export async function POST(request: NextRequest) {
       const botToken = process.env.TELEGRAM_CHAT_BOT_TOKEN;
       const telegramUrl = `https://api.telegram.org/bot${botToken}/sendDocument`;
 
-      console.log("📤 [SEND-DOCUMENT] Отправляем документ в Telegram...");
 
       const response = await fetch(telegramUrl, {
         method: 'POST',
@@ -135,7 +129,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log("✅ [SEND-DOCUMENT] Документ отправлен успешно");
 
       return NextResponse.json({
         success: true,

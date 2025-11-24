@@ -15,7 +15,6 @@ const supabaseAdmin = createClient(
 
 export async function POST() {
   try {
-    console.log("🔧 Исправляем RLS политики для chat таблиц...");
 
     // Отключаем RLS и удаляем проблемные политики
     const steps = [
@@ -76,7 +75,6 @@ export async function POST() {
     
     for (const sql of steps) {
       try {
-        console.log("Выполняю:", sql.slice(0, 50) + "...");
         const { error } = await supabaseAdmin.rpc('exec_sql', { sql });
         
         if (error) {

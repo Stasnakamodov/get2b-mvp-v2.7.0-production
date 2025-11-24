@@ -8,14 +8,11 @@ export async function GET() {
   }
 
   try {
-    console.log("🤖 Тестируем бота...")
-    console.log("🔑 Токен:", TELEGRAM_BOT_TOKEN ? `${TELEGRAM_BOT_TOKEN.substring(0, 10)}...` : "Отсутствует")
 
     // Получаем информацию о боте
     const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`)
     const result = await response.json()
 
-    console.log("🤖 Информация о боте:", result)
 
     if (result.ok) {
       return NextResponse.json({

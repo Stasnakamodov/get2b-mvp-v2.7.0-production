@@ -26,7 +26,6 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log(`✅ [API] Загружено ${rootCategories?.length || 0} корневых категорий`);
 
     // ОПТИМИЗАЦИЯ: Загружаем подкатегории ТОЛЬКО если нужно
     let subcategories = null;
@@ -52,7 +51,6 @@ export async function GET(request: NextRequest) {
     let totalSubcategories = 0;
 
     if (includeSubcategories) {
-      console.log(`✅ [API] Загружено ${subcategories?.length || 0} подкатегорий`);
 
       // Подсчитываем количество товаров для каждой подкатегории
       const subcategoriesWithCounts = await Promise.all(
@@ -73,7 +71,6 @@ export async function GET(request: NextRequest) {
         })
       );
 
-      console.log(`✅ [API] Подсчитано товаров для ${subcategoriesWithCounts.length} подкатегорий`);
 
       // Добавляем подкатегории к корневым категориям
       categoriesWithSubcategories = rootCategories.map(category => ({
@@ -83,7 +80,6 @@ export async function GET(request: NextRequest) {
 
       totalSubcategories = subcategories?.length || 0;
     } else {
-      console.log(`⚡ [API] БЫСТРАЯ ЗАГРУЗКА: Подкатегории пропущены (includeSubcategories=false)`);
     }
 
     // Статистика
@@ -106,7 +102,6 @@ export async function GET(request: NextRequest) {
 // POST: Синхронизация категорий из кода в БД
 export async function POST() {
   try {
-    console.log("🔄 [API] Начинаем синхронизацию категорий...");
 
     // Получаем существующие категории
     const { data: existingCategories, error: selectError } = await supabase
@@ -150,7 +145,6 @@ export async function POST() {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    console.log(`✅ [API] Синхронизировано ${data?.length} новых категорий`);
     
     return NextResponse.json({ 
       message: "Категории успешно синхронизированы",

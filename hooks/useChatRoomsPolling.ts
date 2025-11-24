@@ -38,7 +38,6 @@ export function useChatRoomsPolling({
   const fetchWithRetry = async (url: string, maxRetries: number = 3): Promise<any> => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`🔄 Polling attempt ${attempt}/${maxRetries} for userId: ${userId}`);
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // Увеличил до 30 секунд
@@ -58,7 +57,6 @@ export function useChatRoomsPolling({
         }
         
         const data = await response.json();
-        console.log(`✅ Polling success, rooms: ${data.rooms?.length || 0}`);
         
         // Сброс счетчика при успехе
         retryCountRef.current = 0;
@@ -75,7 +73,6 @@ export function useChatRoomsPolling({
           
           // Для timeout не считаем как критическую ошибку если это последняя попытка
           if (attempt === maxRetries) {
-            console.log('📡 Timeout на всех попытках, но продолжаем polling...');
             retryCountRef.current = Math.min(retryCountRef.current + 1, 3); // Ограничиваем рост
             setIsConnected(false);
             return { success: false, error: 'timeout' }; // Возвращаем вместо throw
@@ -92,7 +89,6 @@ export function useChatRoomsPolling({
         
         // Exponential backoff: 1s, 2s, 4s
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Макс 5 сек
-        console.log(`⏳ Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -119,16 +115,13 @@ export function useChatRoomsPolling({
         
         // Проверяем изменились ли данные
         if (newRoomsHash !== lastRoomsHashRef.current) {
-          console.log('🔄 Обнаружены изменения в комнатах - обновляем');
           onRoomsUpdate(data.rooms);
           lastRoomsHashRef.current = newRoomsHash;
           lastSuccessTimeRef.current = currentTime;
         } else {
-          console.log('✅ Комнаты не изменились - пропускаем обновление');
         }
       } else if (data && data.error === 'timeout') {
         // Timeout - не обновляем данные, но и не логируем как ошибку
-        console.log('⏱️ Polling timeout - пропускаем обновление');
       }
       
     } catch (error) {
@@ -167,7 +160,6 @@ export function useChatRoomsPolling({
         const timeSinceLastUpdate = Date.now() - lastSuccessTimeRef.current;
         if (timeSinceLastUpdate > 300000) { // 5 минут без изменений
           adaptiveInterval = Math.min(adaptiveInterval * 1.5, 90000); // Макс 90 секунд
-          console.log(`⏳ Замедляем polling до ${adaptiveInterval/1000}с - долго нет активности`);
         }
           
         pollingTimeoutRef.current = setTimeout(poll, adaptiveInterval);

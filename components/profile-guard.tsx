@@ -19,7 +19,6 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
   useEffect(() => {
     // Добавляем таймаут для предотвращения зависания
     const timeoutId = setTimeout(() => {
-      console.log('[ProfileGuard] Timeout reached, allowing access')
       setLoading(false)
       setHasProfile(true)
     }, 5000) // 5 секунд таймаут
@@ -34,11 +33,9 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
     
     try {
       setLoading(true)
-      console.log('[ProfileGuard] Starting profile check...')
       
       // Устанавливаем таймаут
       timeoutId = setTimeout(() => {
-        console.log('[ProfileGuard] Timeout reached, allowing access')
         setLoading(false)
         setHasProfile(true)
       }, 5000)
@@ -47,16 +44,13 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
       if (authError || !user) {
-        console.log('[ProfileGuard] No user found, redirecting to login')
         router.push('/login')
         return
       }
 
-      console.log('[ProfileGuard] User found:', user.id)
       setCurrentUserId(user.id)
 
       // Проверяем наличие профиля
-      console.log('[ProfileGuard] Checking user_profiles table...')
       
       const { data: userProfiles, error: profileError } = await supabase
         .from('user_profiles')
@@ -69,7 +63,6 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
         
         // Если таблица не существует, пропускаем проверку профиля
         if (profileError.message.includes('does not exist')) {
-          console.log('[ProfileGuard] user_profiles table does not exist, allowing access')
           setHasProfile(true)
           setLoading(false)
           return
@@ -79,16 +72,13 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
         return
       }
 
-      console.log('[ProfileGuard] User profiles found:', userProfiles)
 
       if (!userProfiles || userProfiles.length === 0) {
         // У пользователя нет профиля - показываем модальное окно
-        console.log('[ProfileGuard] No profiles found, showing setup modal')
         setShowProfileSetup(true)
         setHasProfile(false)
       } else {
         // У пользователя есть профиль
-        console.log('[ProfileGuard] Profile found, allowing access')
         setHasProfile(true)
       }
     } catch (error) {

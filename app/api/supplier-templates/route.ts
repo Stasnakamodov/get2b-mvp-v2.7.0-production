@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("📋 API /supplier-templates вызван");
 
     const { searchParams } = new URL(request.url);
     const supplierId = searchParams.get('supplierId');
@@ -51,7 +50,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (!templates || templates.length === 0) {
-      console.log("📭 Шаблоны не найдены для поставщика:", supplierId);
       return NextResponse.json({
         success: true,
         templates: [],
@@ -76,7 +74,6 @@ export async function GET(request: NextRequest) {
       file_path: template.file_path
     }));
 
-    console.log("✅ Найдено шаблонов из БД:", templates.length);
 
     return NextResponse.json({
       success: true,

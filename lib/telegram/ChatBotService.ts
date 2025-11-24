@@ -29,7 +29,6 @@ export class ChatBotService {
    * Отправляет сообщение в чат (используется для команд бота)
    */
   async sendMessage(chatId: string | number, text: string, parseMode: 'HTML' | 'Markdown' = 'Markdown') {
-    console.log("💬 ChatBotService: отправка сообщения");
     
     return await this.telegramService.sendMessage({
       chat_id: chatId,
@@ -43,7 +42,6 @@ export class ChatBotService {
    * Отправляет сообщение с кнопками
    */
   async sendMessageWithButtons(chatId: string | number, text: string, replyMarkup: any, parseMode: 'HTML' | 'Markdown' = 'Markdown') {
-    console.log("💬 ChatBotService: отправка сообщения с кнопками");
     
     return await this.telegramService.sendMessage({
       chat_id: chatId,
@@ -55,7 +53,6 @@ export class ChatBotService {
   }
 
   async sendPhoto(chatId: string | number, photoUrl: string, caption?: string) {
-    console.log("📷 ChatBotService: отправка изображения");
     return await this.telegramService.sendPhoto({
       chat_id: chatId,
       photo: photoUrl,
@@ -82,7 +79,6 @@ export class ChatBotService {
     projectName?: string;
     companyName?: string;
   }) {
-    console.log("💬 ChatBotService: уведомление менеджерам о сообщении в чате");
 
     const text = `💬 НОВОЕ СООБЩЕНИЕ В ЧАТЕ
 
@@ -140,7 +136,6 @@ export class ChatBotService {
     companyEmail: string;
     createdAt: string;
   }) {
-    console.log("💬 ChatBotService: отправка деталей проекта");
 
     const detailsText = `📋 ДЕТАЛИ ПРОЕКТА
 
@@ -163,7 +158,6 @@ export class ChatBotService {
    * Отправляет ответ на callback query
    */
   async answerCallbackQuery(callbackQueryId: string, text: string, showAlert = false) {
-    console.log("💬 ChatBotService: ответ на callback query");
     
     return await this.telegramService.answerCallbackQuery({
       callback_query_id: callbackQueryId,
@@ -354,7 +348,6 @@ https://get2b.com/dashboard/profile
     certificatesCount: number;
     legalDocumentsCount: number;
   }) {
-    console.log("⭐ ChatBotService: уведомление о новой заявке на аккредитацию");
 
     const text = `⭐ **НОВАЯ ЗАЯВКА НА АККРЕДИТАЦИЮ**
 
@@ -408,7 +401,6 @@ https://get2b.com/dashboard/profile
     companyName: string;
     managerName: string;
   }) {
-    console.log("✅ ChatBotService: уведомление об одобрении аккредитации");
 
     const text = `✅ **ЗАЯВКА НА АККРЕДИТАЦИЮ ОДОБРЕНА**
 
@@ -443,7 +435,6 @@ https://get2b.com/dashboard/profile
     managerName: string;
     reason: string;
   }) {
-    console.log("❌ ChatBotService: уведомление об отклонении аккредитации");
 
     const text = `❌ **ЗАЯВКА НА АККРЕДИТАЦИЮ ОТКЛОНЕНА**
 

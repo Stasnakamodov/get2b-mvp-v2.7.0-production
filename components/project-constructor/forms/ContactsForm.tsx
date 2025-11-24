@@ -14,7 +14,6 @@ interface ContactsFormProps extends FormProps<ContactsData> {
 }
 
 const ContactsForm = ({ onSave, onCancel, initialData, isInlineView = false }: ContactsFormProps) => {
-  console.log("🔍 ContactsForm получил initialData:", initialData);
 
   const [formData, setFormData] = useState({
     contact_person: initialData?.contact_person || '',

@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("🔍 [IMAGE SEARCH] Начинаем поиск товаров по изображению");
 
     // Получаем сервис Yandex Vision
     const visionService = getYandexVisionService();
@@ -29,21 +28,16 @@ export async function POST(request: NextRequest) {
     // Шаг 1: Классифицируем изображение
     const { labels, description } = await visionService.classifyImage(image);
 
-    console.log("🏷️ [IMAGE SEARCH] Классификация:", { labels, description });
 
     // Шаг 2: Распознаем текст на изображении (OCR)
     let ocrText = "";
     try {
-      console.log("📝 [IMAGE SEARCH] Запускаем OCR для распознавания текста...");
       ocrText = await visionService.recognizeTextFromBase64(image);
 
       if (ocrText && ocrText.trim()) {
-        console.log("✅ [IMAGE SEARCH] Распознанный текст:", ocrText);
       } else {
-        console.log("ℹ️ [IMAGE SEARCH] Текст на изображении не найден");
       }
     } catch (error) {
-      console.log("⚠️ [IMAGE SEARCH] OCR не удался:", error);
     }
 
     // Шаг 3: YandexGPT - умный анализ товара
@@ -53,18 +47,11 @@ export async function POST(request: NextRequest) {
       .slice(0, 5)
       .map(label => label.name);
 
-    console.log("🤖 [IMAGE SEARCH] Запускаем YandexGPT для умного анализа...");
     const gptAnalysis = await gptService.analyzeProductImage(
       image,
       ocrText,
       topLabels
     );
-
-    console.log("🎯 [IMAGE SEARCH] YandexGPT результат:", {
-      brand: gptAnalysis.brand,
-      category: gptAnalysis.category,
-      keywords: gptAnalysis.keywords
-    });
 
     // Шаг 4: Формируем поисковые запросы
     // Комбинируем ВСЕ источники данных
@@ -82,14 +69,12 @@ export async function POST(request: NextRequest) {
       ...gptAnalysis.keywords.slice(0, 10) // Топ-10 ключевых слов от GPT
     ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); // Убираем дубликаты
 
-    console.log("🔍 [IMAGE SEARCH] Финальные поисковые термины:", searchTerms);
 
     // Импортируем supabase для поиска товаров
     const { supabase } = await import("@/lib/supabaseClient");
 
     // Ищем товары, которые содержат хотя бы один из поисковых терминов
     if (searchTerms.length === 0) {
-      console.log("⚠️ [IMAGE SEARCH] Не найдено поисковых терминов");
       return NextResponse.json({
         success: true,
         labels,
@@ -125,7 +110,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`✅ [IMAGE SEARCH] Найдено товаров: ${products?.length || 0}`);
 
     return NextResponse.json({
       success: true,

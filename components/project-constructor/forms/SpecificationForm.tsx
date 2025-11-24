@@ -9,7 +9,6 @@ import type { FormProps, SpecificationData, SpecificationItem } from '@/types/pr
 import { SpecificationDataSchema } from '@/types/project-constructor.types'
 
 const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<SpecificationData>) => {
-  console.log("🔍 SpecificationForm получил initialData:", initialData);
 
   const [formData, setFormData] = useState({
     items: (initialData?.items || [{
@@ -32,7 +31,6 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
 
   // Обновляем форму при изменении initialData
   useEffect(() => {
-    console.log("🔄 SpecificationForm useEffect - initialData изменился:", initialData);
     if (initialData) {
       const newFormData = {
         items: (initialData.items || [{
@@ -52,7 +50,6 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
         currency: initialData.currency || 'RUB',
         notes: initialData.notes || ''
       };
-      console.log("📝 SpecificationForm устанавливает новые данные:", newFormData);
       setFormData(newFormData);
     }
   }, [initialData]);
@@ -80,7 +77,6 @@ const SpecificationForm = ({ onSave, onCancel, initialData }: FormProps<Specific
 
     // Валидация через Zod схему
     try {
-      console.log('🔍 [VALIDATION] Данные перед валидацией:', JSON.stringify(cleanedData, null, 2))
       const validatedData = SpecificationDataSchema.parse(cleanedData)
       onSave(validatedData)
     } catch (error: any) {

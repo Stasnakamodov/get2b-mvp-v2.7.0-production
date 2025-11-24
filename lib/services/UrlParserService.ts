@@ -32,17 +32,14 @@ export class UrlParserService {
    * Основной метод парсинга - пробует разные методы с fallback
    */
   async parseProductUrl(url: string): Promise<ParsedProductMetadata> {
-    console.log('🔍 [URL Parser] Начинаем парсинг:', url)
 
     // Определяем маркетплейс
     const marketplace = this.detectMarketplace(url)
-    console.log('🏪 [URL Parser] Определен маркетплейс:', marketplace)
 
     // Для защищенных маркетплейсов используем Playwright
     const protectedMarketplaces = ['ozon', 'wildberries', 'aliexpress']
 
     if (protectedMarketplaces.includes(marketplace)) {
-      console.log('🛡️ [URL Parser] Защищенный маркетплейс - используем Playwright')
 
       try {
         // Сначала пробуем Playwright (самый надежный)
@@ -50,15 +47,12 @@ export class UrlParserService {
 
         if (await playwrightParser.isAvailable()) {
           const data = await playwrightParser.parseWithPlaywright(url)
-          console.log('✅ [URL Parser] Playwright парсинг успешен')
           return data
         }
 
         // Fallback на Puppeteer если Playwright недоступен
-        console.log('⚠️ [URL Parser] Playwright недоступен, пробуем Puppeteer')
         const browserParser = getBrowserParserService()
         const data = await browserParser.parseWithBrowser(url)
-        console.log('✅ [URL Parser] Puppeteer парсинг успешен')
         return data
 
       } catch (error) {
@@ -78,7 +72,6 @@ export class UrlParserService {
       const ogData = await this.parseOpenGraph(url)
 
       if (ogData.title && ogData.description) {
-        console.log('✅ [URL Parser] Open Graph данные получены')
         return {
           title: ogData.title,
           description: ogData.description,
@@ -92,15 +85,12 @@ export class UrlParserService {
         }
       }
 
-      console.log('⚠️ [URL Parser] Open Graph неполный, пробуем HTML парсинг...')
     } catch (error) {
-      console.log('⚠️ [URL Parser] Open Graph не удался:', error)
     }
 
     // Fallback на HTML парсинг
     try {
       const htmlData = await this.parseHtml(url, marketplace)
-      console.log('✅ [URL Parser] HTML данные получены')
       return {
         title: htmlData.title || 'Товар без названия',
         description: htmlData.description || '',
@@ -116,7 +106,6 @@ export class UrlParserService {
       console.error('❌ [URL Parser] Ошибка парсинга HTML:', error)
 
       // Последняя попытка - браузерный парсинг
-      console.log('🔄 [URL Parser] Пробуем браузерный парсинг как последний fallback')
       try {
         const browserParser = getBrowserParserService()
         return await browserParser.parseWithBrowser(url)
@@ -140,7 +129,6 @@ export class UrlParserService {
    * Fallback парсинг HTML если Open Graph не работает
    */
   private async parseHtml(url: string, marketplace: string): Promise<Partial<ParsedProductMetadata>> {
-    console.log('🌐 [URL Parser] Загружаем HTML напрямую:', url)
 
     const response = await fetch(url, {
       headers: {
@@ -158,33 +146,27 @@ export class UrlParserService {
       redirect: 'follow'
     })
 
-    console.log('📡 [URL Parser] HTTP статус:', response.status)
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
 
     const html = await response.text()
-    console.log('📄 [URL Parser] HTML получен, размер:', html.length, 'байт')
 
     const $ = cheerio.load(html)
 
     // Выводим первые мета-теги для отладки
     const ogTitle = $('meta[property="og:title"]').attr('content')
     const ogDesc = $('meta[property="og:description"]').attr('content')
-    console.log('🏷️ [URL Parser] og:title:', ogTitle?.substring(0, 50))
-    console.log('🏷️ [URL Parser] og:description:', ogDesc?.substring(0, 50))
 
     // Сначала пробуем универсальный парсинг Open Graph из HTML
     const ogData = this.parseOGFromHTML($ as any)
 
     if (ogData.title && ogData.description) {
-      console.log('✅ [URL Parser] Данные из OG тегов в HTML получены')
       return ogData
     }
 
     // Если OG не сработал, используем специфичные парсеры
-    console.log('⚠️ [URL Parser] OG теги неполные, используем специфичный парсер для', marketplace)
 
     switch (marketplace) {
       case 'wildberries':

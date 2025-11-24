@@ -10,7 +10,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Missing requisite_id' }, { status: 400 });
     }
 
-    console.log('🗑️ Удаляем реквизит:', requisiteId);
 
     // Удаляем запись по ID
     const { data: deletedData, error: deleteError } = await supabase
@@ -24,7 +23,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Delete failed', details: deleteError }, { status: 500 });
     }
 
-    console.log('✅ Удалено записей:', deletedData?.length || 0);
     
     return NextResponse.json({ 
       success: true, 

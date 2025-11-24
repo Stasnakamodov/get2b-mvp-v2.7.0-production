@@ -7,7 +7,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const applicationId = searchParams.get('applicationId');
 
-    console.log("🔍 [LEGAL-DOCS] Проверка юридических документов");
 
     if (applicationId) {
       // Проверяем конкретную заявку

@@ -11,14 +11,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'user_id обязателен' }, { status: 400 })
     }
 
-    console.log('🔍 [ECHO CARDS FIXED] Запуск с правильным приоритетом для user_id:', userId)
 
     // ========================================
     // 📊 ПРАВИЛЬНЫЙ ПРИОРИТЕТ ИСТОЧНИКОВ ДАННЫХ
     // ========================================
 
     // 1. ПРИОРИТЕТ 1: Реквизиты поставщиков из project_requisites (Step5)
-    console.log('🔍 [P1] Получаем реквизиты поставщиков из project_requisites')
     
     const { data: projectRequisites, error: projectRequisitesError } = await supabase
       .from('project_requisites')
@@ -29,17 +27,14 @@ export async function GET(request: NextRequest) {
       console.error('⚠️ Ошибка project_requisites:', projectRequisitesError)
     }
 
-    console.log('📊 Project requisites найдено:', projectRequisites?.length || 0)
 
     // 2. ПРИОРИТЕТ 2: Шаблоны реквизитов как fallback
-    console.log('🔍 [P2] Получаем шаблоны реквизитов как fallback')
     
     const { data: bankTemplates } = await supabase
       .from('bank_accounts')
       .select('*')
       .eq('user_id', userId)
 
-    console.log('📊 Bank templates найдено:', bankTemplates?.length || 0)
 
     // 3. Получаем проекты (Step5+)
     const { data: projects, error: projectsError } = await supabase
@@ -53,7 +48,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Ошибка получения проектов' }, { status: 500 })
     }
 
-    console.log('📊 Проектов найдено:', projects?.length || 0)
 
     if (!projects || projects.length === 0) {
       return NextResponse.json({
@@ -70,7 +64,6 @@ export async function GET(request: NextRequest) {
       .select('project_id, item_name, quantity, price, total, image_url')
       .in('project_id', projectIds)
 
-    console.log('📊 Товаров найдено:', specifications?.length || 0)
 
     // ========================================
     // 🔄 СОЗДАЕМ ЭХО КАРТОЧКИ С ПРАВИЛЬНЫМ ПРИОРИТЕТОМ
@@ -80,7 +73,6 @@ export async function GET(request: NextRequest) {
     const supplierStats = new Map()
 
     projects.forEach((project: any) => {
-      console.log(`\\n🔄 Обрабатываем проект: ${project.name}`)
 
       let supplierInfo: any = {}
       let dataSource = 'none'
@@ -89,7 +81,6 @@ export async function GET(request: NextRequest) {
       const projectSpecificReqs = projectRequisites?.filter(r => r.project_id === project.id) || []
       
       if (projectSpecificReqs.length > 0) {
-        console.log(`✅ [P1] Найдены реквизиты поставщика в project_requisites`)
         const req = projectSpecificReqs[0]
         const data = req.data || {}
         
@@ -106,7 +97,6 @@ export async function GET(request: NextRequest) {
       }
       // ПРИОРИТЕТ 2: Ищем в шаблонах по payment_method
       else if (bankTemplates && bankTemplates.length > 0) {
-        console.log(`⚠️ [P2] Используем шаблон банковских реквизитов`)
         const template = bankTemplates[0]
         
         supplierInfo = {
@@ -122,7 +112,6 @@ export async function GET(request: NextRequest) {
       }
       // НЕТ ДАННЫХ - пропускаем
       else {
-        console.log(`❌ Пропускаем проект ${project.name} - нет реквизитов`)
         return
       }
 
@@ -238,9 +227,7 @@ export async function GET(request: NextRequest) {
       return b.statistics.total_projects - a.statistics.total_projects
     })
 
-    console.log(`🎉 [FIXED] Создано эхо карточек: ${echoCards.length}`)
     echoCards.forEach(card => {
-      console.log(`📋 ${card.supplier_info.name} - источник: ${card.extraction_info.data_source}`)
     })
 
     return NextResponse.json({

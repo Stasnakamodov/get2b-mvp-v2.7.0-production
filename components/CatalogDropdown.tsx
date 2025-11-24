@@ -306,7 +306,6 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
         throw new Error(data.error || 'Ошибка поиска')
       }
 
-      console.log('✅ Результаты поиска по изображению:', data)
 
       // Сохраняем результаты
       setProductSearchResults(data.products || [])
@@ -322,8 +321,6 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
         const firstProduct = data.products[0]
         const productCategory = firstProduct.category
 
-        console.log('🎯 Переходим в категорию:', productCategory)
-        console.log('📦 Найдено товаров:', data.products.length)
 
         // Перенаправляем в каталог с этой категорией и флагом для показа товаров
         router.push(`/dashboard/catalog?category=${encodeURIComponent(productCategory)}&view=products`)
@@ -349,7 +346,6 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
 
     // Проверяем, это ссылка на Ozon?
     if (searchUrl.toLowerCase().includes('ozon.ru')) {
-      console.log('🎯 [URL SEARCH] Обнаружен Ozon - показываем модалку выбора метода')
       setOzonUrl(searchUrl)
       setIsOzonMethodModalOpen(true)
       return
@@ -359,7 +355,6 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
     setShowNoResults(false)
 
     try {
-      console.log('🔗 [URL SEARCH] Начинаем поиск по URL:', searchUrl)
 
       // Вызываем наш API для поиска по URL
       const response = await fetch('/api/catalog/search-by-url', {
@@ -376,11 +371,9 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
         throw new Error(data.error || 'Ошибка поиска')
       }
 
-      console.log('✅ [URL SEARCH] Результаты получены:', data)
 
       // Если товары найдены
       if (data.products && data.products.length > 0) {
-        console.log('🎯 [URL SEARCH] Найдено товаров:', data.products.length)
 
         // Сохраняем результаты
         setProductSearchResults(data.products)
@@ -394,14 +387,12 @@ export default function CatalogDropdown({ cartItemsCount = 0, onCartClick }: Cat
         const firstProduct = data.products[0]
         const productCategory = firstProduct.category
 
-        console.log('📂 [URL SEARCH] Переходим в категорию:', productCategory)
 
         // Перенаправляем в каталог с этой категорией и флагом для показа товаров
         router.push(`/dashboard/catalog?category=${encodeURIComponent(productCategory)}&view=products`)
         setIsOpen(false)
       } else {
         // Если ничего не найдено
-        console.log('⚠️ [URL SEARCH] Товары не найдены')
         setShowNoResults(true)
       }
     } catch (error) {

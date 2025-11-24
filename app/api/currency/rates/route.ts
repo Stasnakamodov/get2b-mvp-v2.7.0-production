@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
   const currencies = searchParams.get('currencies')?.split(',');
 
   try {
-    console.log(`📡 [Currency API] Запрос курсов${forceRefresh ? ' (принудительное обновление)' : ''}`);
     
     const currencyService = CurrencyService.getInstance();
     const data = await currencyService.getRates(forceRefresh);
@@ -40,8 +39,6 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    console.log(`✅ [Currency API] Отправлено курсов: ${Object.keys(data.rates).length}`);
-    console.log(`📊 [Currency API] Источник: ${data.source}`);
 
     return NextResponse.json(response, {
       status: 200,
@@ -84,7 +81,6 @@ export async function POST(request: NextRequest) {
     const currencyService = CurrencyService.getInstance();
     const conversion = await currencyService.convert(Number(amount), from.toUpperCase(), to.toUpperCase());
 
-    console.log(`💱 [Currency API] Конвертация: ${amount} ${from} → ${conversion.amount} ${to}`);
 
     return NextResponse.json({
       success: true,

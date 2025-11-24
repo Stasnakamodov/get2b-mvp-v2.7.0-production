@@ -14,8 +14,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "webhookUrl обязателен" }, { status: 400 })
     }
 
-    console.log("🤖 Устанавливаем webhook для ChatHub Assistant:", webhookUrl)
-    console.log("🔑 Используем чат-бот токен:", TELEGRAM_CHAT_BOT_TOKEN ? "Токен установлен" : "Токен отсутствует")
 
     // Сначала удаляем старый webhook
     const deleteResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_CHAT_BOT_TOKEN}/deleteWebhook`, {
@@ -24,7 +22,6 @@ export async function POST(req: NextRequest) {
     })
 
     const deleteResult = await deleteResponse.json()
-    console.log("🗑️ Удаление старого чат-бот webhook:", deleteResult)
 
     // Устанавливаем новый webhook для чат-бота
     const setResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_CHAT_BOT_TOKEN}/setWebhook`, {
@@ -38,7 +35,6 @@ export async function POST(req: NextRequest) {
     })
 
     const setResult = await setResponse.json()
-    console.log("📡 ChatHub Assistant setWebhook ответ:", setResult)
 
     if (setResult.ok) {
       return NextResponse.json({
@@ -62,12 +58,10 @@ export async function GET() {
   }
 
   try {
-    console.log("📋 Получаем информацию о чат-бот webhook")
 
     const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_CHAT_BOT_TOKEN}/getWebhookInfo`)
     const result = await response.json()
 
-    console.log("📡 ChatHub Assistant getWebhookInfo ответ:", result)
 
     return NextResponse.json(result)
   } catch (error: any) {

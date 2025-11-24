@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'user_id обязателен' }, { status: 400 });
     }
 
-    console.log('🧠 [SMART RECOMMENDATIONS] Запрос рекомендаций для:', user_id);
 
     // Получаем статистику поставщиков
     const { data: supplierStats, error: statsError } = await supabase

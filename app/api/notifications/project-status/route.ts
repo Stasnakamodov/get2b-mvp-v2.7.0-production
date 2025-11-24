@@ -4,10 +4,8 @@ import { ProjectStatus } from '@/lib/types/project-status'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔔 API /notifications/project-status вызван')
 
     const body = await request.json()
-    console.log('📦 Тело запроса:', body)
 
     const { 
       projectId, 
@@ -30,7 +28,6 @@ export async function POST(request: NextRequest) {
 
     // Получаем список доступных каналов
     const availableChannels = notificationService.getAvailableChannels()
-    console.log('📡 Доступные каналы:', availableChannels)
 
     if (availableChannels.length === 0) {
       console.warn('⚠️ Нет доступных каналов уведомлений')
@@ -44,7 +41,6 @@ export async function POST(request: NextRequest) {
     // Подготавливаем получателей или используем дефолтные
     const finalRecipients: NotificationRecipient[] = recipients || getDefaultRecipients(newStatus, availableChannels)
 
-    console.log('👥 Получатели уведомлений:', finalRecipients.length)
 
     // Отправляем уведомления
     const results = await notificationService.sendProjectStatusNotification(
@@ -59,10 +55,8 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter(r => r.success).length
     const failureCount = results.filter(r => !r.success).length
 
-    console.log(`✅ Отправлено успешно: ${successCount}/${results.length}`)
     if (failureCount > 0) {
       console.warn(`❌ Неудачные отправки: ${failureCount}`)
-      console.log('Ошибки:', results.filter(r => !r.success).map(r => ({ channel: r.channel, error: r.error })))
     }
 
     return NextResponse.json({

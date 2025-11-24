@@ -11,26 +11,21 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("🎯 [WEBHOOK] Получен callback от Telegram");
     
     const body = await request.json();
-    console.log("📋 [WEBHOOK] Данные:", JSON.stringify(body, null, 2));
 
     // Сначала проверяем наличие сообщения с файлом
     if (body.message?.photo || body.message?.document) {
-      console.log("📁 [WEBHOOK] Получен файл");
       const message = body.message;
       const replyToMessage = message.reply_to_message;
       
       // Проверяем, что это ответ на сообщение о загрузке чека
       if (replyToMessage && replyToMessage.text?.includes("Загрузка чека для проекта")) {
-        console.log("✅ [WEBHOOK] Найдено сообщение о загрузке чека");
         
         const projectIdMatch = replyToMessage.text.match(/проекта ([a-f0-9-]+)/);
         
         if (projectIdMatch) {
           const projectId = projectIdMatch[1];
-          console.log("🎯 [WEBHOOK] Обрабатываем файл для проекта:", projectId);
           
           try {
             let fileId = "";
@@ -45,7 +40,6 @@ export async function POST(request: NextRequest) {
               fileName = message.document.file_name || "receipt";
             }
             
-            console.log("📄 [WEBHOOK] Получаем файл:", { fileId, fileName });
             
             // Получаем URL файла от Telegram
             const botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -54,7 +48,6 @@ export async function POST(request: NextRequest) {
             
             if (fileData.ok) {
               const fileUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
-              console.log("🔗 [WEBHOOK] URL файла от Telegram:", fileUrl);
               
               // Скачиваем и загружаем файл в Supabase
               const fileDownloadResponse = await fetch(fileUrl);
@@ -62,7 +55,6 @@ export async function POST(request: NextRequest) {
               const fileExtension = fileName.split('.').pop() || 'jpg';
               const supabaseFileName = `manager-receipt-${projectId}-${Date.now()}.${fileExtension}`;
               
-              console.log("📁 [WEBHOOK] Загружаем в Supabase Storage:", supabaseFileName);
               
               const { data: uploadData, error: uploadError } = await supabase.storage
                 .from("step6-client-receipts")
@@ -81,7 +73,6 @@ export async function POST(request: NextRequest) {
                 .getPublicUrl(supabaseFileName);
                 
               const supabaseFileUrl = urlData.publicUrl;
-              console.log("✅ [WEBHOOK] Файл загружен в Supabase:", supabaseFileUrl);
               
               // Получаем текущие данные проекта и обновляем
               const { data: currentProject, error: fetchError } = await supabase
@@ -113,7 +104,6 @@ export async function POST(request: NextRequest) {
                 }
               });
 
-              console.log("✅ [WEBHOOK] Проект обновлен с чеком от менеджера");
 
               const managerBot = new ManagerBotService();
               await managerBot.sendMessage(
@@ -140,10 +130,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ ok: false, error: error.message });
           }
         } else {
-          console.log("❌ [WEBHOOK] Project ID не найден в тексте сообщения");
         }
       } else {
-        console.log("❌ [WEBHOOK] Сообщение не является ответом на загрузку чека");
       }
       
       return NextResponse.json({ ok: true, message: "File processed" });
@@ -151,7 +139,6 @@ export async function POST(request: NextRequest) {
 
     // Проверяем наличие callback_query
     if (!body.callback_query) {
-      console.log("ℹ️ [WEBHOOK] Не callback query, игнорируем");
       return NextResponse.json({ ok: true });
     }
 
@@ -159,7 +146,6 @@ export async function POST(request: NextRequest) {
     const callbackData = callbackQuery.data;
     const callbackQueryId = callbackQuery.id;
     
-    console.log("🔍 [WEBHOOK] Callback data:", callbackData);
     
     const managerBot = new ManagerBotService();
 
@@ -180,22 +166,18 @@ export async function POST(request: NextRequest) {
         // Fallback - убираем только approve_
         projectId = callbackData.replace(/^approve_/, '');
       }
-      console.log("✅ [WEBHOOK] ОДОБРЕНИЕ проекта:", projectId);
       
       // Определяем новый статус в зависимости от типа одобрения
       let newStatus: ProjectStatus;
       let responseMessage: string;
       
       if (callbackData.includes('receipt')) {
-        console.log("📄 [WEBHOOK] Одобрение чека");
         newStatus = 'receipt_approved';
         responseMessage = `✅ Чек для проекта ${projectId} одобрен!`;
       } else if (callbackData.includes('invoice')) {
-        console.log("🧾 [WEBHOOK] Одобрение инвойса");
         newStatus = 'in_work';
         responseMessage = `✅ Инвойс для проекта ${projectId} одобрен!`;
       } else {
-        console.log("📋 [WEBHOOK] Общее одобрение проекта");
         newStatus = 'waiting_receipt';
         responseMessage = `✅ Проект ${projectId} одобрен! Переведен на следующий шаг`;
       }
@@ -209,7 +191,6 @@ export async function POST(request: NextRequest) {
           comment: 'Одобрено менеджером через Telegram'
         });
         
-        console.log(`✅ [WEBHOOK] Проект ${projectId} переведен в статус ${newStatus}, шаг ${result.step}`);
         
         await managerBot.answerCallbackQuery(
           callbackQueryId,
@@ -240,22 +221,18 @@ export async function POST(request: NextRequest) {
         // Fallback - убираем только reject_
         projectId = callbackData.replace(/^reject_/, '');
       }
-      console.log("❌ [WEBHOOK] ОТКЛОНЕНИЕ проекта:", projectId);
       
       // Определяем новый статус для отклонения
       let newStatus: ProjectStatus;
       let responseMessage: string;
       
       if (callbackData.includes('receipt')) {
-        console.log("📄 [WEBHOOK] Отклонение чека");
         newStatus = 'receipt_rejected';
         responseMessage = `❌ Чек для проекта ${projectId} отклонен`;
       } else if (callbackData.includes('invoice')) {
-        console.log("🧾 [WEBHOOK] Отклонение инвойса");
         newStatus = 'waiting_manager_receipt';
         responseMessage = `❌ Инвойс для проекта ${projectId} отклонен`;
       } else {
-        console.log("📋 [WEBHOOK] Отклонение проекта");
         newStatus = 'receipt_rejected';
         responseMessage = `❌ Проект ${projectId} отклонен`;
       }
@@ -269,7 +246,6 @@ export async function POST(request: NextRequest) {
           comment: 'Отклонено менеджером через Telegram'
         });
         
-        console.log(`❌ [WEBHOOK] Проект ${projectId} переведен в статус ${newStatus}, шаг ${result.step}`);
         
         await managerBot.answerCallbackQuery(
           callbackQueryId,
@@ -284,7 +260,6 @@ export async function POST(request: NextRequest) {
       }
     } else if (callbackData.startsWith('upload_supplier_receipt_')) {
       const projectId = callbackData.replace('upload_supplier_receipt_', '');
-      console.log("📤 [WEBHOOK] Запрос на загрузку чека для проекта:", projectId);
       
       try {
         // Отвечаем на callback query
@@ -299,7 +274,6 @@ export async function POST(request: NextRequest) {
         
         await managerBot.sendMessage(text);
         
-        console.log("✅ [WEBHOOK] Диалог загрузки чека открыт для проекта:", projectId);
       } catch (error: any) {
         console.error("❌ [WEBHOOK] Ошибка при открытии диалога загрузки:", error);
         await managerBot.answerCallbackQuery(
@@ -308,14 +282,12 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      console.log("❓ [WEBHOOK] Неизвестный callback:", callbackData);
       await managerBot.answerCallbackQuery(
         callbackQueryId,
         "Команда не распознана"
       );
     }
 
-    console.log("✅ [WEBHOOK] Обработка завершена успешно");
     return NextResponse.json({ ok: true });
 
   } catch (error) {

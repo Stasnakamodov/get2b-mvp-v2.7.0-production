@@ -13,10 +13,11 @@ const supabase = createClient(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const categoryId = params.id
+    const { id } = await params
+    const categoryId = id
 
     // Загружаем подкатегории для конкретной категории
     const { data: subcategories, error: subcategoriesError } = await supabase

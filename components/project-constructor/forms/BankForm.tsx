@@ -9,7 +9,6 @@ import type { FormProps, BankData } from '@/types/project-constructor.types'
 import { BankDataSchema } from '@/types/project-constructor.types'
 
 const BankForm = ({ onSave, onCancel, initialData }: FormProps<BankData>) => {
-  console.log("🔍 BankForm получил initialData:", initialData);
 
   const [formData, setFormData] = useState({
     bank_name: initialData?.bank_name || '',

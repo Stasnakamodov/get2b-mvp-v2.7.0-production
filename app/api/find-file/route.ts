@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log("🔍 [FIND-FILE] Ищем файл:", fileName);
     
     interface SearchResults {
       [bucketName: string]: {
@@ -30,7 +29,6 @@ export async function GET(request: NextRequest) {
 
     for (const bucketName of buckets) {
       try {
-        console.log(`🔍 [FIND-FILE] Проверяем бакет: ${bucketName}`);
         
         // Получаем список всех файлов в бакете
         const { data: files, error } = await supabaseService.storage
@@ -50,7 +48,6 @@ export async function GET(request: NextRequest) {
         ) || [];
 
         if (foundFiles.length > 0) {
-          console.log(`✅ [FIND-FILE] Найдено в бакете ${bucketName}:`, foundFiles.length, "файлов");
           
           results[bucketName] = {
             found: true,

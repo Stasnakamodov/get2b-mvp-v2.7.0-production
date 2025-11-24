@@ -118,7 +118,6 @@ export default function Step3PaymentForm() {
 
   // Диагностика: логируем спецификацию на 3 шаге
   useEffect(() => {
-    console.log('[Step3] projectId:', projectId, 'role:', role, 'specificationItems:', specificationItems);
   }, [projectId, role, specificationItems]);
 
   // Загрузка чека

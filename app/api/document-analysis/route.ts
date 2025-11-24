@@ -4,7 +4,6 @@ import { RussianCompanyExtractor } from "@/lib/ocr/RussianCompanyExtractor";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("📄 API /document-analysis вызван");
 
     const body = await request.json();
     const { fileUrl, fileType, documentType } = body;
@@ -16,24 +15,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("🔍 Анализируем документ:", {
-      fileUrl: fileUrl.substring(0, 100) + "...",
-      fileType,
-      documentType
-    });
-
     // Получаем сервис Yandex Vision
     const visionService = getYandexVisionService();
 
     // Извлекаем текст из документа
     const extractedText = await visionService.extractTextFromDocument(fileUrl, fileType);
 
-    console.log("✅ Текст извлечен:", extractedText.substring(0, 500) + "...");
-    console.log("📄 Длина извлеченного текста:", extractedText.length);
 
     // Проверяем, что текст был извлечен
     if (!extractedText || extractedText.trim().length === 0) {
-      console.log("⚠️ Текст не был извлечен из документа");
       return NextResponse.json({
         success: false,
         error: "Не удалось извлечь текст из документа",
@@ -54,24 +44,16 @@ export async function POST(request: NextRequest) {
 
     // Если это карточка компании, пытаемся извлечь структурированные данные
     if (documentType === 'company_card') {
-      console.log("🔍 Парсим данные компании с улучшенным экстрактором...");
-      console.log("📄 Тип документа:", documentType);
-      console.log("📄 Длина текста:", extractedText.length);
       
       const extractor = new RussianCompanyExtractor();
       const extractedData = extractor.extractCompanyData(extractedText);
       
       // Преобразуем в старый формат для совместимости
       result.suggestions = convertToLegacyFormat(extractedData);
-      console.log("📊 Результат парсинга:", result.suggestions);
-      console.log("📈 Общая уверенность:", extractedData.overallConfidence + "%");
-      console.log("📋 Извлечено полей:", extractedData.extractedFields);
     }
     // Если это инвойс, пытаемся извлечь позиции
     else if (documentType === 'invoice') {
-      console.log("🔍 Парсим данные инвойса...");
       result.suggestions = await extractInvoiceData(extractedText);
-      console.log("📊 Результат парсинга:", result.suggestions);
     }
 
     return NextResponse.json(result);
@@ -142,12 +124,9 @@ function convertToLegacyFormat(extractedData: any): any {
   }
   
   if (extractedData.corrAccount) {
-    console.log('✅ [API] Найден corrAccount:', extractedData.corrAccount.value);
     legacy.bankCorrAccount = extractedData.corrAccount.value;
     legacy.bankCorrAccountConfidence = extractedData.corrAccount.confidence;
   } else {
-    console.log('❌ [API] corrAccount не найден в extractedData');
-    console.log('🔍 [API] Доступные поля:', Object.keys(extractedData));
   }
   
   if (extractedData.phone) {
@@ -180,11 +159,6 @@ function convertToLegacyFormat(extractedData: any): any {
 function extractCompanyDataLegacy(text: string) {
   const suggestions: any = {};
   
-  console.log("🔍 Анализируем текст для извлечения данных компании...");
-  console.log("📄 Длина текста:", text.length);
-  console.log("📄 Первые 500 символов текста:", text.substring(0, 500));
-  console.log("📄 Строки текста (первые 10):", text.split('\n').slice(0, 10));
-  console.log("📄 Все строки текста:", text.split('\n'));
 
   // 🔥 УЛУЧШЕННЫЙ ПОИСК ИНН
   const innPatterns = [
@@ -240,7 +214,6 @@ function extractCompanyDataLegacy(text: string) {
   
   for (const pattern of innPatterns) {
     const match = text.match(pattern);
-    console.log("🔍 Проверяем паттерн ИНН:", pattern.source);
     if (match) {
       // Очищаем ИНН от возможных OCR ошибок
       let inn = match[1].replace(/[-_\s\.]/g, '');
@@ -249,7 +222,6 @@ function extractCompanyDataLegacy(text: string) {
       // Проверяем, что получилось 10 или 12 цифр
       if ((inn.length === 10 || inn.length === 12) && /^\d+$/.test(inn)) {
         suggestions.inn = inn;
-        console.log("✅ ИНН найден:", suggestions.inn);
         
         // Если это формат ИНН/КПП, то извлекаем и КПП
         if (match[2]) {
@@ -259,7 +231,6 @@ function extractCompanyDataLegacy(text: string) {
           // Проверяем, что получилось 9 цифр
           if (kpp.length === 9 && /^\d{9}$/.test(kpp)) {
             suggestions.kpp = kpp;
-            console.log("✅ КПП найден из ИНН/КПП:", suggestions.kpp);
           }
         }
         break;
@@ -269,7 +240,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // Дополнительная проверка: если ИНН не найден, но есть строка с двумя числами
   if (!suggestions.inn) {
-    console.log("🔍 ИНН не найден стандартными паттернами, ищем по контексту...");
     
     // Ищем строки с двумя числами (ИНН + КПП)
     const lines = text.split('\n');
@@ -284,7 +254,6 @@ function extractCompanyDataLegacy(text: string) {
         if (/^\d{10}$/.test(potentialInn) && /^\d{9}$/.test(potentialKpp)) {
           suggestions.inn = potentialInn;
           suggestions.kpp = potentialKpp;
-          console.log("✅ ИНН и КПП найдены по контексту:", suggestions.inn, suggestions.kpp);
           break;
         }
       }
@@ -293,7 +262,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // 🔥 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если КПП уже найден, но неправильный
   if (suggestions.kpp && suggestions.kpp === '971711419') {
-    console.log("⚠️ КПП неправильный, ищем правильный...");
     
     const lines = text.split('\n');
     for (const line of lines) {
@@ -304,7 +272,6 @@ function extractCompanyDataLegacy(text: string) {
         
         if (potentialInn === suggestions.inn && /^\d{9}$/.test(potentialKpp)) {
           suggestions.kpp = potentialKpp;
-          console.log("✅ Правильный КПП найден:", suggestions.kpp);
           break;
         }
       }
@@ -313,7 +280,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // 🔥 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если КПП все еще неправильный
   if (suggestions.kpp && suggestions.kpp === '971711419') {
-    console.log("⚠️ КПП все еще неправильный, ищем по строке ИНН / КПП...");
     
     const lines = text.split('\n');
     for (const line of lines) {
@@ -325,7 +291,6 @@ function extractCompanyDataLegacy(text: string) {
           
           if (potentialInn === suggestions.inn && /^\d{9}$/.test(potentialKpp)) {
             suggestions.kpp = potentialKpp;
-            console.log("✅ Правильный КПП найден по строке ИНН / КПП:", suggestions.kpp);
             break;
           }
         }
@@ -351,7 +316,6 @@ function extractCompanyDataLegacy(text: string) {
       
       if (kpp.length === 9 && /^\d{9}$/.test(kpp)) {
         suggestions.kpp = kpp;
-        console.log("✅ КПП найден:", suggestions.kpp);
         break;
       }
     }
@@ -380,7 +344,6 @@ function extractCompanyDataLegacy(text: string) {
       // Проверяем, что получилось 13 или 15 цифр
       if ((ogrn.length === 13 || ogrn.length === 15) && /^\d+$/.test(ogrn)) {
         suggestions.ogrn = ogrn;
-        console.log("✅ ОГРН найден:", suggestions.ogrn);
         break;
       }
     }
@@ -453,7 +416,6 @@ function extractCompanyDataLegacy(text: string) {
       // Проверяем, что название не слишком короткое и не слишком длинное
       if (companyName.length >= 3 && companyName.length <= 200) {
         suggestions.companyName = companyName;
-        console.log("✅ Название компании найдено:", suggestions.companyName);
         foundCompanyName = true;
         break;
       }
@@ -462,7 +424,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // 🔥 АГРЕССИВНЫЙ ПОИСК НАЗВАНИЯ КОМПАНИИ
   if (!foundCompanyName) {
-    console.log("🔍 Название компании не найдено стандартными паттернами, ищем агрессивно...");
     
     const lines = text.split('\n');
     for (let i = 0; i < Math.min(lines.length, 15); i++) { // Проверяем первые 15 строк
@@ -474,7 +435,6 @@ function extractCompanyDataLegacy(text: string) {
         const potentialName = orgMatch[1] + ' ' + orgMatch[2].trim();
         if (potentialName.length >= 5 && potentialName.length <= 200) {
           suggestions.companyName = potentialName;
-          console.log("✅ Название компании найдено агрессивным поиском:", suggestions.companyName);
           foundCompanyName = true;
           break;
         }
@@ -494,7 +454,6 @@ function extractCompanyDataLegacy(text: string) {
           !line.includes('ОРГАНИЗАЦИЯ')) {
         
         suggestions.companyName = line.trim();
-        console.log("✅ Название компании найдено по буквенному паттерну:", suggestions.companyName);
         foundCompanyName = true;
         break;
       }
@@ -503,7 +462,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // 🔥 ДОПОЛНИТЕЛЬНЫЙ ПОИСК: если название все еще не найдено, ищем в первых строках
   if (!foundCompanyName) {
-    console.log("🔍 Название компании все еще не найдено, ищем в первых строках...");
     
     const lines = text.split('\n');
     for (let i = 0; i < Math.min(lines.length, 10); i++) {
@@ -517,7 +475,6 @@ function extractCompanyDataLegacy(text: string) {
         
         if (cleanLine.length >= 5 && cleanLine.length <= 200) {
           suggestions.companyName = cleanLine;
-          console.log("✅ Название компании найдено в первых строках:", suggestions.companyName);
           foundCompanyName = true;
           break;
         }
@@ -527,7 +484,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // 🔥 ПОСЛЕДНЯЯ ПОПЫТКА: ищем строки с кавычками
   if (!foundCompanyName) {
-    console.log("🔍 Название компании не найдено, ищем строки с кавычками...");
     
     const lines = text.split('\n');
     for (const line of lines) {
@@ -542,7 +498,6 @@ function extractCompanyDataLegacy(text: string) {
         if (quoteMatch) {
           const companyName = quoteMatch[1] + ' "' + quoteMatch[2] + '"';
           suggestions.companyName = companyName;
-          console.log("✅ Название компании найдено в кавычках:", suggestions.companyName);
           foundCompanyName = true;
           break;
         }
@@ -552,7 +507,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // Если все еще не найдено, попробуем более агрессивный поиск
   if (!foundCompanyName) {
-    console.log("🔍 Название компании все еще не найдено, пробуем агрессивный поиск...");
     
     const lines = text.split('\n');
     for (const line of lines) {
@@ -572,7 +526,6 @@ function extractCompanyDataLegacy(text: string) {
           !trimmedLine.includes('Счет')) {
         
         suggestions.companyName = trimmedLine;
-        console.log("✅ Название компании найдено агрессивным поиском:", suggestions.companyName);
         foundCompanyName = true;
         break;
       }
@@ -584,8 +537,6 @@ function extractCompanyDataLegacy(text: string) {
     // Если название компании содержит только цифры и пробелы, это скорее всего ИНН/КПП
     const onlyNumbers = suggestions.companyName.replace(/\s/g, '').replace(/\D/g, '');
     if (onlyNumbers.length >= 15 && onlyNumbers.length <= 25) {
-      console.log("⚠️ Название компании содержит только цифры, вероятно это ИНН/КПП:", suggestions.companyName);
-      console.log("🔍 Очищаем название компании и ищем реальное название...");
       
       // Очищаем название компании
       suggestions.companyName = '';
@@ -602,7 +553,6 @@ function extractCompanyDataLegacy(text: string) {
           const potentialName = orgMatch[1] + ' ' + orgMatch[2].trim();
           if (potentialName.length >= 5 && potentialName.length <= 200) {
             suggestions.companyName = potentialName;
-            console.log("✅ Реальное название компании найдено:", suggestions.companyName);
             foundCompanyName = true;
             break;
           }
@@ -613,7 +563,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // 🔥 ДОПОЛНИТЕЛЬНЫЙ ПОИСК: если название все еще пустое, ищем в кавычках
   if (!suggestions.companyName || suggestions.companyName === '') {
-    console.log("🔍 Название компании пустое, ищем в кавычках...");
     
     const lines = text.split('\n');
     for (const line of lines) {
@@ -628,7 +577,6 @@ function extractCompanyDataLegacy(text: string) {
         if (quoteMatch) {
           const companyName = quoteMatch[1] + ' "' + quoteMatch[2] + '"';
           suggestions.companyName = companyName;
-          console.log("✅ Название компании найдено в кавычках:", suggestions.companyName);
           foundCompanyName = true;
           break;
         }
@@ -641,14 +589,12 @@ function extractCompanyDataLegacy(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.legalName = match[1].trim();
-      console.log("✅ Юридическое название найдено:", suggestions.legalName);
       break;
     }
   }
   
   // 🔥 ДОПОЛНИТЕЛЬНЫЙ ПОИСК ЮРИДИЧЕСКОГО НАЗВАНИЯ
   if (!suggestions.legalName) {
-    console.log("🔍 Юридическое название не найдено стандартными паттернами, ищем дополнительно...");
     
     const lines = text.split('\n');
     for (let i = 0; i < lines.length; i++) {
@@ -661,7 +607,6 @@ function extractCompanyDataLegacy(text: string) {
           const nextLine = lines[i + 1].trim();
           if (nextLine.length > 5 && nextLine.length < 200) {
             suggestions.legalName = nextLine;
-            console.log("✅ Юридическое название найдено в следующей строке:", suggestions.legalName);
             break;
           }
         }
@@ -670,7 +615,6 @@ function extractCompanyDataLegacy(text: string) {
       // Ищем строки с "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ"
       if (line.includes('ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ')) {
         suggestions.legalName = line.trim();
-        console.log("✅ Юридическое название найдено по ключевому слову:", suggestions.legalName);
         break;
       }
     }
@@ -704,7 +648,6 @@ function extractCompanyDataLegacy(text: string) {
           !/^\d+/.test(bankName) && // Исключаем строки, начинающиеся с цифр
           !/^\d+\s*\/\s*\d+/.test(bankName)) { // Исключаем форматы типа "123 / 456"
         suggestions.bankName = bankName;
-        console.log("✅ Банк найден:", suggestions.bankName);
         break;
       }
     }
@@ -712,7 +655,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // Если банк не найден, попробуем агрессивный поиск
   if (!suggestions.bankName) {
-    console.log("🔍 Банк не найден стандартными паттернами, пробуем агрессивный поиск...");
     
     const lines = text.split('\n');
     for (let i = 0; i < lines.length; i++) {
@@ -728,7 +670,6 @@ function extractCompanyDataLegacy(text: string) {
               !/^\d+/.test(nextLine) && // Исключаем строки, начинающиеся с цифр
               !/^\d+\s*\/\s*\d+/.test(nextLine)) { // Исключаем форматы типа "123 / 456"
             suggestions.bankName = nextLine;
-            console.log("✅ Банк найден после заголовка:", suggestions.bankName);
             break;
           }
         }
@@ -745,7 +686,6 @@ function extractCompanyDataLegacy(text: string) {
           !/^\d+/.test(line)) { // Исключаем строки, начинающиеся с цифр
         
         suggestions.bankName = line;
-        console.log("✅ Банк найден агрессивным поиском:", suggestions.bankName);
         break;
       }
     }
@@ -775,7 +715,6 @@ function extractCompanyDataLegacy(text: string) {
       // Проверяем, что получилось 20 цифр
       if (account.length === 20 && /^\d{20}$/.test(account)) {
         suggestions.bankAccount = account;
-        console.log("✅ Банковский счет найден:", suggestions.bankAccount);
         break;
       }
     }
@@ -783,7 +722,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // 🔥 ДОПОЛНИТЕЛЬНЫЙ ПОИСК: если счет не найден, ищем по контексту
   if (!suggestions.bankAccount) {
-    console.log("🔍 Расчетный счет не найден стандартными паттернами, ищем по контексту...");
     
     const lines = text.split('\n');
     for (let i = 0; i < lines.length; i++) {
@@ -797,7 +735,6 @@ function extractCompanyDataLegacy(text: string) {
           const accountMatch = nextLine.match(/(\d{20})/);
           if (accountMatch) {
             suggestions.bankAccount = accountMatch[1];
-            console.log("✅ Расчетный счет найден по контексту:", suggestions.bankAccount);
             break;
           }
         }
@@ -825,7 +762,6 @@ function extractCompanyDataLegacy(text: string) {
       // Проверяем, что получилось 20 цифр
       if (corrAccount.length === 20 && /^\d{20}$/.test(corrAccount)) {
         suggestions.bankCorrAccount = corrAccount;
-        console.log("✅ Корреспондентский счет найден:", suggestions.bankCorrAccount);
         break;
       }
     }
@@ -858,7 +794,6 @@ function extractCompanyDataLegacy(text: string) {
       // Проверяем, что получилось 9 цифр
       if (bik.length === 9 && /^\d{9}$/.test(bik)) {
         suggestions.bankBik = bik;
-        console.log("✅ БИК найден:", suggestions.bankBik);
         break;
       }
     }
@@ -866,7 +801,6 @@ function extractCompanyDataLegacy(text: string) {
   
   // 🔥 ДОПОЛНИТЕЛЬНЫЙ ПОИСК: если БИК не найден, ищем по контексту
   if (!suggestions.bankBik) {
-    console.log("🔍 БИК не найден стандартными паттернами, ищем по контексту...");
     
     const lines = text.split('\n');
     for (let i = 0; i < lines.length; i++) {
@@ -880,7 +814,6 @@ function extractCompanyDataLegacy(text: string) {
           const bikMatch = nextLine.match(/(\d{9})/);
           if (bikMatch) {
             suggestions.bankBik = bikMatch[1];
-            console.log("✅ БИК найден по контексту:", suggestions.bankBik);
             break;
           }
         }
@@ -889,7 +822,6 @@ function extractCompanyDataLegacy(text: string) {
         const bikMatch = line.match(/БИК[^0-9]*(\d{9})/i);
         if (bikMatch) {
           suggestions.bankBik = bikMatch[1];
-          console.log("✅ БИК найден в строке:", suggestions.bankBik);
           break;
         }
       }
@@ -908,7 +840,6 @@ function extractCompanyDataLegacy(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.address = match[2] || match[1];
-      console.log("✅ Адрес найден:", suggestions.address);
       break;
     }
   }
@@ -924,7 +855,6 @@ function extractCompanyDataLegacy(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.phone = (match[2] || match[1]).trim();
-      console.log("✅ Телефон найден:", suggestions.phone);
       break;
     }
   }
@@ -939,7 +869,6 @@ function extractCompanyDataLegacy(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.email = match[2] || match[1];
-      console.log("✅ Email найден:", suggestions.email);
       break;
     }
   }
@@ -954,7 +883,6 @@ function extractCompanyDataLegacy(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.website = match[2] || match[1];
-      console.log("✅ Сайт найден:", suggestions.website);
       break;
     }
   }
@@ -969,14 +897,12 @@ function extractCompanyDataLegacy(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.director = match[2] || match[1];
-      console.log("✅ Директор найден:", suggestions.director);
       break;
     }
   }
   
   // Если директор не найден, попробуем агрессивный поиск
   if (!suggestions.director) {
-    console.log("🔍 Директор не найден стандартными паттернами, пробуем агрессивный поиск...");
     
     const lines = text.split('\n');
     for (const line of lines) {
@@ -992,13 +918,11 @@ function extractCompanyDataLegacy(text: string) {
           !trimmedLine.includes('Адрес')) {
         
         suggestions.director = trimmedLine;
-        console.log("✅ Директор найден агрессивным поиском:", suggestions.director);
         break;
       }
     }
   }
 
-  console.log("📊 Итоговые извлеченные данные:", suggestions);
   return suggestions;
 }
 
@@ -1011,25 +935,20 @@ async function extractInvoiceData(text: string) {
     invoiceInfo: {}
   };
 
-  console.log("🔍 Анализируем текст для извлечения данных инвойса...");
-  console.log("📄 Первые 300 символов текста:", text.substring(0, 300));
 
   // Специальная обработка для XLSX данных (табличные форматы)
   if (text.includes('=== ЛИСТ:')) {
-    console.log("📊 Обнаружены данные XLSX, применяем специальную обработку...");
     return extractInvoiceDataFromXlsx(text);
   }
 
   // 🤖 UNIVERSAL AI: Обработка нетабличных форматов с автоматическим fallback
   if (text.length > 500) {
-    console.log("🤖 Используем Universal AI для обработки нетабличного инвойса...");
     try {
       const { universalAIService } = await import('../../../lib/services/UniversalAIService');
 
       const aiResult = await universalAIService.processInvoiceWithAI(text);
 
       if (aiResult.items && aiResult.items.length > 0) {
-        console.log("✅ Universal AI успешно обработал инвойс!");
 
         // Конвертируем AI результат в формат suggestions
         const convertedResult = {
@@ -1045,16 +964,12 @@ async function extractInvoiceData(text: string) {
           bankInfo: aiResult.bankInfo || {}
         };
 
-        console.log("📊 Universal AI результат:", convertedResult);
         return convertedResult;
       } else {
-        console.log("⚠️ Universal AI не нашел товары, переходим к regex парсингу");
       }
     } catch (error) {
-      console.log("⚠️ Ошибка Universal AI, используем regex парсинг:", error);
     }
   } else {
-    console.log("⚠️ Текст слишком короткий для AI, используем regex парсинг");
   }
 
   // Поиск номера инвойса
@@ -1069,7 +984,6 @@ async function extractInvoiceData(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.invoiceInfo.number = match[2] || match[1];
-      console.log("✅ Номер инвойса найден:", suggestions.invoiceInfo.number);
       break;
     }
   }
@@ -1085,7 +999,6 @@ async function extractInvoiceData(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.invoiceInfo.date = match[2] || match[1];
-      console.log("✅ Дата инвойса найдена:", suggestions.invoiceInfo.date);
       break;
     }
   }
@@ -1102,7 +1015,6 @@ async function extractInvoiceData(text: string) {
     if (match) {
       suggestions.invoiceInfo.totalAmount = match[2];
       suggestions.invoiceInfo.currency = match[3];
-      console.log("✅ Общая сумма найдена:", match[2], match[3]);
       break;
     }
   }
@@ -1118,7 +1030,6 @@ async function extractInvoiceData(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.invoiceInfo.vat = match[2];
-      console.log("✅ НДС найден:", match[2]);
       break;
     }
   }
@@ -1134,7 +1045,6 @@ async function extractInvoiceData(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.invoiceInfo.seller = match[2] || match[1];
-      console.log("✅ Поставщик найден:", suggestions.invoiceInfo.seller);
       break;
     }
   }
@@ -1150,7 +1060,6 @@ async function extractInvoiceData(text: string) {
     const match = text.match(pattern);
     if (match) {
       suggestions.invoiceInfo.buyer = match[2] || match[1];
-      console.log("✅ Покупатель найден:", suggestions.invoiceInfo.buyer);
       break;
     }
   }
@@ -1159,7 +1068,6 @@ async function extractInvoiceData(text: string) {
   const bankRequisites = extractBankRequisitesFromInvoice(text);
   if (bankRequisites.hasRequisites) {
     suggestions.bankInfo = bankRequisites;
-    console.log("🏦 Банковские реквизиты извлечены:", bankRequisites);
   }
 
   // Улучшенный поиск позиций товаров
@@ -1223,7 +1131,6 @@ async function extractInvoiceData(text: string) {
           
           if (item.name.length > 2) {
             suggestions.items.push(item);
-            console.log("✅ Позиция найдена:", item);
           }
           break;
         }
@@ -1272,7 +1179,6 @@ async function extractInvoiceData(text: string) {
 
           if (item.name.length > 2) {
             suggestions.items.push(item);
-            console.log("✅ Товар найден по ключевому слову:", item);
           }
         }
       }
@@ -1283,10 +1189,8 @@ async function extractInvoiceData(text: string) {
   const extractedBankRequisites = extractBankRequisitesFromInvoice(text);
   if (extractedBankRequisites.hasRequisites) {
     suggestions.bankInfo = extractedBankRequisites;
-    console.log("🏦 Банковские реквизиты добавлены:", extractedBankRequisites);
   }
 
-  console.log("📊 Итоговые данные инвойса:", suggestions);
   return suggestions;
 }
 
@@ -1296,7 +1200,6 @@ function extractInvoiceDataFromXlsx(text: string) {
     invoiceInfo: {}
   };
 
-  console.log("🔍 Специальная обработка XLSX данных...");
 
   const lines = text.split('\n');
   let currentSheet = '';
@@ -1309,7 +1212,6 @@ function extractInvoiceDataFromXlsx(text: string) {
     // Определяем лист
     if (line.startsWith('=== ЛИСТ:')) {
       currentSheet = line.replace('=== ЛИСТ:', '').replace('===', '').trim();
-      console.log("📋 Обрабатываем лист:", currentSheet);
       continue;
     }
 
@@ -1318,7 +1220,6 @@ function extractInvoiceDataFromXlsx(text: string) {
       const invMatch = line.match(/(?:INV:|Счет|Invoice)[:\s]*([A-Z0-9\-_\/]+)/i);
       if (invMatch && !suggestions.invoiceInfo.number) {
         suggestions.invoiceInfo.number = invMatch[1];
-        console.log("✅ Номер инвойса найден:", suggestions.invoiceInfo.number);
       }
     }
 
@@ -1327,7 +1228,6 @@ function extractInvoiceDataFromXlsx(text: string) {
       const dateMatch = line.match(/(\w+\s+\d{1,2}\s+\w+\s+\d{4})/);
       if (dateMatch && !suggestions.invoiceInfo.date) {
         suggestions.invoiceInfo.date = dateMatch[1];
-        console.log("✅ Дата инвойса найдена:", suggestions.invoiceInfo.date);
       }
     }
 
@@ -1337,7 +1237,6 @@ function extractInvoiceDataFromXlsx(text: string) {
       const sellerMatch = line.match(/Agent:\s*(.+?)(?:\s+based on|$)/);
       if (sellerMatch && !suggestions.invoiceInfo.seller) {
         suggestions.invoiceInfo.seller = sellerMatch[1].trim();
-        console.log("✅ Поставщик найден:", suggestions.invoiceInfo.seller);
       }
     }
     if (line.includes('Buyer:') && line.includes('LLC')) {
@@ -1345,7 +1244,6 @@ function extractInvoiceDataFromXlsx(text: string) {
       const buyerMatch = line.match(/Buyer:\s*(.+?)(?:\s*$)/);
       if (buyerMatch && !suggestions.invoiceInfo.buyer) {
         suggestions.invoiceInfo.buyer = buyerMatch[1].trim();
-        console.log("✅ Покупатель найден:", suggestions.invoiceInfo.buyer);
       }
     }
 
@@ -1355,7 +1253,6 @@ function extractInvoiceDataFromXlsx(text: string) {
     if (totalMatch && !suggestions.invoiceInfo.totalAmount) {
       suggestions.invoiceInfo.totalAmount = totalMatch[1];
       suggestions.invoiceInfo.currency = line.includes('RMB') ? 'RMB' : 'USD';
-      console.log("✅ Общая сумма найдена:", totalMatch[1], suggestions.invoiceInfo.currency);
     }
   }
   
@@ -1364,38 +1261,27 @@ function extractInvoiceDataFromXlsx(text: string) {
     const totalMatch = line.match(/Total,RUB\s*(\d+[.,]?\d*)/i);
     if (totalMatch && !suggestions.invoiceInfo.totalAmountRUB) {
       suggestions.invoiceInfo.totalAmountRUB = totalMatch[1];
-      console.log("✅ Общая сумма в рублях найдена:", totalMatch[1]);
     }
   }
 
     // Определяем начало секции товаров
     if (line.includes('Product description') || line.includes('ITEM NUMBER') || line.includes('QTY') || line.includes('Price,RMB') || line.includes('ITEM NUMBER |')) {
       inItemsSection = true;
-      console.log("📍 Найдена секция товаров");
       continue;
     }
 
     // Определяем конец секции товаров
     if (inItemsSection && (line.includes('Total:') || line.includes('Deposit(RMB):') || line.includes('Payment terms:'))) {
       inItemsSection = false;
-      console.log("📍 Конец секции товаров");
       continue;
     }
 
     // Извлечение позиций товаров из XLSX (два формата)
     if (inItemsSection && line.includes('|')) {
-      console.log("🔍 Обрабатываем строку товара:", line);
       const parts = line.split('|').map(part => part.trim()).filter(part => part.length > 0);
-      console.log("📋 Части строки:", parts);
-      console.log("🔍 Проверяем условия для входа в форматы:");
-      console.log("  - parts.length >= 3:", parts.length >= 3);
-      console.log("  - parts.length >= 4:", parts.length >= 4);
-      console.log("  - parts.length >= 6:", parts.length >= 6);
-      console.log("  - line.match(/^\\d+\\s+\\|/):", line.match(/^\d+\s+\|/));
       
               // ПРИОРИТЕТ 1: Формат 3 - Номер | Код | Название | Количество | Цена | Сумма (6 колонок)
         if (parts.length >= 6 && line.match(/^\d+\s+\|/)) {
-          console.log("🔍 Проверяем формат 3 (6+ колонок)...");
           const itemNumber = parts[0];
           const itemCode = parts[1];
           const itemName = parts[2];
@@ -1403,9 +1289,6 @@ function extractInvoiceDataFromXlsx(text: string) {
           const priceStr = parts[4];
           const totalStr = parts[5] || '';
 
-          console.log("🔍 Проверяем условия для товара (формат 3):");
-          console.log("  - itemNumber:", itemNumber, "isNaN:", isNaN(parseInt(itemNumber)));
-          console.log("  - itemCode:", itemCode, "trimmed length:", itemCode?.trim().length);
 
           // Проверяем, что это действительно товар (начинается с цифры и код не пустой)
           if (itemNumber && !isNaN(parseInt(itemNumber)) && itemCode && itemCode.trim().length > 0) {
@@ -1413,11 +1296,6 @@ function extractInvoiceDataFromXlsx(text: string) {
             const price = parseFloat(priceStr.replace(/[^\d.,]/g, '').replace(',', '.'));
             const total = totalStr ? parseFloat(totalStr.replace(/[^\d.,]/g, '').replace(',', '.')) : quantity * price;
 
-            console.log("🔍 Числовые значения (формат 3):");
-            console.log("  - quantity:", quantity);
-            console.log("  - price:", price);
-            console.log("  - total:", total);
-            console.log("  - itemName length:", itemName?.trim().length);
 
             if (quantity && price && itemName && itemName.trim().length > 2) {
               const item = {
@@ -1429,18 +1307,14 @@ function extractInvoiceDataFromXlsx(text: string) {
                 unit: 'шт'
               };
               suggestions.items.push(item);
-              console.log("✅ Позиция из XLSX найдена (формат 3):", item);
             } else {
-              console.log("❌ Формат 3: Условия не прошли проверку");
             }
           } else {
-            console.log("❌ Формат 3: itemNumber или itemCode не прошли проверку");
           }
         }
 
         // ПРИОРИТЕТ 2: Формат 1 - Product description | Quantity | Price | Total (3-4 колонки)
         else if (parts.length >= 3 && parts.length < 6 && !line.match(/^(Product|ITEM|QTY|Price|Total)/i)) {
-          console.log("🔍 Проверяем формат 1 (3-5 колонок)...");
         const itemName = parts[0];
         const quantityStr = parts[1];
         const priceStr = parts[2];
@@ -1463,14 +1337,12 @@ function extractInvoiceDataFromXlsx(text: string) {
             };
 
             suggestions.items.push(item);
-            console.log("✅ Позиция из XLSX найдена:", item);
           }
         }
       }
       
               // Формат 2: ITEM NUMBER | CODE | NAME | QTY | PRICE | TOTAL
         else if (parts.length >= 4 && line.match(/^\d+\s+\|/)) {
-          console.log("🔍 Проверяем формат 2...");
         const itemNumber = parts[0];
         const itemCode = parts[1];
         const itemName = parts[2];
@@ -1495,7 +1367,6 @@ function extractInvoiceDataFromXlsx(text: string) {
             };
 
             suggestions.items.push(item);
-            console.log("✅ Позиция из XLSX найдена:", item);
           }
         }
       }
@@ -1507,10 +1378,8 @@ function extractInvoiceDataFromXlsx(text: string) {
   const extractedBankRequisites = extractBankRequisitesFromInvoice(text);
   if (extractedBankRequisites.hasRequisites) {
     suggestions.bankInfo = extractedBankRequisites;
-    console.log("🏦 Банковские реквизиты добавлены:", extractedBankRequisites);
   }
 
-  console.log("📊 Итоговые данные XLSX инвойса:", suggestions);
   return suggestions;
 }
 
@@ -1518,8 +1387,6 @@ function extractInvoiceDataFromXlsx(text: string) {
  * 🔥 НОВАЯ ФУНКЦИЯ: Извлечение банковских реквизитов из инвойса
  */
 function extractBankRequisitesFromInvoice(text: string) {
-  console.log("🏦 Начинаем извлечение банковских реквизитов из инвойса...");
-  console.log("📄 Первые 1000 символов текста для поиска банковских реквизитов:", text.substring(0, 1000));
   
   const requisites = {
     bankName: '',
@@ -1548,7 +1415,6 @@ function extractBankRequisitesFromInvoice(text: string) {
     const match = text.match(pattern);
     if (match) {
       requisites.accountNumber = match[1];
-      console.log("✅ Найден номер счета:", requisites.accountNumber);
       break;
     }
   }
@@ -1567,7 +1433,6 @@ function extractBankRequisitesFromInvoice(text: string) {
     const match = text.match(pattern);
     if (match) {
       requisites.swift = match[1];
-      console.log("✅ Найден SWIFT код:", requisites.swift);
       break;
     }
   }
@@ -1591,7 +1456,6 @@ function extractBankRequisitesFromInvoice(text: string) {
       bankName = bankName.replace(/^[^a-zA-Z]*/, '').replace(/[^a-zA-Z\s]*$/, '').trim();
       if (bankName.length > 3) {
         requisites.bankName = bankName;
-        console.log("✅ Найдено название банка:", requisites.bankName);
         break;
       }
     }
@@ -1609,7 +1473,6 @@ function extractBankRequisitesFromInvoice(text: string) {
     const match = text.match(pattern);
     if (match) {
       requisites.recipientName = match[1].trim();
-      console.log("✅ Найдено название получателя:", requisites.recipientName);
       break;
     }
   }
@@ -1632,7 +1495,6 @@ function extractBankRequisitesFromInvoice(text: string) {
       
       if (address) {
         requisites.recipientAddress = address;
-        console.log("✅ Найден адрес получателя:", requisites.recipientAddress);
         break;
       }
     }
@@ -1648,7 +1510,6 @@ function extractBankRequisitesFromInvoice(text: string) {
   // Проверяем, есть ли хотя бы основные реквизиты
   requisites.hasRequisites = !!(requisites.accountNumber || requisites.swift || requisites.recipientName);
   
-  console.log("🏦 Результат извлечения реквизитов:", requisites);
   return requisites;
 }
 
@@ -1656,7 +1517,6 @@ function extractBankRequisitesFromInvoice(text: string) {
  * 🔥 НОВАЯ ФУНКЦИЯ: Очистка адреса от товарных данных
  */
 function cleanAddressFromProductData(address: string): string {
-  console.log("🧹 Очищаем адрес от товарных данных:", address);
   
   // Удаляем строки с товарными данными
   const lines = address.split('\n');
@@ -1673,7 +1533,6 @@ function cleanAddressFromProductData(address: string): string {
         trimmedLine.includes('|') && trimmedLine.includes('RMB') ||
         trimmedLine.match(/^\d+[.,]\d+$/) ||  // Цены
         trimmedLine.match(/^\d+$/) && trimmedLine.length > 8) {  // Длинные номера товаров
-      console.log("❌ Удаляем товарную строку:", trimmedLine);
       return false;
     }
     
@@ -1681,7 +1540,6 @@ function cleanAddressFromProductData(address: string): string {
   });
   
   const cleanAddress = cleanLines.join('\n').trim();
-  console.log("✅ Очищенный адрес:", cleanAddress);
   
   return cleanAddress;
 } 

@@ -12,7 +12,6 @@ export async function GET(
   try {
     const resolvedParams = await params
     const category = decodeURIComponent(resolvedParams.category)
-    console.log(`📦 [API] Запрос товаров категории: "${category}"`)
 
     // Получаем параметры запроса
     const { searchParams } = new URL(request.url)
@@ -32,7 +31,6 @@ export async function GET(
         const { data: { user } } = await supabase.auth.getUser(token)
         currentUserId = user?.id || null
       } catch (error) {
-        console.log('ℹ️ [API] Не удалось определить пользователя из токена')
       }
     }
 
@@ -49,7 +47,6 @@ export async function GET(
       offset_param: offset
     })
 
-    console.log('🔍 [API] RAW DATA from RPC:', typeof rawData, Array.isArray(rawData) ? `Array[${rawData.length}]` : rawData)
 
     // Функция возвращает JSONB array напрямую через Supabase JS client
     let products = []
@@ -69,8 +66,6 @@ export async function GET(
       products = []
     }
 
-    console.log('🔍 [API] Parsed products:', products?.length, 'товаров')
-    console.log('🔍 [API] Первый товар из БД:', products?.[0] ? `${products[0].product_name} (${products[0].category_name})` : 'нет товаров')
 
     if (error) {
       console.error('❌ [API] Ошибка получения товаров категории:', error)
@@ -88,12 +83,6 @@ export async function GET(
     const supplierStats = groupProductsBySupplier(sortedProducts)
 
     const executionTime = Date.now() - startTime
-    console.log(`✅ [API] Товары категории "${category}" получены за ${executionTime}мс:`, {
-      total_products: sortedProducts.length,
-      suppliers_count: supplierStats.length,
-      search_query: searchQuery,
-      user_id: currentUserId ? 'authenticated' : 'anonymous'
-    })
 
     return NextResponse.json({
       success: true,

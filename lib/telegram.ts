@@ -23,24 +23,20 @@ function getManagerBotService(): ManagerBotService {
 // ===============================
 
 export async function sendTelegramMessage(text: string) {
-  console.log("🔄 DEPRECATED: sendTelegramMessage - использует новый ManagerBotService");
   
   try {
     const service = getManagerBotService();
     await service.sendMessage(text);
-    console.log("✅ Сообщение отправлено через ManagerBotService");
   } catch (error) {
     console.error("❌ Ошибка при отправке сообщения:", error);
   }
 }
 
 export async function sendTelegramDocument(documentUrl: string, caption?: string) {
-  console.log("🔄 DEPRECATED: sendTelegramDocument - использует новый ManagerBotService");
   
   try {
     const service = getManagerBotService();
     const result = await service.sendDocument(documentUrl, caption);
-    console.log("✅ Документ отправлен через ManagerBotService");
     return { success: true, result };
   } catch (error) {
     console.error("❌ Ошибка при отправке документа:", error);
@@ -49,12 +45,10 @@ export async function sendTelegramDocument(documentUrl: string, caption?: string
 }
 
 export async function sendClientReceiptApprovalRequest(documentUrl: string, caption: string, projectRequestId: string) {
-  console.log("🔄 sendClientReceiptApprovalRequest - использует новый ManagerBotService");
   
   try {
     const service = getManagerBotService();
     const result = await service.sendClientReceiptApprovalRequest(documentUrl, caption, projectRequestId);
-    console.log("✅ Чек клиента с кнопками отправлен через ManagerBotService");
     return { success: true, result };
   } catch (error) {
     console.error("❌ Ошибка при отправке чека клиента:", error);
@@ -67,12 +61,10 @@ export async function sendTelegramProjectApprovalRequest(
   projectId: string,
   type: "spec" | "receipt" = "spec",
 ) {
-  console.log("🔄 DEPRECATED: sendTelegramProjectApprovalRequest - использует новый ManagerBotService");
   
   try {
     const service = getManagerBotService();
     const result = await service.sendProjectApprovalRequest(text, projectId, type);
-    console.log("✅ Запрос на одобрение отправлен через ManagerBotService");
     return { success: true, result };
   } catch (error) {
     console.error("❌ Ошибка при отправке запроса:", error);
@@ -97,7 +89,6 @@ export async function sendSupplierReceiptRequestToManager({
   paymentMethod: string;
   requisites?: string;
 }) {
-  console.log("🔄 DEPRECATED: sendSupplierReceiptRequestToManager - использует новый ManagerBotService");
   
   try {
     const service = getManagerBotService();
@@ -110,7 +101,6 @@ export async function sendSupplierReceiptRequestToManager({
       paymentMethod,
       requisites
     });
-    console.log("✅ Запрос на загрузку чека отправлен через ManagerBotService");
     return { success: true, result };
   } catch (error) {
     console.error("❌ Ошибка при отправке запроса:", error);
@@ -127,7 +117,6 @@ export async function sendClientConfirmationRequestToTelegram({
   email: string;
   companyName: string;
 }) {
-  console.log("🔄 DEPRECATED: sendClientConfirmationRequestToTelegram - использует новый ManagerBotService");
   
   try {
     const service = getManagerBotService();
@@ -136,7 +125,6 @@ export async function sendClientConfirmationRequestToTelegram({
       email,
       companyName
     });
-    console.log("✅ Запрос на подтверждение отправлен через ManagerBotService");
     return { success: true, result };
   } catch (error) {
     console.error("❌ Ошибка при отправке запроса:", error);
@@ -163,7 +151,6 @@ export async function sendAccreditationRequestToTelegram({
   notes?: string;
   productsCount: number;
 }) {
-  console.log("🔄 DEPRECATED: sendAccreditationRequestToTelegram - использует новый ManagerBotService");
   
   try {
     const service = getManagerBotService();
@@ -177,7 +164,6 @@ export async function sendAccreditationRequestToTelegram({
       notes,
       productsCount
     });
-    console.log("✅ Заявка на аккредитацию отправлена через ManagerBotService");
     return { success: true, result };
   } catch (error) {
     console.error("❌ Ошибка при отправке заявки:", error);
@@ -243,7 +229,6 @@ export async function sendClientProfileNotificationToManager({
       corrAccount,
       bik
     });
-    console.log("✅ Уведомление о профиле клиента отправлено менеджеру");
     return { success: true, result };
   } catch (error) {
     console.error("❌ Ошибка при отправке уведомления о профиле клиента:", error);
@@ -297,7 +282,6 @@ export async function sendSupplierProfileNotificationToManager({
       contactPhone,
       website
     });
-    console.log("✅ Уведомление о профиле поставщика отправлено менеджеру");
     return { success: true, result };
   } catch (error) {
     console.error("❌ Ошибка при отправке уведомления о профиле поставщика:", error);

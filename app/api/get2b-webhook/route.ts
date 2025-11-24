@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createHmac, timingSafeEqual } from "crypto";
 
 // 🚀 GET2B WEBHOOK - Интеграция с основным сайтом
 // URL: https://945bbafbb0fd.ngrok-free.app
@@ -39,8 +40,6 @@ try {
         persistSession: false,
       },
     });
-    console.log('✅ Supabase инициализирован для webhook с', 
-      process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service role key (обходит RLS)' : 'anon key');
   } else {
     console.warn('⚠️ Переменные Supabase не найдены, webhook работает без БД');
   }
@@ -50,10 +49,8 @@ try {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('🌐 GET2B Webhook: Получен запрос с основного сайта');
     
     const body: Get2BWebhookPayload = await req.json();
-    console.log('📦 Webhook payload:', JSON.stringify(body, null, 2));
 
     // Верификация подписи (опционально)
     const signature = req.headers.get('x-get2b-signature');
@@ -112,7 +109,6 @@ export async function GET(req: NextRequest) {
 
 // 📋 Обработка лидов (заявки с лендинга)
 async function handleLead(data: Get2BWebhookPayload['data']) {
-  console.log('🎯 Обработка лида:', data);
 
   try {
     let leadId = null;
@@ -143,24 +139,12 @@ async function handleLead(data: Get2BWebhookPayload['data']) {
           // Не прерываем выполнение, продолжаем без сохранения
         } else {
           leadId = lead.id;
-          console.log('✅ Лид сохранен в БД:', leadId);
         }
       } catch (dbError) {
         console.error('❌ Ошибка подключения к БД:', dbError);
         // Продолжаем без сохранения
       }
     }
-
-    // Логируем данные в любом случае
-    console.log('✅ Лид обработан:', {
-      id: leadId,
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      company: data.company,
-      message: data.message,
-      source: data.source || 'website'
-    });
 
     // Отправляем уведомление в Telegram (если настроен)
     await notifyTelegramAboutLead({
@@ -185,7 +169,6 @@ async function handleLead(data: Get2BWebhookPayload['data']) {
 
 // 📞 Обработка заявок на контакт
 async function handleContact(data: Get2BWebhookPayload['data']) {
-  console.log('📞 Обработка заявки на контакт как лид:', data);
   
   // Обрабатываем как обычный лид
   return handleLead({ ...data, source: 'contact_form' });
@@ -193,7 +176,6 @@ async function handleContact(data: Get2BWebhookPayload['data']) {
 
 // 💼 Обработка заявок на консультацию
 async function handleConsultation(data: Get2BWebhookPayload['data']) {
-  console.log('💼 Обработка заявки на консультацию как лид:', data);
   
   // Обрабатываем как обычный лид
   return handleLead({ ...data, source: 'consultation_form' });
@@ -201,7 +183,6 @@ async function handleConsultation(data: Get2BWebhookPayload['data']) {
 
 // 🏗️ Обработка заявок на создание проекта
 async function handleProjectRequest(data: Get2BWebhookPayload['data']) {
-  console.log('🏗️ Обработка заявки на проект как лид:', data);
   
   // Добавляем детали проекта в сообщение
   const projectMessage = [
@@ -220,15 +201,44 @@ async function handleProjectRequest(data: Get2BWebhookPayload['data']) {
   });
 }
 
-// 🔐 Верификация подписи
-function verifySignature(payload: any, signature: string): boolean {
-  // Реализация проверки подписи webhook
-  // В production должен использовать криптографическую подпись
+// 🔐 Верификация подписи HMAC-SHA256
+function verifySignature(payload: Get2BWebhookPayload, signature: string): boolean {
   const secret = process.env.GET2B_WEBHOOK_SECRET;
-  if (!secret) return true; // Пропускаем проверку если секрет не установлен
-  
-  // TODO: Реализовать HMAC проверку
-  return true;
+
+  // Если секрет не установлен, логируем предупреждение
+  if (!secret) {
+    console.warn('⚠️ GET2B_WEBHOOK_SECRET не установлен - проверка подписи отключена');
+    return true;
+  }
+
+  try {
+    // Создаем HMAC-SHA256 подпись из payload
+    const payloadString = JSON.stringify(payload);
+    const expectedSignature = createHmac('sha256', secret)
+      .update(payloadString)
+      .digest('hex');
+
+    // Используем timing-safe сравнение для защиты от timing attacks
+    const signatureBuffer = Buffer.from(signature, 'hex');
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+
+    // Проверяем длину буферов
+    if (signatureBuffer.length !== expectedBuffer.length) {
+      console.error('❌ Неверная длина подписи');
+      return false;
+    }
+
+    const isValid = timingSafeEqual(signatureBuffer, expectedBuffer);
+
+    if (!isValid) {
+      console.error('❌ Подпись не совпадает');
+    }
+
+    return isValid;
+  } catch (error) {
+    console.error('❌ Ошибка проверки подписи:', error);
+    return false;
+  }
 }
 
 // 📱 Уведомления в Telegram
@@ -273,7 +283,6 @@ async function sendTelegramMessage(text: string) {
       throw new Error(`Telegram API error: ${response.status}`);
     }
 
-    console.log('✅ Уведомление отправлено в Telegram');
   } catch (error) {
     console.error('❌ Ошибка отправки в Telegram:', error);
   }

@@ -12,12 +12,6 @@ export async function POST(request: NextRequest) {
       currentStage
     } = await request.json()
 
-    console.log('🚀 [Atomic Constructor] Отправка данных менеджеру:', {
-      currentStage,
-      stepsWithData: Object.keys(manualData).length,
-      user: user?.email
-    })
-
     // Проверяем авторизацию
     if (!user?.id) {
       return NextResponse.json({ error: 'Требуется авторизация' }, { status: 401 })
@@ -43,7 +37,8 @@ export async function POST(request: NextRequest) {
       requestId,
       userEmail: user.email,
       userName: user.user_metadata?.full_name || user.email,
-      currentStage
+      currentStage,
+      activeScenario: stepConfigs?.activeScenario || 'quick'
     })
 
     // Сохраняем запрос в базе данных

@@ -57,7 +57,6 @@ export default function InlineCategoryList({
         throw new Error('Ошибка загрузки категорий')
       }
 
-      console.log(`✅ [InlineCategoryList] Загружено категорий: ${categoriesData.categories.length}`)
       
       // Для каждой категории получаем количество товаров
       const categoriesWithCounts = await Promise.all(

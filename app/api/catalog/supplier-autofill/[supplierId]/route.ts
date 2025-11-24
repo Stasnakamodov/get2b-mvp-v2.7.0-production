@@ -12,7 +12,6 @@ export async function GET(
   try {
     const resolvedParams = await params
     const supplierId = resolvedParams.supplierId
-    console.log(`🔮 [API] Запрос автозаполнения для поставщика: ${supplierId}`)
 
     // Получаем параметры запроса
     const { searchParams } = new URL(request.url)
@@ -29,7 +28,6 @@ export async function GET(
         const { data: { user } } = await supabase.auth.getUser(token)
         currentUserId = user?.id
       } catch (error) {
-        console.log('⚠️ [API] Не удалось определить пользователя из токена')
       }
     }
 
@@ -79,7 +77,6 @@ export async function GET(
     }
 
     if (!supplierData) {
-      console.log(`❌ [API] Поставщик ${supplierId} не найден или недоступен`)
       return NextResponse.json({
         success: false,
         error: 'Поставщик не найден или недоступен',
@@ -147,12 +144,6 @@ export async function GET(
     }
 
     const executionTime = Date.now() - startTime
-    console.log(`✅ [API] Автозаполнение для поставщика получено за ${executionTime}мс:`, {
-      supplier_name: supplierData.name,
-      supplier_type: supplierType,
-      products_count: autofillData.step2_data.products.length,
-      has_phantom_data: autofillData.metadata.has_phantom_data
-    })
 
     return NextResponse.json({
       success: true,
@@ -182,7 +173,6 @@ export async function GET(
 // 🔮 Функция получения фантомных данных из завершенных проектов
 async function getPhantomSupplierData(supplierName: string, userId: string) {
   try {
-    console.log(`🔍 [PHANTOM] Поиск фантомных данных для поставщика: ${supplierName}`)
 
     // 1. Ищем проекты с этим поставщиком в спецификациях
     const { data: specifications, error: specsError } = await supabase
@@ -192,12 +182,10 @@ async function getPhantomSupplierData(supplierName: string, userId: string) {
       .eq('user_id', userId)
 
     if (specsError || !specifications?.length) {
-      console.log(`ℹ️ [PHANTOM] Проекты с поставщиком "${supplierName}" не найдены`)
       return null
     }
 
     const projectIds = [...new Set(specifications.map(s => s.project_id))]
-    console.log(`🔍 [PHANTOM] Найдено проектов с поставщиком: ${projectIds.length}`)
 
     // 2. Получаем данные проектов и их реквизиты
     const { data: projects, error: projectsError } = await supabase
@@ -210,7 +198,6 @@ async function getPhantomSupplierData(supplierName: string, userId: string) {
       .eq('user_id', userId)
 
     if (projectsError || !projects?.length) {
-      console.log(`ℹ️ [PHANTOM] Данные проектов не получены`)
       return null
     }
 
@@ -220,7 +207,6 @@ async function getPhantomSupplierData(supplierName: string, userId: string) {
     const allRequisites = projects.flatMap(p => p.project_requisites || [])
 
     if (completedProjects.length === 0) {
-      console.log(`ℹ️ [PHANTOM] Нет завершенных проектов с поставщиком "${supplierName}"`)
       return null
     }
 
@@ -246,12 +232,6 @@ async function getPhantomSupplierData(supplierName: string, userId: string) {
       last_used: completedProjects[0]?.created_at
     }
 
-    console.log(`✅ [PHANTOM] Фантомные данные найдены:`, {
-      payment_method: phantomData.payment_method,
-      has_requisites: !!phantomData.requisites,
-      projects_count: phantomData.projects_used,
-      confidence: phantomData.confidence_score
-    })
 
     return phantomData
 

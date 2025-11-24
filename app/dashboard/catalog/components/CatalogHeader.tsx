@@ -81,7 +81,6 @@ export const CatalogHeader = React.memo(function CatalogHeader({
             </div>
             <button 
               onClick={() => {
-                console.log('Manual refresh requested');
                 // Используем router.refresh() вместо reload
                 window.location.reload();
               }} 

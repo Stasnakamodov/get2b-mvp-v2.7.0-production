@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 // GET: Простейший тест API
 export async function GET(request: NextRequest) {
   try {
-    console.log('🧪 TEST: Simple API test called');
     
     return NextResponse.json({
       success: true,

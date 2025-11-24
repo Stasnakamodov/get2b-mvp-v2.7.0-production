@@ -56,14 +56,9 @@ export function useStepData(params: StepDataParams) {
    * Сохранение данных шага (РУЧНОЙ ВВОД - без автозаполнения)
    */
   const saveStepData = (stepId: StepNumber, data: any) => {
-    console.log('🔍 [useStepData] saveStepData вызван');
-    console.log('  - stepId:', stepId);
-    console.log('  - data:', data);
 
     // 1. Валидация
     const validation = validateStepData(stepId, data)
-    console.log('  - validation.success:', validation.success);
-    console.log('  - validation.errors:', validation.errors);
 
     if (!validation.success) {
       console.error(`❌ Ошибка валидации шага ${stepId}:`, validation.errors)
@@ -71,19 +66,14 @@ export function useStepData(params: StepDataParams) {
       return
     }
 
-    console.log('=== СОХРАНЕНИЕ ДАННЫХ (РУЧНОЙ ВВОД) ===')
-    console.log('stepId:', stepId)
-    console.log('data для сохранения:', data)
 
     // 2. Сохранение в state
     setManualData(prev => {
-      console.log('Текущие manualData:', prev)
 
       // Для шага 1 объединяем данные с существующими (может быть частичное заполнение)
       if (stepId === 1) {
         const existingData = prev[stepId] || {}
         const mergedData = { ...existingData, ...data }
-        console.log('Объединенные данные:', mergedData)
 
         // Проверяем готовность к сводке
         setTimeout(() => {
@@ -103,7 +93,6 @@ export function useStepData(params: StepDataParams) {
 
       // ✅ СПЕЦИАЛЬНО для Step 4: автоматически подготавливаем Step 5
       if (stepId === 4 && data.method) {
-        console.log('🔗 [SYNC] Подготовка Step 5 при сохранении Step 4 с методом:', data.method)
 
         // Создаём базовую структуру для Step 5 на основе выбранного метода
         const requisiteType = data.method === 'bank-transfer' ? 'bank' : data.method
@@ -113,12 +102,10 @@ export function useStepData(params: StepDataParams) {
           source: 'manual'
         }
 
-        console.log('✅ [SYNC] Step 5 подготовлен с типом:', requisiteType)
       }
 
       // ✅ СПЕЦИАЛЬНО для Step 5: автоматически заполняем Step 4 при сохранении реквизитов
       if (stepId === 5 && data.type) {
-        console.log('🔗 [SYNC] Автозаполнение Step 4 при сохранении Step 5 с типом:', data.type)
 
         // Определяем метод на основе типа реквизитов
         const method = data.type === 'bank' ? 'bank-transfer' : data.type
@@ -130,7 +117,6 @@ export function useStepData(params: StepDataParams) {
             user_choice: true,
             source: 'manual'
           }
-          console.log('✅ [SYNC] Step 4 автоматически заполнен методом:', method)
         }
       }
 
@@ -154,7 +140,6 @@ export function useStepData(params: StepDataParams) {
       // ✅ Если сохраняем Step 5 и Step 4 был автоматически заполнен, устанавливаем stepConfigs[4]
       if (stepId === 5 && data.type && (!prev[4] || prev[4] !== 'manual')) {
         newConfigs[4] = 'manual'
-        console.log('✅ [SYNC] stepConfigs[4] установлен в "manual"')
       }
 
       return newConfigs
@@ -174,7 +159,6 @@ export function useStepData(params: StepDataParams) {
    * Удаление данных шага
    */
   const removeStepData = (stepId: number) => {
-    console.log(`🗑️ Удаление данных шага ${stepId}`)
 
     // Удаляем конфигурацию шага
     setStepConfigs((prev: any) => {
@@ -195,11 +179,9 @@ export function useStepData(params: StepDataParams) {
 
     // Сбрасываем выбранные профили при удалении Step 1 (клиент) или Step 3 (поставщик)
     if (stepId === 1 && setSelectedProfileId) {
-      console.log('🔄 Сбрасываем выбранный профиль клиента')
       setSelectedProfileId(null)
     }
     if (stepId === 3 && setSelectedSupplierProfileId) {
-      console.log('🔄 Сбрасываем выбранный профиль поставщика')
       setSelectedSupplierProfileId(null)
     }
   }
