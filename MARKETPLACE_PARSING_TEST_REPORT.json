@@ -1,0 +1,113 @@
+{
+  "date": "2025-11-29T09:49:08.477Z",
+  "statistics": {
+    "total": 10,
+    "successful": 9,
+    "failed": 1,
+    "withImages": 3,
+    "withPrices": 0,
+    "avgDuration": "15.17"
+  },
+  "results": [
+    {
+      "marketplace": "Яндекс.Маркет",
+      "status": "SUCCESS",
+      "duration": "12.10",
+      "name": "Нет такой страницы - Яндекс Маркет",
+      "price": null,
+      "hasImage": true,
+      "id": "93004808-b13c-4504-be6b-6e4fa874e076",
+      "error": null
+    },
+    {
+      "marketplace": "Wildberries",
+      "status": "SUCCESS",
+      "duration": "8.03",
+      "name": "Интернет‑магазин Wildberries: широкий ассортимент товаров - скидки каждый день!",
+      "price": null,
+      "hasImage": false,
+      "id": "ec95440c-0dce-4467-b0bf-10c3531557cc",
+      "error": null
+    },
+    {
+      "marketplace": "Ozon",
+      "status": "SUCCESS",
+      "duration": "25.90",
+      "name": "Доступ ограничен",
+      "price": null,
+      "hasImage": false,
+      "id": "d89ab4cb-ef29-4d1c-a428-f7926ace1b56",
+      "error": null
+    },
+    {
+      "marketplace": "СберМегаМаркет",
+      "status": "SUCCESS",
+      "duration": "1.17",
+      "name": "Товар без названия",
+      "price": null,
+      "hasImage": false,
+      "id": "698d76df-750c-4dd8-97d4-35e4b5e9f9ad",
+      "error": null
+    },
+    {
+      "marketplace": "МВидео",
+      "status": "SUCCESS",
+      "duration": "3.07",
+      "name": "Товар без названия",
+      "price": null,
+      "hasImage": true,
+      "id": "3ae8166f-f536-4e36-90a0-f01233ee9756",
+      "error": null
+    },
+    {
+      "marketplace": "AliExpress RU",
+      "status": "SUCCESS",
+      "duration": "11.79",
+      "name": "Такой страницы нет",
+      "price": null,
+      "hasImage": false,
+      "id": "1c4a9f48-5373-4d2f-9fa2-12672bc01a2e",
+      "error": null
+    },
+    {
+      "marketplace": "JD.ru",
+      "status": "ERROR",
+      "duration": "66.66",
+      "name": null,
+      "price": null,
+      "hasImage": false,
+      "id": null,
+      "error": "Критическая ошибка при импорте товара"
+    },
+    {
+      "marketplace": "DNS",
+      "status": "SUCCESS",
+      "duration": "6.68",
+      "name": "HTTP 403",
+      "price": null,
+      "hasImage": false,
+      "id": "00f5d147-bca2-4c06-9c26-d480a74829fe",
+      "error": null
+    },
+    {
+      "marketplace": "Эльдорадо",
+      "status": "SUCCESS",
+      "duration": "7.20",
+      "name": "Document",
+      "price": null,
+      "hasImage": false,
+      "id": "d64a3ed9-5c64-4f3b-9625-b34d2777368c",
+      "error": null
+    },
+    {
+      "marketplace": "Ситилинк",
+      "status": "SUCCESS",
+      "duration": "9.13",
+      "name": "Термопот BLACKTON Bt TP536,  черный и серебристый – купить в Ситилинк | 1886343",
+      "price": null,
+      "hasImage": true,
+      "id": "9140174c-0ca4-47cb-b1d0-fd4b791d603f",
+      "error": null
+    }
+  ]
+}

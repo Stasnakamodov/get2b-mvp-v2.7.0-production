@@ -220,13 +220,33 @@ export class PlaywrightParserService {
     // Метод 2: Accessibility tree (как в Playwright MCP)
     const accessibilityData = this.parseAccessibilityTree(accessibilityTree)
 
-    // Метод 3: DOM селекторы
+    // Метод 3: DOM селекторы (расширенные для галереи товаров)
     const domData = await page.evaluate(() => {
       const getText = (selector: string) =>
         document.querySelector(selector)?.textContent?.trim() || undefined
 
       const getAttr = (selector: string, attr: string) =>
         document.querySelector(selector)?.getAttribute(attr) || undefined
+
+      // 🔥 FIX: Ищем изображения в галерее товара (НЕ баннеры!)
+      const getProductImage = () => {
+        // Wildberries галерея
+        const wbGallery = document.querySelector('.slide__content img')?.getAttribute('src')
+        const wbGallery2 = document.querySelector('.product-gallery img')?.getAttribute('src')
+
+        // Ozon галерея
+        const ozonGallery = document.querySelector('[data-widget="webGallery"] img')?.getAttribute('src')
+        const ozonMain = document.querySelector('.product-image img')?.getAttribute('src')
+
+        // Яндекс.Маркет галерея
+        const yandexGallery = document.querySelector('[data-auto="productMediaGallery"] img')?.getAttribute('src')
+        const yandexMain = document.querySelector('[data-zone-name="gallery"] img')?.getAttribute('src')
+
+        // AliExpress галерея
+        const aliGallery = document.querySelector('.images-view-item img')?.getAttribute('src')
+
+        return wbGallery || wbGallery2 || ozonGallery || ozonMain || yandexGallery || yandexMain || aliGallery
+      }
 
       return {
         title: getText('h1') || document.title,
@@ -237,23 +257,48 @@ export class PlaywrightParserService {
         price: getText('.price-block__final-price') ||
               getText('[data-widget="webPrice"]') ||
               getText('.product-price-value'),
-        imageUrl: getAttr('.product-image img', 'src') ||
-                 getAttr('[data-widget="webGallery"] img', 'src') ||
-                 getAttr('.slide__content img', 'src')
+        imageUrl: getProductImage()
       }
     })
 
     console.log('📦 [Playwright Parser] Извлечено:', {
       ogTitle: !!ogData.title,
       accessibilityTitle: !!accessibilityData.title,
-      domTitle: !!domData.title
+      domTitle: !!domData.title,
+      domImage: !!domData.imageUrl,
+      ogImage: !!ogData.imageUrl
     })
 
-    // Объединяем (приоритет: OG > Accessibility > DOM)
+    // 🔥 FIX: Валидация изображения с проверкой размеров
+    let validatedImageUrl = null
+
+    // Приоритет 1: DOM изображение (из галереи товара)
+    if (domData.imageUrl) {
+      const isValid = await this.validateImage(page, domData.imageUrl)
+      if (isValid) {
+        console.log('✅ [Playwright Parser] DOM изображение валидно:', domData.imageUrl)
+        validatedImageUrl = domData.imageUrl
+      } else {
+        console.warn('⚠️ [Playwright Parser] DOM изображение отклонено (баннер или слишком маленькое)')
+      }
+    }
+
+    // Приоритет 2: og:image (только если DOM не подошло)
+    if (!validatedImageUrl && ogData.imageUrl) {
+      const isValid = await this.validateImage(page, ogData.imageUrl)
+      if (isValid) {
+        console.log('✅ [Playwright Parser] OG изображение валидно:', ogData.imageUrl)
+        validatedImageUrl = ogData.imageUrl
+      } else {
+        console.warn('⚠️ [Playwright Parser] OG изображение отклонено (баннер)')
+      }
+    }
+
+    // Объединяем (приоритет: DOM (галерея) > OG > Accessibility)
     return {
       title: ogData.title || accessibilityData.title || domData.title || '',
       description: ogData.description || accessibilityData.description || domData.description || '',
-      imageUrl: ogData.imageUrl || domData.imageUrl,
+      imageUrl: validatedImageUrl || undefined,
       price: ogData.price || domData.price
     }
   }
@@ -307,6 +352,75 @@ export class PlaywrightParserService {
     if (lowercaseUrl.includes('sbermegamarket.ru')) return 'sber'
 
     return 'unknown'
+  }
+
+  /**
+   * 🔥 Валидация изображения товара
+   * Проверяет что это НЕ баннер/логотип, а реальная фотография товара
+   */
+  private async validateImage(page: any, imageUrl: string): Promise<boolean> {
+    try {
+      if (!imageUrl || imageUrl.length === 0) {
+        return false
+      }
+
+      // Проверяем размеры изображения
+      const dimensions = await page.evaluate(async (url: string) => {
+        return new Promise((resolve) => {
+          const img = new Image()
+
+          img.onload = () => {
+            resolve({
+              width: img.naturalWidth,
+              height: img.naturalHeight,
+              success: true
+            })
+          }
+
+          img.onerror = () => {
+            resolve({ width: 0, height: 0, success: false })
+          }
+
+          img.src = url
+        })
+      }, imageUrl)
+
+      if (!dimensions.success) {
+        console.warn('⚠️ [Playwright Parser] Не удалось загрузить изображение:', imageUrl)
+        return false
+      }
+
+      const { width, height } = dimensions
+
+      console.log(`📏 [Playwright Parser] Размеры изображения: ${width}x${height}`)
+
+      // Правила валидации:
+      // 1. Минимум 400x400 пикселей (отсекает иконки и мелкие логотипы)
+      // 2. Соотношение сторон не больше 3:1 (отсекает баннеры)
+      // 3. Соотношение сторон не меньше 1:3 (отсекает вертикальные баннеры)
+
+      const MIN_SIZE = 400
+      const MAX_ASPECT_RATIO = 3
+
+      if (width < MIN_SIZE || height < MIN_SIZE) {
+        console.warn(`⚠️ [Playwright Parser] Изображение слишком маленькое: ${width}x${height} (минимум ${MIN_SIZE}x${MIN_SIZE})`)
+        return false
+      }
+
+      const aspectRatio = width / height
+
+      if (aspectRatio > MAX_ASPECT_RATIO || aspectRatio < (1 / MAX_ASPECT_RATIO)) {
+        console.warn(`⚠️ [Playwright Parser] Неправильные пропорции (баннер?): ${aspectRatio.toFixed(2)} (макс ${MAX_ASPECT_RATIO}:1)`)
+        return false
+      }
+
+      console.log(`✅ [Playwright Parser] Изображение прошло валидацию: ${width}x${height}, пропорции ${aspectRatio.toFixed(2)}:1`)
+      return true
+
+    } catch (error) {
+      console.error('❌ [Playwright Parser] Ошибка валидации изображения:', error)
+      return false
+    }
   }
 
   /**

@@ -14,6 +14,8 @@ import ogs from 'open-graph-scraper'
 import * as cheerio from 'cheerio'
 import { getBrowserParserService } from './BrowserParserService'
 import { getPlaywrightParserService } from './PlaywrightParserService'
+import { getScraperApiService } from './ScraperApiService'
+import { getClaudeWebFetchService } from './ClaudeWebFetchService'
 
 export interface ParsedProductMetadata {
   title: string
@@ -37,7 +39,7 @@ export class UrlParserService {
     const marketplace = this.detectMarketplace(url)
 
     // Для защищенных маркетплейсов используем Playwright
-    const protectedMarketplaces = ['ozon', 'wildberries', 'aliexpress']
+    const protectedMarketplaces = ['ozon', 'wildberries', 'aliexpress', 'yandex']
 
     if (protectedMarketplaces.includes(marketplace)) {
 
@@ -57,6 +59,44 @@ export class UrlParserService {
 
       } catch (error) {
         console.error('❌ [URL Parser] Браузерный парсинг не удался:', error)
+
+        // Последняя попытка - ScraperAPI
+        const scraperApi = getScraperApiService()
+        if (scraperApi.isAvailable()) {
+          console.log('🌐 [URL Parser] Пробуем ScraperAPI как последний шанс...')
+          try {
+            // Для защищенных маркетплейсов используем premium прокси
+            const usePremium = marketplace === 'ozon' || marketplace === 'wildberries'
+            const html = await scraperApi.fetchPage(url, { premium: usePremium })
+            const claudeService = getClaudeWebFetchService()
+
+            if (claudeService.isAvailable()) {
+              // Используем Claude для анализа HTML от ScraperAPI
+              const data = await claudeService.analyzeHtmlContent(html, url)
+              return data
+            } else {
+              // Парсим HTML через cheerio
+              const $ = cheerio.load(html)
+              const ogData = this.parseOGFromHTML($)
+
+              if (ogData.title) {
+                return {
+                  title: ogData.title,
+                  description: ogData.description || '',
+                  price: ogData.price,
+                  currency: ogData.currency,
+                  imageUrl: ogData.imageUrl,
+                  brand: ogData.brand,
+                  category: ogData.category,
+                  marketplace,
+                  originalUrl: url
+                }
+              }
+            }
+          } catch (scraperError) {
+            console.error('❌ [URL Parser] ScraperAPI тоже не помог:', scraperError)
+          }
+        }
 
         // Fallback на сообщение об ошибке
         throw new Error(
@@ -110,6 +150,51 @@ export class UrlParserService {
         const browserParser = getBrowserParserService()
         return await browserParser.parseWithBrowser(url)
       } catch (browserError) {
+        console.error('❌ [URL Parser] Браузерный парсинг не удался')
+
+        // Финальная попытка - ScraperAPI
+        const scraperApi = getScraperApiService()
+        if (scraperApi.isAvailable()) {
+          console.log('🌐 [URL Parser] Последняя попытка через ScraperAPI...')
+          try {
+            // Для защищенных маркетплейсов используем premium прокси
+            const usePremium = marketplace === 'ozon' || marketplace === 'wildberries'
+            const html = await scraperApi.fetchPage(url, { premium: usePremium })
+            const $ = cheerio.load(html)
+            const ogData = this.parseOGFromHTML($)
+
+            if (ogData.title) {
+              return {
+                title: ogData.title,
+                description: ogData.description || '',
+                price: ogData.price,
+                currency: ogData.currency,
+                imageUrl: ogData.imageUrl,
+                brand: ogData.brand,
+                category: ogData.category,
+                marketplace,
+                originalUrl: url
+              }
+            }
+
+            const htmlData = await this.parseHtml(url, marketplace)
+
+            return {
+              title: htmlData.title || 'Товар без названия',
+              description: htmlData.description || '',
+              price: htmlData.price,
+              currency: htmlData.currency,
+              imageUrl: htmlData.imageUrl,
+              brand: htmlData.brand,
+              category: htmlData.category,
+              marketplace,
+              originalUrl: url
+            }
+          } catch (scraperError) {
+            console.error('❌ [URL Parser] ScraperAPI не помог:', scraperError)
+          }
+        }
+
         console.error('❌ [URL Parser] Все методы парсинга не удались')
         throw new Error(`Не удалось распарсить URL: ${url}`)
       }
@@ -154,10 +239,6 @@ export class UrlParserService {
     const html = await response.text()
 
     const $ = cheerio.load(html)
-
-    // Выводим первые мета-теги для отладки
-    const ogTitle = $('meta[property="og:title"]').attr('content')
-    const ogDesc = $('meta[property="og:description"]').attr('content')
 
     // Сначала пробуем универсальный парсинг Open Graph из HTML
     const ogData = this.parseOGFromHTML($ as any)

@@ -13,16 +13,60 @@ import SubcategoryList from '@/components/catalog/SubcategoryList'
 import ProductGridByCategory from '@/components/catalog/ProductGridByCategory'
 import type { CatalogCategory } from '@/lib/types'
 
+// Импорты вынесенных модулей
+import { ALL_PRODUCTS, getMockProductsPaginated } from './constants/mockProducts'
+import { SUPPLIER_STEPS, toRoman, ROOM_TYPES, CATALOG_MODES, PAGINATION_CONFIG, ERROR_MESSAGES, SUCCESS_MESSAGES } from './constants/supplierConfig'
+import { getCertifications, formatPrice, isValidEmail, isValidUrl, isValidPhone, formatDate, truncateText } from './utils/helpers'
+
+// Импорты новых хуков и сервисов
+import { useSuppliers } from './hooks/useSuppliers'
+import { useCategories } from './hooks/useCategories'
+import { supplierService } from './services/supplierService'
+import { productService } from './services/productService'
+
 export default function CatalogPage() {
   const router = useRouter()
-  
+
+  // Используем новые хуки
+  const {
+    suppliers,
+    loading: loadingSuppliers,
+    error: suppliersError,
+    selectedRoom,
+    setSelectedRoom,
+    searchQuery: supplierSearchQuery,
+    setSearchQuery: setSupplierSearchQuery,
+    paginatedSuppliers,
+    currentPage: suppliersCurrentPage,
+    setCurrentPage: setSuppliersCurrentPage,
+    totalPages: suppliersTotalPages,
+    loadSuppliers,
+    createSupplier,
+    updateSupplier,
+    deleteSupplier
+  } = useSuppliers()
+
+  const {
+    categories,
+    subcategories,
+    loading: loadingCategories,
+    error: categoriesError,
+    selectedCategory,
+    setSelectedCategory,
+    selectedSubcategory,
+    setSelectedSubcategory,
+    loadCategories,
+    loadSubcategories,
+    getCategoryByName,
+    getTotalProductsInCategory
+  } = useCategories()
+
   // Состояние для Supabase подключения
   const [supabaseError, setSupabaseError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(true)
 
   // Состояния для динамических категорий из API
   const [apiCategories, setApiCategories] = useState<any[]>([])
-  const [loadingCategories, setLoadingCategories] = useState(false)
 
   // Проверка подключения к Supabase при загрузке
   useEffect(() => {
@@ -53,13 +97,13 @@ export default function CatalogPage() {
   // Функция загрузки пользовательских поставщиков из API
   const loadSuppliersFromAPI = async () => {
     console.log('🔄 [DEBUG] Начинаем загрузку поставщиков из API...');
-    setLoadingSuppliers(true)
+    // setLoadingSuppliers(true) // Now handled by useSuppliers hook
     try {
       // Получаем токен авторизации
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         console.error('❌ Нет активной сессии для загрузки поставщиков');
-        setRealSuppliers([]);
+        // setRealSuppliers([]); // Now handled by useSuppliers hook
         return;
       }
 
@@ -93,19 +137,20 @@ export default function CatalogPage() {
           })
         })
         
-        setRealSuppliers(data.suppliers)
+        // setRealSuppliers(data.suppliers) // Now handled by useSuppliers hook
+        // TODO: Use loadSuppliers to update the list
       } else {
         console.warn('⚠️ Нет пользовательских поставщиков в ответе API')
         console.log('📊 Полный ответ API:', data)
         // Устанавливаем пустой массив вместо тестовых данных
-        setRealSuppliers([])
+        // setRealSuppliers([]) // Now handled by useSuppliers hook
       }
     } catch (error) {
       console.error('❌ Ошибка загрузки пользовательских поставщиков:', error)
       // Устанавливаем пустой массив вместо тестовых данных
-      setRealSuppliers([])
+      // setRealSuppliers([]) // Now handled by useSuppliers hook
     } finally {
-      setLoadingSuppliers(false)
+      // setLoadingSuppliers(false) // Now handled by useSuppliers hook
     }
   }
 
@@ -138,7 +183,7 @@ export default function CatalogPage() {
   // Функция загрузки категорий из API
   const loadCategoriesFromAPI = async () => {
     try {
-      setLoadingCategories(true)
+      // setLoadingCategories(true) // Now handled by useCategories hook
       console.log('🔧 [DEBUG] Загружаем категории из API...')
       
       const response = await fetch('/api/catalog/categories')
@@ -166,7 +211,7 @@ export default function CatalogPage() {
       }))
       setApiCategories(fallbackCategories)
     } finally {
-      setLoadingCategories(false)
+      // setLoadingCategories(false) // Now handled by useCategories hook
     }
   }
 
@@ -492,7 +537,7 @@ export default function CatalogPage() {
 
   // Основные состояния навигации
   const [catalogMode, setCatalogMode] = useState<'suppliers' | 'categories'>('categories')
-  const [selectedRoom, setSelectedRoom] = useState<'orange' | 'blue'>('orange')
+  // const [selectedRoom, setSelectedRoom] = useState<'orange' | 'blue'>('orange') // Now using useSuppliers hook
   
   // Состояние авторизации
   const [authToken, setAuthToken] = useState<string>('')
@@ -527,9 +572,9 @@ export default function CatalogPage() {
   }, [])
 
   // Поставщики
-  const [realSuppliers, setRealSuppliers] = useState<any[]>([])
-  const [verifiedSuppliers, setVerifiedSuppliers] = useState<any[]>([])
-  const [loadingSuppliers, setLoadingSuppliers] = useState(false)
+  // const [realSuppliers, setRealSuppliers] = useState<any[]>([]) // Now using useSuppliers hook
+  const [verifiedSuppliers, setVerifiedSuppliers] = useState<any[]>([]) // TODO: integrate into suppliers hook
+  // const [loadingSuppliers, setLoadingSuppliers] = useState(false) // Now using useSuppliers hook
   const [loadingVerified, setLoadingVerified] = useState(false)
 
   // Состояние для товаров поставщика в модальном окне
@@ -1001,9 +1046,9 @@ export default function CatalogPage() {
   // Проверка, есть ли поставщик уже в личном списке
   const isSupplierInPersonalList = (catalogSupplier: any) => {
     console.log('🔍 [DEBUG] Проверяем дублирование для:', catalogSupplier.name || catalogSupplier.company_name)
-    console.log('🔍 [DEBUG] В личном списке:', realSuppliers.length, 'поставщиков')
-    
-    const isDuplicate = realSuppliers.some(personalSupplier => 
+    console.log('🔍 [DEBUG] В личном списке:', suppliers.length, 'поставщиков')
+
+    const isDuplicate = suppliers.some((personalSupplier: any) => 
       personalSupplier.company_name === catalogSupplier.company_name ||
       personalSupplier.name === catalogSupplier.name ||
       (personalSupplier.contact_email && catalogSupplier.email && 
@@ -1380,16 +1425,16 @@ export default function CatalogPage() {
   const currentProducts = ALL_PRODUCTS.slice(startIndex, endIndex)
 
   // Динамический массив категорий из API с fallback на статические
-  const categories = [
+  const categoryFilterOptions = [
     { value: 'all', label: 'Все категории' },
-    ...apiCategories.map(cat => ({ 
+    ...apiCategories.map(cat => ({
       value: cat.name, 
       label: `${cat.icon || '📦'} ${cat.name}` 
     }))
   ]
 
   // ИСПРАВЛЕНО: Оранжевая комната = аккредитованные поставщики, Синяя комната = персональные поставщики
-  const currentSuppliers = selectedRoom === 'orange' ? verifiedSuppliers : realSuppliers
+  const currentSuppliers = selectedRoom === 'orange' ? verifiedSuppliers : suppliers
 
   const filteredSuppliers = currentSuppliers.filter(supplier => {
     // Безопасная проверка на null/undefined
@@ -2172,7 +2217,7 @@ export default function CatalogPage() {
               <div className="text-sm text-gray-600">
                 {selectedRoom === 'orange' ? 
                   `🧡 Get2B каталог: ${verifiedSuppliers.length} поставщиков` : 
-                  `🔵 Ваши поставщики: ${realSuppliers.length} поставщиков`
+                  `🔵 Ваши поставщики: ${suppliers.length} поставщиков`
                 }
               </div>
             </div>

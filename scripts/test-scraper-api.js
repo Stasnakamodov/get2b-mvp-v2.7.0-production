@@ -71,7 +71,8 @@ async function testScraperAPI() {
         api_key: apiKey,
         url: test.url,
         render: 'true',        // JS rendering
-        country_code: 'ru'     // Российский IP
+        country_code: 'ru',    // Российский IP
+        premium: 'true'        // Premium residential прокси для защищенных сайтов
       })
 
       const apiUrl = `https://api.scraperapi.com?${params.toString()}`
@@ -157,12 +158,12 @@ async function testScraperAPI() {
       }
 
       // Считаем использованные кредиты
-      // JS rendering (5) + Geotargeting RU (10) = 15 кредитов
-      const creditsUsed = 15
+      // JS rendering (5) + Geotargeting RU (10) + Premium (10) = 25 кредитов
+      const creditsUsed = 25
       totalCreditsUsed += creditsUsed
 
       console.log('\n💰 Использовано кредитов:', creditsUsed)
-      console.log('💵 Стоимость запроса: ~$0.007 (0.63₽)')
+      console.log('💵 Стоимость запроса: ~$0.012 (1.08₽)')
 
     } catch (error) {
       console.error('❌ КРИТИЧЕСКАЯ ОШИБКА:', error.message)
@@ -192,7 +193,7 @@ async function testScraperAPI() {
   console.log('')
   console.log('📈 Осталось кредитов (Trial):')
   console.log(`  5,000 - ${totalCreditsUsed} = ${5000 - totalCreditsUsed} кредитов`)
-  console.log(`  ~${Math.floor((5000 - totalCreditsUsed) / 15)} запросов Ozon/WB`)
+  console.log(`  ~${Math.floor((5000 - totalCreditsUsed) / 25)} запросов Ozon/WB (premium)`)
   console.log('')
 
   if (successCount > 0) {
