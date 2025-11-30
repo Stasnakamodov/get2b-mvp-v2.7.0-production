@@ -1,11 +1,12 @@
-// FSD: widgets/catalog-suppliers - 8465B :0B0;>30 ?>AB02I8:>2
+// FSD: widgets/catalog-suppliers - Виджет каталога поставщиков
 
-// -:A?>@B UI :><?>=5=B>2
+// Экспорт UI компонентов
 export { SupplierCard } from './ui/SupplierCard'
 export { SupplierGrid } from './ui/SupplierGrid'
 export { ProductCard } from './ui/ProductCard'
+export { CategoryView, SubcategorySelector } from './ui/CategoryView'
 
-//  5M:A?>@B B8?>2 4;O C4>1AB20
+// Реэкспорт типов для удобства
 export type {
   Supplier,
   Product,
