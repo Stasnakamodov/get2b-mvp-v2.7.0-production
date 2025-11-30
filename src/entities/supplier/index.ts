@@ -1,9 +1,9 @@
-// FSD: entities/supplier - 87=5A ACI=>ABL ?>AB02I8:0
+// FSD: entities/supplier - Бизнес сущность поставщика
 
-// -:A?>@B 2A5E B8?>2
+// Экспорт всех типов
 export * from './model/types'
 
-//  5M:A?>@B >A=>2=KE B8?>2 4;O C4>1AB20
+// Реэкспорт основных типов для удобства
 export type {
   Supplier,
   Product,
@@ -16,3 +16,34 @@ export type {
   CatalogMode,
   LoadingState
 } from './model/types'
+
+// Экспорт API функций
+export {
+  // Поставщики
+  fetchUserSuppliers,
+  fetchVerifiedSuppliers,
+  createSupplier,
+  updateSupplier,
+  deleteSupplier,
+
+  // Товары
+  fetchSupplierProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+
+  // Категории
+  fetchCategories,
+  fetchSubcategories,
+
+  // Эхо карточки
+  fetchEchoCards,
+  importSupplierFromEchoCard,
+
+  // Рекомендации
+  fetchRecommendations,
+
+  // Утилиты
+  uploadImage,
+  checkSupabaseConnection
+} from './api/supabaseApi'
