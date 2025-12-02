@@ -21,7 +21,8 @@ import {
 import {
   SupplierGrid,
   SupplierCard,
-  ProductCard
+  ProductCard,
+  AddSupplierModal
 } from '@/src/widgets/catalog-suppliers'
 
 import type {
@@ -67,6 +68,8 @@ export default function CatalogPage() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
   const [showSupplierModal, setShowSupplierModal] = useState(false)
   const [showCartModal, setShowCartModal] = useState(false)
+  const [showAddSupplierModal, setShowAddSupplierModal] = useState(false)
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
 
   // Использование FSD хуков
   const {
@@ -264,13 +267,29 @@ export default function CatalogPage() {
               )}
             </div>
 
-            <button
-              onClick={handleRefresh}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Обновить
-            </button>
+            <div className="flex gap-2">
+              {/* Кнопка добавления поставщика (только для синей комнаты в режиме поставщиков) */}
+              {catalogMode === 'suppliers' && selectedRoom === 'blue' && (
+                <button
+                  onClick={() => {
+                    setEditingSupplier(null)
+                    setShowAddSupplierModal(true)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Добавить поставщика
+                </button>
+              )}
+
+              <button
+                onClick={handleRefresh}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Обновить
+              </button>
+            </div>
           </div>
         </div>
 
@@ -362,6 +381,14 @@ export default function CatalogPage() {
               loading={loadingSuppliers}
               onSupplierClick={handleSupplierClick}
               onStartProject={handleStartProject}
+              onEditSupplier={(supplier) => {
+                setEditingSupplier(supplier)
+                setShowAddSupplierModal(true)
+              }}
+              onDeleteSupplier={async (supplier) => {
+                // Удаление будет обработано внутри SupplierCard
+                await refreshSuppliers()
+              }}
               showActions={true}
               roomType={selectedRoom}
               title={`Поставщики (${displayedSuppliers.length})`}
@@ -542,6 +569,20 @@ export default function CatalogPage() {
             </div>
           </div>
         )}
+
+        {/* Модальное окно добавления/редактирования поставщика */}
+        <AddSupplierModal
+          isOpen={showAddSupplierModal}
+          onClose={() => {
+            setShowAddSupplierModal(false)
+            setEditingSupplier(null)
+          }}
+          onSuccess={(supplier) => {
+            refreshSuppliers()
+            logger.info('Поставщик успешно сохранен:', supplier.name)
+          }}
+          editingSupplier={editingSupplier}
+        />
       </div>
     </div>
   )

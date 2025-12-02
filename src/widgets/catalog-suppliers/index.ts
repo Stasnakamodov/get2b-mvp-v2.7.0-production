@@ -5,6 +5,7 @@ export { SupplierCard } from './ui/SupplierCard'
 export { SupplierGrid } from './ui/SupplierGrid'
 export { ProductCard } from './ui/ProductCard'
 export { CategoryView, SubcategorySelector } from './ui/CategoryView'
+export { AddSupplierModal } from './ui/AddSupplierModal'
 
 // Реэкспорт типов для удобства
 export type {
