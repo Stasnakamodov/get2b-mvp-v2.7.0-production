@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { Plus, RefreshCw, ArrowLeft, Package, Grid3X3, Users, ShoppingCart } from 'lucide-react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 // FSD импорты
 import {
@@ -61,6 +62,7 @@ const ProductGridByCategory = dynamic(
 
 export default function CatalogPage() {
   const router = useRouter()
+  const supabase = createClientComponentClient()
 
   // Основные состояния страницы
   const [selectedRoom, setSelectedRoom] = useState<RoomType>('orange')
@@ -70,6 +72,7 @@ export default function CatalogPage() {
   const [showCartModal, setShowCartModal] = useState(false)
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false)
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
+  const [token, setToken] = useState<string>('')
 
   // Использование FSD хуков
   const {
@@ -112,6 +115,15 @@ export default function CatalogPage() {
   // Инициализация
   useEffect(() => {
     logger.info('🚀 Страница каталога (FSD) инициализирована')
+
+    // Получаем токен для API
+    const getToken = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) {
+        setToken(session.access_token)
+      }
+    }
+    getToken()
 
     // Проверяем URL параметры
     const params = new URLSearchParams(window.location.search)
@@ -342,7 +354,19 @@ export default function CatalogPage() {
 
                 {/* Товары категории */}
                 <ProductGridByCategory
-                  category={selectedSubcategory || selectedCategory}
+                  selectedCategory={(selectedSubcategory || selectedCategory)?.name || ''}
+                  token={token}
+                  cart={cart.map(item => ({
+                    ...item,
+                    description: item.description || undefined,
+                    total_price: parseFloat(String(item.price || 0).replace(/[^0-9.-]+/g, '')) * item.quantity,
+                    supplier_name: (item as any).supplier_name || '',
+                    room_type: (item as any).room_type || 'user',
+                    room_icon: (item as any).room_icon || '',
+                    room_description: (item as any).room_description || ''
+                  })) as any}
+                  selectedRoom={selectedRoom}
+                  activeSupplier={activeSupplier}
                   onAddToCart={(product: any) => {
                     if (addToCart(product)) {
                       logger.info('Товар добавлен в корзину')
@@ -350,9 +374,7 @@ export default function CatalogPage() {
                       alert('Нельзя добавить товар другого поставщика. Сначала очистите корзину.')
                     }
                   }}
-                  onSupplierClick={(supplier: any) => {
-                    handleSupplierClick(supplier)
-                  }}
+                  isProductInCart={(productId: string) => cart.some(item => item.id === productId)}
                 />
               </div>
             )}
@@ -385,7 +407,7 @@ export default function CatalogPage() {
                 setEditingSupplier(supplier)
                 setShowAddSupplierModal(true)
               }}
-              onDeleteSupplier={async (supplier) => {
+              onDeleteSupplier={async () => {
                 // Удаление будет обработано внутри SupplierCard
                 await refreshSuppliers()
               }}

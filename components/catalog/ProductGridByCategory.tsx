@@ -114,7 +114,10 @@ export default function ProductGridByCategory({
 
   // Загрузка товаров при изменении категории
   useEffect(() => {
-    loadProducts()
+    console.log('🔄 [ProductGrid] useEffect триггер:', { selectedCategory, hasToken: !!token })
+    if (selectedCategory) {
+      loadProducts()
+    }
   }, [selectedCategory, token])
 
   // Фильтрация товаров при изменении поискового запроса или фильтров
@@ -124,38 +127,50 @@ export default function ProductGridByCategory({
   }, [products, searchQuery, roomFilter, sortBy, activeSupplier])
 
   const loadProducts = async () => {
-    if (!selectedCategory) return
-    
+    if (!selectedCategory) {
+      console.log('⚠️ [ProductGrid] Категория не выбрана, загрузка отменена')
+      return
+    }
+
+    console.log('🚀 [ProductGrid] Начинаем загрузку товаров для категории:', selectedCategory)
     setIsLoading(true)
     setError(null)
-    
+
     try {
       // Используем новый API products-by-category который возвращает полные данные с поставщиками
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       }
-      
+
       // Добавляем токен для авторизации
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
+        console.log('🔑 [ProductGrid] Токен добавлен в запрос')
+      } else {
+        console.log('⚠️ [ProductGrid] Запрос без токена')
       }
 
-      const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(selectedCategory)}?search=${searchQuery || ''}&limit=100`, {
-        headers
-      })
+      const url = `/api/catalog/products-by-category/${encodeURIComponent(selectedCategory)}?search=${searchQuery || ''}&limit=100`
+      console.log('📡 [ProductGrid] Отправляем запрос:', url)
+
+      const response = await fetch(url, { headers })
+
+      console.log('📥 [ProductGrid] Ответ получен:', response.status, response.statusText)
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       const data = await response.json()
+      console.log('📦 [ProductGrid] Данные распакованы:', { success: data.success, productsCount: data.products?.length })
 
       if (data.error) {
+        console.error('❌ [ProductGrid] Ошибка в ответе API:', data.error)
         throw new Error(data.error)
       }
 
       const products = data.products || []
-      console.log(`📦 [ProductGrid] Товары категории "${selectedCategory}" загружены:`, products.length)
+      console.log(`✅ [ProductGrid] Товары категории "${selectedCategory}" загружены:`, products.length)
       
       // Логируем первый товар для проверки структуры данных
       if (products.length > 0) {
