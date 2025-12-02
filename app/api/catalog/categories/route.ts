@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-import { CATEGORY_CERTIFICATIONS } from "@/components/catalog-categories-and-certifications";
+import { CATEGORY_CERTIFICATIONS } from "@/src/shared/config";
 
 // GET: Получение всех категорий с иерархией (Unified архитектура: catalog_categories с parent_id, без level)
 export async function GET(request: NextRequest) {

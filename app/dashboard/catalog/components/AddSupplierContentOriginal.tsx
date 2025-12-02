@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAddSupplierContext } from "../context/AddSupplierContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Package, Plus, X, ImageIcon, Upload, Building2, Smartphone, Bitcoin, FileText } from 'lucide-react';
-import { CATEGORY_CERTIFICATIONS } from '@/components/catalog-categories-and-certifications';
+import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config';
 
 interface AddSupplierContentOriginalProps {
   onClose: () => void;

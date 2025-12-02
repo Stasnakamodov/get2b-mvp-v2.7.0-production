@@ -3,6 +3,9 @@
 // Экспорт всех констант каталога
 export * from './catalog.constants'
 
+// Экспорт констант категорий и сертификатов
+export * from './categories.constants'
+
 // Реэкспорт основных констант для удобства
 export {
   PRODUCTS_PER_PAGE,

@@ -18,13 +18,13 @@ import {
   RESPONSE_TIMES,
   EMPLOYEE_RANGES,
   MIN_ORDER_RANGES,
+  CATEGORY_CERTIFICATIONS,
   toRoman,
   isValidEmail,
   isValidUrl,
   ERROR_MESSAGES,
   SUCCESS_MESSAGES
 } from '@/src/shared/config'
-import { CATEGORY_CERTIFICATIONS } from '@/components/catalog-categories-and-certifications'
 import { logger } from '@/src/shared/lib'
 
 interface AddSupplierModalProps {

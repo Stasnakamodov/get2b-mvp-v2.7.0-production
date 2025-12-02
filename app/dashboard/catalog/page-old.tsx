@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search, Plus, Star, MapPin, Phone, Mail, Globe, Building, Users, Package, Filter, CheckCircle, Clock, Zap, X, Upload, Image as ImageIcon, Edit, Trash2, Save, MessageCircle, Heart, ShoppingCart, Grid3X3, List, ArrowLeft } from 'lucide-react'
 
 import { motion } from "framer-motion"
-import { CATEGORY_CERTIFICATIONS } from '@/components/catalog-categories-and-certifications'
+import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config'
 import { supabase } from '@/lib/supabaseClient'
 import { AddSupplierModal } from './components/AddSupplierModal'
 import InlineCategoryList from '@/components/catalog/InlineCategoryList'

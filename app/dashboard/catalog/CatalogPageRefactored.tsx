@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { CATEGORY_CERTIFICATIONS } from '@/components/catalog-categories-and-certifications'
+import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config'
 import { CatalogHeader } from './components/CatalogHeader'
 import { SupplierGrid } from './components/SupplierGrid'
 import { AddSupplierModal } from './components/AddSupplierModal'

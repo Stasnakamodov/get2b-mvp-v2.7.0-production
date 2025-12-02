@@ -11,7 +11,7 @@ import {
   type CategoryTree
 } from '@/src/entities/supplier'
 import { logger } from '@/src/shared/lib'
-import { CATEGORY_CERTIFICATIONS } from '@/components/catalog-categories-and-certifications'
+import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config'
 
 interface UseCategoriesResult {
   // Данные
