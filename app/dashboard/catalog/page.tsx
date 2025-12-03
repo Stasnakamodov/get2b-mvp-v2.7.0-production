@@ -15,9 +15,10 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import {
   useSuppliers,
   useCategories,
-  useProducts,
-  useCart
+  useProducts
 } from '@/src/features/supplier-management'
+
+import { useCart } from '@/src/features/cart-management'
 
 import {
   SupplierGrid,

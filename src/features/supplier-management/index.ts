@@ -3,7 +3,9 @@
 // -:A?>@B 2A5E EC:>2
 export { useSuppliers, useSupplier } from './hooks/useSuppliers'
 export { useCategories, useCategoryProducts } from './hooks/useCategories'
-export { useProducts, useCart } from './hooks/useProducts'
+export { useProducts } from './hooks/useProducts'
+
+// useCart перенесен в features/cart-management
 
 //  5M:A?>@B B8?>2 4;O C4>1AB20
 export type {
