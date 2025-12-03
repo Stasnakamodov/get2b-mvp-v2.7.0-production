@@ -14,11 +14,11 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 // FSD импорты
 import {
   useSuppliers,
-  useCategories,
-  useProducts
+  useCategories
 } from '@/src/features/supplier-management'
 
 import { useCart } from '@/src/features/cart-management'
+import { useSupplierModal, SupplierModal } from '@/src/features/supplier-modal'
 
 import {
   SupplierGrid,
@@ -68,8 +68,6 @@ export default function CatalogPage() {
   // Основные состояния страницы
   const [selectedRoom, setSelectedRoom] = useState<RoomType>('orange')
   const [catalogMode, setCatalogMode] = useState<CatalogMode>('categories') // По умолчанию категории
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
-  const [showSupplierModal, setShowSupplierModal] = useState(false)
   const [showCartModal, setShowCartModal] = useState(false)
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false)
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
@@ -98,12 +96,6 @@ export default function CatalogPage() {
   } = useCategories()
 
   const {
-    products,
-    loading: loadingProducts,
-    loadProducts
-  } = useProducts()
-
-  const {
     cart,
     activeSupplier,
     addToCart,
@@ -112,6 +104,23 @@ export default function CatalogPage() {
     getTotalItems,
     getTotalAmount
   } = useCart()
+
+  // Функция для начала проекта
+  const handleStartProject = (supplier: Supplier) => {
+    logger.info('🚀 Начинаем проект с поставщиком:', supplier.name)
+    const params = new URLSearchParams({
+      supplierId: supplier.id,
+      supplierName: supplier.name || '',
+      mode: 'catalog'
+    })
+    router.push(`/dashboard/create-project?${params.toString()}`)
+  }
+
+  // Хук модального окна поставщика
+  const supplierModal = useSupplierModal({
+    onStartProject: handleStartProject,
+    selectedRoom
+  })
 
   // Инициализация
   useEffect(() => {
@@ -139,30 +148,10 @@ export default function CatalogPage() {
     }
   }, [])
 
-  // Загрузка товаров при выборе поставщика
-  useEffect(() => {
-    if (selectedSupplier && showSupplierModal) {
-      const supplierType = selectedSupplier.room_type ||
-                          (selectedRoom === 'orange' ? 'verified' : 'user')
-      loadProducts(selectedSupplier.id, supplierType)
-    }
-  }, [selectedSupplier, showSupplierModal, selectedRoom, loadProducts])
-
-  // Обработчики поставщиков
+  // Обработчик клика по поставщику
   const handleSupplierClick = (supplier: Supplier) => {
     logger.debug('Выбран поставщик:', supplier.name)
-    setSelectedSupplier(supplier)
-    setShowSupplierModal(true)
-  }
-
-  const handleStartProject = (supplier: Supplier) => {
-    logger.info('🚀 Начинаем проект с поставщиком:', supplier.name)
-    const params = new URLSearchParams({
-      supplierId: supplier.id,
-      supplierName: supplier.name || '',
-      mode: 'catalog'
-    })
-    router.push(`/dashboard/create-project?${params.toString()}`)
+    supplierModal.open(supplier)
   }
 
   // Обработчики категорий
@@ -423,93 +412,15 @@ export default function CatalogPage() {
         )}
 
         {/* Модальное окно поставщика */}
-        {showSupplierModal && selectedSupplier && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">
-                    {selectedSupplier.name}
-                  </h2>
-                  <button
-                    onClick={() => {
-                      setShowSupplierModal(false)
-                      setSelectedSupplier(null)
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6">
-                {/* Информация о поставщике */}
-                <div className="mb-6">
-                  <SupplierCard
-                    supplier={selectedSupplier}
-                    onStartProject={handleStartProject}
-                    showActions={true}
-                  />
-                </div>
-
-                {/* Товары поставщика */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">
-                    Товары поставщика ({products.length})
-                  </h3>
-
-                  {loadingProducts ? (
-                    <div className="flex items-center justify-center h-32">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                    </div>
-                  ) : products.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {products.map(product => (
-                        <ProductCard
-                          key={product.id}
-                          product={product}
-                          supplierName={selectedSupplier.name}
-                          isCompact={true}
-                          onAddToCart={(product) => {
-                            if (addToCart(product)) {
-                              logger.info('Товар добавлен в корзину')
-                            } else {
-                              alert('Нельзя добавить товар другого поставщика')
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      У этого поставщика пока нет товаров
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-6 border-t flex justify-between">
-                <button
-                  onClick={() => {
-                    setShowSupplierModal(false)
-                    setSelectedSupplier(null)
-                  }}
-                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Закрыть
-                </button>
-
-                <button
-                  onClick={() => handleStartProject(selectedSupplier)}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Начать проект
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <SupplierModal
+          isOpen={supplierModal.isOpen}
+          supplier={supplierModal.selectedSupplier}
+          products={supplierModal.products}
+          loading={supplierModal.loading}
+          onClose={supplierModal.close}
+          onStartProject={handleStartProject}
+          onAddToCart={addToCart}
+        />
 
         {/* Модальное окно корзины */}
         {showCartModal && (
