@@ -4,10 +4,16 @@
  */
 
 import React, { useState, useMemo } from 'react'
-import { Grid3X3, List, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react'
 import { SupplierCard } from './SupplierCard'
 import type { Supplier, RoomType } from '@/src/entities/supplier'
 import { SUPPLIERS_PER_PAGE } from '@/src/shared/config'
+import {
+  SearchBar,
+  FilterSelect,
+  ViewModeSwitcher,
+  Pagination,
+  type ViewMode
+} from '@/src/shared/ui'
 
 interface SupplierGridProps {
   suppliers: Supplier[]
@@ -27,8 +33,6 @@ interface SupplierGridProps {
   showPagination?: boolean
   itemsPerPage?: number
 }
-
-type ViewMode = 'grid' | 'list'
 
 export const SupplierGrid: React.FC<SupplierGridProps> = ({
   suppliers,
@@ -173,60 +177,28 @@ export const SupplierGrid: React.FC<SupplierGridProps> = ({
         <div className="flex items-center gap-3">
           {/* Поиск */}
           {showSearch && (
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Поиск поставщиков..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-              />
-            </div>
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Поиск поставщиков..."
+            />
           )}
 
           {/* Фильтр по категориям */}
           {showFilters && categories.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">Все категории</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
+            <FilterSelect
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              options={categories.map(cat => ({ value: cat, label: cat }))}
+              placeholder="Все категории"
+            />
           )}
 
           {/* Переключатель вида */}
-          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-              title="Сетка"
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-              title="Список"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
+          <ViewModeSwitcher
+            mode={viewMode}
+            onChange={setViewMode}
+          />
         </div>
       </div>
 
@@ -275,56 +247,13 @@ export const SupplierGrid: React.FC<SupplierGridProps> = ({
       )}
 
       {/* Пагинация */}
-      {showPagination && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          {/* Номера страниц */}
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-              // Показываем только несколько страниц вокруг текущей
-              if (
-                page === 1 ||
-                page === totalPages ||
-                (page >= currentPage - 1 && page <= currentPage + 1)
-              ) {
-                return (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                      page === currentPage
-                        ? 'bg-blue-500 text-white'
-                        : 'border border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                )
-              } else if (
-                page === currentPage - 2 ||
-                page === currentPage + 2
-              ) {
-                return <span key={page} className="px-1">...</span>
-              }
-              return null
-            })}
-          </div>
-
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+      {showPagination && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          className="mt-6"
+        />
       )}
     </div>
   )
