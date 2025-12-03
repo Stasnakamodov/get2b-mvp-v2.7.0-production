@@ -6,7 +6,7 @@
 import React, { useState, useMemo } from 'react'
 import { Grid3X3, List, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react'
 import { SupplierCard } from './SupplierCard'
-import type { Supplier, RoomType, ViewMode } from '@/src/entities/supplier'
+import type { Supplier, RoomType } from '@/src/entities/supplier'
 import { SUPPLIERS_PER_PAGE } from '@/src/shared/config'
 
 interface SupplierGridProps {

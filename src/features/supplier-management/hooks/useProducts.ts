@@ -9,10 +9,10 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-  uploadImage,
   type Product,
   type ProductFormData
-} from '@/src/entities/supplier'
+} from '@/src/entities/product'
+import { uploadImage } from '@/src/shared/api'
 import { logger } from '@/src/shared/lib'
 
 interface UseProductsResult {
@@ -59,7 +59,7 @@ export const useProducts = (): UseProductsResult => {
     supplierId: string,
     supplierType: 'user' | 'verified' = 'user'
   ) => {
-    logger.debug('📦 Загрузка товаров поставщика:', supplierId, supplierType)
+    logger.debug(`📦 Загрузка товаров поставщика: ${supplierId} (${supplierType})`)
     setLoading(true)
     setError(null)
     setCurrentSupplierId(supplierId)
@@ -296,7 +296,7 @@ export const useCart = () => {
       try {
         const parsedCart = JSON.parse(savedCart)
         setCart(parsedCart)
-        logger.info('✅ Корзина загружена из localStorage:', parsedCart.length, 'товаров')
+        logger.info(`✅ Корзина загружена из localStorage: ${parsedCart.length} товаров`)
       } catch (error) {
         logger.error('❌ Ошибка загрузки корзины из localStorage:', error)
       }
@@ -314,7 +314,7 @@ export const useCart = () => {
     if (typeof window === 'undefined') return
 
     localStorage.setItem('catalog_cart', JSON.stringify(cart))
-    logger.debug('💾 Корзина сохранена в localStorage:', cart.length, 'товаров')
+    logger.debug(`💾 Корзина сохранена в localStorage: ${cart.length} товаров`)
   }, [cart])
 
   /**

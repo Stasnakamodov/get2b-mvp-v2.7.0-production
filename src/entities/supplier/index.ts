@@ -6,15 +6,15 @@ export * from './model/types'
 // Реэкспорт основных типов для удобства
 export type {
   Supplier,
-  Product,
-  CatalogCategory,
   EchoCard,
   SupplierFormData,
-  ProductFormData,
   RoomType,
   Room,
   CatalogMode,
-  LoadingState
+  LoadingState,
+  SmartRecommendation,
+  SuppliersResponse,
+  EchoCardsResponse
 } from './model/types'
 
 // Экспорт API функций
@@ -26,24 +26,10 @@ export {
   updateSupplier,
   deleteSupplier,
 
-  // Товары
-  fetchSupplierProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-
-  // Категории
-  fetchCategories,
-  fetchSubcategories,
-
   // Эхо карточки
   fetchEchoCards,
   importSupplierFromEchoCard,
 
   // Рекомендации
-  fetchRecommendations,
-
-  // Утилиты
-  uploadImage,
-  checkSupabaseConnection
-} from './api/supabaseApi'
+  fetchRecommendations
+} from './api'

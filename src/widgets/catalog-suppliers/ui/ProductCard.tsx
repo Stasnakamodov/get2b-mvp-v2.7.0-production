@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { ShoppingCart, Package, Info, Image as ImageIcon } from 'lucide-react'
-import type { Product } from '@/src/entities/supplier'
+import type { Product } from '@/src/entities/product'
 import { formatPrice } from '@/src/shared/config'
 
 interface ProductCardProps {

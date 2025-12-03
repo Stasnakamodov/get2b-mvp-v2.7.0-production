@@ -28,11 +28,11 @@ import {
 
 import type {
   Supplier,
-  Product,
   RoomType,
-  CatalogMode,
-  CatalogCategory
+  CatalogMode
 } from '@/src/entities/supplier'
+import type { Product } from '@/src/entities/product'
+import type { CatalogCategory } from '@/src/entities/category'
 
 import {
   ROOM_TYPES,

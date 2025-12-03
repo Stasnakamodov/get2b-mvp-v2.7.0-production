@@ -4,7 +4,8 @@
  */
 
 import React from 'react'
-import type { SupplierFormData, ProductFormData } from '@/src/entities/supplier'
+import type { SupplierFormData } from '@/src/entities/supplier'
+import type { ProductFormData } from '@/src/entities/product'
 
 interface Step5ProductsProps {
   formData: SupplierFormData

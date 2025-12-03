@@ -4,8 +4,10 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import type { Supplier, SupplierFormData as FormData, ProductFormData } from '@/src/entities/supplier'
-import { createSupplier, updateSupplier, uploadImage } from '@/src/entities/supplier'
+import type { Supplier, SupplierFormData as FormData } from '@/src/entities/supplier'
+import type { ProductFormData } from '@/src/entities/product'
+import { createSupplier, updateSupplier } from '@/src/entities/supplier'
+import { uploadImage } from '@/src/shared/api'
 import { DEFAULT_SUPPLIER_FORM_DATA, SUCCESS_MESSAGES } from '@/src/shared/config'
 import { logger } from '@/src/shared/lib'
 import { validateStep } from './validation'

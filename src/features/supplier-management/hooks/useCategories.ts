@@ -9,7 +9,7 @@ import {
   fetchSubcategories,
   type CatalogCategory,
   type CategoryTree
-} from '@/src/entities/supplier'
+} from '@/src/entities/category'
 import { logger } from '@/src/shared/lib'
 import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config'
 

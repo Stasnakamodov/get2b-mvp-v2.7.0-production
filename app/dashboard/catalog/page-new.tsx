@@ -24,10 +24,10 @@ import {
 
 import type {
   Supplier,
-  Product,
   RoomType,
   CatalogMode
 } from '@/src/entities/supplier'
+import type { Product } from '@/src/entities/product'
 
 import {
   ROOM_TYPES,

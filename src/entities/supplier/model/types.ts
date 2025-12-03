@@ -3,6 +3,9 @@
  * Извлечено из монолитного файла page.tsx при рефакторинге на FSD архитектуру
  */
 
+import type { Product, ProductFormData } from '@/src/entities/product'
+import type { CatalogCategory } from '@/src/entities/category'
+
 // ========================================
 // 🎯 ОСНОВНЫЕ ТИПЫ ПОСТАВЩИКОВ
 // ========================================
@@ -62,74 +65,6 @@ export interface Room {
 }
 
 // ========================================
-// 🎯 ТИПЫ ТОВАРОВ И КАТЕГОРИЙ
-// ========================================
-
-/**
- * Модель товара в каталоге
- */
-export interface Product {
-  id: string
-  supplier_id: string
-  product_name: string
-  name?: string // Alias для совместимости
-  description: string | null
-  price: string
-  currency: string
-  min_order: string | null
-  in_stock: boolean
-  images: string[] | null
-  image_url?: string | null
-  item_code: string | null
-  sku?: string | null
-  specifications?: Record<string, string>
-  category?: string
-  created_at: string
-  updated_at?: string
-}
-
-/**
- * Категория товаров с поддержкой иерархии
- */
-export interface CatalogCategory {
-  id?: number
-  key?: string
-  name: string
-  category: string  // Alias для обратной совместимости
-  products_count: number
-  suppliers_count: number
-  min_price: number | null
-  max_price: number | null
-  available_rooms: ('verified' | 'user')[]
-  countries: string[]
-  icon: string
-  description: string
-  price_range?: string | null
-  rooms_info: {
-    has_verified: boolean
-    has_user: boolean
-    total_rooms: number
-  }
-  // Поля для иерархии
-  parent_id?: number | null
-  level?: number  // 1 = основная категория, 2 = подкатегория
-  sort_order?: number
-  has_subcategories?: boolean
-  subcategories?: CatalogCategory[]
-  category_path?: string  // Полный путь "Основная → Подкатегория"
-}
-
-/**
- * Дерево категорий
- */
-export interface CategoryTree {
-  main_category: CatalogCategory
-  subcategories: CatalogCategory[]
-  total_products: number
-  total_suppliers: number
-}
-
-// ========================================
 // 🎯 ТИПЫ ДЛЯ ФОРМ И МОДАЛОК
 // ========================================
 
@@ -177,21 +112,6 @@ export interface SupplierFormData {
   card_holder?: string
   crypto_network?: string
   crypto_address?: string
-}
-
-/**
- * Данные формы товара
- */
-export interface ProductFormData {
-  id: string
-  name: string
-  price: string
-  description: string
-  images: string[]
-  specifications: Record<string, string>
-  category: string
-  inStock: boolean
-  minOrder: string
 }
 
 // ========================================
@@ -274,25 +194,6 @@ export interface SuppliersResponse {
   suppliers: Supplier[]
   total?: number
   page?: number
-  error?: string
-}
-
-/**
- * Ответ API со списком товаров
- */
-export interface ProductsResponse {
-  success: boolean
-  products: Product[]
-  total?: number
-  error?: string
-}
-
-/**
- * Ответ API со списком категорий
- */
-export interface CategoriesResponse {
-  success: boolean
-  categories: CatalogCategory[]
   error?: string
 }
 

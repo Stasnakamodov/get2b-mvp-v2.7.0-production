@@ -8,13 +8,17 @@ export { useProducts, useCart } from './hooks/useProducts'
 //  5M:A?>@B B8?>2 4;O C4>1AB20
 export type {
   Supplier,
-  Product,
-  CatalogCategory,
   EchoCard,
   SupplierFormData,
-  ProductFormData,
   RoomType,
   Room,
   CatalogMode,
   LoadingState
 } from '@/src/entities/supplier'
+
+export type {
+  Product,
+  ProductFormData
+} from '@/src/entities/product'
+
+export type { CatalogCategory } from '@/src/entities/category'

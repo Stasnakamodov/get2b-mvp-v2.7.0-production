@@ -10,8 +10,9 @@ export { AddSupplierModal } from './ui/AddSupplierModal'
 // Реэкспорт типов для удобства
 export type {
   Supplier,
-  Product,
-  CatalogCategory,
   RoomType,
   CatalogMode
 } from '@/src/entities/supplier'
+
+export type { Product } from '@/src/entities/product'
+export type { CatalogCategory } from '@/src/entities/category'

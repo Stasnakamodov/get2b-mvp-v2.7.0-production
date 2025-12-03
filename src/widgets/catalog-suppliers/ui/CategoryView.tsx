@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { ChevronRight, Package, Users, ShoppingCart } from 'lucide-react'
-import type { CatalogCategory } from '@/src/entities/supplier'
+import type { CatalogCategory } from '@/src/entities/category'
 import { formatPrice } from '@/src/shared/config'
 
 interface CategoryViewProps {
