@@ -6,6 +6,7 @@
 
 // Layout & Navigation
 export { SearchBar } from './SearchBar'
+export { SearchBarWithCategories } from './SearchBarWithCategories'
 export { FilterSelect } from './FilterSelect'
 export { ViewModeSwitcher } from './ViewModeSwitcher'
 export { Pagination } from './Pagination'

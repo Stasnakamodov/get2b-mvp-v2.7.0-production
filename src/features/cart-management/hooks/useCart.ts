@@ -37,10 +37,23 @@ export const useCart = (): UseCartResult => {
     if (savedCart) {
       try {
         const parsedCart = JSON.parse(savedCart)
-        setCart(parsedCart)
-        logger.info(`✅ Корзина загружена из localStorage: ${parsedCart.length} товаров`)
+
+        // Проверяем структуру данных
+        if (Array.isArray(parsedCart) && parsedCart.length > 0) {
+          // Убеждаемся, что каждый элемент имеет поле quantity
+          const validCart = parsedCart.map(item => ({
+            ...item,
+            quantity: item.quantity || 1
+          }))
+          setCart(validCart)
+          logger.info(`✅ Корзина загружена из localStorage: ${validCart.length} товаров, общее количество: ${validCart.reduce((sum, item) => sum + item.quantity, 0)}`)
+        } else if (parsedCart.length === 0) {
+          setCart([])
+          logger.info('📭 Корзина пуста')
+        }
       } catch (error) {
         logger.error('❌ Ошибка загрузки корзины из localStorage:', error)
+        localStorage.removeItem('catalog_cart') // Очищаем поврежденные данные
       }
     }
 
@@ -55,8 +68,15 @@ export const useCart = (): UseCartResult => {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    localStorage.setItem('catalog_cart', JSON.stringify(cart))
-    logger.debug(`💾 Корзина сохранена в localStorage: ${cart.length} товаров`)
+    const cartToSave = cart.map(item => ({
+      ...item,
+      quantity: item.quantity || 1 // Гарантируем наличие quantity
+    }))
+
+    const serialized = JSON.stringify(cartToSave)
+    localStorage.setItem('catalog_cart', serialized)
+
+    logger.debug(`💾 Корзина сохранена в localStorage: ${cart.length} товаров, общее количество: ${cart.reduce((sum, item) => sum + item.quantity, 0)}`)
   }, [cart])
 
   /**
@@ -90,16 +110,18 @@ export const useCart = (): UseCartResult => {
 
       if (existingItem) {
         // Увеличиваем количество
+        const newQuantity = existingItem.quantity + quantity
         setCart(prev => prev.map(item =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: newQuantity }
             : item
         ))
-        logger.info('✅ Количество товара увеличено в корзине')
+        logger.info(`✅ Количество товара увеличено в корзине: ${existingItem.quantity} → ${newQuantity}`)
       } else {
         // Добавляем новый товар
-        setCart(prev => [...prev, { ...product, quantity }])
-        logger.info('✅ Товар добавлен в корзину')
+        const newItem: CartItem = { ...product, quantity }
+        setCart(prev => [...prev, newItem])
+        logger.info(`✅ Товар добавлен в корзину с количеством: ${quantity}`)
       }
 
       return true

@@ -7,6 +7,33 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const includeSubcategories = searchParams.get('includeSubcategories') !== 'false';
+    const simpleList = searchParams.get('simple') === 'true';
+
+    // Если запрошен простой список - возвращаем уникальные категории из продуктов
+    if (simpleList) {
+      const { data: products, error } = await supabase
+        .from("catalog_verified_products")
+        .select("category")
+        .not("category", "is", null)
+        .order("category");
+
+      if (error) {
+        console.error("❌ [API] Ошибка загрузки категорий из продуктов:", error);
+        return NextResponse.json({
+          success: false,
+          error: error.message
+        }, { status: 500 });
+      }
+
+      // Извлекаем уникальные категории
+      const uniqueCategories = [...new Set(products?.map(p => p.category))].filter(Boolean);
+
+      return NextResponse.json({
+        success: true,
+        categories: uniqueCategories,
+        count: uniqueCategories.length
+      });
+    }
 
     // ПРАВИЛЬНАЯ АРХИТЕКТУРА: Используем отдельные таблицы
     // catalog_categories - корневые категории (8 штук)

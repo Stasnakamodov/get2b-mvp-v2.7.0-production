@@ -81,7 +81,7 @@ const PAYMENT_METHODS = [
 export default function AccreditSupplierPage() {
   const params = useParams();
   const router = useRouter();
-  const supplierId = params.id as string;
+  const supplierId = params?.id as string;
   
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);

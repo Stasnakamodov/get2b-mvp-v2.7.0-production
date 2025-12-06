@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
 import ThemeToggle from "@/components/theme-toggle"
 import { ProfileGuard } from "@/components/profile-guard"
+import { CartProvider } from "@/src/features/cart-management"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true) // По умолчанию открыт
@@ -61,6 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ProfileGuard>
+    <CartProvider>
     <div className="min-h-screen bg-background">
       {/* Mobile Sidebar Toggle */}
       <div className="fixed top-4 left-4 z-50 md:hidden">
@@ -123,7 +125,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                           isActive
                             ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            : "text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                         }`}
                       >
                         <Icon className="h-5 w-5" />
@@ -165,6 +167,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="max-w-screen-2xl mx-auto px-4 py-2">{children}</main>
       </div>
     </div>
+    </CartProvider>
     </ProfileGuard>
   )
 }

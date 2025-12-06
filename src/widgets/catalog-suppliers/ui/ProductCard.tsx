@@ -1,10 +1,10 @@
 /**
- * Компонент карточки товара
- * Часть FSD архитектуры - widgets/catalog-suppliers
+ * Premium Product Card Component
+ * Design Philosophy: Image-first, Minimal text, Clean hover states
  */
 
 import React from 'react'
-import { ShoppingCart, Package, Info, Image as ImageIcon } from 'lucide-react'
+import { ShoppingCart, Image as ImageIcon } from 'lucide-react'
 import type { Product } from '@/src/entities/product'
 import { formatPrice } from '@/src/shared/config'
 
@@ -56,173 +56,134 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }
   }
 
-  // Получаем первое изображение или используем заглушку
+  // Get image and basic data
   const imageUrl = product.images?.[0] || product.image_url || null
   const productName = product.product_name || product.name || 'Без названия'
   const price = formatPrice(product.price, product.currency)
 
   if (isCompact) {
     return (
-      <div
-        className="group relative border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md bg-white"
-        onClick={handleCardClick}
-      >
-        {/* Изображение */}
-        <div className="aspect-square mb-3 bg-gray-100 rounded-lg overflow-hidden">
+      <div className="group relative bg-white rounded-lg overflow-hidden transition-shadow duration-200 hover:shadow-lg">
+        {/* Image */}
+        <div
+          className="aspect-square bg-gray-50 overflow-hidden cursor-pointer"
+          onClick={handleCardClick}
+        >
           {imageUrl ? (
             <img
               src={imageUrl}
               alt={productName}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {
-                (e.target as HTMLImageElement).onerror = null
-                (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMDAgMTUwQzE5NC40NzcgMTUwIDE5MCAxNTQuNDc3IDE5MCAxNjBWMjQwQzE5MCAyNDUuNTIzIDE5NC40NzcgMjUwIDIwMCAyNTBIMjgwQzI4NS41MjMgMjUwIDI5MCAyNDUuNTIzIDI5MCAyNDBWMTYwQzI5MCAxNTQuNDc3IDI4NS41MjMgMTUwIDI4MCAxNTBIMjAwWiIgc3Ryb2tlPSIjOUIxQzJDIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMjE1IDE3NUMyMTUgMTc3Ljc2MSAyMTIuNzYxIDE4MCAyMTAgMTgwQzIwNy4yMzkgMTgwIDIwNSAxNzcuNzYxIDIwNSAxNzVDMjA1IDE3Mi4yMzkgMjA3LjIzOSAxNzAgMjEwIDE3MEMyMTIuNzYxIDE3MCAyMTUgMTcyLjIzOSAyMTUgMTc1WiIgZmlsbD0iIzlCMUMyQyIvPgo8cGF0aCBkPSJNMTkwIDI1MEwyMzAgMjEwTDI5MCAyNTAiIHN0cm9rZT0iIzlCMUMyQyIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+                const target = e.target as HTMLImageElement
+                target.onerror = null
+                target.src = '/placeholder.svg'
               }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <ImageIcon className="w-12 h-12 text-gray-400" />
+              <ImageIcon className="w-12 h-12 text-gray-300" />
             </div>
           )}
         </div>
 
-        {/* Название */}
-        <h4 className="font-medium text-sm mb-2 line-clamp-2">{productName}</h4>
+        {/* Product Info */}
+        <div className="p-3">
+          <h4
+            className="font-medium text-sm text-gray-900 line-clamp-1 cursor-pointer hover:text-gray-700"
+            onClick={handleCardClick}
+          >
+            {productName}
+          </h4>
 
-        {/* Цена */}
-        <div className="text-lg font-semibold text-blue-600 mb-2">{price}</div>
+          <div className="flex items-center justify-between mt-2 mb-3">
+            <span className="text-lg font-bold text-gray-900">{price}</span>
+            {product.in_stock && (
+              <span className="text-xs text-violet-600 font-medium">В наличии</span>
+            )}
+          </div>
 
-        {/* Информация о наличии */}
-        <div className="flex items-center gap-2 text-xs text-gray-600">
-          {product.in_stock ? (
-            <>
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>В наличии</span>
-            </>
-          ) : (
-            <>
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span>Под заказ</span>
-            </>
-          )}
-          {product.min_order && (
-            <span className="ml-auto">Мин: {product.min_order}</span>
+          {/* Cart button - always visible */}
+          {showActions && onAddToCart && (
+            <button
+              onClick={handleAddToCart}
+              className="w-full py-2 px-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg flex items-center justify-center gap-2"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              В корзину
+            </button>
           )}
         </div>
-
-        {/* Кнопка в корзину */}
-        {showActions && onAddToCart && (
-          <button
-            onClick={handleAddToCart}
-            className="absolute top-2 right-2 p-2 bg-white shadow-md rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-50"
-            title="Добавить в корзину"
-          >
-            <ShoppingCart className="w-4 h-4 text-blue-600" />
-          </button>
-        )}
       </div>
     )
   }
 
   return (
     <div
-      className="border rounded-lg p-6 cursor-pointer transition-all hover:shadow-lg bg-white"
+      className="group bg-white rounded-lg cursor-pointer transition-shadow duration-200 hover:shadow-md overflow-hidden"
       onClick={handleCardClick}
     >
-      <div className="flex gap-6">
-        {/* Изображение */}
-        <div className="w-32 h-32 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+      <div className="flex">
+        {/* Image */}
+        <div className="w-40 h-40 flex-shrink-0 bg-gray-50 overflow-hidden">
           {imageUrl ? (
             <img
               src={imageUrl}
               alt={productName}
               className="w-full h-full object-cover"
               onError={(e) => {
-                (e.target as HTMLImageElement).onerror = null
-                (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMDAgMTUwQzE5NC40NzcgMTUwIDE5MCAxNTQuNDc3IDE5MCAxNjBWMjQwQzE5MCAyNDUuNTIzIDE5NC40NzcgMjUwIDIwMCAyNTBIMjgwQzI4NS41MjMgMjUwIDI5MCAyNDUuNTIzIDI5MCAyNDBWMTYwQzI5MCAxNTQuNDc3IDI4NS41MjMgMTUwIDI4MCAxNTBIMjAwWiIgc3Ryb2tlPSIjOUIxQzJDIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMjE1IDE3NUMyMTUgMTc3Ljc2MSAyMTIuNzYxIDE4MCAyMTAgMTgwQzIwNy4yMzkgMTgwIDIwNSAxNzcuNzYxIDIwNSAxNzVDMjA1IDE3Mi4yMzkgMjA3LjIzOSAxNzAgMjEwIDE3MEMyMTIuNzYxIDE3MCAyMTUgMTcyLjIzOSAyMTUgMTc1WiIgZmlsbD0iIzlCMUMyQyIvPgo8cGF0aCBkPSJNMTkwIDI1MEwyMzAgMjEwTDI5MCAyNTAiIHN0cm9rZT0iIzlCMUMyQyIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+                const target = e.target as HTMLImageElement
+                target.onerror = null
+                target.src = '/placeholder.svg'
               }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <ImageIcon className="w-12 h-12 text-gray-400" />
+              <ImageIcon className="w-12 h-12 text-gray-300" />
             </div>
           )}
         </div>
 
-        {/* Информация */}
-        <div className="flex-1">
-          {/* Заголовок и цена */}
-          <div className="flex items-start justify-between mb-3">
-            <h3 className="text-lg font-semibold">{productName}</h3>
-            <div className="text-xl font-bold text-blue-600">{price}</div>
+        {/* Info - Clean typography */}
+        <div className="flex-1 p-4">
+          {/* Title and price */}
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 flex-1">{productName}</h3>
+            <div className="text-xl font-bold ml-4">{price}</div>
           </div>
 
-          {/* Поставщик */}
+          {/* Supplier */}
           {supplierName && (
-            <p className="text-sm text-gray-600 mb-2">Поставщик: {supplierName}</p>
+            <p className="text-xs text-gray-500 mb-2">{supplierName}</p>
           )}
 
-          {/* Описание */}
+          {/* Description */}
           {product.description && (
-            <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
               {product.description}
             </p>
           )}
 
-          {/* Метаинформация */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+          {/* Meta info - minimal */}
+          <div className="flex items-center gap-4 text-xs text-gray-500">
             {product.item_code && (
-              <div className="flex items-center gap-1">
-                <Package className="w-4 h-4" />
-                <span>Артикул: {product.item_code}</span>
-              </div>
+              <span>Арт. {product.item_code}</span>
             )}
 
-            {product.min_order && (
-              <div className="flex items-center gap-1">
-                <Info className="w-4 h-4" />
-                <span>Мин. заказ: {product.min_order}</span>
-              </div>
+            {product.in_stock ? (
+              <span className="text-violet-700 font-medium">В наличии</span>
+            ) : (
+              <span className="text-gray-500">Под заказ</span>
             )}
-
-            {/* Наличие */}
-            <div className="flex items-center gap-1">
-              {product.in_stock ? (
-                <>
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-green-600 font-medium">В наличии</span>
-                </>
-              ) : (
-                <>
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span className="text-red-600 font-medium">Под заказ</span>
-                </>
-              )}
-            </div>
           </div>
 
-          {/* Спецификации */}
-          {product.specifications && Object.keys(product.specifications).length > 0 && (
-            <div className="mb-4">
-              <h4 className="text-sm font-medium mb-2">Характеристики:</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {Object.entries(product.specifications).slice(0, 4).map(([key, value]) => (
-                  <div key={key} className="flex">
-                    <span className="text-gray-600">{key}:</span>
-                    <span className="ml-2 font-medium">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Действия */}
+          {/* Actions - clean buttons */}
           {showActions && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-3">
               {onAddToCart && (
                 <button
                   onClick={handleAddToCart}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   <span>В корзину</span>
@@ -232,18 +193,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               {onEdit && (
                 <button
                   onClick={handleEdit}
-                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                  className="px-3 py-1.5 text-gray-600 text-sm hover:bg-gray-50 rounded-lg transition-colors"
                 >
-                  ✏️ Редактировать
+                  Изменить
                 </button>
               )}
 
               {onDelete && (
                 <button
                   onClick={handleDelete}
-                  className="px-4 py-2 text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
+                  className="px-3 py-1.5 text-red-600 text-sm hover:bg-red-50 rounded-lg transition-colors"
                 >
-                  🗑️ Удалить
+                  Удалить
                 </button>
               )}
             </div>

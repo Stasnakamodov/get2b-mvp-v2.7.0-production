@@ -38,7 +38,7 @@ export default function Step1CompanyForm(props: {
   const [localError, setLocalError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const templateId = searchParams.get("templateId");
+  const templateId = searchParams?.get("templateId");
   const [uploading, setUploading] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);

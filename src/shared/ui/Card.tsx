@@ -1,13 +1,11 @@
 /**
- * Переиспользуемый компонент карточки
- * FSD: shared/ui
- *
- * Извлечено из widgets/catalog-suppliers/ui/SupplierCard.tsx и ProductCard.tsx
+ * Premium Card Component
+ * Design Philosophy: Borderless, Clean, Minimal
  */
 
 import React from 'react'
 
-type CardVariant = 'default' | 'bordered' | 'elevated'
+type CardVariant = 'default' | 'elevated' | 'flat'
 type CardPadding = 'none' | 'sm' | 'md' | 'lg'
 
 interface CardProps {
@@ -22,9 +20,6 @@ interface CardProps {
   className?: string
 }
 
-/**
- * Компонент карточки с поддержкой header/footer и различных стилей
- */
 export const Card: React.FC<CardProps> = ({
   children,
   header,
@@ -36,14 +31,14 @@ export const Card: React.FC<CardProps> = ({
   onClick,
   className = ''
 }) => {
-  // Варианты стилей
+  // Minimal styles - no borders, subtle shadows only for depth
   const variantStyles = {
-    default: 'bg-white border border-gray-200',
-    bordered: 'bg-white border-2 border-gray-300',
-    elevated: 'bg-white shadow-md'
+    default: 'bg-white',
+    elevated: 'bg-white shadow-sm',
+    flat: 'bg-transparent'
   }
 
-  // Размеры padding
+  // Tighter padding for information density
   const paddingStyles = {
     none: '',
     sm: 'p-3',
@@ -51,9 +46,9 @@ export const Card: React.FC<CardProps> = ({
     lg: 'p-6'
   }
 
-  // Стили для интерактивных карточек
+  // Subtle hover effects
   const interactiveStyles = hoverable || clickable
-    ? 'transition-all hover:shadow-lg'
+    ? 'transition-shadow duration-200 hover:shadow-md'
     : ''
 
   const cursorStyle = clickable || onClick ? 'cursor-pointer' : ''
@@ -67,7 +62,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={`
-        rounded-lg
+        rounded-lg overflow-hidden
         ${variantStyles[variant]}
         ${interactiveStyles}
         ${cursorStyle}
@@ -77,7 +72,7 @@ export const Card: React.FC<CardProps> = ({
     >
       {/* Header */}
       {header && (
-        <div className={`${paddingStyles[padding]} border-b border-gray-200`}>
+        <div className={`${paddingStyles[padding]} ${footer ? 'border-b border-gray-100' : ''}`}>
           {header}
         </div>
       )}
@@ -89,7 +84,7 @@ export const Card: React.FC<CardProps> = ({
 
       {/* Footer */}
       {footer && (
-        <div className={`${paddingStyles[padding]} border-t border-gray-200 bg-gray-50`}>
+        <div className={`${paddingStyles[padding]} border-t border-gray-100`}>
           {footer}
         </div>
       )}

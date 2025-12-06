@@ -84,7 +84,7 @@ export async function GET(
 
     const executionTime = Date.now() - startTime
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       category: category,
       products: sortedProducts,
@@ -103,6 +103,11 @@ export async function GET(
         execution_time_ms: executionTime
       }
     })
+
+    // Добавляем заголовки кэширования
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
+
+    return response
 
   } catch (error) {
     console.error('❌ [API] Критическая ошибка получения товаров категории:', error)

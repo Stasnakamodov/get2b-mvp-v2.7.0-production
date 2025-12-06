@@ -1,8 +1,6 @@
 /**
- * Переиспользуемый компонент кнопки
- * FSD: shared/ui
- *
- * Извлечено из анализа паттернов в app/dashboard/catalog/page.tsx
+ * Premium Button Component
+ * Design Philosophy: Clean, Minimal, Apple-inspired
  */
 
 import React from 'react'
@@ -20,9 +18,6 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children?: React.ReactNode
 }
 
-/**
- * Компонент кнопки с поддержкой различных вариантов и размеров
- */
 export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',
@@ -34,22 +29,22 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
-  // Варианты стилей
+  // Premium minimal styles - no gradients, subtle shadows
   const variantStyles = {
-    primary: 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700',
-    secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300',
-    danger: 'bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 border border-red-200',
-    ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 active:bg-gray-200'
+    primary: 'bg-black text-white font-medium hover:bg-gray-900 active:bg-gray-800',
+    secondary: 'bg-white text-gray-900 font-medium hover:bg-gray-50 active:bg-gray-100',
+    danger: 'bg-white text-red-600 font-medium hover:bg-red-50 active:bg-red-100',
+    ghost: 'bg-transparent text-gray-600 font-medium hover:bg-gray-50 active:bg-gray-100'
   }
 
-  // Размеры
+  // Clean sizing - reduced padding for tighter feel
   const sizeStyles = {
     sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg'
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-5 py-2.5 text-base'
   }
 
-  const baseStyles = 'rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2'
+  const baseStyles = 'rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2'
 
   const widthStyles = fullWidth ? 'w-full' : ''
 

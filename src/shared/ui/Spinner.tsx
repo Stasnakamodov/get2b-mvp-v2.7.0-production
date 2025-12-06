@@ -38,11 +38,11 @@ export const Spinner: React.FC<SpinnerProps> = ({
     xl: 'h-16 w-16 border-4'
   }
 
-  // Варианты цветов
+  // Варианты цветов с улучшенным видом
   const variantStyles = {
-    primary: 'border-gray-300 border-t-blue-600',
-    secondary: 'border-gray-200 border-t-gray-600',
-    white: 'border-gray-400 border-t-white'
+    primary: 'border-gray-200 border-t-blue-600 shadow-lg shadow-blue-500/20',
+    secondary: 'border-gray-100 border-t-gray-600',
+    white: 'border-gray-400/50 border-t-white shadow-lg'
   }
 
   const spinnerElement = (
@@ -61,15 +61,15 @@ export const Spinner: React.FC<SpinnerProps> = ({
   // С текстом
   if (label) {
     const content = (
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-4">
         {spinnerElement}
-        <span className="text-gray-600 text-sm">{label}</span>
+        <span className="text-gray-700 text-base font-semibold">{label}</span>
       </div>
     )
 
     if (fullScreen) {
       return (
-        <div className="fixed inset-0 bg-white bg-opacity-90 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center">
           {content}
         </div>
       )
@@ -89,7 +89,7 @@ export const Spinner: React.FC<SpinnerProps> = ({
   // Без текста
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-white bg-opacity-90 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center">
         {spinnerElement}
       </div>
     )

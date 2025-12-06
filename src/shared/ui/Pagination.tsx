@@ -40,14 +40,17 @@ export const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => handlePageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+        className="p-3 rounded-xl border-2 border-gray-200 bg-white shadow-sm
+          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+          hover:border-blue-500 hover:bg-blue-50 hover:shadow-md hover:scale-105
+          active:scale-95 transition-all duration-200"
         aria-label="Предыдущая страница"
       >
-        <ChevronLeft className="w-4 h-4" />
+        <ChevronLeft className="w-5 h-5" />
       </button>
 
       {/* Номера страниц */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
           // Показываем только несколько страниц вокруг текущей
           if (
@@ -59,10 +62,10 @@ export const Pagination: React.FC<PaginationProps> = ({
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                className={`min-w-[44px] h-11 px-4 rounded-xl font-semibold transition-all duration-200 ${
                   page === currentPage
-                    ? 'bg-blue-500 text-white'
-                    : 'border border-gray-300 hover:bg-gray-50'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105'
+                    : 'border-2 border-gray-200 bg-white hover:border-blue-500 hover:bg-blue-50 hover:shadow-md hover:scale-105 active:scale-95'
                 }`}
                 aria-label={`Страница ${page}`}
                 aria-current={page === currentPage ? 'page' : undefined}
@@ -74,7 +77,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             page === currentPage - 2 ||
             page === currentPage + 2
           ) {
-            return <span key={page} className="px-1">...</span>
+            return <span key={page} className="px-2 text-gray-400 font-semibold">...</span>
           }
           return null
         })}
@@ -84,10 +87,13 @@ export const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => handlePageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+        className="p-3 rounded-xl border-2 border-gray-200 bg-white shadow-sm
+          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+          hover:border-blue-500 hover:bg-blue-50 hover:shadow-md hover:scale-105
+          active:scale-95 transition-all duration-200"
         aria-label="Следующая страница"
       >
-        <ChevronRight className="w-4 h-4" />
+        <ChevronRight className="w-5 h-5" />
       </button>
     </div>
   )

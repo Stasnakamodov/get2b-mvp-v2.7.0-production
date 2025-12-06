@@ -216,13 +216,14 @@ export const useCategories = (): UseCategoriesResult => {
    */
   useEffect(() => {
     loadCategories()
-  }, []) // Не включаем loadCategories в зависимости
+  }, [loadCategories])
 
   /**
    * Обработка URL параметров
    */
   useEffect(() => {
-    if (typeof window === 'undefined' || categories.length === 0) return
+    // Early return optimization
+    if (categories.length === 0 || typeof window === 'undefined') return
 
     const params = new URLSearchParams(window.location.search)
     const categoryParam = params.get('category')
@@ -263,7 +264,7 @@ export const useCategories = (): UseCategoriesResult => {
         })
       }
     }
-  }, [categories])
+  }, [categories, getCategoryById, getCategoryByName, selectCategory, selectSubcategory])
 
   return {
     // Данные

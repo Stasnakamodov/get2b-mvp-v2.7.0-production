@@ -34,43 +34,43 @@ export const Input: React.FC<InputProps> = ({
   className = '',
   ...props
 }) => {
-  // Размеры
+  // Размеры с улучшенным spacing
   const sizeStyles = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-5 py-3 text-lg'
+    sm: 'px-4 py-2 text-sm',
+    md: 'px-4 py-3 text-base',
+    lg: 'px-6 py-4 text-lg'
   }
 
   // Отступы для иконок
   const paddingWithIcon = leftIcon
     ? inputSize === 'sm'
-      ? 'pl-9'
+      ? 'pl-10'
       : inputSize === 'lg'
-      ? 'pl-12'
-      : 'pl-10'
+      ? 'pl-14'
+      : 'pl-12'
     : ''
 
   const paddingWithRightIcon = rightIcon
     ? inputSize === 'sm'
-      ? 'pr-9'
+      ? 'pr-10'
       : inputSize === 'lg'
-      ? 'pr-12'
-      : 'pr-10'
+      ? 'pr-14'
+      : 'pr-12'
     : ''
 
-  // Базовые стили
-  const baseStyles = 'border rounded-lg focus:outline-none focus:ring-2 transition-colors'
+  // Базовые стили с современными эффектами
+  const baseStyles = 'border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-200 shadow-sm hover:shadow-md'
   const stateStyles = error
-    ? 'border-red-300 focus:ring-red-500'
-    : 'border-gray-300 focus:ring-blue-500'
-  const disabledStyles = disabled ? 'bg-gray-50 cursor-not-allowed opacity-60' : 'bg-white'
+    ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
+    : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100 hover:border-gray-300'
+  const disabledStyles = disabled ? 'bg-gray-50 cursor-not-allowed opacity-60 hover:shadow-sm' : 'bg-white'
   const widthStyles = fullWidth ? 'w-full' : ''
 
   return (
     <div className={`${fullWidth ? 'w-full' : ''}`}>
       {/* Label */}
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
           {label}
         </label>
       )}
@@ -79,7 +79,7 @@ export const Input: React.FC<InputProps> = ({
       <div className="relative">
         {/* Левая иконка */}
         {leftIcon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 transition-colors duration-200">
             {leftIcon}
           </div>
         )}
@@ -102,7 +102,7 @@ export const Input: React.FC<InputProps> = ({
 
         {/* Правая иконка */}
         {rightIcon && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 transition-colors duration-200">
             {rightIcon}
           </div>
         )}

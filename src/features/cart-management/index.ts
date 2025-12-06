@@ -5,8 +5,8 @@
  * принципа единственной ответственности (SRP)
  */
 
-// Экспорт хука
-export { useCart } from './hooks/useCart'
+// Экспорт Provider и хука
+export { CartProvider, useCart } from './providers/CartProvider'
 
 // Экспорт типов
 export type {

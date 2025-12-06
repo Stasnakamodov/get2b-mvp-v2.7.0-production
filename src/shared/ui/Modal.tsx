@@ -83,29 +83,31 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
       onClick={handleOverlayClick}
     >
       <div
         className={`
-          bg-white rounded-xl w-full max-h-[90vh] overflow-y-auto
+          bg-white rounded-2xl w-full max-h-[90vh] overflow-y-auto
+          shadow-2xl shadow-black/20
+          animate-in zoom-in-95 duration-200
           ${sizeStyles[size]}
           ${className}
         `.trim().replace(/\s+/g, ' ')}
       >
         {/* Заголовок */}
         {(title || showCloseButton) && (
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
             <div className="flex items-center justify-between">
               {title && (
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-900">
                   {title}
                 </h2>
               )}
               {showCloseButton && (
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-200 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
                   aria-label="Закрыть"
                 >
                   <X className="w-5 h-5 text-gray-500" />
@@ -116,13 +118,13 @@ export const Modal: React.FC<ModalProps> = ({
         )}
 
         {/* Контент */}
-        <div className="p-6">
+        <div className="p-8">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="p-6 border-t border-gray-200 bg-gray-50">
+          <div className="p-6 border-t border-gray-100 bg-gradient-to-r from-gray-50 to-white">
             {footer}
           </div>
         )}

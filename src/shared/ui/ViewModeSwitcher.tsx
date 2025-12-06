@@ -25,28 +25,28 @@ export const ViewModeSwitcher: React.FC<ViewModeSwitcherProps> = ({
   className = ''
 }) => {
   return (
-    <div className={`flex items-center border border-gray-300 rounded-lg overflow-hidden ${className}`}>
+    <div className={`flex items-center gap-1 border-2 border-gray-200 rounded-xl overflow-hidden p-1 bg-white shadow-sm ${className}`}>
       <button
         onClick={() => onChange('grid')}
-        className={`p-2 transition-colors ${
+        className={`p-2.5 rounded-lg transition-all duration-200 ${
           mode === 'grid'
-            ? 'bg-blue-500 text-white'
-            : 'bg-white text-gray-600 hover:bg-gray-100'
+            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105'
+            : 'bg-white text-gray-600 hover:bg-gray-100 hover:scale-105 active:scale-95'
         }`}
         title="Сетка"
       >
-        <Grid3X3 className="w-4 h-4" />
+        <Grid3X3 className="w-5 h-5" />
       </button>
       <button
         onClick={() => onChange('list')}
-        className={`p-2 transition-colors ${
+        className={`p-2.5 rounded-lg transition-all duration-200 ${
           mode === 'list'
-            ? 'bg-blue-500 text-white'
-            : 'bg-white text-gray-600 hover:bg-gray-100'
+            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105'
+            : 'bg-white text-gray-600 hover:bg-gray-100 hover:scale-105 active:scale-95'
         }`}
         title="Список"
       >
-        <List className="w-4 h-4" />
+        <List className="w-5 h-5" />
       </button>
     </div>
   )

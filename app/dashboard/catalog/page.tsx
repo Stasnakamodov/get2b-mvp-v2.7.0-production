@@ -5,10 +5,10 @@
  * Поддерживает режимы: поставщики и категории
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
-import { Plus, RefreshCw, ArrowLeft, Package, Grid3X3, Users, ShoppingCart } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Plus, RefreshCw, ArrowLeft, Package, Grid3X3, Users, ShoppingCart, ChevronRight } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 // FSD импорты
@@ -33,25 +33,17 @@ import type {
   CatalogMode
 } from '@/src/entities/supplier'
 import type { Product } from '@/src/entities/product'
-import type { CatalogCategory } from '@/src/entities/category'
 
 import {
   ROOM_TYPES,
-  CATALOG_MODES,
-  SUCCESS_MESSAGES,
-  ERROR_MESSAGES
+  CATALOG_MODES
 } from '@/src/shared/config'
 
 import { logger } from '@/src/shared/lib'
 
 // Динамические импорты для оптимизации
-const CategoryView = dynamic(
-  () => import('@/src/widgets/catalog-suppliers/ui/CategoryView').then(m => ({ default: m.CategoryView })),
-  { loading: () => <div className="animate-pulse h-96 bg-gray-100 rounded-lg"></div> }
-)
-
-const SubcategorySelector = dynamic(
-  () => import('@/src/widgets/catalog-suppliers/ui/CategoryView').then(m => ({ default: m.SubcategorySelector })),
+const SubcategoryList = dynamic(
+  () => import('@/components/catalog/SubcategoryList'),
   { ssr: false }
 )
 
@@ -63,15 +55,20 @@ const ProductGridByCategory = dynamic(
 
 export default function CatalogPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClientComponentClient()
+
+  // Получаем категорию из URL параметров
+  const categoryFromUrl = searchParams?.get('category') || ''
 
   // Основные состояния страницы
   const [selectedRoom, setSelectedRoom] = useState<RoomType>('orange')
-  const [catalogMode, setCatalogMode] = useState<CatalogMode>('categories') // По умолчанию категории
+  const [catalogMode, setCatalogMode] = useState<CatalogMode>('categories') // По умолчанию категории (товары)
   const [showCartModal, setShowCartModal] = useState(false)
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false)
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
   const [token, setToken] = useState<string>('')
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null) // Для модального окна товара
 
   // Использование FSD хуков
   const {
@@ -100,88 +97,97 @@ export default function CatalogPage() {
     activeSupplier,
     addToCart,
     removeFromCart,
+    updateQuantity,
     clearCart,
-    getTotalItems,
-    getTotalAmount
+    getTotalAmount,
+    getTotalItems
   } = useCart()
 
-  // Функция для начала проекта
-  const handleStartProject = (supplier: Supplier) => {
-    logger.info('🚀 Начинаем проект с поставщиком:', supplier.name)
-    const params = new URLSearchParams({
-      supplierId: supplier.id,
-      supplierName: supplier.name || '',
-      mode: 'catalog'
-    })
-    router.push(`/dashboard/create-project?${params.toString()}`)
-  }
+  const supplierModal = useSupplierModal()
 
-  // Хук модального окна поставщика
-  const supplierModal = useSupplierModal({
-    onStartProject: handleStartProject,
-    selectedRoom
-  })
+  // Удалено: избыточный useEffect для urlCategory - используем categoryFromUrl напрямую
 
-  // Инициализация
+  // Мемоизированная функция для mapping корзины (используется 3 раза)
+  const cartMapped = useMemo(() => {
+    return cart.map(item => ({
+      ...item,
+      description: item.description || undefined,
+      total_price: parseFloat(String(item.price || 0).replace(/[^0-9.-]+/g, '')) * item.quantity,
+      supplier_name: (item as any).supplier_name || '',
+      room_type: (item as any).room_type || 'user',
+      room_icon: (item as any).room_icon || '',
+      room_description: (item as any).room_description || ''
+    })) as any
+  }, [cart])
+
+  // Мемоизированная категория из URL
+  const categoryFromUrlMemo = useMemo(() => {
+    if (!categoryFromUrl || categories.length === 0) {
+      return null
+    }
+    return categories.find(cat =>
+      cat.name === categoryFromUrl || cat.category === categoryFromUrl
+    )
+  }, [categoryFromUrl, categories])
+
+  // Обработка выбора категории из URL (когда пользователь кликает на категорию в поиске)
   useEffect(() => {
-    logger.info('🚀 Страница каталога (FSD) инициализирована')
+    if (!categoryFromUrlMemo) {
+      // Если нет категории в URL или категории не загружены - сбрасываем выбор
+      if (selectedCategory || selectedSubcategory) {
+        selectCategory(null)
+        selectSubcategory(null)
+      }
+      return
+    }
 
-    // Получаем токен для API
-    const getToken = async () => {
+    if (!selectedCategory || selectedCategory.id !== categoryFromUrlMemo.id) {
+      // Выбираем категорию - это покажет её подкатегории
+      selectCategory(categoryFromUrlMemo)
+    }
+  }, [categoryFromUrlMemo, selectedCategory, selectedSubcategory, selectCategory, selectSubcategory])
+
+  // Загрузка токена
+  useEffect(() => {
+    const fetchUserData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.access_token) {
         setToken(session.access_token)
       }
     }
-    getToken()
+    fetchUserData()
+  }, [supabase])
 
-    // Проверяем URL параметры
-    const params = new URLSearchParams(window.location.search)
-    const categoryParam = params.get('category')
-    const modeParam = params.get('mode')
-
-    if (categoryParam) {
-      setCatalogMode('categories')
-    }
-    if (modeParam === 'suppliers' || modeParam === 'categories') {
-      setCatalogMode(modeParam as CatalogMode)
-    }
-  }, [])
-
-  // Обработчик клика по поставщику
   const handleSupplierClick = (supplier: Supplier) => {
-    logger.debug('Выбран поставщик:', supplier.name)
     supplierModal.open(supplier)
   }
 
-  // Обработчики категорий
-  const handleCategoryClick = (category: CatalogCategory) => {
-    logger.debug('Выбрана категория:', category.name)
-    selectCategory(category)
-    selectSubcategory(null) // Сбрасываем подкатегорию
-  }
-
-  const handleSubcategoryClick = (category: CatalogCategory, subcategory: CatalogCategory) => {
-    logger.debug('Выбрана подкатегория:', subcategory.name)
-    selectCategory(category)
-    selectSubcategory(subcategory)
-  }
-
-  const handleRefresh = () => {
-    logger.debug('🔄 Обновление данных каталога')
-    if (catalogMode === 'suppliers') {
-      refreshSuppliers()
-    } else {
-      loadCategories()
+  const handleStartProject = async (supplier: Supplier) => {
+    try {
+      if (supplierModal.onStartProject) {
+        await supplierModal.onStartProject(supplier)
+        router.push('/dashboard/project-constructor')
+      }
+    } catch (error) {
+      logger.error('Ошибка при создании проекта', error)
     }
   }
 
-  // Определение отображаемых поставщиков
-  const displayedSuppliers = selectedRoom === 'orange'
-    ? verifiedSuppliers
-    : userSuppliers
+  const handleRefresh = async () => {
+    if (catalogMode === 'suppliers') {
+      await refreshSuppliers()
+    } else {
+      await loadCategories()
+    }
+    logger.info('✅ Каталог обновлен')
+  }
 
-  const roomConfig = selectedRoom === 'orange'
+  // Фильтрация поставщиков по комнате
+  const suppliersToFilter = selectedRoom === 'orange' ? verifiedSuppliers : userSuppliers
+  const displayedSuppliers = filterByRoom(selectedRoom)
+
+  // Формируем номер комнаты для передачи в API
+  const roomTypeForApi = selectedRoom === 'orange'
     ? ROOM_TYPES.ORANGE
     : ROOM_TYPES.BLUE
 
@@ -190,20 +196,30 @@ export default function CatalogPage() {
       {/* Заголовок страницы */}
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">
-              📦 Каталог {catalogMode === 'suppliers' ? 'поставщиков' : 'товаров'}
-            </h1>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Package className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Каталог товаров
+                </h1>
+                <p className="text-sm text-gray-500">
+                  {catalogMode === 'suppliers' ? 'Просмотр поставщиков' : 'Все категории товаров'}
+                </p>
+              </div>
+            </div>
 
             {/* Корзина */}
             {getTotalItems() > 0 && (
               <button
                 onClick={() => setShowCartModal(true)}
-                className="relative flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                className="relative flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl hover:from-emerald-600 hover:to-green-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
               >
                 <ShoppingCart className="w-5 h-5" />
-                <span>Корзина</span>
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+                <span className="font-medium">Корзина</span>
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-md animate-pulse">
                   {getTotalItems()}
                 </span>
               </button>
@@ -212,59 +228,69 @@ export default function CatalogPage() {
 
           {/* Переключатель режимов */}
           <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              {/* Режимы каталога */}
-              <button
-                onClick={() => setCatalogMode('categories')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                  catalogMode === 'categories'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <Grid3X3 className="w-4 h-4" />
-                Категории
-              </button>
+            <div className="flex gap-3">
+              {/* Стильная группа переключателей режимов */}
+              <div className="flex bg-gray-100 rounded-xl p-1">
+                <button
+                  onClick={() => setCatalogMode('categories')}
+                  className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                    catalogMode === 'categories'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Grid3X3 className={`w-4 h-4 ${catalogMode === 'categories' ? 'text-indigo-600' : ''}`} />
+                  Категории
+                </button>
 
-              <button
-                onClick={() => setCatalogMode('suppliers')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                  catalogMode === 'suppliers'
-                    ? 'bg-purple-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                Поставщики
-              </button>
+                <button
+                  onClick={() => setCatalogMode('suppliers')}
+                  className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                    catalogMode === 'suppliers'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Users className={`w-4 h-4 ${catalogMode === 'suppliers' ? 'text-indigo-600' : ''}`} />
+                  Поставщики
+                </button>
+              </div>
 
-              {/* Разделитель */}
+              {/* Разделитель и переключатель комнат */}
               {catalogMode === 'suppliers' && (
                 <>
-                  <div className="w-px bg-gray-300 mx-2"></div>
+                  <div className="w-px bg-gray-300 mx-1"></div>
 
-                  {/* Переключатель комнат (только для поставщиков) */}
-                  <button
-                    onClick={() => setSelectedRoom('orange')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      selectedRoom === 'orange'
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {ROOM_TYPES.ORANGE.icon} Аккредитованные
-                  </button>
+                  {/* Переключатель комнат в том же стиле */}
+                  <div className="flex bg-gray-100 rounded-xl p-1">
+                    <button
+                      onClick={() => setSelectedRoom('orange')}
+                      className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                        selectedRoom === 'orange'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <span className={selectedRoom === 'orange' ? 'text-orange-500' : ''}>
+                        {ROOM_TYPES.ORANGE.icon}
+                      </span>
+                      Аккредитованные
+                    </button>
 
-                  <button
-                    onClick={() => setSelectedRoom('blue')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      selectedRoom === 'blue'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {ROOM_TYPES.BLUE.icon} Мои поставщики
-                  </button>
+                    <button
+                      onClick={() => setSelectedRoom('blue')}
+                      className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                        selectedRoom === 'blue'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <span className={selectedRoom === 'blue' ? 'text-blue-500' : ''}>
+                        {ROOM_TYPES.BLUE.icon}
+                      </span>
+                      Мои поставщики
+                    </button>
+                  </div>
                 </>
               )}
             </div>
@@ -277,19 +303,19 @@ export default function CatalogPage() {
                     setEditingSupplier(null)
                     setShowAddSupplierModal(true)
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-xl hover:from-indigo-600 hover:to-blue-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                 >
                   <Plus className="w-4 h-4" />
-                  Добавить поставщика
+                  <span className="font-medium">Добавить поставщика</span>
                 </button>
               )}
 
               <button
                 onClick={handleRefresh}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow"
               >
                 <RefreshCw className="w-4 h-4" />
-                Обновить
+                <span className="font-medium">Обновить</span>
               </button>
             </div>
           </div>
@@ -298,17 +324,47 @@ export default function CatalogPage() {
         {/* Контент в зависимости от режима */}
         {catalogMode === 'categories' ? (
           <>
-            {/* Режим категорий */}
-            {!selectedCategory ? (
-              <CategoryView
-                categories={categories}
-                loading={loadingCategories}
-                error={categoriesError}
-                onCategoryClick={handleCategoryClick}
-                onSubcategoryClick={handleSubcategoryClick}
+            {/* ПРАВИЛЬНАЯ НАВИГАЦИЯ ПО КАТЕГОРИЯМ */}
+
+            {/* 1. НЕ ВЫБРАНА КАТЕГОРИЯ - показываем ВСЕ ТОВАРЫ */}
+            {!selectedCategory && !selectedSubcategory && (
+              <ProductGridByCategory
+                selectedCategory=""
+                token={token}
+                cart={cartMapped}
+                selectedRoom={selectedRoom}
+                activeSupplier={activeSupplier}
+                onProductClick={(product: any) => {
+                  setSelectedProduct(product)
+                }}
+                onAddToCart={(product: any) => {
+                  if (addToCart(product)) {
+                    logger.info('✅ Товар добавлен в корзину')
+                  } else {
+                    const activeSupplierProduct = cart[0] as any
+                    const activeSupplierName = activeSupplierProduct?.supplier_name ||
+                                              activeSupplierProduct?.supplier_company_name ||
+                                              'текущего поставщика'
+
+                    const confirmSwitch = window.confirm(
+                      `В корзине уже есть товары от поставщика "${activeSupplierName}".\n\n` +
+                      `Хотите очистить корзину и добавить товары от поставщика "${product.supplier_name || product.supplier_company_name}"?`
+                    )
+
+                    if (confirmSwitch) {
+                      clearCart()
+                      addToCart(product)
+                      logger.info('✅ Корзина очищена и добавлен новый товар')
+                    }
+                  }
+                }}
+                isProductInCart={(productId: string) => cart.some(item => item.id === productId)}
               />
-            ) : (
-              <div>
+            )}
+
+            {/* 2. ВЫБРАНА КАТЕГОРИЯ, НО НЕ ПОДКАТЕГОРИЯ - показываем подкатегории */}
+            {selectedCategory && !selectedSubcategory && (
+              <>
                 {/* Навигация */}
                 <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
                   <div className="flex items-center gap-2">
@@ -316,68 +372,139 @@ export default function CatalogPage() {
                       onClick={() => {
                         selectCategory(null)
                         selectSubcategory(null)
+                        router.push('/dashboard/catalog', { scroll: false })
                       }}
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 hover:underline flex items-center gap-1"
                     >
-                      Все категории
+                      <ArrowLeft className="w-4 h-4" />
+                      Все товары
                     </button>
                     <span className="text-gray-400">/</span>
-                    <span className="font-medium">{selectedCategory.name}</span>
-                    {selectedSubcategory && (
-                      <>
-                        <span className="text-gray-400">/</span>
-                        <span className="font-medium">{selectedSubcategory.name}</span>
-                      </>
-                    )}
+                    <span className="font-medium text-lg">{selectedCategory.name}</span>
                   </div>
                 </div>
 
-                {/* Подкатегории */}
-                {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 && !selectedSubcategory && (
-                  <SubcategorySelector
-                    subcategories={selectedCategory.subcategories}
-                    selectedSubcategory={selectedSubcategory}
-                    onSelect={(subcat) => selectSubcategory(subcat)}
-                    onClose={() => selectCategory(null)}
+                {/* Список подкатегорий */}
+                {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 ? (
+                  <SubcategoryList
+                    category={selectedCategory}
+                    onSubcategorySelect={(subcategory: any) => {
+                      selectSubcategory(subcategory)
+                    }}
+                    onBack={() => {
+                      selectCategory(null)
+                      selectSubcategory(null)
+                    }}
+                    selectedRoom={selectedRoom}
+                  />
+                ) : (
+                  // Если подкатегорий нет, показываем товары категории
+                  <ProductGridByCategory
+                    selectedCategory={selectedCategory.name}
+                    token={token}
+                    cart={cartMapped}
+                    selectedRoom={selectedRoom}
+                    activeSupplier={activeSupplier}
+                    onProductClick={(product: any) => {
+                      setSelectedProduct(product)
+                    }}
+                    onAddToCart={(product: any) => {
+                      if (addToCart(product)) {
+                        logger.info('✅ Товар добавлен в корзину')
+                      } else {
+                        const activeSupplierProduct = cart[0] as any
+                        const activeSupplierName = activeSupplierProduct?.supplier_name ||
+                                                  activeSupplierProduct?.supplier_company_name ||
+                                                  'текущего поставщика'
+
+                        const confirmSwitch = window.confirm(
+                          `В корзине уже есть товары от поставщика "${activeSupplierName}".\n\n` +
+                          `Хотите очистить корзину и добавить товары от поставщика "${product.supplier_name || product.supplier_company_name}"?`
+                        )
+
+                        if (confirmSwitch) {
+                          clearCart()
+                          addToCart(product)
+                          logger.info('✅ Корзина очищена и добавлен новый товар')
+                        }
+                      }
+                    }}
+                    isProductInCart={(productId: string) => cart.some(item => item.id === productId)}
                   />
                 )}
+              </>
+            )}
 
-                {/* Товары категории */}
+            {/* 3. ВЫБРАНА И КАТЕГОРИЯ, И ПОДКАТЕГОРИЯ - показываем товары подкатегории */}
+            {selectedCategory && selectedSubcategory && (
+              <>
+                {/* Навигация */}
+                <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        selectCategory(null)
+                        selectSubcategory(null)
+                        router.push('/dashboard/catalog', { scroll: false })
+                      }}
+                      className="text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Все товары
+                    </button>
+                    <span className="text-gray-400">/</span>
+                    <button
+                      onClick={() => {
+                        selectSubcategory(null)
+                      }}
+                      className="text-blue-600 hover:underline"
+                    >
+                      {selectedCategory.name}
+                    </button>
+                    <span className="text-gray-400">/</span>
+                    <span className="font-medium text-lg">{selectedSubcategory.name}</span>
+                  </div>
+                </div>
+
+                {/* Товары подкатегории */}
                 <ProductGridByCategory
-                  selectedCategory={(selectedSubcategory || selectedCategory)?.name || ''}
+                  selectedCategory={selectedSubcategory.name}
                   token={token}
-                  cart={cart.map(item => ({
-                    ...item,
-                    description: item.description || undefined,
-                    total_price: parseFloat(String(item.price || 0).replace(/[^0-9.-]+/g, '')) * item.quantity,
-                    supplier_name: (item as any).supplier_name || '',
-                    room_type: (item as any).room_type || 'user',
-                    room_icon: (item as any).room_icon || '',
-                    room_description: (item as any).room_description || ''
-                  })) as any}
+                  cart={cartMapped}
                   selectedRoom={selectedRoom}
                   activeSupplier={activeSupplier}
+                  onProductClick={(product: any) => {
+                    setSelectedProduct(product)
+                  }}
                   onAddToCart={(product: any) => {
                     if (addToCart(product)) {
-                      logger.info('Товар добавлен в корзину')
+                      logger.info('✅ Товар добавлен в корзину')
                     } else {
-                      alert('Нельзя добавить товар другого поставщика. Сначала очистите корзину.')
+                      const activeSupplierProduct = cart[0] as any
+                      const activeSupplierName = activeSupplierProduct?.supplier_name ||
+                                                activeSupplierProduct?.supplier_company_name ||
+                                                'текущего поставщика'
+
+                      const confirmSwitch = window.confirm(
+                        `В корзине уже есть товары от поставщика "${activeSupplierName}".\n\n` +
+                        `Хотите очистить корзину и добавить товары от поставщика "${product.supplier_name || product.supplier_company_name}"?`
+                      )
+
+                      if (confirmSwitch) {
+                        clearCart()
+                        addToCart(product)
+                        logger.info('✅ Корзина очищена и добавлен новый товар')
+                      }
                     }
                   }}
                   isProductInCart={(productId: string) => cart.some(item => item.id === productId)}
                 />
-              </div>
+              </>
             )}
           </>
         ) : (
           <>
             {/* Режим поставщиков */}
-            <div className={`rounded-lg p-4 mb-6 ${roomConfig.bgColor} ${roomConfig.borderColor} border`}>
-              <p className={`${roomConfig.color} font-medium`}>
-                {roomConfig.description}
-              </p>
-            </div>
-
             {/* Ошибки */}
             {(userError || verifiedError) && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -420,6 +547,9 @@ export default function CatalogPage() {
           onClose={supplierModal.close}
           onStartProject={handleStartProject}
           onAddToCart={addToCart}
+          onProductClick={(product: Product) => {
+            setSelectedProduct(product)
+          }}
         />
 
         {/* Модальное окно корзины */}
@@ -428,9 +558,7 @@ export default function CatalogPage() {
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
               <div className="p-6 border-b">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">
-                    Корзина ({getTotalItems()} товаров)
-                  </h2>
+                  <h2 className="text-xl font-semibold">Корзина ({getTotalItems()} товаров)</h2>
                   <button
                     onClick={() => setShowCartModal(false)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -441,82 +569,96 @@ export default function CatalogPage() {
               </div>
 
               <div className="p-6">
-                {cart.length > 0 ? (
-                  <div className="space-y-4">
-                    {cart.map((item: any) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                {cart.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">Корзина пуста</p>
+                ) : (
+                  <>
+                    {cart.map((item) => (
+                      <div key={item.id} className="flex items-center gap-4 mb-4 p-4 border rounded-lg">
+                        {(item as any).images && (item as any).images[0] && (
+                          <img
+                            src={(item as any).images[0]}
+                            alt={item.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        )}
                         <div className="flex-1">
-                          <h4 className="font-medium">{item.product_name || item.name}</h4>
-                          <p className="text-sm text-gray-600">
-                            Количество: {item.quantity} × {item.price}
+                          <h4 className="font-medium">{item.name}</h4>
+                          <p className="text-sm text-gray-500">
+                            {item.price} × {item.quantity}
                           </p>
                         </div>
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          Удалить
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                            className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
+                          >
+                            -
+                          </button>
+                          <span className="px-3">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
+                          >
+                            +
+                          </button>
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="ml-2 text-red-500 hover:text-red-600"
+                          >
+                            Удалить
+                          </button>
+                        </div>
                       </div>
                     ))}
 
-                    <div className="pt-4 border-t">
-                      <div className="flex justify-between text-lg font-semibold">
-                        <span>Итого:</span>
-                        <span>${getTotalAmount().toFixed(2)}</span>
+                    <div className="mt-6 pt-6 border-t">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-lg font-semibold">Итого:</span>
+                        <span className="text-2xl font-bold text-green-600">
+                          {getTotalAmount().toLocaleString('ru-RU')} ₽
+                        </span>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            clearCart()
+                            setShowCartModal(false)
+                          }}
+                          className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          Очистить корзину
+                        </button>
+                        <button
+                          onClick={() => {
+                            router.push('/dashboard/project-constructor')
+                            setShowCartModal(false)
+                          }}
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          Оформить заказ
+                        </button>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    Корзина пуста
-                  </div>
+                  </>
                 )}
-              </div>
-
-              <div className="p-6 border-t flex justify-between">
-                <button
-                  onClick={() => {
-                    clearCart()
-                    setShowCartModal(false)
-                  }}
-                  className="px-6 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                >
-                  Очистить
-                </button>
-
-                <button
-                  onClick={() => {
-                    // Создание проекта из корзины
-                    const params = new URLSearchParams({
-                      mode: 'cart',
-                      supplierId: activeSupplier || ''
-                    })
-                    router.push(`/dashboard/create-project?${params.toString()}`)
-                  }}
-                  disabled={cart.length === 0}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Оформить заказ
-                </button>
               </div>
             </div>
           </div>
         )}
 
         {/* Модальное окно добавления/редактирования поставщика */}
-        <AddSupplierModal
-          isOpen={showAddSupplierModal}
-          onClose={() => {
-            setShowAddSupplierModal(false)
-            setEditingSupplier(null)
-          }}
-          onSuccess={(supplier) => {
-            refreshSuppliers()
-            logger.info('Поставщик успешно сохранен:', supplier.name)
-          }}
-          editingSupplier={editingSupplier}
-        />
+        {showAddSupplierModal && (
+          <AddSupplierModal
+            isOpen={showAddSupplierModal}
+            onClose={() => {
+              setShowAddSupplierModal(false)
+              setEditingSupplier(null)
+            }}
+            onSuccess={() => refreshSuppliers()}
+            editingSupplier={editingSupplier}
+          />
+        )}
       </div>
     </div>
   )

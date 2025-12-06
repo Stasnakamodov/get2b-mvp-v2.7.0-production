@@ -1,12 +1,11 @@
 /**
- * Компонент карточки поставщика
- * Часть FSD архитектуры - widgets/catalog-suppliers
+ * Premium Supplier Card Component
+ * Design Philosophy: Clean typography, White space, Minimal decoration
  */
 
 import React from 'react'
-import { Star, MapPin, Phone, Mail, Globe, Building, CheckCircle, Clock } from 'lucide-react'
+import { Star, MapPin, CheckCircle } from 'lucide-react'
 import type { Supplier } from '@/src/entities/supplier'
-import { formatDate } from '@/src/shared/config'
 
 interface SupplierCardProps {
   supplier: Supplier
@@ -54,48 +53,56 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
     }
   }
 
-  // Определение цветов в зависимости от типа комнаты
-  const roomColors = supplier.room_type === 'verified'
-    ? {
-        bg: 'bg-orange-50',
-        border: 'border-orange-200',
-        text: 'text-orange-600',
-        badge: 'bg-orange-100 text-orange-700'
-      }
-    : {
-        bg: 'bg-blue-50',
-        border: 'border-blue-200',
-        text: 'text-blue-600',
-        badge: 'bg-blue-100 text-blue-700'
-      }
-
   if (isCompact) {
     return (
       <div
-        className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${roomColors.bg} ${roomColors.border}`}
+        className="h-full flex flex-col p-6 bg-white rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg"
         onClick={handleCardClick}
       >
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold truncate">{supplier.name}</h3>
-          {supplier.rating && (
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
-              <span className="text-sm font-medium">{supplier.rating.toFixed(1)}</span>
+        <div className="flex-1 flex flex-col">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900">{supplier.name}</h3>
+              {supplier.room_type === 'verified' && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <CheckCircle className="w-4 h-4 text-violet-600" />
+                  <span className="text-sm text-violet-600 font-medium">Аккредитован</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+            <div className="flex items-center gap-3">
+              {supplier.logo_url && (
+                <img
+                  src={supplier.logo_url}
+                  alt={supplier.name}
+                  className="w-14 h-14 rounded-xl object-cover shadow-sm"
+                />
+              )}
+              {supplier.rating && (
+                <div className="flex items-center gap-1.5 bg-gradient-to-r from-violet-50 to-indigo-50 px-2.5 py-1 rounded-lg">
+                  <Star className="w-4 h-4 text-violet-500" fill="currentColor" />
+                  <span className="font-semibold text-gray-900">{supplier.rating.toFixed(1)}</span>
+                </div>
+              )}
+            </div>
+          </div>
 
-        <p className="text-sm text-gray-600 mb-2">{supplier.category}</p>
+          <div className="mb-3">
+            <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg">
+              {supplier.category}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <MapPin className="w-3 h-3" />
-          <span>{supplier.country}{supplier.city ? `, ${supplier.city}` : ''}</span>
+          <div className="flex items-center gap-1.5 text-sm text-gray-600 mt-auto">
+            <MapPin className="w-4 h-4 text-gray-400" />
+            <span>{supplier.country}{supplier.city ? `, ${supplier.city}` : ''}</span>
+          </div>
         </div>
 
         {showActions && (
           <button
             onClick={handleStartProject}
-            className={`w-full mt-3 px-3 py-1 ${roomColors.text} ${roomColors.badge} rounded text-sm font-medium hover:opacity-80 transition-opacity`}
+            className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
           >
             Начать проект
           </button>
@@ -106,15 +113,15 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
 
   return (
     <div
-      className={`p-6 border rounded-lg cursor-pointer transition-all hover:shadow-lg ${roomColors.bg} ${roomColors.border}`}
+      className="p-6 bg-white rounded-lg cursor-pointer transition-shadow duration-200 hover:shadow-md"
       onClick={handleCardClick}
     >
-      {/* Заголовок */}
+      {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold mb-1">{supplier.name}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">{supplier.name}</h3>
           {supplier.company_name && (
-            <p className="text-sm text-gray-600">{supplier.company_name}</p>
+            <p className="text-sm text-gray-500">{supplier.company_name}</p>
           )}
         </div>
 
@@ -127,119 +134,72 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
         )}
       </div>
 
-      {/* Бейджи */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <span className={`px-2 py-1 text-xs rounded-full ${roomColors.badge}`}>
+      {/* Badges - minimal */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        <span className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-md">
           {supplier.category}
         </span>
 
         {supplier.room_type === 'verified' && (
-          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 flex items-center gap-1">
+          <span className="px-2.5 py-0.5 text-xs font-medium bg-gradient-to-r from-violet-100 to-indigo-100 text-violet-700 rounded-md flex items-center gap-1">
             <CheckCircle className="w-3 h-3" />
             Аккредитован
           </span>
         )}
 
         {supplier.source_type === 'echo_card' && (
-          <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-700">
-            🔮 Из проектов
+          <span className="px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-md">
+            Из проектов
           </span>
         )}
       </div>
 
-      {/* Рейтинг и статистика */}
+      {/* Rating and stats - clean layout */}
       {(supplier.rating || supplier.reviews || supplier.projects) && (
-        <div className="flex items-center gap-4 mb-4 text-sm">
+        <div className="flex items-center gap-3 mb-3 text-sm">
           {supplier.rating && (
             <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
-              <span className="font-medium">{supplier.rating.toFixed(1)}</span>
+              <Star className="w-3 h-3" fill="currentColor" />
+              <span className="font-medium text-gray-900">{supplier.rating.toFixed(1)}</span>
             </div>
           )}
 
           {supplier.reviews && (
-            <span className="text-gray-600">{supplier.reviews} отзывов</span>
+            <span className="text-gray-500 text-xs">{supplier.reviews} отзывов</span>
           )}
 
           {supplier.projects && (
-            <span className="text-gray-600">{supplier.projects} проектов</span>
+            <span className="text-gray-500 text-xs">{supplier.projects} проектов</span>
           )}
         </div>
       )}
 
-      {/* Описание */}
+      {/* Description */}
       {supplier.description && (
-        <p className="text-sm text-gray-700 mb-4 line-clamp-2">
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
           {supplier.description}
         </p>
       )}
 
-      {/* Контактная информация */}
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <MapPin className="w-4 h-4 flex-shrink-0" />
-          <span>{supplier.country}{supplier.city ? `, ${supplier.city}` : ''}</span>
+      {/* Location info - minimal */}
+      <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
+        <MapPin className="w-3 h-3" />
+        <span>{supplier.country}{supplier.city ? `, ${supplier.city}` : ''}</span>
+      </div>
+
+      {/* Contact info - only if expanded */}
+      {supplier.contact_phone && (
+        <div className="text-xs text-gray-500 mb-1">
+          {supplier.contact_phone}
         </div>
+      )}
 
-        {supplier.contact_phone && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Phone className="w-4 h-4 flex-shrink-0" />
-            <span>{supplier.contact_phone}</span>
-          </div>
-        )}
-
-        {supplier.contact_email && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Mail className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">{supplier.contact_email}</span>
-          </div>
-        )}
-
-        {supplier.website && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Globe className="w-4 h-4 flex-shrink-0" />
-            <a
-              href={supplier.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline truncate"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {supplier.website.replace(/^https?:\/\//, '')}
-            </a>
-          </div>
-        )}
-      </div>
-
-      {/* Бизнес информация */}
-      <div className="flex flex-wrap gap-4 mb-4 text-sm text-gray-600">
-        {supplier.min_order && (
-          <div className="flex items-center gap-1">
-            <Building className="w-4 h-4" />
-            <span>Мин. заказ: {supplier.min_order}</span>
-          </div>
-        )}
-
-        {supplier.response_time && (
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            <span>{supplier.response_time}</span>
-          </div>
-        )}
-
-        {supplier.established && (
-          <div className="text-xs">
-            Основан: {supplier.established}
-          </div>
-        )}
-      </div>
-
-      {/* Действия */}
+      {/* Actions - clean buttons */}
       {showActions && (
-        <div className="flex gap-2 border-t pt-4">
+        <div className="flex gap-2 pt-3">
           <button
             onClick={handleStartProject}
-            className={`flex-1 px-4 py-2 ${roomColors.text} ${roomColors.badge} rounded font-medium hover:opacity-80 transition-opacity`}
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md"
           >
             Начать проект
           </button>
@@ -248,16 +208,16 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
             <>
               <button
                 onClick={handleEdit}
-                className="px-4 py-2 text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                className="px-3 py-2 text-gray-600 text-sm hover:bg-gray-50 rounded-lg transition-colors"
               >
-                ✏️
+                Изменить
               </button>
 
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
+                className="px-3 py-2 text-red-600 text-sm hover:bg-red-50 rounded-lg transition-colors"
               >
-                🗑️
+                Удалить
               </button>
             </>
           )}

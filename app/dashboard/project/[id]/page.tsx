@@ -45,7 +45,7 @@ interface Project {
 export default function ProjectDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const projectId = params.id as string
+  const projectId = params?.id as string
 
   const [project, setProject] = useState<Project | null>(null)
   const [statusHistory, setStatusHistory] = useState<StatusHistoryItem[]>([])
