@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from '@/lib/supabaseClient'
 
 export async function GET() {
@@ -9,7 +10,7 @@ export async function GET() {
     const { data, error } = await supabase.from('projects').select('count').limit(1)
 
     if (error) {
-      console.error('Health check - Database error:', error)
+      logger.error('Health check - Database error:', error)
       return NextResponse.json(
         {
           status: 'unhealthy',
@@ -56,7 +57,7 @@ export async function GET() {
     return NextResponse.json(healthData)
 
   } catch (error) {
-    console.error('Health check error:', error)
+    logger.error('Health check error:', error)
     return NextResponse.json(
       {
         status: 'error',

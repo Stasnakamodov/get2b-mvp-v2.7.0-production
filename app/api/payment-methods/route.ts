@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 // GET: Получение методов оплаты
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
       .not("payment_methods", "is", null);
     
     if (error) {
-      console.error('❌ [API] Ошибка загрузки методов оплаты:', error);
+      logger.error('❌ [API] Ошибка загрузки методов оплаты:', error);
       return NextResponse.json(
         { error: 'Ошибка загрузки методов оплаты' },
         { status: 500 }
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(methods);
     
   } catch (error) {
-    console.error('❌ [API] Ошибка загрузки методов оплаты:', error);
+    logger.error('❌ [API] Ошибка загрузки методов оплаты:', error);
     return NextResponse.json(
       { error: 'Ошибка загрузки методов оплаты' },
       { status: 500 }

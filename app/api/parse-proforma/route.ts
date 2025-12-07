@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import * as XLSX from 'xlsx';
 
 export async function POST(request: NextRequest) {
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [API] Ошибка парсинга проформы:', error);
+    logger.error('❌ [API] Ошибка парсинга проформы:', error);
     return NextResponse.json(
       {
         error: 'Ошибка парсинга проформы',

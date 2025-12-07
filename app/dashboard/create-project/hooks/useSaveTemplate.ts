@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-
 export function useSaveTemplate() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +87,7 @@ export function useProjectTemplates() {
     try {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user?.id) {
-        console.error('❌ [useProjectTemplates] Ошибка получения пользователя:', userError);
+        logger.error('❌ [useProjectTemplates] Ошибка получения пользователя:', userError);
         setError("Не удалось получить пользователя");
         setLoading(false);
         return;
@@ -109,7 +109,7 @@ export function useProjectTemplates() {
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
       if (error) {
-        console.error('❌ [useProjectTemplates] Ошибка запроса шаблонов:', error);
+        logger.error('❌ [useProjectTemplates] Ошибка запроса шаблонов:', error);
         
         // Обработка специфических ошибок
         if (error.message.includes('Failed to fetch') || error.message.includes('network')) {
@@ -127,7 +127,7 @@ export function useProjectTemplates() {
       setTemplates(data || []);
       setLoading(false);
     } catch (err: any) {
-      console.error('❌ [useProjectTemplates] Неожиданная ошибка:', err);
+      logger.error('❌ [useProjectTemplates] Неожиданная ошибка:', err);
       
       // Обработка сетевых ошибок
       if (err.message.includes('Failed to fetch') || err.message.includes('network')) {

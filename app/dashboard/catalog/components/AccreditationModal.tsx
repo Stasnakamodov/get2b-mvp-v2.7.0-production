@@ -1,5 +1,7 @@
 "use client"
 
+import { logger } from "@/src/shared/lib/logger"
+
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
@@ -509,7 +511,7 @@ export const AccreditationModal: React.FC<AccreditationModalProps> = ({
       onClose()
       
     } catch (error) {
-      console.error('Ошибка:', error)
+      logger.error('Ошибка:', error)
       alert('Ошибка при подаче заявки на аккредитацию')
     } finally {
       setLoading(false)

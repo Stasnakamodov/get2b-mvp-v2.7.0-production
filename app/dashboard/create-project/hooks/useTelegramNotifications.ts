@@ -1,5 +1,5 @@
 import { sendTelegramMessageClient, sendTelegramDocumentClient, sendTelegramProjectApprovalRequestClient } from '@/lib/telegram-client';
-
+import { logger } from '@/src/shared/lib/logger';
 interface SpecificationItem {
   name: string;
   code: string;
@@ -38,18 +38,18 @@ export function useTelegramNotifications() {
         try {
           await sendTelegramDocumentClient(invoiceFileUrl, text);
         } catch (documentError) {
-          console.warn('⚠️ Не удалось отправить документ, отправляем ссылку:', documentError);
+          logger.warn('⚠️ Не удалось отправить документ, отправляем ссылку:', documentError);
           try {
           await sendTelegramMessageClient(`${text}\nСсылка на файл спецификации: ${invoiceFileUrl}`);
           } catch (messageError) {
-            console.warn('⚠️ Не удалось отправить сообщение со ссылкой:', messageError);
+            logger.warn('⚠️ Не удалось отправить сообщение со ссылкой:', messageError);
           }
         }
         if (projectId) {
           try {
             await sendTelegramProjectApprovalRequestClient(text, projectId, "invoice");
           } catch (approvalError) {
-            console.warn('⚠️ Не удалось отправить запрос на одобрение:', approvalError);
+            logger.warn('⚠️ Не удалось отправить запрос на одобрение:', approvalError);
           }
         }
         return;
@@ -58,20 +58,20 @@ export function useTelegramNotifications() {
         try {
         await sendTelegramProjectApprovalRequestClient(text, projectId);
         } catch (telegramError) {
-          console.warn('⚠️ Telegram недоступен, но проект сохранен:', telegramError);
+          logger.warn('⚠️ Telegram недоступен, но проект сохранен:', telegramError);
           // Не показываем ошибку пользователю, так как проект все равно сохранен
         }
       } else {
         try {
         await sendTelegramMessageClient(text);
         } catch (telegramError) {
-          console.warn('⚠️ Telegram недоступен:', telegramError);
+          logger.warn('⚠️ Telegram недоступен:', telegramError);
         }
       }
       // eslint-disable-next-line no-console
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('❌ Ошибка отправки спецификации в Telegram:', error);
+      logger.error('❌ Ошибка отправки спецификации в Telegram:', error);
       // Показываем предупреждение вместо ошибки
       alert('⚠️ Спецификация сохранена в базе данных. Уведомление в Telegram не отправлено из-за технических проблем. Обратитесь к менеджеру для проверки проекта.');
     }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 // POST: Исправление URL файлов в существующих заявках на аккредитацию
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("❌ [FIX] Ошибка получения заявок:", error);
+      logger.error("❌ [FIX] Ошибка получения заявок:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
           errorCount++;
         }
       } catch (error) {
-        console.error(`❌ [FIX] Ошибка исправления заявки ${application.id}:`, error);
+        logger.error(`❌ [FIX] Ошибка исправления заявки ${application.id}:`, error);
         errorCount++;
       }
     }
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [FIX] Критическая ошибка:", error);
+    logger.error("❌ [FIX] Критическая ошибка:", error);
     return NextResponse.json({ 
       error: "Внутренняя ошибка сервера",
       details: error instanceof Error ? error.message : 'Неизвестная ошибка'
@@ -119,7 +120,7 @@ async function fixApplicationUrls(applicationId: string) {
             } else {
             }
           } catch (urlError) {
-            console.error(`❌ [FIX] Ошибка получения URL для ${fileName}:`, urlError);
+            logger.error(`❌ [FIX] Ошибка получения URL для ${fileName}:`, urlError);
           }
         }
       }
@@ -150,7 +151,7 @@ async function fixApplicationUrls(applicationId: string) {
             } else {
             }
           } catch (urlError) {
-            console.error(`❌ [FIX] Ошибка получения URL для ${fileName}:`, urlError);
+            logger.error(`❌ [FIX] Ошибка получения URL для ${fileName}:`, urlError);
           }
         }
       }
@@ -168,7 +169,7 @@ async function fixApplicationUrls(applicationId: string) {
       .eq('id', applicationId);
 
     if (updateError) {
-      console.error("❌ [FIX] Ошибка обновления заявки:", updateError);
+      logger.error("❌ [FIX] Ошибка обновления заявки:", updateError);
       return { success: false, error: updateError.message };
     }
 

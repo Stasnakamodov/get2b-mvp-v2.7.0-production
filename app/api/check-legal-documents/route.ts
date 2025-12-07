@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 // GET: Проверка юридических документов в заявках
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
           ? JSON.parse(application.legal_documents_data) 
           : application.legal_documents_data || [];
       } catch (parseError) {
-        console.error('Ошибка парсинга legal_documents_data:', parseError);
+        logger.error('Ошибка парсинга legal_documents_data:', parseError);
       }
 
       return NextResponse.json({
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
             ? JSON.parse(app.legal_documents_data) 
             : app.legal_documents_data || [];
         } catch (parseError) {
-          console.error('Ошибка парсинга legal_documents_data:', parseError);
+          logger.error('Ошибка парсинга legal_documents_data:', parseError);
         }
 
         return {
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error("❌ [LEGAL-DOCS] Ошибка:", error);
+    logger.error("❌ [LEGAL-DOCS] Ошибка:", error);
     return NextResponse.json({ 
       error: "Внутренняя ошибка сервера" 
     }, { status: 500 });

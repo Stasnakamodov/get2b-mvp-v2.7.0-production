@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from '@/lib/supabaseClient';
 
 export async function DELETE(request: NextRequest) {
@@ -19,7 +20,7 @@ export async function DELETE(request: NextRequest) {
       .select('*');
 
     if (deleteError) {
-      console.error('❌ Ошибка удаления:', deleteError);
+      logger.error('❌ Ошибка удаления:', deleteError);
       return NextResponse.json({ error: 'Delete failed', details: deleteError }, { status: 500 });
     }
 
@@ -31,7 +32,7 @@ export async function DELETE(request: NextRequest) {
       deleted_data: deletedData
     });
   } catch (error) {
-    console.error('❌ Ошибка API:', error);
+    logger.error('❌ Ошибка API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

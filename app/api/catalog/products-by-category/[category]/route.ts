@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+import { logger } from '@/src/shared/lib/logger'
 
 // 🎯 API ENDPOINT: Получение товаров по категории (Category-First подход)
 // GET /api/catalog/products-by-category/{category}
@@ -31,6 +32,8 @@ export async function GET(
         const { data: { user } } = await supabase.auth.getUser(token)
         currentUserId = user?.id || null
       } catch (error) {
+        logger.warn('Failed to get user from auth token', error)
+        // Продолжаем без авторизации - вернем только публичные товары
       }
     }
 

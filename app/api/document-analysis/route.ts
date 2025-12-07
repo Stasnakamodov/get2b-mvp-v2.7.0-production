@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { getYandexVisionService } from "@/lib/services/YandexVisionService";
 import { RussianCompanyExtractor } from "@/lib/ocr/RussianCompanyExtractor";
 
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("❌ Ошибка в API document-analysis:", error);
+    logger.error("❌ Ошибка в API document-analysis:", error);
     return NextResponse.json(
       {
         error: "Ошибка анализа документа",

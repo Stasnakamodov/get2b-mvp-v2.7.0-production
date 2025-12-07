@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { logger } from "@/src/shared/lib/logger";
 import { NextResponse } from 'next/server'
 
 const supabase = createClient(
@@ -13,7 +14,7 @@ export async function POST() {
     const { data: buckets, error: listError } = await supabase.storage.listBuckets()
     
     if (listError) {
-      console.error('❌ Ошибка получения списка buckets:', listError)
+      logger.error('❌ Ошибка получения списка buckets:', listError)
       return NextResponse.json({ 
         success: false, 
         error: 'Ошибка получения списка buckets: ' + listError.message 
@@ -37,7 +38,7 @@ export async function POST() {
     })
     
     if (error) {
-      console.error('❌ Ошибка создания bucket:', error)
+      logger.error('❌ Ошибка создания bucket:', error)
       return NextResponse.json({ 
         success: false, 
         error: 'Ошибка создания bucket: ' + error.message 
@@ -52,7 +53,7 @@ export async function POST() {
     })
     
   } catch (error: any) {
-    console.error('❌ Неожиданная ошибка:', error)
+    logger.error('❌ Неожиданная ошибка:', error)
     return NextResponse.json({ 
       success: false, 
       error: 'Неожиданная ошибка: ' + error.message 

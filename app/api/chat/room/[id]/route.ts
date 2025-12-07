@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 // GET: Получить информацию о комнате
 export async function GET(
   request: NextRequest,
@@ -48,7 +48,7 @@ export async function GET(
       .eq('is_active', true);
 
     if (participantsError) {
-      console.error('Error fetching participants:', participantsError);
+      logger.error('Error fetching participants:', participantsError);
     }
 
     // Получаем статистику сообщений
@@ -58,7 +58,7 @@ export async function GET(
       .eq('room_id', roomId);
 
     if (statsError) {
-      console.error('Error fetching message stats:', statsError);
+      logger.error('Error fetching message stats:', statsError);
     }
 
     // Подсчитываем статистику
@@ -95,7 +95,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Unexpected error in GET /api/chat/room/[id]:', error);
+    logger.error('Unexpected error in GET /api/chat/room/[id]:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }
@@ -141,7 +141,7 @@ export async function PUT(
       .single();
 
     if (error) {
-      console.error('Error updating room:', error);
+      logger.error('Error updating room:', error);
       return NextResponse.json(
         { error: "Failed to update room", details: error.message },
         { status: 500 }
@@ -155,7 +155,7 @@ export async function PUT(
     });
 
   } catch (error) {
-    console.error('Unexpected error in PUT /api/chat/room/[id]:', error);
+    logger.error('Unexpected error in PUT /api/chat/room/[id]:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }
@@ -211,7 +211,7 @@ export async function DELETE(
       .eq('id', roomId);
 
     if (updateError) {
-      console.error('Error archiving room:', updateError);
+      logger.error('Error archiving room:', updateError);
       return NextResponse.json(
         { error: "Failed to archive room", details: updateError.message },
         { status: 500 }
@@ -224,7 +224,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Unexpected error in DELETE /api/chat/room/[id]:', error);
+    logger.error('Unexpected error in DELETE /api/chat/room/[id]:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }

@@ -1,9 +1,9 @@
 'use client'
 
+import { logger } from "@/src/shared/lib/logger"
 import React from 'react'
 import { Star, MapPin, Phone, Mail, Globe, Building, Package, CheckCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
-
 interface Product {
   id: string
   name: string
@@ -104,7 +104,7 @@ export const SupplierCard = React.memo(function SupplierCard({
                   alt={supplierName}
                   className="w-full h-full object-contain"
                   onError={(e) => {
-                    console.error(`❌ ОШИБКА ЗАГРУЗКИ ${supplierName}:`, supplier.logo_url);
+                    logger.error(`❌ ОШИБКА ЗАГРУЗКИ ${supplierName}:`, supplier.logo_url);
                   }}
                 />
               );

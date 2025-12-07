@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       });
 
     if (tablesError) {
-      console.error("❌ [API] Ошибка получения списка таблиц:", tablesError);
+      logger.error("❌ [API] Ошибка получения списка таблиц:", tablesError);
     } else {
       analysis.tables = tables;
     }
@@ -275,7 +276,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при анализе БД:", error);
+    logger.error("❌ [API] Критическая ошибка при анализе БД:", error);
     return NextResponse.json({ 
       error: "Internal server error",
       details: error instanceof Error ? error.message : 'Unknown error'

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabaseService } from "@/lib/supabaseServiceClient";
 
 export async function GET(request: NextRequest) {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
           .list('', { limit: 1000 });
 
         if (error) {
-          console.error(`❌ [FIND-FILE] Ошибка в бакете ${bucketName}:`, error);
+          logger.error(`❌ [FIND-FILE] Ошибка в бакете ${bucketName}:`, error);
           results[bucketName] = { found: false, error: error.message };
           continue;
         }
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
           results[bucketName] = { found: false, files: [] };
         }
       } catch (error) {
-        console.error(`❌ [FIND-FILE] Исключение в бакете ${bucketName}:`, error);
+        logger.error(`❌ [FIND-FILE] Исключение в бакете ${bucketName}:`, error);
         results[bucketName] = { found: false, error: error instanceof Error ? error.message : 'Unknown error' };
       }
     }
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [FIND-FILE] Ошибка:", error);
+    logger.error("❌ [FIND-FILE] Ошибка:", error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

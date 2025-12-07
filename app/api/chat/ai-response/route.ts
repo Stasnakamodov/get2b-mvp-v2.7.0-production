@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 // POST: Генерировать AI ответ
 export async function POST(request: NextRequest) {
   try {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userMessageError) {
-      console.error('❌ Error saving user message:', userMessageError);
+      logger.error('❌ Error saving user message:', userMessageError);
       return NextResponse.json(
         { error: "Failed to save user message", details: userMessageError.message },
         { status: 500 }
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (messageError) {
-      console.error('❌ Error saving AI message:', messageError);
+      logger.error('❌ Error saving AI message:', messageError);
       return NextResponse.json(
         { error: "Failed to save AI response", details: messageError.message },
         { status: 500 }
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Unexpected error in POST /api/chat/ai-response:', error);
+    logger.error('Unexpected error in POST /api/chat/ai-response:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }
@@ -202,7 +202,7 @@ async function getEnhancedUserContext(userId: string, projectId?: string) {
     context.catalog_interactions = catalogInteractions || 0;
 
   } catch (error) {
-    console.error('Error getting enhanced user context:', error);
+    logger.error('Error getting enhanced user context:', error);
   }
 
   return context;
@@ -259,8 +259,8 @@ async function generateBotHubAIResponse(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ BotHub API Error:', response.status, errorText);
-      console.error('🔍 Request Body:', JSON.stringify(requestBody, null, 2));
+      logger.error('❌ BotHub API Error:', { status: response.status, error: errorText });
+      logger.error('🔍 Request Body:', requestBody);
       throw new Error(`BotHub API error: ${response.status} ${errorText}`);
     }
 
@@ -279,9 +279,9 @@ async function generateBotHubAIResponse(
     };
 
   } catch (error) {
-    console.error('💥 КРИТИЧЕСКАЯ ОШИБКА BotHub API:', error);
-    console.error('🔍 Error Details:', (error as Error).message || 'Unknown error');
-    console.error('📊 Request was:', userMessage);
+    logger.error('💥 КРИТИЧЕСКАЯ ОШИБКА BotHub API:', error);
+    logger.error('🔍 Error Details:', (error as Error).message || 'Unknown error');
+    logger.error('📊 Request was:', userMessage);
     
     // Fallback с Get2B контекстом!
     return generateGet2BAIResponse(userMessage, context, userContext, recentMessages);
@@ -834,7 +834,7 @@ ${userContext.recent_projects?.length > 0 ? `\n🔍 У вас ${userContext.rece
         category: 'exchange_rates'
       };
     } catch (error) {
-      console.error('❌ Ошибка получения курсов в generateEnhancedAIResponse:', error);
+      logger.error('❌ Ошибка получения курсов в generateEnhancedAIResponse:', error);
     }
   }
 

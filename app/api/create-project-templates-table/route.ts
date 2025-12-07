@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from "@/src/shared/lib/logger";
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'
 
 export async function POST() {
@@ -22,7 +23,7 @@ export async function POST() {
     const { error: createError } = await supabase.rpc('exec_sql', { sql: createTableSQL })
     
     if (createError) {
-      console.error('❌ Ошибка создания таблицы:', createError)
+      logger.error('❌ Ошибка создания таблицы:', createError)
       return NextResponse.json({
         error: 'Ошибка создания таблицы',
         details: createError.message
@@ -38,7 +39,7 @@ export async function POST() {
     const { error: indexError } = await supabase.rpc('exec_sql', { sql: createIndexesSQL })
     
     if (indexError) {
-      console.error('❌ Ошибка создания индексов:', indexError)
+      logger.error('❌ Ошибка создания индексов:', indexError)
       return NextResponse.json({
         error: 'Ошибка создания индексов',
         details: indexError.message
@@ -51,7 +52,7 @@ export async function POST() {
     const { error: rlsError } = await supabase.rpc('exec_sql', { sql: enableRLSSQL })
     
     if (rlsError) {
-      console.error('❌ Ошибка включения RLS:', rlsError)
+      logger.error('❌ Ошибка включения RLS:', rlsError)
       return NextResponse.json({
         error: 'Ошибка включения RLS',
         details: rlsError.message
@@ -81,7 +82,7 @@ export async function POST() {
     const { error: policyError } = await supabase.rpc('exec_sql', { sql: createPoliciesSQL })
     
     if (policyError) {
-      console.error('❌ Ошибка создания политик:', policyError)
+      logger.error('❌ Ошибка создания политик:', policyError)
       return NextResponse.json({
         error: 'Ошибка создания политик RLS',
         details: policyError.message
@@ -95,7 +96,7 @@ export async function POST() {
     })
     
   } catch (error: any) {
-    console.error('❌ Неожиданная ошибка:', error)
+    logger.error('❌ Неожиданная ошибка:', error)
     return NextResponse.json({
       error: 'Неожиданная ошибка',
       details: error.message || 'Unknown error'

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 // POST: Отправка файла из аккредитации как документа в Telegram
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
         ? JSON.parse(application.products_data) 
         : application.products_data;
     } catch (parseError) {
-      console.error('Ошибка парсинга products_data:', parseError);
+      logger.error('Ошибка парсинга products_data:', parseError);
       return NextResponse.json({ 
         error: "Ошибка чтения данных товаров" 
       }, { status: 500 });
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
         .download(storagePath);
 
       if (downloadError) {
-        console.error("❌ [SEND-DOCUMENT] Ошибка скачивания файла:", downloadError);
+        logger.error("❌ [SEND-DOCUMENT] Ошибка скачивания файла:", downloadError);
         return NextResponse.json({ 
           error: "Ошибка скачивания файла",
           details: downloadError.message
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
       const result = await response.json();
 
       if (!response.ok) {
-        console.error("❌ [SEND-DOCUMENT] Ошибка Telegram API:", result);
+        logger.error("❌ [SEND-DOCUMENT] Ошибка Telegram API:", result);
         return NextResponse.json({ 
           error: "Ошибка отправки в Telegram",
           details: result.description || 'Неизвестная ошибка'
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (telegramError) {
-      console.error("❌ [SEND-DOCUMENT] Ошибка отправки в Telegram:", telegramError);
+      logger.error("❌ [SEND-DOCUMENT] Ошибка отправки в Telegram:", telegramError);
       return NextResponse.json({ 
         error: "Ошибка отправки в Telegram",
         details: telegramError instanceof Error ? telegramError.message : 'Неизвестная ошибка'
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error("❌ [SEND-DOCUMENT] Критическая ошибка:", error);
+    logger.error("❌ [SEND-DOCUMENT] Критическая ошибка:", error);
     return NextResponse.json({ 
       error: "Внутренняя ошибка сервера",
       details: error instanceof Error ? error.message : 'Неизвестная ошибка'

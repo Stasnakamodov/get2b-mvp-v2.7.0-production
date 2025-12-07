@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import ExcelJS from 'exceljs';
 import { createClient } from '@supabase/supabase-js';
 
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
         .download(templatePath);
 
       if (templateError) {
-        console.error("❌ Ошибка загрузки шаблона:", templateError);
+        logger.error("❌ Ошибка загрузки шаблона:", templateError);
         // Fallback к созданию нового файла
         workbook = new ExcelJS.Workbook();
         workbook.addWorksheet('Проформа');
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (templateError || !templateRecord) {
-        console.error("❌ Не удалось получить правила заполнения для шаблона:", templatePath);
+        logger.error("❌ Не удалось получить правила заполнения для шаблона:", templatePath);
         // Fallback к старой логике без правил
         const worksheet = workbook.worksheets[0];
 
@@ -364,7 +365,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error("❌ Ошибка загрузки в Storage:", uploadError);
+      logger.error("❌ Ошибка загрузки в Storage:", uploadError);
       // Если загрузка не удалась, все равно возвращаем файл пользователю
     } else {
     }
@@ -381,7 +382,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [API] Ошибка генерации проформы:', error);
+    logger.error('❌ [API] Ошибка генерации проформы:', error);
     return NextResponse.json(
       {
         error: 'Ошибка генерации проформы',

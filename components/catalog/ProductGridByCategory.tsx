@@ -62,6 +62,8 @@ interface ProductGridByCategoryProps {
   className?: string
   activeSupplier?: string | null
   isProductInCart?: (productId: string) => boolean
+  selectedRoom?: string | null
+  onProductClick?: (product: Product) => void
 }
 
 export default function ProductGridByCategory({
@@ -71,7 +73,9 @@ export default function ProductGridByCategory({
   cart,
   className,
   activeSupplier,
-  isProductInCart: isProductInCartProp
+  isProductInCart: isProductInCartProp,
+  selectedRoom,
+  onProductClick
 }: ProductGridByCategoryProps) {
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])

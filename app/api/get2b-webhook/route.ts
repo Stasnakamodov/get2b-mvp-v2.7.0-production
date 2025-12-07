@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "crypto";
 
@@ -41,10 +42,10 @@ try {
       },
     });
   } else {
-    console.warn('⚠️ Переменные Supabase не найдены, webhook работает без БД');
+    logger.warn('⚠️ Переменные Supabase не найдены, webhook работает без БД');
   }
 } catch (error) {
-  console.error('❌ Ошибка инициализации Supabase:', error);
+  logger.error('❌ Ошибка инициализации Supabase:', error);
 }
 
 export async function POST(req: NextRequest) {
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
     // Верификация подписи (опционально)
     const signature = req.headers.get('x-get2b-signature');
     if (signature && !verifySignature(body, signature)) {
-      console.error('❌ Неверная подпись webhook');
+      logger.error('❌ Неверная подпись webhook');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
@@ -74,12 +75,12 @@ export async function POST(req: NextRequest) {
         return handleProjectRequest(body.data);
       
       default:
-        console.warn('⚠️ Неизвестный тип webhook:', body.type);
+        logger.warn('⚠️ Неизвестный тип webhook:', body.type);
         return NextResponse.json({ error: 'Unknown webhook type' }, { status: 400 });
     }
 
   } catch (error) {
-    console.error('💥 Ошибка обработки Get2B webhook:', error);
+    logger.error('💥 Ошибка обработки Get2B webhook:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: String(error) },
       { status: 500 }
@@ -135,13 +136,13 @@ async function handleLead(data: Get2BWebhookPayload['data']) {
           .single();
 
         if (leadError) {
-          console.error('❌ Ошибка сохранения лида в БД:', leadError);
+          logger.error('❌ Ошибка сохранения лида в БД:', leadError);
           // Не прерываем выполнение, продолжаем без сохранения
         } else {
           leadId = lead.id;
         }
       } catch (dbError) {
-        console.error('❌ Ошибка подключения к БД:', dbError);
+        logger.error('❌ Ошибка подключения к БД:', dbError);
         // Продолжаем без сохранения
       }
     }
@@ -162,7 +163,7 @@ async function handleLead(data: Get2BWebhookPayload['data']) {
     });
 
   } catch (error) {
-    console.error('💥 Ошибка обработки лида:', error);
+    logger.error('💥 Ошибка обработки лида:', error);
     throw error;
   }
 }
@@ -207,7 +208,7 @@ function verifySignature(payload: Get2BWebhookPayload, signature: string): boole
 
   // Если секрет не установлен, логируем предупреждение
   if (!secret) {
-    console.warn('⚠️ GET2B_WEBHOOK_SECRET не установлен - проверка подписи отключена');
+    logger.warn('⚠️ GET2B_WEBHOOK_SECRET не установлен - проверка подписи отключена');
     return true;
   }
 
@@ -224,19 +225,19 @@ function verifySignature(payload: Get2BWebhookPayload, signature: string): boole
 
     // Проверяем длину буферов
     if (signatureBuffer.length !== expectedBuffer.length) {
-      console.error('❌ Неверная длина подписи');
+      logger.error('❌ Неверная длина подписи');
       return false;
     }
 
     const isValid = timingSafeEqual(signatureBuffer, expectedBuffer);
 
     if (!isValid) {
-      console.error('❌ Подпись не совпадает');
+      logger.error('❌ Подпись не совпадает');
     }
 
     return isValid;
   } catch (error) {
-    console.error('❌ Ошибка проверки подписи:', error);
+    logger.error('❌ Ошибка проверки подписи:', error);
     return false;
   }
 }
@@ -255,7 +256,7 @@ async function notifyTelegramAboutLead(lead: any) {
 
     await sendTelegramMessage(message);
   } catch (error) {
-    console.error('❌ Ошибка отправки уведомления о лиде:', error);
+    logger.error('❌ Ошибка отправки уведомления о лиде:', error);
   }
 }
 
@@ -264,7 +265,7 @@ async function sendTelegramMessage(text: string) {
   const chatId = process.env.TELEGRAM_CHAT_ID;
   
   if (!botToken || !chatId) {
-    console.warn('⚠️ Telegram не настроен');
+    logger.warn('⚠️ Telegram не настроен');
     return;
   }
 
@@ -284,6 +285,6 @@ async function sendTelegramMessage(text: string) {
     }
 
   } catch (error) {
-    console.error('❌ Ошибка отправки в Telegram:', error);
+    logger.error('❌ Ошибка отправки в Telegram:', error);
   }
 } 

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from '@/lib/supabaseClient'
 
 export async function GET() {
@@ -56,7 +57,7 @@ export async function GET() {
     })
 
   } catch (error: unknown) {
-    console.error('[API] Error checking profile tables:', error)
+    logger.error('[API] Error checking profile tables:', error)
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : String(error)

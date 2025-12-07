@@ -1,18 +1,20 @@
 "use client";
 
+import { logger } from "@/src/shared/lib/logger"
+
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabaseClient";
+import { ArrowLeft, ArrowRight, Check, CheckCircle, Building, FileText, Shield, Package, Users, Star, Plus, X, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/lib/supabaseClient";
-import { ArrowLeft, ArrowRight, CheckCircle, Upload, Plus, X } from "lucide-react";
-import { checkSupabaseHealth } from '@/lib/supabaseClient';
-
+import { toast } from "sonner";
 interface AccreditationData {
   // Шаг 1: Основная информация
   company_name: string;
@@ -133,7 +135,7 @@ export default function AccreditSupplierPage() {
 
 
         if (error) {
-          console.error('❌ [DEBUG] Ошибка Supabase:', error);
+          logger.error('❌ [DEBUG] Ошибка Supabase:', error);
           setError(`Ошибка при получении данных поставщика: ${error.message}`);
           setSupplier(null);
           return;
@@ -149,7 +151,7 @@ export default function AccreditSupplierPage() {
         setError(null);
 
       } catch (err) {
-        console.error('❌ [DEBUG] Ошибка при загрузке поставщика:', err);
+        logger.error('❌ [DEBUG] Ошибка при загрузке поставщика:', err);
         setError('Произошла ошибка при загрузке данных поставщика');
         setSupplier(null);
       } finally {
@@ -250,7 +252,7 @@ export default function AccreditSupplierPage() {
       // Успешная подача заявки
       router.push('/dashboard/profile?accreditation=success');
     } catch (error) {
-      console.error('Ошибка подачи заявки:', error);
+      logger.error('Ошибка подачи заявки:', error);
       alert('Ошибка при подаче заявки. Попробуйте еще раз.');
     } finally {
       setLoading(false);

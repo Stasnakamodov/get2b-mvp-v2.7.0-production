@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabaseService } from "@/lib/supabaseServiceClient";
 
 export async function POST(request: NextRequest) {
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [FIX-OLD-ACCREDITATION] Ошибка:", error);
+    logger.error("❌ [FIX-OLD-ACCREDITATION] Ошибка:", error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

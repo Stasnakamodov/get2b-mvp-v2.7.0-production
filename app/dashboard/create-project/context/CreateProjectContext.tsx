@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useState, useContext, useMemo, useCallback, useEffect, type ReactNode } from "react"
-
+import { logger } from '@/src/shared/lib/logger';
 // Create a context for project state
 interface ProjectContextType {
   // Основные состояния проекта
@@ -102,7 +102,7 @@ function ProjectProvider({ children }: { children: ReactNode }) {
         try {
           setSavedTemplates(JSON.parse(stored))
         } catch (error) {
-          console.error("Failed to parse saved templates:", error)
+          logger.error("Failed to parse saved templates:", error)
         }
       }
     }
@@ -179,7 +179,7 @@ function ProjectProvider({ children }: { children: ReactNode }) {
         .then(data => {
         })
         .catch(error => {
-          console.error("[fillFromEchoCard] Ошибка сохранения товаров в БД:", error);
+          logger.error("[fillFromEchoCard] Ошибка сохранения товаров в БД:", error);
         });
       }
     }

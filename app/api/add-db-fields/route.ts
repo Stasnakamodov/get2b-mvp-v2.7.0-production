@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { logger } from "@/src/shared/lib/logger";
 import { supabaseAdmin } from "@/lib/supabaseAdmin"
 
 export async function POST() {
@@ -24,7 +25,7 @@ export async function POST() {
     })
 
     if (sqlError) {
-      console.error("SQL Error:", sqlError)
+      logger.error("SQL Error:", sqlError)
       
       // Если функция exec_sql не существует, попробуем другой способ
       const { error: directError } = await supabaseAdmin
@@ -55,7 +56,7 @@ export async function POST() {
       message: "Fields added successfully or already exist"
     })
   } catch (error: any) {
-    console.error("Error:", error)
+    logger.error("Error:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 } 

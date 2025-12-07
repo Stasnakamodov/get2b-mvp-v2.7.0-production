@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logger } from "@/src/shared/lib/logger";
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 
 export async function POST() {
@@ -41,7 +42,7 @@ export async function POST() {
       .eq('id', 'b10a2033-7f41-4892-9ff3-2f859ca05cc5');
 
     if (error1) {
-      console.error('❌ Ошибка обновления проекта 1:', error1);
+      logger.error('❌ Ошибка обновления проекта 1:', error1);
       return NextResponse.json({ error: 'Ошибка обновления проекта 1' }, { status: 500 });
     }
 
@@ -81,7 +82,7 @@ export async function POST() {
       .eq('id', 'ff3303ce-454f-4b5e-a6de-e4044e6c05b2');
 
     if (error2) {
-      console.error('❌ Ошибка обновления проекта 2:', error2);
+      logger.error('❌ Ошибка обновления проекта 2:', error2);
       return NextResponse.json({ error: 'Ошибка обновления проекта 2' }, { status: 500 });
     }
 
@@ -120,7 +121,7 @@ export async function POST() {
       .eq('id', '7ace8371-9b82-4500-958a-6aff3ef720ec');
 
     if (error3) {
-      console.error('❌ Ошибка обновления проекта 3:', error3);
+      logger.error('❌ Ошибка обновления проекта 3:', error3);
       return NextResponse.json({ error: 'Ошибка обновления проекта 3' }, { status: 500 });
     }
 
@@ -200,7 +201,7 @@ export async function POST() {
       ]);
 
     if (specsError) {
-      console.error('❌ Ошибка добавления спецификаций:', specsError);
+      logger.error('❌ Ошибка добавления спецификаций:', specsError);
       return NextResponse.json({ error: 'Ошибка добавления спецификаций' }, { status: 500 });
     }
 
@@ -245,7 +246,7 @@ export async function POST() {
       ]);
 
     if (reqError) {
-      console.error('❌ Ошибка добавления реквизитов:', reqError);
+      logger.error('❌ Ошибка добавления реквизитов:', reqError);
       return NextResponse.json({ error: 'Ошибка добавления реквизитов' }, { status: 500 });
     }
 
@@ -259,7 +260,7 @@ export async function POST() {
     });
 
   } catch (error) {
-    console.error('❌ Ошибка обновления проектов:', error);
+    logger.error('❌ Ошибка обновления проектов:', error);
     return NextResponse.json(
       { error: 'Ошибка обновления проектов' },
       { status: 500 }

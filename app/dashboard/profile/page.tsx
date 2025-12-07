@@ -1,12 +1,9 @@
 "use client"
 
+import { logger } from "@/src/shared/lib/logger"
+
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Building,
   Users,
@@ -19,9 +16,13 @@ import {
   Eye,
 } from "lucide-react"
 import { supabase } from '@/lib/supabaseClient'
-import { AddSupplierModal } from '../catalog/components/AddSupplierModal'
-import { AccreditationModalV2 } from '../catalog/components/AccreditationModalV2'
-import KonturEniCheckModal from '@/components/KonturEniCheckModal'
+import { motion } from "framer-motion"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { AddSupplierModal } from "@/app/dashboard/catalog/components/AddSupplierModal"
+import { AccreditationModalV2 } from "@/app/dashboard/catalog/components/AccreditationModalV2"
+import KonturEniCheckModal from "@/components/KonturEniCheckModal"
 
 export default function ProfilePage() {
   // Состояния для пользователя
@@ -82,7 +83,7 @@ export default function ProfilePage() {
     const getUser = async () => {
       const { data: { user }, error } = await supabase.auth.getUser()
       if (error) {
-        console.error('Ошибка получения пользователя:', error)
+        logger.error('Ошибка получения пользователя:', error)
         return
       }
       setUserId(user?.id || null)
@@ -139,7 +140,7 @@ export default function ProfilePage() {
       setClientProfiles(clients || [])
       setSupplierProfiles(suppliers || [])
     } catch (error) {
-      console.error('Ошибка загрузки профилей:', error)
+      logger.error('Ошибка загрузки профилей:', error)
     } finally {
       setLoading(false)
     }
@@ -195,7 +196,7 @@ export default function ProfilePage() {
 
       loadProfiles()
     } catch (error) {
-      console.error('Ошибка сохранения клиента:', error)
+      logger.error('Ошибка сохранения клиента:', error)
       alert('Ошибка сохранения профиля клиента')
     }
   }
@@ -269,7 +270,7 @@ export default function ProfilePage() {
         .upload(fileName, file)
 
       if (error) {
-        console.warn('⚠️ Ошибка загрузки в Supabase Storage:', error.message)
+        logger.warn('⚠️ Ошибка загрузки в Supabase Storage:', error.message)
         // Fallback на Base64
         const base64 = await convertToBase64(file)
         setClientForm(prev => ({ ...prev, logo_url: base64 }))
@@ -282,13 +283,13 @@ export default function ProfilePage() {
         setClientForm(prev => ({ ...prev, logo_url: urlData.publicUrl }))
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки логотипа:', error)
+      logger.error('❌ Ошибка загрузки логотипа:', error)
       // Fallback на Base64
       try {
         const base64 = await convertToBase64(file)
         setClientForm(prev => ({ ...prev, logo_url: base64 }))
       } catch (base64Error) {
-        console.error('❌ Ошибка конвертации в Base64:', base64Error)
+        logger.error('❌ Ошибка конвертации в Base64:', base64Error)
         alert('Ошибка загрузки логотипа')
       }
     } finally {
@@ -348,7 +349,7 @@ export default function ProfilePage() {
 
       if (!analysisResponse.ok) {
         const errorText = await analysisResponse.text()
-        console.error('❌ Analysis Error:', errorText)
+        logger.error('❌ Analysis Error:', errorText)
         throw new Error(`Ошибка анализа документа: ${analysisResponse.status}`)
       }
 
@@ -384,7 +385,7 @@ export default function ProfilePage() {
         throw new Error(analysisResult.error || 'Не удалось извлечь данные из документа')
       }
     } catch (error: any) {
-      console.error('Ошибка OCR обработки:', error)
+      logger.error('Ошибка OCR обработки:', error)
       setOcrError(error.message || 'Произошла ошибка при обработке документа')
     } finally {
       setOcrAnalyzing(false)
@@ -427,7 +428,7 @@ export default function ProfilePage() {
       setItemToDelete(null)
       loadProfiles()
       } catch (error) {
-      console.error('Ошибка удаления:', error)
+      logger.error('Ошибка удаления:', error)
       alert('Ошибка удаления профиля')
     }
   }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 // POST: Отправка юридического документа из аккредитации в Telegram
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
         ? JSON.parse(application.legal_documents_data) 
         : application.legal_documents_data || [];
     } catch (parseError) {
-      console.error('Ошибка парсинга legal_documents_data:', parseError);
+      logger.error('Ошибка парсинга legal_documents_data:', parseError);
       return NextResponse.json({ 
         error: "Ошибка чтения данных документов" 
       }, { status: 500 });
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
         .download(storagePath);
 
       if (downloadError) {
-        console.error("❌ [SEND-LEGAL-DOC] Ошибка скачивания файла:", downloadError);
+        logger.error("❌ [SEND-LEGAL-DOC] Ошибка скачивания файла:", downloadError);
         return NextResponse.json({ 
           error: "Ошибка скачивания файла",
           details: downloadError.message
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
       const result = await response.json();
 
       if (!result.ok) {
-        console.error("❌ [SEND-LEGAL-DOC] Ошибка Telegram API:", result);
+        logger.error("❌ [SEND-LEGAL-DOC] Ошибка Telegram API:", result);
         return NextResponse.json({ 
           error: "Ошибка отправки в Telegram",
           details: result.description
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (error) {
-      console.error("❌ [SEND-LEGAL-DOC] Ошибка:", error);
+      logger.error("❌ [SEND-LEGAL-DOC] Ошибка:", error);
       return NextResponse.json({
         success: false,
         error: error instanceof Error ? error.message : 'Неизвестная ошибка'
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error("❌ [SEND-LEGAL-DOC] Ошибка:", error);
+    logger.error("❌ [SEND-LEGAL-DOC] Ошибка:", error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Неизвестная ошибка'

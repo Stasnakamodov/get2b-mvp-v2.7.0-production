@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 // GET: Тестирование функций умного каталога
 export async function GET() {
   try {
@@ -159,7 +159,7 @@ export async function GET() {
     return NextResponse.json(results);
 
   } catch (error) {
-    console.error('❌ [TEST FUNCTIONS] Критическая ошибка:', error);
+    logger.error('❌ [TEST FUNCTIONS] Критическая ошибка:', error);
     return NextResponse.json({ 
       status: "❌ Критическая ошибка",
       error: error instanceof Error ? error.message : String(error),

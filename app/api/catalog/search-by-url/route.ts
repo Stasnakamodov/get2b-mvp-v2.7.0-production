@@ -1,10 +1,11 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from 'next/server'
 import { getUrlParserService } from '@/lib/services/UrlParserService'
 import { getHtmlParserService } from '@/lib/services/HtmlParserService'
-import { getYandexGPTService } from '@/lib/services/YandexGPTService'
 import { getClaudeWebFetchService } from '@/lib/services/ClaudeWebFetchService'
+import { getPlaywrightParserService } from '@/lib/services/PlaywrightParserService'
+import { getYandexGPTService } from '@/lib/services/YandexGPTService'
 import { supabase } from '@/lib/supabaseClient'
-
 /**
  * POST /api/catalog/search-by-url
  * Поиск товаров по ссылке с маркетплейса ИЛИ по HTML коду
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
     const { data: products, error } = await query
 
     if (error) {
-      console.error('❌ [URL SEARCH] Ошибка поиска в БД:', error)
+      logger.error('❌ [URL SEARCH] Ошибка поиска в БД:', error)
       throw error
     }
 
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ [URL SEARCH] Критическая ошибка:', error)
+    logger.error('❌ [URL SEARCH] Критическая ошибка:', error)
 
     // Определяем тип ошибки для более информативного ответа
     if (error instanceof Error) {

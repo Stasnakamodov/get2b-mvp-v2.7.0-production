@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 // POST: Создание простого тестового изображения
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error("❌ [CREATE-SIMPLE-IMAGE] Ошибка загрузки изображения:", uploadError);
+      logger.error("❌ [CREATE-SIMPLE-IMAGE] Ошибка загрузки изображения:", uploadError);
       return NextResponse.json({ 
         error: "Ошибка загрузки изображения",
         details: uploadError.message
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
         ? JSON.parse(application.products_data) 
         : application.products_data;
     } catch (parseError) {
-      console.error('Ошибка парсинга products_data:', parseError);
+      logger.error('Ошибка парсинга products_data:', parseError);
       return NextResponse.json({ 
         error: "Ошибка чтения данных товаров" 
       }, { status: 500 });
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
         .eq('id', applicationId);
 
       if (updateError) {
-        console.error("❌ [CREATE-SIMPLE-IMAGE] Ошибка обновления заявки:", updateError);
+        logger.error("❌ [CREATE-SIMPLE-IMAGE] Ошибка обновления заявки:", updateError);
       } else {
       }
     }
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [CREATE-SIMPLE-IMAGE] Критическая ошибка:", error);
+    logger.error("❌ [CREATE-SIMPLE-IMAGE] Критическая ошибка:", error);
     return NextResponse.json({ 
       error: "Внутренняя ошибка сервера",
       details: error instanceof Error ? error.message : 'Неизвестная ошибка'

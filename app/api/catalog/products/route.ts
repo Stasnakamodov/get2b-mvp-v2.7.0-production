@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 // GET: Получение списка товаров с фильтрацией
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
         
         if (authError || !user) {
-          console.error("❌ [SECURITY] Недействительный токен авторизации");
+          logger.error("❌ [SECURITY] Недействительный токен авторизации");
           return NextResponse.json({ 
             error: "Unauthorized - недействительный токен" 
           }, { status: 401 });
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         
         if (authError || !user) {
-          console.error("❌ [SECURITY] Пользователь не авторизован для user-товаров");
+          logger.error("❌ [SECURITY] Пользователь не авторизован для user-товаров");
           return NextResponse.json({ 
             error: "Unauthorized - требуется авторизация" 
           }, { status: 401 });
@@ -81,13 +81,13 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
   if (error) {
-    console.error(`❌ [API] Ошибка получения товаров из ${tableName}:`, error);
+    logger.error(`❌ [API] Ошибка получения товаров из ${tableName}:`, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ products: data });
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при получении товаров:", error);
+    logger.error("❌ [API] Критическая ошибка при получении товаров:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error(`❌ [API] Ошибка создания товара в ${tableName}:`, error);
+    logger.error(`❌ [API] Ошибка создания товара в ${tableName}:`, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -169,7 +169,7 @@ export async function PATCH(request: NextRequest) {
     .single();
     
   if (error) {
-    console.error(`❌ [API] Ошибка обновления товара в ${tableName}:`, error);
+    logger.error(`❌ [API] Ошибка обновления товара в ${tableName}:`, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   
@@ -193,7 +193,7 @@ export async function DELETE(request: NextRequest) {
     .single();
     
   if (error) {
-    console.error(`❌ [API] Ошибка удаления товара из ${tableName}:`, error);
+    logger.error(`❌ [API] Ошибка удаления товара из ${tableName}:`, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   

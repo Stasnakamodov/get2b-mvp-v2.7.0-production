@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
@@ -5,7 +6,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { Download, CheckCircle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { sendSupplierReceiptRequestToManagerClient } from "@/lib/telegram-client";
-
 export default function Step6ReceiptForClient() {
   const { projectId, projectName, setCurrentStep, specificationItems, paymentMethod, companyData, currentStep } = useCreateProjectContext();
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export default function Step6ReceiptForClient() {
     async function fetchRequisite() {
       if (!projectId) return;
       
-      console.log("🔍 [STEP6] Загружаем реквизиты для проекта:", projectId);
+      logger.info("🔍 [STEP6] Загружаем реквизиты для проекта:", projectId);
       
       // Берём последний реквизит для этого проекта
       const { data, error } = await supabase
@@ -36,13 +36,13 @@ export default function Step6ReceiptForClient() {
         .limit(1)
         .single();
       
-      console.log("🔍 [STEP6] Результат запроса реквизитов:", { data, error });
+      logger.info("🔍 [STEP6] Результат запроса реквизитов:", { data, error });
       
       if (data) {
-        console.log("✅ [STEP6] Реквизиты найдены:", data.data);
+        logger.info("✅ [STEP6] Реквизиты найдены:", data.data);
         setRequisite(data.data); // data — это jsonb с реквизитами
       } else {
-        console.log("❌ [STEP6] Реквизиты НЕ найдены, причина:", error || "data отсутствует");
+        logger.info("❌ [STEP6] Реквизиты НЕ найдены, причина:", error || "data отсутствует");
         setRequisite(null);
       }
     }
@@ -92,7 +92,7 @@ export default function Step6ReceiptForClient() {
             }
           }
           
-          console.log("🔍 [STEP6] Проверка чека менеджера:", {
+          logger.info("🔍 [STEP6] Проверка чека менеджера:", {
             managerReceiptUrl: !!managerReceiptUrl,
             status: data.status,
             hasReceipts: !!data.receipts
@@ -105,7 +105,7 @@ export default function Step6ReceiptForClient() {
             
             // АВТОМАТИЧЕСКОЕ ИЗМЕНЕНИЕ СТАТУСА: если есть чек, но статус еще waiting_manager_receipt
             if (data.status === "waiting_manager_receipt") {
-              console.log("🔄 [STEP6] Обнаружен чек от менеджера, меняем статус на in_work");
+              logger.info("🔄 [STEP6] Обнаружен чек от менеджера, меняем статус на in_work");
               await supabase
                 .from("projects")
                 .update({ 
@@ -113,7 +113,7 @@ export default function Step6ReceiptForClient() {
                   updated_at: new Date().toISOString()
                 })
                 .eq("id", projectId);
-              console.log("✅ [STEP6] Статус изменен на in_work");
+              logger.info("✅ [STEP6] Статус изменен на in_work");
             }
           } else {
             setReceiptUrl(null);
@@ -175,7 +175,7 @@ export default function Step6ReceiptForClient() {
           isRequestSent || 
           alreadySentLocal || 
           alreadySentSession) {
-        console.log("🔄 [STEP6] Запрос на загрузку чека уже отправлен или заблокирован, пропускаем", {
+        logger.info("🔄 [STEP6] Запрос на загрузку чека уже отправлен или заблокирован, пропускаем", {
           projectId: !!projectId,
           sentRequestRef: sentRequest.current,
           isProcessing: isProcessing.current,
@@ -202,13 +202,13 @@ export default function Step6ReceiptForClient() {
           .single();
           
         if (error || !fetchedProjectData) {
-          console.log("🔄 [STEP6] Ошибка загрузки данных проекта или данные отсутствуют");
+          logger.info("🔄 [STEP6] Ошибка загрузки данных проекта или данные отсутствуют");
           return;
         }
         
         // Проверяем статус проекта - отправляем только если waiting_manager_receipt
         if (fetchedProjectData.status !== "waiting_manager_receipt") {
-          console.log("🔄 [STEP6] Статус проекта не требует отправки запроса:", fetchedProjectData.status);
+          logger.info("🔄 [STEP6] Статус проекта не требует отправки запроса:", fetchedProjectData.status);
           return;
         }
         
@@ -232,13 +232,13 @@ export default function Step6ReceiptForClient() {
         
         // Если чек уже загружен, не отправляем запрос
         if (hasManagerReceiptLocal) {
-          console.log("🔄 [STEP6] Чек от менеджера уже загружен, запрос не отправляем");
+          logger.info("🔄 [STEP6] Чек от менеджера уже загружен, запрос не отправляем");
           localStorage.setItem(sentKey, JSON.stringify({ timestamp, completed: true }));
           sessionStorage.setItem(sessionKey, JSON.stringify({ timestamp, completed: true }));
           return;
         }
         
-        console.log("🔄 [STEP6] Отправляем запрос менеджеру на загрузку чека");
+        logger.info("🔄 [STEP6] Отправляем запрос менеджеру на загрузку чека");
         
         // Получаем актуальную спецификацию из базы данных
         let totalAmount = 0;
@@ -267,7 +267,7 @@ export default function Step6ReceiptForClient() {
         // Получаем реквизиты для включения в сообщение
         let requisiteText = '';
         try {
-          console.log("🔍 [TELEGRAM] Получаем реквизиты для проекта:", projectId);
+          logger.info("🔍 [TELEGRAM] Получаем реквизиты для проекта:", projectId);
           
           const { data: requisiteData } = await supabase
             .from("project_requisites")
@@ -277,7 +277,7 @@ export default function Step6ReceiptForClient() {
             .limit(1)
             .single();
           
-          console.log("🔍 [TELEGRAM] Результат запроса реквизитов:", { 
+          logger.info("🔍 [TELEGRAM] Результат запроса реквизитов:", { 
             hasData: !!requisiteData, 
             data: requisiteData,
             paymentMethod: fetchedProjectData.payment_method 
@@ -287,7 +287,7 @@ export default function Step6ReceiptForClient() {
             const req = requisiteData.data;
             const details = req.details || req;
             
-            console.log("🔍 [TELEGRAM] Обрабатываем реквизиты:", { req, details, paymentMethod: fetchedProjectData.payment_method });
+            logger.info("🔍 [TELEGRAM] Обрабатываем реквизиты:", { req, details, paymentMethod: fetchedProjectData.payment_method });
             
             if (fetchedProjectData.payment_method === 'bank-transfer') {
               requisiteText = `\n\n📋 Реквизиты для оплаты:\n• Получатель: ${details.recipientName || '-'}\n• Банк: ${details.bankName || '-'}\n• Счет: ${details.accountNumber || '-'}\n• SWIFT/BIC: ${details.swift || details.cnapsCode || details.iban || '-'}\n• Валюта: ${details.transferCurrency || 'USD'}`;
@@ -297,17 +297,17 @@ export default function Step6ReceiptForClient() {
               requisiteText = `\n\n🪙 Криптокошелек:\n• Адрес: ${req.address || '-'}\n• Сеть: ${req.network || '-'}`;
             }
             
-            console.log("✅ [TELEGRAM] Сформированный текст реквизитов:", requisiteText);
+            logger.info("✅ [TELEGRAM] Сформированный текст реквизитов:", requisiteText);
           } else {
-            console.log("❌ [TELEGRAM] Данные реквизитов отсутствуют");
+            logger.info("❌ [TELEGRAM] Данные реквизитов отсутствуют");
           }
         } catch (error) {
-          console.log("⚠️ [TELEGRAM] Не удалось получить реквизиты для сообщения:", error);
+          logger.info("⚠️ [TELEGRAM] Не удалось получить реквизиты для сообщения:", error);
         }
         
         // Обновляем сумму в базе данных, если она отличается
         if (totalAmount !== fetchedProjectData.amount && totalAmount > 0) {
-          console.log(`💰 Обновляем сумму в БД: ${fetchedProjectData.amount} → ${totalAmount}`);
+          logger.info(`💰 Обновляем сумму в БД: ${fetchedProjectData.amount} → ${totalAmount}`);
           await supabase
             .from("projects")
             .update({ amount: totalAmount })
@@ -325,14 +325,14 @@ export default function Step6ReceiptForClient() {
           requisites: requisiteText
         });
         
-        console.log("✅ [STEP6] Запрос менеджеру отправлен успешно");
+        logger.info("✅ [STEP6] Запрос менеджеру отправлен успешно");
         
         // Обновляем флаги после успешной отправки
         localStorage.setItem(sentKey, JSON.stringify({ timestamp, completed: true }));
         sessionStorage.setItem(sessionKey, JSON.stringify({ timestamp, completed: true }));
         
       } catch (error) {
-        console.error("❌ [STEP6] Ошибка отправки запроса менеджеру:", error);
+        logger.error("❌ [STEP6] Ошибка отправки запроса менеджеру:", error);
         // При ошибке сбрасываем флаги, чтобы можно было повторить попытку
         sentRequest.current = false;
         isProcessing.current = false;
@@ -463,7 +463,7 @@ export default function Step6ReceiptForClient() {
             <Button
               className="mt-4 bg-green-600 hover:bg-green-700 text-white"
               onClick={async () => {
-                console.log("🔄 [STEP6] Переходим на Step7, обновляем статус на waiting_client_confirmation");
+                logger.info("🔄 [STEP6] Переходим на Step7, обновляем статус на waiting_client_confirmation");
                 setCurrentStep(7);
                 if (projectId) {
                   await supabase
@@ -474,7 +474,7 @@ export default function Step6ReceiptForClient() {
                       status: "waiting_client_confirmation"
                     })
                     .eq("id", projectId);
-                  console.log("✅ [STEP6] Статус проекта обновлен на waiting_client_confirmation");
+                  logger.info("✅ [STEP6] Статус проекта обновлен на waiting_client_confirmation");
                 }
               }}
             >

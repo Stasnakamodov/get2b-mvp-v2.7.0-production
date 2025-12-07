@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabaseService } from "@/lib/supabaseServiceClient";
 
 export async function GET() {
@@ -11,7 +12,7 @@ export async function GET() {
       .limit(1);
 
     if (error) {
-      console.error("❌ [CHECK-ACCREDITATION-STRUCTURE] Ошибка:", error);
+      logger.error("❌ [CHECK-ACCREDITATION-STRUCTURE] Ошибка:", error);
       return NextResponse.json({
         success: false,
         error: error.message
@@ -26,7 +27,7 @@ export async function GET() {
       .single();
 
     if (sampleError) {
-      console.error("❌ [CHECK-ACCREDITATION-STRUCTURE] Ошибка получения записи:", sampleError);
+      logger.error("❌ [CHECK-ACCREDITATION-STRUCTURE] Ошибка получения записи:", sampleError);
       return NextResponse.json({
         success: false,
         error: sampleError.message
@@ -47,7 +48,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error("❌ [CHECK-ACCREDITATION-STRUCTURE] Ошибка:", error);
+    logger.error("❌ [CHECK-ACCREDITATION-STRUCTURE] Ошибка:", error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

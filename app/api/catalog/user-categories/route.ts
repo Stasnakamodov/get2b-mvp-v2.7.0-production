@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 import { supabase } from "@/lib/supabaseClient";
 import { NextResponse } from 'next/server'
 

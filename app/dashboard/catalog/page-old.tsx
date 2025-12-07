@@ -1,9 +1,9 @@
+import { logger } from "@/src/shared/lib/logger"
 'use client'
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, Plus, Star, MapPin, Phone, Mail, Globe, Building, Users, Package, Filter, CheckCircle, Clock, Zap, X, Upload, Image as ImageIcon, Edit, Trash2, Save, MessageCircle, Heart, ShoppingCart, Grid3X3, List, ArrowLeft } from 'lucide-react'
-
 import { motion } from "framer-motion"
 import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config'
 import { supabase } from '@/lib/supabaseClient'
@@ -12,7 +12,6 @@ import InlineCategoryList from '@/components/catalog/InlineCategoryList'
 import SubcategoryList from '@/components/catalog/SubcategoryList'
 import ProductGridByCategory from '@/components/catalog/ProductGridByCategory'
 import type { CatalogCategory } from '@/lib/types'
-
 export default function CatalogPage() {
   const router = useRouter()
   
@@ -33,7 +32,7 @@ export default function CatalogPage() {
         const { data, error } = await supabase.auth.getSession()
         
         if (error) {
-          console.error('[SUPABASE CONNECTION ERROR]', error)
+          logger.error('[SUPABASE CONNECTION ERROR]', error)
           setSupabaseError(error.message)
           setSupabaseConnected(false)
         } else {
@@ -41,7 +40,7 @@ export default function CatalogPage() {
           setSupabaseError(null)
         }
       } catch (err) {
-        console.error('[SUPABASE IMPORT ERROR]', err)
+        logger.error('[SUPABASE IMPORT ERROR]', err)
         setSupabaseError('Ошибка загрузки Supabase клиента')
         setSupabaseConnected(false)
       }
@@ -52,35 +51,35 @@ export default function CatalogPage() {
 
   // Функция загрузки пользовательских поставщиков из API
   const loadSuppliersFromAPI = async () => {
-    console.log('🔄 [DEBUG] Начинаем загрузку поставщиков из API...');
+    logger.info('🔄 [DEBUG] Начинаем загрузку поставщиков из API...');
     setLoadingSuppliers(true)
     try {
       // Получаем токен авторизации
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        console.error('❌ Нет активной сессии для загрузки поставщиков');
+        logger.error('❌ Нет активной сессии для загрузки поставщиков');
         setRealSuppliers([]);
         return;
       }
 
-      console.log('✅ [DEBUG] Сессия найдена, делаем запрос к API...');
+      logger.info('✅ [DEBUG] Сессия найдена, делаем запрос к API...');
       const response = await fetch('/api/catalog/user-suppliers', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
       });
       
-      console.log('📡 [DEBUG] Ответ API получен, статус:', response.status);
+      logger.info('📡 [DEBUG] Ответ API получен, статус:', response.status);
       const data = await response.json();
-      console.log('📊 [DEBUG] Данные ответа API:', data);
+      logger.info('📊 [DEBUG] Данные ответа API:', data);
       
       if (data.suppliers) {
-        console.log('✅ Загружено пользовательских поставщиков:', data.suppliers.length)
-        console.log('📊 Данные пользовательских поставщиков:', data.suppliers)
+        logger.info('✅ Загружено пользовательских поставщиков:', data.suppliers.length)
+        logger.info('📊 Данные пользовательских поставщиков:', data.suppliers)
         
         // 🔍 ДЕТАЛЬНАЯ ПРОВЕРКА КАЖДОГО ПОСТАВЩИКА
         data.suppliers.forEach((supplier: any, index: number) => {
-          console.log(`🔍 Поставщик ${index + 1} "${supplier.name}":`, {
+          logger.info(`🔍 Поставщик ${index + 1} "${supplier.name}":`, {
             contact_email: supplier.contact_email,
             contact_phone: supplier.contact_phone, 
             contact_person: supplier.contact_person,
@@ -95,13 +94,13 @@ export default function CatalogPage() {
         
         setRealSuppliers(data.suppliers)
       } else {
-        console.warn('⚠️ Нет пользовательских поставщиков в ответе API')
-        console.log('📊 Полный ответ API:', data)
+        logger.warn('⚠️ Нет пользовательских поставщиков в ответе API')
+        logger.info('📊 Полный ответ API:', data)
         // Устанавливаем пустой массив вместо тестовых данных
         setRealSuppliers([])
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки пользовательских поставщиков:', error)
+      logger.error('❌ Ошибка загрузки пользовательских поставщиков:', error)
       // Устанавливаем пустой массив вместо тестовых данных
       setRealSuppliers([])
     } finally {
@@ -117,17 +116,17 @@ export default function CatalogPage() {
       const data = await response.json()
       
       if (data.suppliers) {
-        console.log('✅ Загружено аккредитованных поставщиков:', data.suppliers.length)
-        console.log('📊 Данные аккредитованных поставщиков:', data.suppliers)
+        logger.info('✅ Загружено аккредитованных поставщиков:', data.suppliers.length)
+        logger.info('📊 Данные аккредитованных поставщиков:', data.suppliers)
         setVerifiedSuppliers(data.suppliers)
       } else {
-        console.warn('⚠️ Нет аккредитованных поставщиков в ответе API')
-        console.log('📊 Полный ответ API:', data)
+        logger.warn('⚠️ Нет аккредитованных поставщиков в ответе API')
+        logger.info('📊 Полный ответ API:', data)
         // Устанавливаем пустой массив вместо тестовых данных
         setVerifiedSuppliers([])
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки аккредитованных поставщиков:', error)
+      logger.error('❌ Ошибка загрузки аккредитованных поставщиков:', error)
       // Устанавливаем пустой массив вместо тестовых данных
       setVerifiedSuppliers([])
     } finally {
@@ -139,7 +138,7 @@ export default function CatalogPage() {
   const loadCategoriesFromAPI = async () => {
     try {
       setLoadingCategories(true)
-      console.log('🔧 [DEBUG] Загружаем категории из API...')
+      logger.info('🔧 [DEBUG] Загружаем категории из API...')
       
       const response = await fetch('/api/catalog/categories')
       if (!response.ok) {
@@ -147,17 +146,17 @@ export default function CatalogPage() {
       }
       
       const data = await response.json()
-      console.log('🔧 [DEBUG] Данные категорий:', data)
+      logger.info('🔧 [DEBUG] Данные категорий:', data)
       
       if (data.categories && Array.isArray(data.categories)) {
         setApiCategories(data.categories)
-        console.log(`✅ [API] Загружено ${data.categories.length} категорий`)
+        logger.info(`✅ [API] Загружено ${data.categories.length} категорий`)
       } else {
-        console.warn('⚠️ [API] Некорректная структура данных для категорий')
+        logger.warn('⚠️ [API] Некорректная структура данных для категорий')
         setApiCategories([])
       }
     } catch (error) {
-      console.error('❌ [API] Ошибка загрузки категорий:', error)
+      logger.error('❌ [API] Ошибка загрузки категорий:', error)
       // В случае ошибки используем fallback на статические категории
       const fallbackCategories = CATEGORY_CERTIFICATIONS.map(cat => ({
         key: cat.category.toLowerCase().replace(/\s+/g, '_'),
@@ -189,13 +188,13 @@ export default function CatalogPage() {
       }
       
       if (data.success && data.recommendations) {
-        console.log('🧠 [SMART RECOMMENDATIONS] Загружено рекомендаций:', data.recommendations)
+        logger.info('🧠 [SMART RECOMMENDATIONS] Загружено рекомендаций:', data.recommendations)
         setRecommendations(data.recommendations)
       } else {
         throw new Error('Некорректная структура данных рекомендаций')
       }
     } catch (error) {
-      console.error('❌ [SMART RECOMMENDATIONS] Ошибка загрузки:', error)
+      logger.error('❌ [SMART RECOMMENDATIONS] Ошибка загрузки:', error)
       setRecommendationsError(error instanceof Error ? error.message : String(error))
     } finally {
       setLoadingRecommendations(false)
@@ -218,7 +217,7 @@ export default function CatalogPage() {
 
     // ВАРИАНТ 1: Клик на подкатегорию в дропдауне (передается category ID + subcategory ID)
     if (categoryParam && subcategoryParam && !viewParam) {
-      console.log('🎯 [URL] Открываем подкатегорию по ID:', { categoryParam, subcategoryParam })
+      logger.info('🎯 [URL] Открываем подкатегорию по ID:', { categoryParam, subcategoryParam })
 
       const checkAndSelectSubcategory = setInterval(() => {
         if (apiCategories.length > 0) {
@@ -228,12 +227,12 @@ export default function CatalogPage() {
           const category = apiCategories.find(cat => cat.id === categoryParam)
 
           if (category) {
-            console.log('✅ [URL] Категория найдена по ID:', category.name)
+            logger.info('✅ [URL] Категория найдена по ID:', category.name)
 
             // Загружаем подкатегории и находим нужную
             const loadAndSelectSubcategory = async () => {
               try {
-                console.log('📂 [URL] Загружаем подкатегории для поиска...')
+                logger.info('📂 [URL] Загружаем подкатегории для поиска...')
                 const response = await fetch(`/api/catalog/categories/${category.id}/subcategories`)
                 const data = await response.json()
 
@@ -242,22 +241,22 @@ export default function CatalogPage() {
                   const subcategory = data.subcategories.find((sub: any) => sub.id === subcategoryParam)
 
                   if (subcategory) {
-                    console.log('✅ [URL] Подкатегория найдена:', subcategory.name)
+                    logger.info('✅ [URL] Подкатегория найдена:', subcategory.name)
                     setSelectedCategoryData({ ...category, subcategories: data.subcategories })
                     setSelectedSubcategoryData(subcategory)
-                    console.log('🎯 [URL] Открыты товары подкатегории:', subcategory.name)
+                    logger.info('🎯 [URL] Открыты товары подкатегории:', subcategory.name)
                   } else {
-                    console.warn('⚠️ [URL] Подкатегория не найдена по ID:', subcategoryParam)
+                    logger.warn('⚠️ [URL] Подкатегория не найдена по ID:', subcategoryParam)
                   }
                 }
               } catch (error) {
-                console.error('❌ [URL] Ошибка загрузки подкатегорий:', error)
+                logger.error('❌ [URL] Ошибка загрузки подкатегорий:', error)
               }
             }
 
             loadAndSelectSubcategory()
           } else {
-            console.warn('⚠️ [URL] Категория не найдена по ID:', categoryParam)
+            logger.warn('⚠️ [URL] Категория не найдена по ID:', categoryParam)
           }
         }
       }, 100)
@@ -268,7 +267,7 @@ export default function CatalogPage() {
 
     // ВАРИАНТ 2: Поиск по изображению (передается category NAME + view=products)
     if (categoryParam && viewParam === 'products') {
-      console.log('🎯 [URL] Автоматически открываем категорию:', categoryParam)
+      logger.info('🎯 [URL] Автоматически открываем категорию:', categoryParam)
 
       // Ждем загрузки категорий
       const checkAndSelectCategory = setInterval(() => {
@@ -279,29 +278,29 @@ export default function CatalogPage() {
           const category = apiCategories.find(cat => cat.name === categoryParam)
 
           if (category) {
-            console.log('✅ [URL] Категория найдена:', category.name)
+            logger.info('✅ [URL] Категория найдена:', category.name)
 
             // Загружаем подкатегории для автоматического показа товаров
             const loadSubcategoriesAndSelectFirst = async () => {
               try {
-                console.log('📂 [URL] Загружаем подкатегории...')
+                logger.info('📂 [URL] Загружаем подкатегории...')
                 const response = await fetch(`/api/catalog/categories/${category.id}/subcategories`)
                 const data = await response.json()
 
                 if (data.subcategories && data.subcategories.length > 0) {
-                  console.log('✅ [URL] Подкатегории загружены:', data.subcategories.length)
+                  logger.info('✅ [URL] Подкатегории загружены:', data.subcategories.length)
                   // Устанавливаем категорию с подкатегориями
                   setSelectedCategoryData({ ...category, subcategories: data.subcategories })
                   // Автоматически выбираем первую подкатегорию для показа товаров
                   setSelectedSubcategoryData(data.subcategories[0])
-                  console.log('🎯 [URL] Автоматически выбрана подкатегория:', data.subcategories[0].name)
+                  logger.info('🎯 [URL] Автоматически выбрана подкатегория:', data.subcategories[0].name)
                 } else {
-                  console.warn('⚠️ [URL] У категории нет подкатегорий')
+                  logger.warn('⚠️ [URL] У категории нет подкатегорий')
                   // Если нет подкатегорий, показываем саму категорию
                   setSelectedCategoryData(category as CatalogCategory)
                 }
               } catch (error) {
-                console.error('❌ [URL] Ошибка загрузки подкатегорий:', error)
+                logger.error('❌ [URL] Ошибка загрузки подкатегорий:', error)
                 // В случае ошибки просто показываем категорию
                 setSelectedCategoryData(category as CatalogCategory)
               }
@@ -309,7 +308,7 @@ export default function CatalogPage() {
 
             loadSubcategoriesAndSelectFirst()
           } else {
-            console.warn('⚠️ [URL] Категория не найдена:', categoryParam)
+            logger.warn('⚠️ [URL] Категория не найдена:', categoryParam)
           }
         }
       }, 100)
@@ -334,7 +333,7 @@ export default function CatalogPage() {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          console.error('❌ [CATALOG] Нет активной сессии для загрузки товаров');
+          logger.error('❌ [CATALOG] Нет активной сессии для загрузки товаров');
           setSupplierProducts([]);
           return;
         }
@@ -349,16 +348,16 @@ export default function CatalogPage() {
       const data = await response.json()
       
       if (data.products) {
-        console.log('✅ Загружено товаров поставщика:', data.products.length)
-        console.log('📊 Данные товаров:', data.products)
+        logger.info('✅ Загружено товаров поставщика:', data.products.length)
+        logger.info('📊 Данные товаров:', data.products)
         setSupplierProducts(data.products)
       } else {
-        console.warn('⚠️ Нет товаров у поставщика в ответе API')
-        console.log('📊 Полный ответ API:', data)
+        logger.warn('⚠️ Нет товаров у поставщика в ответе API')
+        logger.info('📊 Полный ответ API:', data)
         setSupplierProducts([])
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки товаров поставщика:', error)
+      logger.error('❌ Ошибка загрузки товаров поставщика:', error)
       setSupplierProducts([])
     } finally {
       setLoadingProducts(false)
@@ -384,16 +383,16 @@ export default function CatalogPage() {
       }
       
       if (data.success && data.echo_cards) {
-        console.log('✅ Загружено эхо карточек:', data.echo_cards.length)
-        console.log('📊 Данные эхо карточек:', data.echo_cards)
-        console.log('📊 Статистика:', data.summary)
+        logger.info('✅ Загружено эхо карточек:', data.echo_cards.length)
+        logger.info('📊 Данные эхо карточек:', data.echo_cards)
+        logger.info('📊 Статистика:', data.summary)
         setEchoCards(data.echo_cards)
       } else {
-        console.warn('⚠️ Нет эхо карточек в ответе API')
+        logger.warn('⚠️ Нет эхо карточек в ответе API')
         setEchoCards([])
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки эхо карточек:', error)
+      logger.error('❌ Ошибка загрузки эхо карточек:', error)
       setEchoCardsError(error instanceof Error ? error.message : 'Неизвестная ошибка')
       setEchoCards([])
     } finally {
@@ -432,7 +431,7 @@ export default function CatalogPage() {
       }
       
       if (data.success) {
-        console.log('✅ Поставщик импортирован:', data.supplier)
+        logger.info('✅ Поставщик импортирован:', data.supplier)
         // Обновляем список поставщиков
         await loadSuppliersFromAPI()
         // Закрываем модальное окно
@@ -440,15 +439,15 @@ export default function CatalogPage() {
         return data
       }
     } catch (error) {
-      console.error('❌ Ошибка импорта поставщика:', error)
+      logger.error('❌ Ошибка импорта поставщика:', error)
       throw error
     }
   }
 
   // Функция запуска проекта с поставщиком
   const handleStartProject = (supplier: any) => {
-    console.log('🚀 Начинаем проект с поставщиком:', supplier.name)
-    console.log('🔍 [DEBUG] Данные поставщика для handleStartProject:', {
+    logger.info('🚀 Начинаем проект с поставщиком:', supplier.name)
+    logger.info('🔍 [DEBUG] Данные поставщика для handleStartProject:', {
       id: supplier.id,
       name: supplier.name,
       company_name: supplier.company_name,
@@ -463,13 +462,13 @@ export default function CatalogPage() {
       mode: 'catalog'
     })
     
-    console.log('🔗 [DEBUG] URL параметры:', params.toString())
+    logger.info('🔗 [DEBUG] URL параметры:', params.toString())
     router.push(`/dashboard/create-project?${params.toString()}`)
   }
 
   // Функция для открытия редактирования поставщика
   const handleEditSupplier = (supplier: any) => {
-    console.log('✏️ Редактируем поставщика:', supplier.name)
+    logger.info('✏️ Редактируем поставщика:', supplier.name)
     setEditingSupplier(supplier)
     setShowAddSupplierModal(true)
   }
@@ -513,12 +512,12 @@ export default function CatalogPage() {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.access_token) {
           setAuthToken(session.access_token)
-          console.log('✅ [AUTH] Токен получен для каталога:', session.access_token.substring(0, 20) + '...')
+          logger.info('✅ [AUTH] Токен получен для каталога:', session.access_token.substring(0, 20) + '...')
         } else {
-          console.log('⚠️ [AUTH] Нет активной сессии')
+          logger.info('⚠️ [AUTH] Нет активной сессии')
         }
       } catch (error) {
-        console.error('❌ [AUTH] Ошибка получения токена авторизации:', error)
+        logger.error('❌ [AUTH] Ошибка получения токена авторизации:', error)
       } finally {
         setAuthLoading(false)
       }
@@ -592,9 +591,9 @@ export default function CatalogPage() {
         try {
           const parsedCart = JSON.parse(savedCart)
           setCart(parsedCart)
-          console.log('✅ Корзина загружена из localStorage:', parsedCart.length, 'товаров')
+          logger.info('✅ Корзина загружена из localStorage:', { count: parsedCart.length })
         } catch (error) {
-          console.error('❌ Ошибка загрузки корзины из localStorage:', error)
+          logger.error('❌ Ошибка загрузки корзины из localStorage:', error)
         }
       }
 
@@ -610,7 +609,7 @@ export default function CatalogPage() {
   useEffect(() => {
     if (cartLoaded && typeof window !== 'undefined') {
       localStorage.setItem('catalog_cart', JSON.stringify(cart))
-      console.log('💾 Корзина сохранена в localStorage:', cart.length, 'товаров')
+      logger.info('💾 Корзина сохранена в localStorage:', { count: cart.length })
     }
   }, [cart, cartLoaded])
 
@@ -849,7 +848,7 @@ export default function CatalogPage() {
   // 🔮 ПРЕДЗАПОЛНЕНИЕ ДАННЫХ ИЗ ЭХО КАРТОЧКИ
   useEffect(() => {
     if (echoCardForImport && showAddSupplierModal) {
-      console.log('🔮 Предзаполняем данные из эхо карточки:', echoCardForImport)
+      logger.info('🔮 Предзаполняем данные из эхо карточки:', echoCardForImport)
       
       const echoData = echoCardForImport.supplier_info
       const selectedSteps = echoCardForImport.selectedSteps || {
@@ -858,11 +857,11 @@ export default function CatalogPage() {
         step5_requisites: true
       }
       
-      console.log('📋 Выбранные шаги для импорта:', selectedSteps)
-      console.log('📦 Товары из эхо карточки:')
-      console.log('  - products_detailed:', echoCardForImport.products_detailed)
-      console.log('  - products (fallback):', echoCardForImport.products)
-      console.log('🖼️ Товары с картинками:', echoCardForImport.products_detailed?.filter((p: any) => p.image_url).length || 0)
+      logger.info('📋 Выбранные шаги для импорта:', selectedSteps)
+      logger.info('📦 Товары из эхо карточки:')
+      logger.info('  - products_detailed:', echoCardForImport.products_detailed)
+      logger.info('  - products (fallback):', echoCardForImport.products)
+      logger.info('🖼️ Товары с картинками:', echoCardForImport.products_detailed?.filter((p: any) => p.image_url).length || 0)
       
       setSupplierFormData({
         // Основная информация из эхо карточки (всегда импортируется)
@@ -905,12 +904,12 @@ export default function CatalogPage() {
                 minOrder: productData.quantity ? `${productData.quantity} штук` : '1 штука'
               }
               
-              console.log(`📦 Создан товар "${newProduct.name}":`)
-              console.log(`  - ID: ${newProduct.id}`)
-              console.log(`  - Цена: ${newProduct.price}`)
-              console.log(`  - Картинка из эхо карточки: ${productData.image_url || 'НЕТ'}`)
-              console.log(`  - Массив images: [${newProduct.images.join(', ')}]`)
-              console.log(`  - Количество картинок: ${newProduct.images.length}`)
+              logger.info(`📦 Создан товар "${newProduct.name}":`)
+              logger.info(`  - ID: ${newProduct.id}`)
+              logger.info(`  - Цена: ${newProduct.price}`)
+              logger.info(`  - Картинка из эхо карточки: ${productData.image_url || 'НЕТ'}`)
+              logger.info(`  - Массив images: [${newProduct.images.join(', ')}]`)
+              logger.info(`  - Количество картинок: ${newProduct.images.length}`)
               
               return newProduct
             }
@@ -952,21 +951,21 @@ export default function CatalogPage() {
         currency: 'USD'
       })
       
-      console.log('✅ Данные предзаполнены из эхо карточки с учетом выбранных шагов')
-      console.log('📦 Товары импортированы:', selectedSteps.step2_products)
-      console.log('💳 Способ оплаты импортирован:', selectedSteps.step4_payment)
-      console.log('🏦 Реквизиты импортированы:', selectedSteps.step5_requisites)
+      logger.info('✅ Данные предзаполнены из эхо карточки с учетом выбранных шагов')
+      logger.info('📦 Товары импортированы:', selectedSteps.step2_products)
+      logger.info('💳 Способ оплаты импортирован:', selectedSteps.step4_payment)
+      logger.info('🏦 Реквизиты импортированы:', selectedSteps.step5_requisites)
       
       // Логирование финального состояния товаров после импорта
       setTimeout(() => {
-        console.log('🔍 ФИНАЛЬНАЯ ПРОВЕРКА ТОВАРОВ В ФОРМЕ:')
+        logger.info('🔍 ФИНАЛЬНАЯ ПРОВЕРКА ТОВАРОВ В ФОРМЕ:')
         setSupplierFormData(current => {
-          console.log(`📦 Общее количество товаров в форме: ${current.products.length}`)
+          logger.info(`📦 Общее количество товаров в форме: ${current.products.length}`)
           current.products.forEach((product, index) => {
-            console.log(`  ${index + 1}. "${product.name}":`)
-            console.log(`     - ID: ${product.id}`)
-            console.log(`     - Картинок: ${product.images?.length || 0}`)
-            console.log(`     - Первая картинка: ${product.images?.[0] || 'НЕТ'}`)
+            logger.info(`  ${index + 1}. "${product.name}":`)
+            logger.info(`     - ID: ${product.id}`)
+            logger.info(`     - Картинок: ${product.images?.length || 0}`)
+            logger.info(`     - Первая картинка: ${product.images?.[0] || 'НЕТ'}`)
           })
           return current
         })
@@ -982,8 +981,8 @@ export default function CatalogPage() {
           return prev
         })
                  setUploadingImages(prev => ({...prev, ...imageStates}))
-         console.log('🖼️ Инициализировано состояние загрузки изображений для импортированных товаров')
-         console.log('📝 Начните с шага 1 и заполните недостающую информацию по всей форме')
+         logger.info('🖼️ Инициализировано состояние загрузки изображений для импортированных товаров')
+         logger.info('📝 Начните с шага 1 и заполните недостающую информацию по всей форме')
        }
     }
   }, [echoCardForImport, showAddSupplierModal])
@@ -1000,8 +999,8 @@ export default function CatalogPage() {
 
   // Проверка, есть ли поставщик уже в личном списке
   const isSupplierInPersonalList = (catalogSupplier: any) => {
-    console.log('🔍 [DEBUG] Проверяем дублирование для:', catalogSupplier.name || catalogSupplier.company_name)
-    console.log('🔍 [DEBUG] В личном списке:', realSuppliers.length, 'поставщиков')
+    logger.info('🔍 [DEBUG] Проверяем дублирование для:', catalogSupplier.name || catalogSupplier.company_name)
+    logger.info('🔍 [DEBUG] В личном списке:', { count: realSuppliers.length })
     
     const isDuplicate = realSuppliers.some(personalSupplier => 
       personalSupplier.company_name === catalogSupplier.company_name ||
@@ -1010,48 +1009,48 @@ export default function CatalogPage() {
        personalSupplier.contact_email === catalogSupplier.email)
     )
     
-    console.log('🔍 [DEBUG] Результат проверки дублирования:', isDuplicate)
+    logger.info('🔍 [DEBUG] Результат проверки дублирования:', isDuplicate)
     return isDuplicate
   }
 
   // Функция добавления поставщика из каталога Get2B в личный список
   const handleAddSupplierToPersonal = async (catalogSupplier: any) => {
-    console.log('🔥 [DEBUG] handleAddSupplierToPersonal вызвана для:', catalogSupplier)
+    logger.info('🔥 [DEBUG] handleAddSupplierToPersonal вызвана для:', catalogSupplier)
     
     // Принудительно сбрасываем loading если он застрял
     setLoading(false)
     
     // Проверяем, нет ли уже такого поставщика
     if (isSupplierInPersonalList(catalogSupplier)) {
-      console.log('⚠️ [DEBUG] Поставщик уже в списке!')
+      logger.info('⚠️ [DEBUG] Поставщик уже в списке!')
       alert('Этот поставщик уже есть в вашем списке!')
       return
     }
 
-    console.log('🚀 [DEBUG] Начинаем импорт поставщика...')
+    logger.info('🚀 [DEBUG] Начинаем импорт поставщика...')
     setLoading(true)
     
     // Дополнительная защита - автосброс через 15 секунд
     const emergencyTimeout = setTimeout(() => {
-      console.log('🚨 [DEBUG] ЭКСТРЕННЫЙ СБРОС LOADING!')
+      logger.info('🚨 [DEBUG] ЭКСТРЕННЫЙ СБРОС LOADING!')
       setLoading(false)
     }, 15000)
     
     try {
       // Проверяем авторизацию и получаем токен
-      console.log('🔐 [DEBUG] Проверяем авторизацию...')
+      logger.info('🔐 [DEBUG] Проверяем авторизацию...')
       const { supabase } = await import('@/lib/supabaseClient')
       const { data: { session }, error: authError } = await supabase.auth.getSession()
       
       if (authError || !session?.access_token) {
-        console.log('❌ [DEBUG] Проблема с авторизацией:', authError)
+        logger.info('❌ [DEBUG] Проблема с авторизацией:', authError)
         alert('❌ Сессия истекла. Пожалуйста, войдите в систему заново.')
         window.location.href = '/login'
         return
       }
 
-      console.log('✅ [DEBUG] Авторизация OK, токен получен')
-      console.log('📞 [DEBUG] Отправляем запрос к API...')
+      logger.info('✅ [DEBUG] Авторизация OK, токен получен')
+      logger.info('📞 [DEBUG] Отправляем запрос к API...')
 
       // Создаем AbortController для таймаута
       const controller = new AbortController()
@@ -1073,46 +1072,46 @@ export default function CatalogPage() {
 
         clearTimeout(timeoutId) // Отменяем таймаут если запрос прошел
 
-        console.log('📡 [DEBUG] Ответ от сервера, статус:', response.status)
+        logger.info('📡 [DEBUG] Ответ от сервера, статус:', response.status)
         const result = await response.json()
-        console.log('📄 [DEBUG] Данные ответа:', result)
+        logger.info('📄 [DEBUG] Данные ответа:', result)
 
         if (response.status === 401) {
-          console.log('🔒 [DEBUG] 401 - проблемы с авторизацией')
+          logger.info('🔒 [DEBUG] 401 - проблемы с авторизацией')
           alert('❌ Сессия истекла. Пожалуйста, войдите в систему заново.')
           window.location.href = '/login'
           return
         }
 
         if (response.ok) {
-          console.log('✅ [DEBUG] Поставщик импортирован успешно:', result.supplier)
-          console.log('🔄 [DEBUG] Обновляем список поставщиков...')
+          logger.info('✅ [DEBUG] Поставщик импортирован успешно:', result.supplier)
+          logger.info('🔄 [DEBUG] Обновляем список поставщиков...')
           // Обновляем список поставщиков
           await loadSuppliersFromAPI()
-          console.log('🔵 [DEBUG] Переключаемся на синюю комнату...')
+          logger.info('🔵 [DEBUG] Переключаемся на синюю комнату...')
           // Автоматически переключаемся на личный список
           setActiveMode('clients')
           alert('🎉 Поставщик успешно добавлен в ваш список!\n\nВы переключены на вкладку "Ваши поставщики"')
         } else {
-          console.error('❌ [DEBUG] Ошибка при импорте поставщика:', result.error)
+          logger.error('❌ [DEBUG] Ошибка при импорте поставщика:', result.error)
           alert(`Ошибка: ${result.error}`)
         }
       } catch (fetchError: any) {
         clearTimeout(timeoutId)
-        console.error('❌ [DEBUG] Ошибка fetch запроса:', fetchError)
+        logger.error('❌ [DEBUG] Ошибка fetch запроса:', fetchError)
         
         if (fetchError.name === 'AbortError') {
-          console.log('⏰ [DEBUG] Запрос прерван по таймауту')
+          logger.info('⏰ [DEBUG] Запрос прерван по таймауту')
           alert('⏰ Запрос занял слишком много времени. Проверьте подключение к интернету и попробуйте снова.')
         } else {
           alert('❌ Ошибка сети при импорте поставщика')
         }
       }
     } catch (error) {
-      console.error('❌ [DEBUG] Критическая ошибка:', error)
+      logger.error('❌ [DEBUG] Критическая ошибка:', error)
       alert('Ошибка при добавлении поставщика. Проверьте подключение к интернету.')
     } finally {
-      console.log('🏁 [DEBUG] Функция завершена, сбрасываем loading')
+      logger.info('🏁 [DEBUG] Функция завершена, сбрасываем loading')
       clearTimeout(emergencyTimeout) // Отменяем экстренный таймаут
       setLoading(false)
     }
@@ -1149,11 +1148,11 @@ export default function CatalogPage() {
         .upload(fileName, file)
 
       if (error) {
-        console.warn('⚠️ Ошибка загрузки в Supabase Storage:', error.message)
+        logger.warn('⚠️ Ошибка загрузки в Supabase Storage:', error.message)
         // Fallback на Base64
         const base64 = await convertToBase64(file)
         setSupplierFormData(prev => ({ ...prev, logo_url: base64 }))
-        console.log('✅ Логотип сохранен как Base64')
+        logger.info('✅ Логотип сохранен как Base64')
       } else {
         // Получаем публичный URL
         const { data: urlData } = supabase.storage
@@ -1161,17 +1160,17 @@ export default function CatalogPage() {
           .getPublicUrl(fileName)
         
         setSupplierFormData(prev => ({ ...prev, logo_url: urlData.publicUrl }))
-        console.log('✅ Логотип загружен в Supabase Storage:', urlData.publicUrl)
+        logger.info('✅ Логотип загружен в Supabase Storage:', urlData.publicUrl)
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки логотипа:', error)
+      logger.error('❌ Ошибка загрузки логотипа:', error)
       // Fallback на Base64
       try {
         const base64 = await convertToBase64(file)
         setSupplierFormData(prev => ({ ...prev, logo_url: base64 }))
-        console.log('✅ Логотип сохранен как Base64 (fallback)')
+        logger.info('✅ Логотип сохранен как Base64 (fallback)')
       } catch (base64Error) {
-        console.error('❌ Ошибка конвертации в Base64:', base64Error)
+        logger.error('❌ Ошибка конвертации в Base64:', base64Error)
         alert('Ошибка загрузки логотипа')
       }
     } finally {
@@ -1230,15 +1229,15 @@ export default function CatalogPage() {
       }
 
       // Отправка данных поставщика
-      console.log('🔧 [DEBUG] Отправляем поставщика с логотипом:', supplierPayload.logo_url);
-      console.log('📊 [DEBUG] Статистика проектов из эхо карточки:', {
+      logger.info('🔧 [DEBUG] Отправляем поставщика с логотипом:', supplierPayload.logo_url);
+      logger.info('📊 [DEBUG] Статистика проектов из эхо карточки:', {
         echo_stats: echoCardForImport?.statistics,
         calculated_successful: supplierPayload.successful_projects,
         calculated_cancelled: supplierPayload.cancelled_projects,
         total_projects: supplierPayload.total_projects,
         total_spent: supplierPayload.total_spent
       });
-      console.log('📝 [DEBUG] ПРОВЕРКА ВСЕХ ПОЛЕЙ ФОРМЫ:', {
+      logger.info('📝 [DEBUG] ПРОВЕРКА ВСЕХ ПОЛЕЙ ФОРМЫ:', {
         name: supplierFormData.name,
         company_name: supplierFormData.company_name,
         description: supplierFormData.description,
@@ -1251,7 +1250,7 @@ export default function CatalogPage() {
         website: supplierFormData.website,
         contact_person: supplierFormData.contact_person
       });
-      console.log('🌍 [DEBUG] ПРОВЕРКА ПОЛЯ COUNTRY:', {
+      logger.info('🌍 [DEBUG] ПРОВЕРКА ПОЛЯ COUNTRY:', {
         'Form country': supplierFormData.country,
         'API country': supplierPayload.country,
         'Country length': supplierFormData.country?.length,
@@ -1260,7 +1259,7 @@ export default function CatalogPage() {
         'Is null': supplierFormData.country === null,
         'Boolean validation': !!supplierFormData.country
       });
-      console.log('🔧 [DEBUG] Полные данные поставщика для API:', supplierPayload);
+      logger.info('🔧 [DEBUG] Полные данные поставщика для API:', supplierPayload);
       
       // Получаем токен авторизации
       const { data: { session } } = await supabase.auth.getSession();
@@ -1283,11 +1282,11 @@ export default function CatalogPage() {
       }
 
       const { supplier } = await supplierResponse.json()
-      console.log('✅ Поставщик создан:', supplier)
+      logger.info('✅ Поставщик создан:', supplier)
 
       // Добавление товаров поставщика
       if (supplierFormData.products.length > 0) {
-        console.log(`🔧 [DEBUG] Начинаем добавление ${supplierFormData.products.length} товаров`);
+        logger.info(`🔧 [DEBUG] Начинаем добавление ${supplierFormData.products.length} товаров`);
         let successCount = 0;
         let errorCount = 0;
         
@@ -1307,7 +1306,7 @@ export default function CatalogPage() {
             sku: (product as any).sku || null
           }
 
-          console.log(`🔧 [DEBUG] Сохраняем товар "${product.name}":`, productPayload);
+          logger.info(`🔧 [DEBUG] Сохраняем товар "${product.name}":`, productPayload);
 
           const productResponse = await fetch('/api/catalog/products', {
             method: 'POST',
@@ -1319,16 +1318,16 @@ export default function CatalogPage() {
 
           if (!productResponse.ok) {
             const errorData = await productResponse.json();
-            console.error(`❌ Ошибка при добавлении товара "${product.name}":`, errorData);
+            logger.error(`❌ Ошибка при добавлении товара "${product.name}":`, errorData);
             errorCount++;
           } else {
             const result = await productResponse.json();
-            console.log(`✅ Товар "${product.name}" добавлен:`, result.product?.id);
+            logger.info(`✅ Товар "${product.name}" добавлен:`, result.product?.id);
             successCount++;
           }
         }
         
-        console.log(`📊 [ИТОГО] Товары: ${successCount} успешно, ${errorCount} ошибок`);
+        logger.info(`📊 [ИТОГО] Товары: ${successCount} успешно, ${errorCount} ошибок`);
       }
 
       // Успешное завершение
@@ -1336,15 +1335,15 @@ export default function CatalogPage() {
       setShowAddSupplierModal(false)
       resetSupplierForm()
       setEchoCardForImport(null) // Очищаем эхо карточку после успешного сохранения
-      console.log('✅ Поставщик сохранен, состояние сброшено')
+      logger.info('✅ Поставщик сохранен, состояние сброшено')
       
       // Обновить список поставщиков из API
-      console.log('🔄 Обновляем список поставщиков после добавления...');
+      logger.info('🔄 Обновляем список поставщиков после добавления...');
       await loadSuppliersFromAPI();
-      console.log('✅ Список поставщиков обновлен');
+      logger.info('✅ Список поставщиков обновлен');
 
     } catch (error) {
-      console.error('❌ Ошибка при сохранении поставщика:', error)
+      logger.error('❌ Ошибка при сохранении поставщика:', error)
       alert(`Ошибка при добавлении поставщика: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     } finally {
       setLoading(false)
@@ -1476,7 +1475,7 @@ export default function CatalogPage() {
 
           uploadedImages.push(publicUrl)
         } catch (storageError) {
-          console.warn('Supabase Storage не доступен, использую Base64:', storageError)
+          logger.warn('Supabase Storage не доступен, использую Base64:', storageError)
           const base64 = await convertToBase64(file)
           uploadedImages.push(base64)
         }
@@ -1487,7 +1486,7 @@ export default function CatalogPage() {
         images: [...prev.images, ...uploadedImages]
       }))
     } catch (error) {
-      console.error('Ошибка загрузки изображений:', error)
+      logger.error('Ошибка загрузки изображений:', error)
       alert('Ошибка загрузки изображений')
     } finally {
       setUploadingProductImages(false)
@@ -1535,7 +1534,7 @@ export default function CatalogPage() {
       
       const method = editingProduct ? 'PATCH' : 'POST' // ИСПРАВЛЕНИЕ: Используем PATCH вместо PUT
 
-      console.log(`${editingProduct ? 'Обновление' : 'Создание'} товара:`, productData)
+      logger.info(`${editingProduct ? 'Обновление' : 'Создание'} товара:`, productData)
 
       const requestBody = editingProduct 
         ? { id: editingProduct.id, ...productData } // Для PATCH включаем id в body
@@ -1562,7 +1561,7 @@ export default function CatalogPage() {
         throw new Error(result.error || `Ошибка ${editingProduct ? 'обновления' : 'создания'} товара`)
       }
 
-      console.log(`Товар ${editingProduct ? 'обновлен' : 'создан'} успешно:`, result)
+      logger.info(`Товар ${editingProduct ? 'обновлен' : 'создан'} успешно:`, result)
       
       alert(`✅ Товар ${editingProduct ? 'обновлен' : 'добавлен'} успешно!`)
       
@@ -1575,7 +1574,7 @@ export default function CatalogPage() {
       resetProductForm()
 
     } catch (error) {
-      console.error(`Ошибка ${editingProduct ? 'обновления' : 'создания'} товара:`, error)
+      logger.error(`Ошибка ${editingProduct ? 'обновления' : 'создания'} товара:`, error)
       alert(`Ошибка ${editingProduct ? 'обновления' : 'создания'} товара: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     } finally {
       setUploadingProductImages(false)
@@ -1588,7 +1587,7 @@ export default function CatalogPage() {
     }
 
     try {
-      console.log('Удаление товара:', productId)
+      logger.info('Удаление товара:', productId)
 
       const supplierType = selectedRoom === 'blue' ? 'user' : 'verified'
 
@@ -1616,7 +1615,7 @@ export default function CatalogPage() {
         throw new Error(result.error || 'Ошибка удаления товара')
       }
 
-      console.log('Товар удален успешно:', result)
+      logger.info('Товар удален успешно:', result)
       alert('✅ Товар удален успешно!')
       
       // Обновляем список товаров
@@ -1625,7 +1624,7 @@ export default function CatalogPage() {
       }
 
     } catch (error) {
-      console.error('Ошибка удаления товара:', error)
+      logger.error('Ошибка удаления товара:', error)
       alert(`Ошибка удаления товара: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     }
   }
@@ -1636,7 +1635,7 @@ export default function CatalogPage() {
     }
 
     try {
-      console.log('Удаление поставщика:', supplierId)
+      logger.info('Удаление поставщика:', supplierId)
 
       // Получаем токен авторизации
       const { data: { session } } = await supabase.auth.getSession();
@@ -1659,7 +1658,7 @@ export default function CatalogPage() {
         throw new Error(result.error || 'Ошибка удаления поставщика')
       }
 
-      console.log('Поставщик удален успешно:', result)
+      logger.info('Поставщик удален успешно:', result)
       alert('✅ Поставщик удален успешно!')
       
       // Закрываем модальное окно и обновляем список поставщиков
@@ -1667,7 +1666,7 @@ export default function CatalogPage() {
       await loadSuppliersFromAPI()
 
     } catch (error) {
-      console.error('Ошибка удаления поставщика:', error)
+      logger.error('Ошибка удаления поставщика:', error)
       alert(`Ошибка удаления поставщика: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     }
   }
@@ -1691,7 +1690,7 @@ export default function CatalogPage() {
 
     try {
       setUploadingSupplierLogo(true)
-      console.log('🔄 Начинаем загрузку нового логотипа для поставщика:', selectedSupplier.id)
+      logger.info('🔄 Начинаем загрузку нового логотипа для поставщика:', selectedSupplier.id)
 
       let logoUrl: string;
 
@@ -1707,7 +1706,7 @@ export default function CatalogPage() {
           .upload(fileName, file)
 
         if (error) {
-          console.warn('⚠️ Ошибка загрузки в Supabase Storage:', error.message)
+          logger.warn('⚠️ Ошибка загрузки в Supabase Storage:', error.message)
           throw error
         }
 
@@ -1717,13 +1716,13 @@ export default function CatalogPage() {
           .getPublicUrl(fileName)
         
         logoUrl = urlData.publicUrl
-        console.log('✅ Логотип загружен в Supabase Storage:', logoUrl)
+        logger.info('✅ Логотип загружен в Supabase Storage:', logoUrl)
 
       } catch (storageError) {
-        console.warn('⚠️ Используем fallback на Base64:', storageError)
+        logger.warn('⚠️ Используем fallback на Base64:', storageError)
         // Fallback на Base64
         logoUrl = await convertToBase64(file)
-        console.log('✅ Логотип сохранен как Base64')
+        logger.info('✅ Логотип сохранен как Base64')
       }
 
       // Получаем токен авторизации для обновления
@@ -1751,7 +1750,7 @@ export default function CatalogPage() {
         throw new Error(result.error || 'Ошибка обновления логотипа')
       }
 
-      console.log('✅ Логотип поставщика обновлен:', result.supplier)
+      logger.info('✅ Логотип поставщика обновлен:', result.supplier)
       
       // Принудительно обновляем selectedSupplier с новым логотипом + cache busting
       const logoUrlWithCacheBuster = logoUrl.includes('data:') 
@@ -1770,7 +1769,7 @@ export default function CatalogPage() {
       alert('✅ Логотип успешно обновлен!')
 
     } catch (error) {
-      console.error('❌ Ошибка замены логотипа:', error)
+      logger.error('❌ Ошибка замены логотипа:', error)
       alert(`Ошибка замены логотипа: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     } finally {
       setUploadingSupplierLogo(false)
@@ -1827,10 +1826,10 @@ export default function CatalogPage() {
     } else {
       // При добавлении первого товара устанавливаем активного поставщика
       if (cart.length === 0) {
-        console.log('🔍 Полный объект товара:', JSON.stringify(product, null, 2))
+        logger.info('🔍 Полный объект товара:', JSON.stringify(product, null, 2))
         const supplierName = product.supplier_company_name || product.supplier_name
         setActiveSupplier(supplierName)
-        console.log('🔒 Установлен активный поставщик:', supplierName)
+        logger.info('🔒 Установлен активный поставщик:', supplierName)
       }
       
       const cartItem = {
@@ -1851,7 +1850,7 @@ export default function CatalogPage() {
     // Если корзина стала пустой, сбрасываем активного поставщика
     if (newCart.length === 0) {
       setActiveSupplier(null)
-      console.log('🔓 Сброшен активный поставщик - корзина пуста')
+      logger.info('🔓 Сброшен активный поставщик - корзина пуста')
     }
   }
 
@@ -1881,7 +1880,7 @@ export default function CatalogPage() {
     
     try {
       // Сохраняем корзину в БД для автозаполнения данных поставщика
-      console.log('💾 Сохраняем корзину в БД...')
+      logger.info('💾 Сохраняем корзину в БД...')
       
       // Находим первого поставщика из корзины (все товары от одного поставщика)
       const firstItem = cart[0]
@@ -1896,7 +1895,7 @@ export default function CatalogPage() {
       }
       
       // 🎯 ПОЛУЧАЕМ ПОЛНЫЕ ДАННЫЕ ПОСТАВЩИКА ИЗ БД
-      console.log('🔍 Загружаем данные поставщика:', supplierInfo.id, 'тип:', supplierInfo.type)
+      logger.info('🔍 Загружаем данные поставщика:', { id: supplierInfo.id, type: supplierInfo.type })
       let fullSupplierData = null
       
       try {
@@ -1909,12 +1908,12 @@ export default function CatalogPage() {
         
         if (supplierFromDB && !supplierError) {
           fullSupplierData = supplierFromDB
-          console.log('✅ Полные данные поставщика загружены:', fullSupplierData)
+          logger.info('✅ Полные данные поставщика загружены:', fullSupplierData)
         } else {
-          console.warn('⚠️ Не удалось загрузить полные данные поставщика:', supplierError)
+          logger.warn('⚠️ Не удалось загрузить полные данные поставщика:', supplierError)
         }
       } catch (err) {
-        console.error('❌ Ошибка загрузки данных поставщика:', err)
+        logger.error('❌ Ошибка загрузки данных поставщика:', err)
       }
 
       // Подготавливаем данные корзины
@@ -1967,17 +1966,17 @@ export default function CatalogPage() {
         .single()
       
       if (error) {
-        console.error('❌ Ошибка сохранения корзины:', error)
+        logger.error('❌ Ошибка сохранения корзины:', error)
         // Если таблица не существует, используем старый метод
         if (error.message?.includes('does not exist')) {
-          console.log('⚠️ Таблица project_carts не найдена, используем URL метод')
+          logger.info('⚠️ Таблица project_carts не найдена, используем URL метод')
           router.push(`/dashboard/create-project?from_cart=true&cart=${encodeURIComponent(JSON.stringify(cart))}`)
           return
         }
         throw error
       }
       
-      console.log('✅ Корзина сохранена с ID:', savedCart.id)
+      logger.info('✅ Корзина сохранена с ID:', savedCart.id)
 
       // Очищаем корзину и localStorage после успешного сохранения
       setCart([])
@@ -1985,14 +1984,14 @@ export default function CatalogPage() {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('catalog_cart')
         localStorage.removeItem('catalog_active_supplier')
-        console.log('🗑️ [CATALOG] localStorage очищен после создания проекта')
+        logger.info('🗑️ [CATALOG] localStorage очищен после создания проекта')
       }
 
       // Переходим к созданию проекта с ID корзины
       router.push(`/dashboard/create-project?from_cart=true&cart_id=${savedCart.id}`)
       
     } catch (error) {
-      console.error('Ошибка при сохранении корзины:', error)
+      logger.error('Ошибка при сохранении корзины:', error)
       // В случае ошибки используем старый метод через URL
       router.push(`/dashboard/create-project?from_cart=true&cart=${encodeURIComponent(JSON.stringify(cart))}`)
     }
@@ -2013,7 +2012,7 @@ export default function CatalogPage() {
             </div>
             <button 
               onClick={() => {
-                console.log('Catalog refresh requested');
+                logger.info('Catalog refresh requested');
                 window.location.reload(); // Пока оставляем только здесь
               }} 
               className="text-red-600 hover:text-red-800 text-sm font-medium"
@@ -3494,21 +3493,21 @@ export default function CatalogPage() {
                                     multiple
                                     onChange={async (e) => {
                                       const files = Array.from(e.target.files || [])
-                                      console.log(`🖼️ Выбрано ${files.length} файлов для товара "${product.name}" (ID: ${product.id})`)
+                                      logger.info(`🖼️ Выбрано ${files.length} файлов для товара "${product.name}" (ID: ${product.id})`)
                                       
                                       if (files.length === 0) {
-                                        console.log('❌ Нет файлов для загрузки')
+                                        logger.info('❌ Нет файлов для загрузки')
                                         return
                                       }
                                       
-                                      console.log(`📁 Файлы:`, files.map(f => `${f.name} (${Math.round(f.size / 1024)}KB)`))
+                                      logger.info(`📁 Файлы:`, files.map(f => `${f.name} (${Math.round(f.size / 1024)}KB)`))
                                       
                                       setUploadingImages({
                                         ...uploadingImages,
                                         [product.id]: true
                                       })
                                       
-                                      console.log(`⏳ Начата загрузка изображений для товара ${product.id}`)
+                                      logger.info(`⏳ Начата загрузка изображений для товара ${product.id}`)
 
                                       // Проверяем размер файлов
                                       const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024) // 5MB
@@ -3539,16 +3538,16 @@ export default function CatalogPage() {
                                               })
 
                                             if (error) {
-                                              console.error('Ошибка загрузки файла:', error.message)
+                                              logger.error('Ошибка загрузки файла:', error.message)
                                               
                                               // Если bucket не существует, используем Base64
                                               if (error.message.includes('Bucket not found') || error.message.includes('does not exist')) {
-                                                console.warn('Bucket product-images не найден, используем Base64')
+                                                logger.warn('Bucket product-images не найден, используем Base64')
                                                 try {
                                                   const base64 = await convertToBase64(file)
                                                   return base64
                                                 } catch (base64Error) {
-                                                  console.error('Ошибка конвертации в Base64:', base64Error)
+                                                  logger.error('Ошибка конвертации в Base64:', base64Error)
                                                   return `https://via.placeholder.com/300x200/f3f4f6/9ca3af?text=${encodeURIComponent(file.name)}`
                                                 }
                                               }
@@ -3563,14 +3562,14 @@ export default function CatalogPage() {
 
                                             return publicUrl
                                           } catch (fileError) {
-                                            console.error('Ошибка обработки файла:', file.name, fileError)
+                                            logger.error('Ошибка обработки файла:', { fileName: file.name, error: fileError })
                                             // Пытаемся конвертировать в Base64 как запасной вариант
                                             try {
                                               const base64 = await convertToBase64(file)
-                                              console.log('✅ Использован Base64 для файла:', file.name)
+                                              logger.info('✅ Использован Base64 для файла:', file.name)
                                               return base64
                                             } catch (base64Error) {
-                                              console.error('Ошибка Base64 конвертации:', base64Error)
+                                              logger.error('Ошибка Base64 конвертации:', base64Error)
                                               return `https://via.placeholder.com/300x200/f3f4f6/9ca3af?text=${encodeURIComponent(file.name)}`
                                             }
                                           }
@@ -3579,7 +3578,7 @@ export default function CatalogPage() {
                                         const uploadedUrls = await Promise.all(uploadPromises)
                                         const validUrls = uploadedUrls.filter((url: string | null) => url !== null) as string[]
 
-                                        console.log(`📊 Результат загрузки:`, {
+                                        logger.info(`📊 Результат загрузки:`, {
                                           uploadedUrls: uploadedUrls.length,
                                           validUrls: validUrls.length,
                                           urls: validUrls
@@ -3593,14 +3592,14 @@ export default function CatalogPage() {
                                           )
                                           setSupplierFormData({ ...supplierFormData, products: updatedProducts })
                                           
-                                          console.log(`✅ Загружено ${validUrls.length} изображений для товара "${product.name}"`)
-                                          console.log(`🖼️ Итого изображений у товара: ${(product.images || []).length + validUrls.length}`)
+                                          logger.info(`✅ Загружено ${validUrls.length} изображений для товара "${product.name}"`)
+                                          logger.info(`🖼️ Итого изображений у товара: ${(product.images || []).length + validUrls.length}`)
                                         } else {
-                                          console.warn('⚠️ Не удалось загрузить ни одного изображения')
+                                          logger.warn('⚠️ Не удалось загрузить ни одного изображения')
                                           alert('Не удалось загрузить изображения. Попробуйте еще раз или обратитесь к администратору.')
                                         }
                                       } catch (error) {
-                                        console.error('❌ Критическая ошибка при загрузке изображений:', error)
+                                        logger.error('❌ Критическая ошибка при загрузке изображений:', error)
                                         alert('Произошла ошибка при загрузке изображений. Пожалуйста, попробуйте позже.')
                                       } finally {
                                         setUploadingImages({
@@ -3988,7 +3987,7 @@ export default function CatalogPage() {
                        setShowAddSupplierModal(false)
                        resetSupplierForm()
                        setEchoCardForImport(null) // Очищаем эхо карточку при закрытии
-                       console.log('🔄 Форма закрыта, состояние сброшено')
+                       logger.info('🔄 Форма закрыта, состояние сброшено')
                      }}
                      className="border-2 border-gray-400 text-gray-600 px-6 py-3 hover:bg-gray-400 hover:text-white transition-all text-sm font-medium uppercase tracking-wider"
                    >
@@ -4190,7 +4189,7 @@ export default function CatalogPage() {
                         <button
                           onClick={() => {
                             setShowEchoCardsModal(true)
-                            console.log('🔄 Открываем эхо карточки для обновления поставщика:', selectedSupplier.name)
+                            logger.info('🔄 Открываем эхо карточки для обновления поставщика:', selectedSupplier.name)
                           }}
                           className="bg-purple-600 text-white px-3 py-2 text-xs uppercase tracking-wider hover:bg-purple-700 transition-colors flex items-center gap-2"
                           title="Найти и обновить данные из эхо карточек"
@@ -5240,7 +5239,7 @@ export default function CatalogPage() {
                               setEchoCardForImport({...echoCard, selectedSteps})
                               setShowAddSupplierModal(true)
                               setShowEchoCardsModal(false)
-                              console.log('🚀 Импорт эхо карточки: форма сброшена, начинаем с шага 1')
+                              logger.info('🚀 Импорт эхо карточки: форма сброшена, начинаем с шага 1')
                             }}
                             className="bg-purple-600 text-white px-6 py-3 hover:bg-purple-700 transition-colors font-medium uppercase tracking-wider text-sm flex items-center gap-2"
                           >

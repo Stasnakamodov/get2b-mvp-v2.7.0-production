@@ -1,9 +1,9 @@
+import { logger } from "@/src/shared/lib/logger"
 import React, { useEffect, useState } from "react";
 import { useAddSupplierContext } from "../context/AddSupplierContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Package, Plus, X, ImageIcon, Upload, Building2, Smartphone, Bitcoin, FileText } from 'lucide-react';
 import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config';
-
 interface AddSupplierContentOriginalProps {
   onClose: () => void;
   onSuccess?: (supplier: any) => void;
@@ -106,7 +106,7 @@ export function AddSupplierContentOriginal({
         .upload(fileName, file)
 
       if (error) {
-        console.warn('⚠️ Ошибка загрузки в Supabase Storage:', error.message)
+        logger.warn('⚠️ Ошибка загрузки в Supabase Storage:', error.message)
         // Fallback на Base64
         const base64 = await convertToBase64(file)
         setSupplierData(prev => ({ ...prev, logo_url: base64 }))
@@ -119,13 +119,13 @@ export function AddSupplierContentOriginal({
         setSupplierData(prev => ({ ...prev, logo_url: urlData.publicUrl }))
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки логотипа:', error)
+      logger.error('❌ Ошибка загрузки логотипа:', error)
       // Fallback на Base64
       try {
         const base64 = await convertToBase64(file)
         setSupplierData(prev => ({ ...prev, logo_url: base64 }))
       } catch (base64Error) {
-        console.error('❌ Ошибка конвертации в Base64:', base64Error)
+        logger.error('❌ Ошибка конвертации в Base64:', base64Error)
         alert('Ошибка загрузки логотипа')
       }
     } finally {
@@ -230,7 +230,7 @@ export function AddSupplierContentOriginal({
       // Получаем токен авторизации для запроса
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        console.error('❌ [DEBUG] Нет активной сессии');
+        logger.error('❌ [DEBUG] Нет активной сессии');
         throw new Error('Нет активной сессии для сохранения поставщика');
       }
       
@@ -284,7 +284,7 @@ export function AddSupplierContentOriginal({
 
           if (!productResponse.ok) {
             const errorData = await productResponse.json();
-            console.error(`❌ Ошибка при добавлении товара "${product.name}":`, errorData);
+            logger.error(`❌ Ошибка при добавлении товара "${product.name}":`, errorData);
             errorCount++;
           } else {
             const productResult = await productResponse.json();
@@ -306,7 +306,7 @@ export function AddSupplierContentOriginal({
 
       onClose();
     } catch (error) {
-      console.error('❌ Ошибка сохранения поставщика:', error);
+      logger.error('❌ Ошибка сохранения поставщика:', error);
       alert(`❌ Ошибка сохранения поставщика: ${error}`);
     } finally {
       setIsLoading(false);
@@ -896,7 +896,7 @@ export function AddSupplierContentOriginal({
                                       const base64 = await convertToBase64(file)
                                       validUrls.push(base64)
                                     } catch (error) {
-                                console.error(`❌ Ошибка конвертации изображения ${i + 1}:`, error)
+                                logger.error(`❌ Ошибка конвертации изображения ${i + 1}:`, error)
                                     }
                                   }
                                   
@@ -910,7 +910,7 @@ export function AddSupplierContentOriginal({
                               
                                   }
                                 } catch (error) {
-                            console.error('❌ Критическая ошибка при загрузке изображений:', error)
+                            logger.error('❌ Критическая ошибка при загрузке изображений:', error)
                             alert('Произошла ошибка при загрузке изображений. Пожалуйста, попробуйте позже.')
                                 }
                               }}

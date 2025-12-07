@@ -1,8 +1,8 @@
 'use client'
 
+import { logger } from "@/src/shared/lib/logger"
 import React from 'react'
 import { CreditCard, CheckCircle2, CheckCircle } from 'lucide-react'
-
 type PaymentMethod = 'bank-transfer' | 'p2p' | 'crypto'
 
 interface Step4PaymentMethodCubesProps {
@@ -89,7 +89,7 @@ export function Step4PaymentMethodCubes({
       }
     }
 
-    console.log('🔍 [DEBUG] Method Check:', {
+    logger.info('🔍 [DEBUG] Method Check:', {
       method,
       hasSupplierData: hasData,
       manualData4: manualData[4],

@@ -1,4 +1,6 @@
-"use client";
+"use client"
+
+import { logger } from "@/src/shared/lib/logger";
 
 import React, { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -19,7 +21,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
-
 interface Template {
   id: string;
   template_name: string;
@@ -194,7 +195,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
         });
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast({
         title: "❌ Ошибка сети",
         description: "Проблема с подключением к серверу",

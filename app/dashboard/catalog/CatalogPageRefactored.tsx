@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
@@ -7,7 +8,6 @@ import { CatalogHeader } from './components/CatalogHeader'
 import { SupplierGrid } from './components/SupplierGrid'
 import { AddSupplierModal } from './components/AddSupplierModal'
 import { useCatalogOptimization } from './hooks/useCatalogOptimization'
-
 interface Supplier {
   id: string
   name: string
@@ -75,7 +75,7 @@ export default function CatalogPageRefactored() {
         const { data, error } = await supabase.auth.getSession()
         
         if (error) {
-          console.error('[SUPABASE CONNECTION ERROR]', error)
+          logger.error('[SUPABASE CONNECTION ERROR]', error)
           setSupabaseError(error.message)
           setSupabaseConnected(false)
         } else {
@@ -83,7 +83,7 @@ export default function CatalogPageRefactored() {
           setSupabaseError(null)
         }
       } catch (err) {
-        console.error('[SUPABASE IMPORT ERROR]', err)
+        logger.error('[SUPABASE IMPORT ERROR]', err)
         setSupabaseError('Ошибка загрузки Supabase клиента')
         setSupabaseConnected(false)
       }
@@ -109,11 +109,11 @@ export default function CatalogPageRefactored() {
       if (data.suppliers) {
         setRealSuppliers(data.suppliers)
       } else {
-        console.warn('⚠️ Нет пользовательских поставщиков в ответе API')
+        logger.warn('⚠️ Нет пользовательских поставщиков в ответе API')
         setRealSuppliers([])
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки пользовательских поставщиков:', error)
+      logger.error('❌ Ошибка загрузки пользовательских поставщиков:', error)
       setRealSuppliers([])
     } finally {
       setLoadingSuppliers(false)
@@ -129,11 +129,11 @@ export default function CatalogPageRefactored() {
       if (data.suppliers) {
         setVerifiedSuppliers(data.suppliers)
       } else {
-        console.warn('⚠️ Нет аккредитованных поставщиков в ответе API')
+        logger.warn('⚠️ Нет аккредитованных поставщиков в ответе API')
         setVerifiedSuppliers([])
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки аккредитованных поставщиков:', error)
+      logger.error('❌ Ошибка загрузки аккредитованных поставщиков:', error)
       setVerifiedSuppliers([])
     } finally {
       setLoadingVerified(false)
@@ -155,7 +155,7 @@ export default function CatalogPageRefactored() {
         })))
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки категорий:', error)
+      logger.error('❌ Ошибка загрузки категорий:', error)
       // Fallback на статические категории
       setApiCategories(CATEGORY_CERTIFICATIONS.map(cat => ({
         name: cat.category,
@@ -178,7 +178,7 @@ export default function CatalogPageRefactored() {
         setRecommendationsError('Не удалось получить рекомендации')
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки рекомендаций:', error)
+      logger.error('❌ Ошибка загрузки рекомендаций:', error)
       setRecommendationsError('Ошибка загрузки рекомендаций')
     } finally {
       setLoadingRecommendations(false)

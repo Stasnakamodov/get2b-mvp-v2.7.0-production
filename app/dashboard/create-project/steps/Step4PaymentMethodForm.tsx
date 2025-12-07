@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { sendPaymentMethodToTelegram } from "../utils/telegram";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-
 const paymentMethods = [
   {
     id: "bank-transfer",
@@ -52,7 +52,7 @@ export default function Step4PaymentMethodForm() {
   useEffect(() => {
     // Пропускаем если нет проекта или уже есть обработанные эхо данные
     if (!projectId || supplierData?.echo_source === 'processed') {
-      console.log("[Step4] ⏭️ Пропускаем загрузку эхо данных:", { 
+      logger.info("[Step4] ⏭️ Пропускаем загрузку эхо данных:", { 
         projectId: !!projectId, 
         echoProcessed: supplierData?.echo_source === 'processed'
       });
@@ -60,7 +60,7 @@ export default function Step4PaymentMethodForm() {
     }
 
     async function loadEchoSupplierData() {
-      console.log("[Step4] 🔍 Загружаем эхо данные поставщиков для автозаполнения...");
+      logger.info("[Step4] 🔍 Загружаем эхо данные поставщиков для автозаполнения...");
       
       try {
         // 1. Получаем всех уникальных поставщиков из спецификаций проекта
@@ -72,21 +72,21 @@ export default function Step4PaymentMethodForm() {
           .not("supplier_name", "eq", "");
         
         if (specsError) {
-          console.error("[Step4] Ошибка получения спецификаций:", specsError);
+          logger.error("[Step4] Ошибка получения спецификаций:", specsError);
           return;
         }
 
         if (!specifications || specifications.length === 0) {
-          console.log("[Step4] Нет поставщиков в спецификациях");
+          logger.info("[Step4] Нет поставщиков в спецификациях");
           return;
         }
 
         const suppliers = [...new Set(specifications.map(s => s.supplier_name))];
-        console.log("[Step4] Найдены поставщики:", suppliers);
+        logger.info("[Step4] Найдены поставщики:", suppliers);
 
         // 2. Для каждого поставщика ищем завершенные проекты с реквизитами И дополняем из каталога
         for (const supplierName of suppliers) {
-          console.log(`[Step4] 🔍 Поиск эхо данных для поставщика: "${supplierName}"`);
+          logger.info(`[Step4] 🔍 Поиск эхо данных для поставщика: "${supplierName}"`);
           
           // Находим проекты с этим поставщиком где есть payment_method (завершенные проекты)
           const { data: echoProjects, error: echoError } = await supabase
@@ -99,12 +99,12 @@ export default function Step4PaymentMethodForm() {
             .not("projects.payment_method", "is", null);
           
           if (echoError) {
-            console.error(`[Step4] Ошибка поиска эхо проектов для ${supplierName}:`, echoError);
+            logger.error(`[Step4] Ошибка поиска эхо проектов для ${supplierName}:`, echoError);
             continue;
           }
 
           // Ищем поставщика в каталоге независимо от эхо проектов
-          console.log(`[Step4] 🔍 Поиск реального поставщика ${supplierName} в каталоге...`);
+          logger.info(`[Step4] 🔍 Поиск реального поставщика ${supplierName} в каталоге...`);
           const { data: catalogSupplier, error: catalogError } = await supabase
             .from('catalog_verified_suppliers')
             .select('id, name, company_name, payment_methods, bank_accounts, crypto_wallets, p2p_cards')
@@ -112,16 +112,16 @@ export default function Step4PaymentMethodForm() {
             .single();
           
           if (catalogError) {
-            console.log(`[Step4] Поставщик не найден в каталоге:`, catalogError.message);
+            logger.info(`[Step4] Поставщик не найден в каталоге:`, catalogError.message);
           }
 
           // Если нет ни эхо проектов, ни каталога - пропускаем
           if ((!echoProjects || echoProjects.length === 0) && !catalogSupplier) {
-            console.log(`[Step4] Нет данных для поставщика ${supplierName} (ни эхо проектов, ни каталога)`);
+            logger.info(`[Step4] Нет данных для поставщика ${supplierName} (ни эхо проектов, ни каталога)`);
             continue;
           }
 
-          console.log(`[Step4] ✅ Найдены данные для ${supplierName}:`, { 
+          logger.info(`[Step4] ✅ Найдены данные для ${supplierName}:`, { 
             echoProjects: echoProjects?.length || 0, 
             catalogFound: !!catalogSupplier 
           });
@@ -156,14 +156,14 @@ export default function Step4PaymentMethodForm() {
             enhanced: true // помечаем как улучшенные данные
           };
 
-          console.log(`[Step4] 🎯 Создаем улучшенные данные для ${supplierName}:`, enhancedSupplierData);
+          logger.info(`[Step4] 🎯 Создаем улучшенные данные для ${supplierName}:`, enhancedSupplierData);
           setSupplierData(enhancedSupplierData);
           
           // Берем данные первого найденного поставщика для автозаполнения
           break;
         }
       } catch (error) {
-        console.error("[Step4] Ошибка загрузки эхо данных:", error);
+        logger.error("[Step4] Ошибка загрузки эхо данных:", error);
       }
     }
 
@@ -172,11 +172,11 @@ export default function Step4PaymentMethodForm() {
 
   // 🎯 Определяем, для каких методов есть реквизиты поставщика
   const methodsWithSupplierData = useMemo(() => {
-    console.log("[Step4] Данные поставщика:", supplierData);
-    console.log("[Step4] Методы оплаты поставщика:", supplierData?.payment_methods);
+    logger.info("[Step4] Данные поставщика:", supplierData);
+    logger.info("[Step4] Методы оплаты поставщика:", supplierData?.payment_methods);
     
     if (!supplierData?.payment_methods || !Array.isArray(supplierData.payment_methods)) {
-      console.log("[Step4] Нет данных о методах оплаты поставщика");
+      logger.info("[Step4] Нет данных о методах оплаты поставщика");
       return [];
     }
     
@@ -196,7 +196,7 @@ export default function Step4PaymentMethodForm() {
       .filter(Boolean)
       .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index); // Убираем дубликаты
       
-    console.log("[Step4] Маппинг методов БД -> UI:", supplierData.payment_methods, "->", uiMethods);
+    logger.info("[Step4] Маппинг методов БД -> UI:", supplierData.payment_methods, "->", uiMethods);
     
     return uiMethods;
   }, [supplierData]);
@@ -206,7 +206,7 @@ export default function Step4PaymentMethodForm() {
     return paymentMethods.map(method => {
       const hasSupplierData = methodsWithSupplierData.includes(method.id);
       const supplierRequisitesCount = getSupplierRequisitesCount(method.id);
-      console.log(`[Step4] ${method.id}: hasSupplierData=${hasSupplierData}, supplierRequisitesCount=${supplierRequisitesCount}`);
+      logger.info(`[Step4] ${method.id}: hasSupplierData=${hasSupplierData}, supplierRequisitesCount=${supplierRequisitesCount}`);
       return {
         ...method,
         hasSupplierData,
@@ -223,15 +223,15 @@ export default function Step4PaymentMethodForm() {
     switch (methodId) {
       case 'bank-transfer':
         count = (Array.isArray(supplierData.bank_accounts) ? supplierData.bank_accounts.length : 0);
-        console.log(`[Step4] bank-transfer реквизиты:`, count, supplierData.bank_accounts);
+        logger.info(`[Step4] bank-transfer реквизиты:`, count, supplierData.bank_accounts);
         return count;
       case 'p2p':
         count = (Array.isArray(supplierData.p2p_cards) ? supplierData.p2p_cards.length : 0);
-        console.log(`[Step4] p2p реквизиты:`, count, supplierData.p2p_cards);
+        logger.info(`[Step4] p2p реквизиты:`, count, supplierData.p2p_cards);
         return count;
       case 'crypto':
         count = (Array.isArray(supplierData.crypto_wallets) ? supplierData.crypto_wallets.length : 0);
-        console.log(`[Step4] crypto реквизиты:`, count, supplierData.crypto_wallets, `(null: ${supplierData.crypto_wallets === null})`);
+        logger.info(`[Step4] crypto реквизиты:`, count, supplierData.crypto_wallets, `(null: ${supplierData.crypto_wallets === null})`);
         return count;
       default:
         return 0;
@@ -250,7 +250,7 @@ export default function Step4PaymentMethodForm() {
     const methodsWithData = enrichedPaymentMethods.filter(method => method.hasSupplierData);
     if (methodsWithData.length === 1 && !selectedMethod) {
       const singleMethod = methodsWithData[0].id;
-      console.log("[Step4] Автовыбираем единственный метод с реквизитами поставщика:", singleMethod);
+      logger.info("[Step4] Автовыбираем единственный метод с реквизитами поставщика:", singleMethod);
       setSelectedMethod(singleMethod);
       setPaymentMethod(singleMethod);
     }
@@ -264,16 +264,16 @@ export default function Step4PaymentMethodForm() {
 
   const handleNext = async () => {
     if (isProcessing || loading) {
-      console.log("[Step4] Обработка уже идет, игнорируем повторное нажатие");
+      logger.info("[Step4] Обработка уже идет, игнорируем повторное нажатие");
       return;
     }
     
-    console.log("[Step4] handleNext вызван с selectedMethod:", selectedMethod);
+    logger.info("[Step4] handleNext вызван с selectedMethod:", selectedMethod);
     setIsProcessing(true);
     setErrorMsg(null);
     
     if (!selectedMethod) {
-      console.log("[Step4] Способ оплаты не выбран");
+      logger.info("[Step4] Способ оплаты не выбран");
       toast({ title: "Выберите способ оплаты", variant: "destructive" });
       setIsProcessing(false);
       return;
@@ -281,32 +281,32 @@ export default function Step4PaymentMethodForm() {
     
     const allowedMethods = ["bank-transfer", "p2p", "crypto"];
     if (!allowedMethods.includes(selectedMethod)) {
-      console.log("[Step4] Недопустимый способ оплаты:", selectedMethod);
+      logger.info("[Step4] Недопустимый способ оплаты:", selectedMethod);
       toast({ title: "Недопустимый способ оплаты", variant: "destructive" });
       setIsProcessing(false);
       return;
     }
     
-    console.log("[Step4] Начинаем сохранение, projectId:", projectId);
+    logger.info("[Step4] Начинаем сохранение, projectId:", projectId);
     setLoading(true);
     setPaymentMethod(selectedMethod);
     
     let saveResult = true;
     try {
       if (projectId) {
-        console.log("[Step4] Вызываем saveSpecification...");
+        logger.info("[Step4] Вызываем saveSpecification...");
         saveResult = await saveSpecification({ 
           projectId, 
           currentStep: 5, 
           payment_method: selectedMethod, 
           status: "filling_requisites" 
         });
-        console.log("[Step4] saveSpecification результат:", saveResult);
+        logger.info("[Step4] saveSpecification результат:", saveResult);
       } else {
-        console.warn("[Step4] projectId отсутствует!");
+        logger.warn("[Step4] projectId отсутствует!");
       }
     } catch (err) {
-      console.error("[Step4] saveSpecification ошибка:", err);
+      logger.error("[Step4] saveSpecification ошибка:", err);
       setErrorMsg("Ошибка сохранения: " + (err instanceof Error ? err.message : String(err)));
       setLoading(false);
       setIsProcessing(false);
@@ -314,7 +314,7 @@ export default function Step4PaymentMethodForm() {
     }
     
     if (!saveResult) {
-      console.error("[Step4] saveSpecification вернул false, supabaseError:", supabaseError);
+      logger.error("[Step4] saveSpecification вернул false, supabaseError:", supabaseError);
       setErrorMsg(supabaseError || "Не удалось сохранить способ оплаты");
       toast({ 
         title: "Ошибка сохранения", 
@@ -328,44 +328,44 @@ export default function Step4PaymentMethodForm() {
     
     // Отправка в Telegram (не критично для перехода)
     try {
-      console.log("[Step4] Отправляем в Telegram...");
+      logger.info("[Step4] Отправляем в Telegram...");
       await sendPaymentMethodToTelegram(selectedMethod, projectName);
-      console.log("[Step4] Отправка в Telegram успешна");
+      logger.info("[Step4] Отправка в Telegram успешна");
     } catch (err) {
-      console.warn("[Step4] Ошибка отправки в Telegram (не критично):", err);
+      logger.warn("[Step4] Ошибка отправки в Telegram (не критично):", err);
       // Не блокируем переход из-за ошибки Telegram
     }
     
     // Переход на следующий шаг
     const nextStep = 5;
-    console.log("[Step4] Переходим на шаг:", nextStep);
-    console.log("[Step4] Текущий maxStepReached:", maxStepReached);
+    logger.info("[Step4] Переходим на шаг:", nextStep);
+    logger.info("[Step4] Текущий maxStepReached:", maxStepReached);
     
     setCurrentStep(nextStep);
     
     if (nextStep > maxStepReached) {
-      console.log("[Step4] Обновляем maxStepReached до:", nextStep);
+      logger.info("[Step4] Обновляем maxStepReached до:", nextStep);
       setMaxStepReached(nextStep);
       if (projectId) {
         try {
           await updateStep(projectId, nextStep, nextStep);
-          console.log("[Step4] updateStep успешно выполнен");
+          logger.info("[Step4] updateStep успешно выполнен");
         } catch (updateErr) {
-          console.error("[Step4] Ошибка updateStep:", updateErr);
+          logger.error("[Step4] Ошибка updateStep:", updateErr);
         }
       }
     } else if (projectId) {
       try {
         await updateStep(projectId, nextStep);
-        console.log("[Step4] updateStep (без maxStep) успешно выполнен");
+        logger.info("[Step4] updateStep (без maxStep) успешно выполнен");
       } catch (updateErr) {
-        console.error("[Step4] Ошибка updateStep (без maxStep):", updateErr);
+        logger.error("[Step4] Ошибка updateStep (без maxStep):", updateErr);
       }
     }
     
     setLoading(false);
     setIsProcessing(false);
-    console.log("[Step4] handleNext завершен успешно");
+    logger.info("[Step4] handleNext завершен успешно");
   };
 
   return (

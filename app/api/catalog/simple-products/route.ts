@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
-
+import { supabase } from "@/lib/supabaseClient";
 // GET: Получение товаров с фильтром по категории (простая версия)
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1)
 
     if (verifiedError || userError) {
-      console.error('❌ [API] Ошибка получения товаров:', { verifiedError, userError })
+      logger.error('❌ [API] Ошибка получения товаров:', { verifiedError, userError })
       return NextResponse.json({ error: 'Ошибка получения товаров' }, { status: 500 })
     }
 
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ [API] Критическая ошибка получения товаров:', error)
+    logger.error('❌ [API] Критическая ошибка получения товаров:', error)
     
     return NextResponse.json({
       success: false,

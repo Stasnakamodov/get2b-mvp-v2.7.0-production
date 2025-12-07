@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
 import { getOtapiService } from '@/lib/services/OtapiService'
+import { logger } from '@/src/shared/lib/logger'
 
 /**
  * API Endpoint для импорта товаров из OTAPI
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
       limit = 20
     } = body
 
-    console.log('[API] Импорт из OTAPI:', { query, provider, category, limit })
+    logger.info('[API] Импорт из OTAPI:', { query, provider, category, limit })
 
     // Инициализируем сервис OTAPI
     const otapi = getOtapiService()
@@ -103,7 +104,12 @@ export async function POST(request: NextRequest) {
       }
 
       supplier = newSupplier
-      console.log(`[API] Создан новый поставщик: ${supplier.name}`)
+      logger.info(`[API] Создан новый поставщик: ${supplier?.name || 'Unknown'}`)
+    }
+
+    // Проверяем что supplier существует
+    if (!supplier) {
+      throw new Error('Не удалось получить или создать поставщика')
     }
 
     // 4. Форматируем и импортируем товары
@@ -127,6 +133,27 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Создаем specifications с правильной типизацией
+        const specifications: Record<string, any> = {
+          ...product.specifications,
+          'Бренд': product.brand,
+          'Маркетплейс': provider,
+          'Рейтинг': product.rating ? `${product.rating}/5` : null,
+          'Продано': product.soldCount ? `${product.soldCount} шт.` : null,
+          'Отзывов': product.reviewsCount,
+          'Поставщик': product.seller.name,
+          'Страна поставщика': product.seller.country,
+          'Город поставщика': product.seller.city
+        }
+
+        // Очищаем null значения из specifications
+        Object.keys(specifications).forEach(key => {
+          if (specifications[key] === null ||
+              specifications[key] === undefined) {
+            delete specifications[key]
+          }
+        })
+
         // Форматируем товар для БД
         const formattedProduct = {
           // Основная информация
@@ -142,17 +169,7 @@ export async function POST(request: NextRequest) {
           in_stock: product.inStock,
 
           // Характеристики
-          specifications: {
-            ...product.specifications,
-            'Бренд': product.brand,
-            'Маркетплейс': provider,
-            'Рейтинг': product.rating ? `${product.rating}/5` : null,
-            'Продано': product.soldCount ? `${product.soldCount} шт.` : null,
-            'Отзывов': product.reviewsCount,
-            'Поставщик': product.seller.name,
-            'Страна поставщика': product.seller.country,
-            'Город поставщика': product.seller.city
-          },
+          specifications: specifications,
           images: product.images.slice(0, 10), // Максимум 10 изображений
 
           // Связь с поставщиком
@@ -162,14 +179,6 @@ export async function POST(request: NextRequest) {
           is_active: true,
           is_featured: product.rating && product.rating >= 4.5 // Выделяем товары с высоким рейтингом
         }
-
-        // Очищаем null значения из specifications
-        Object.keys(formattedProduct.specifications).forEach(key => {
-          if (formattedProduct.specifications[key] === null ||
-              formattedProduct.specifications[key] === undefined) {
-            delete formattedProduct.specifications[key]
-          }
-        })
 
         productsToImport.push(formattedProduct)
 
@@ -194,7 +203,7 @@ export async function POST(request: NextRequest) {
       }
 
       imported = insertedProducts?.length || 0
-      console.log(`[API] Импортировано товаров: ${imported}`)
+      logger.info(`[API] Импортировано товаров: ${imported}`)
     }
 
     // 6. Формируем ответ
@@ -221,7 +230,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('[API] Ошибка импорта из OTAPI:', error)
+    logger.error('[API] Ошибка импорта из OTAPI:', error)
 
     return NextResponse.json({
       success: false,
@@ -236,7 +245,7 @@ export async function POST(request: NextRequest) {
  *
  * Проверка статуса OTAPI
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     if (!process.env.OTAPI_INSTANCE_KEY) {
       return NextResponse.json({

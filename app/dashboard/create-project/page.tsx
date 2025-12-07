@@ -1,11 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { logger } from "@/src/shared/lib/logger"
 import {
   Building,
   FileText,
@@ -30,7 +26,6 @@ import {
 
 // Add these imports at the top with the other imports
 import { useSearchParams, useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"
 import {
   sendTelegramMessageClient,
   sendTelegramDocumentClient,
@@ -39,27 +34,29 @@ import {
   sendClientConfirmationRequestToTelegramClient,
 } from "@/lib/telegram-client"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { CreateProjectProvider, useCreateProjectContext } from "./context/CreateProjectContext"
+import { Button } from "@/components/ui/button"
+import { AnimatePresence } from "framer-motion"
+import { useCreateProjectContext, CreateProjectProvider } from "./context/CreateProjectContext"
+import { useProjectSupabase } from "./hooks/useProjectSupabase"
+import { useProjectTemplates } from "./hooks/useSaveTemplate"
+import { useClientProfiles } from "@/hooks/useClientProfiles"
+import { useSupplierProfiles } from "@/hooks/useSupplierProfiles"
+import { getStepByStatus } from "@/lib/types/project-status"
+import { supabase } from "@/lib/supabaseClient"
+import ProjectTimeline from "@/components/ui/ProjectTimeline"
 import Step1CompanyForm from "./steps/Step1CompanyForm"
 import Step2SpecificationForm from "./steps/Step2SpecificationForm"
-import ProjectTimeline from "@/components/ui/ProjectTimeline"
-import { useProjectSupabase } from "./hooks/useProjectSupabase"
 import Step3PaymentForm from "./steps/Step3PaymentForm"
 import Step4PaymentMethodForm from "./steps/Step4PaymentMethodForm"
 import Step5RequisiteSelectForm from "./steps/Step5RequisiteSelectForm"
 import Step6ReceiptForClient from "./steps/Step6ReceiptForClient"
 import Step7ClientConfirmationForm from "./steps/Step7ClientConfirmationForm"
-import { useClientProfiles } from '@/hooks/useClientProfiles';
-import { useSupplierProfiles } from '@/hooks/useSupplierProfiles';
-import { useProjectTemplates } from "./hooks/useSaveTemplate";
-import { getStepByStatus } from '@/lib/types/project-status';
-
 // --- ДОБАВЬ: функция для отправки данных в Telegram ---
 async function sendCompanyDataToTelegram(companyData: any) {
   try {
     // Проверяем, что данные не пустые
     if (!companyData || !companyData.name) {
-      console.error("Данные компании пустые, отправка отменена")
+      logger.error("Данные компании пустые, отправка отменена")
       return
     }
 
@@ -67,7 +64,7 @@ async function sendCompanyDataToTelegram(companyData: any) {
 
     await sendTelegramMessageClient(text)
   } catch (error) {
-    console.error("❌ Ошибка отправки данных компании в Telegram:", error)
+    logger.error("❌ Ошибка отправки данных компании в Telegram:", error)
     alert("Ошибка отправки данных в Telegram: " + (error instanceof Error ? error.message : String(error)))
   }
 }
@@ -112,7 +109,7 @@ async function sendSpecificationToTelegram({
       await sendTelegramMessageClient(text)
     }
   } catch (error) {
-    console.error("❌ Ошибка отправки спецификации в Telegram:", error)
+    logger.error("❌ Ошибка отправки спецификации в Telegram:", error)
     alert("Ошибка отправки спецификации в Telegram: " + (error instanceof Error ? error.message : String(error)))
   }
 }
@@ -298,7 +295,7 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
               setTimeout(() => clearInterval(checkProjectId), 10000);
               
             } catch (error) {
-              console.error('[ProjectIdLoader] Ошибка сохранения товаров поставщика:', error);
+              logger.error('[ProjectIdLoader] Ошибка сохранения товаров поставщика:', error);
             }
           }, 1000);
         }
@@ -592,7 +589,7 @@ function ProjectStartFlow() {
           .single();
         if (projectError) {
           setProjectInsertError('Ошибка создания проекта: ' + JSON.stringify(projectError));
-          console.error('Ошибка создания проекта:', projectError);
+          logger.error('Ошибка создания проекта:', projectError);
         }
         if (projectError || !project?.id) throw new Error(projectError?.message || 'Ошибка создания проекта');
         const projectId: string = project.id;
@@ -636,7 +633,7 @@ function ProjectStartFlow() {
             .insert(specRows);
           if (specError) {
             alert('Ошибка копирования спецификации: ' + specError.message);
-            console.error('Ошибка копирования спецификации:', specError);
+            logger.error('Ошибка копирования спецификации:', specError);
           }
           // --- Polling: ждём, пока все позиции появятся в Supabase ---
           const waitForSpec = async () => {
@@ -964,7 +961,7 @@ function CartLoader() {
             .single();
           
           if (error) {
-            console.error("[CartLoader] Ошибка загрузки корзины из БД:", error);
+            logger.error("[CartLoader] Ошибка загрузки корзины из БД:", error);
             throw error;
           }
           
@@ -1052,7 +1049,7 @@ function CartLoader() {
           // Отмечаем что корзина обработана
           setCartProcessed(true);
 
-          console.log("[CartLoader] Данные успешно загружены", {
+          logger.info("[CartLoader] Данные успешно загружены", {
             товары: specItems.length,
             способыОплаты: hasPaymentData ? "✅" : "❌",
             реквизиты: hasBankData ? "✅" : "❌",
@@ -1060,7 +1057,7 @@ function CartLoader() {
           });
         }
       } catch (error) {
-        console.error("[CartLoader] Ошибка загрузки данных корзины:", error);
+        logger.error("[CartLoader] Ошибка загрузки данных корзины:", error);
       } finally {
         setIsCartLoading(false);
       }
@@ -1109,7 +1106,7 @@ function SupplierLoader() {
         // Получаем токен авторизации
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          console.error("[SupplierLoader] Нет активной сессии для загрузки поставщика");
+          logger.error("[SupplierLoader] Нет активной сессии для загрузки поставщика");
           return;
         }
 
@@ -1242,10 +1239,10 @@ function SupplierLoader() {
           }
           
         } else {
-          console.warn("[SupplierLoader] Поставщик не найден:", supplierId);
+          logger.warn("[SupplierLoader] Поставщик не найден:", supplierId);
         }
       } catch (error) {
-        console.error("[SupplierLoader] Ошибка загрузки поставщика:", error);
+        logger.error("[SupplierLoader] Ошибка загрузки поставщика:", error);
       } finally {
         setIsSupplierLoading(false);
       }

@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useRef, useEffect } from "react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,6 @@ import { useRouter } from "next/navigation";
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import CatalogModal from "../components/CatalogModal";
 import ProformaSelectionModal from "../components/ProformaSelectionModal";
-
 const CURRENCY = "USD";
 
 // Функция для очистки имени файла и частей пути
@@ -118,7 +118,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     async function restoreStep2() {
       if (!projectId) return;
       const data = await loadSpecification(projectId);
-      console.log('[LOG:restoreStep2] projectId:', projectId, 'data из Supabase:', data);
+      logger.info('[LOG:restoreStep2] projectId:', projectId, 'data из Supabase:', data);
       if (data) {
         setCompanyData(data.company_data || {});
         // --- Новая логика перехода на шаг 3, если проект уже одобрен ---
@@ -237,12 +237,12 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         })
         .eq("id", projectId);
       if (error) {
-        console.error("[ERROR] Не удалось обновить amount/currency в проекте:", error);
+        logger.error("[ERROR] Не удалось обновить amount/currency в проекте:", error);
       } else {
-        console.log("[DEBUG] amount/currency обновлены в проекте:", { amount: total, currency: CURRENCY });
+        logger.info("[DEBUG] amount/currency обновлены в проекте:", { amount: total, currency: CURRENCY });
       }
     } catch (err) {
-      console.error("[ERROR] Ошибка обновления amount/currency:", err);
+      logger.error("[ERROR] Ошибка обновления amount/currency:", err);
     }
   };
 
@@ -307,7 +307,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         .single();
       if (specData?.id) {
         await supabase.from('projects').update({ specification_id: specData.id }).eq('id', projectId);
-        console.log('[ensureSpecificationId] specification_id автозаполнен:', specData.id);
+        logger.info('[ensureSpecificationId] specification_id автозаполнен:', specData.id);
       }
     }
   }
@@ -364,7 +364,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       projectId,
     });
     } catch (telegramError) {
-      console.warn('⚠️ Telegram недоступен, но проект сохранен:', telegramError);
+      logger.warn('⚠️ Telegram недоступен, но проект сохранен:', telegramError);
       // Показываем предупреждение вместо ошибки
       toast({
         title: "⚠️ Уведомление",
@@ -431,9 +431,9 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       const cleanName = sanitizeFileName(file.name);
       const filePath = `invoices/${projectId}/${date}_${timestamp}_${sender}_${cleanName}`;
       
-      console.log("📤 Загружаем файл в Supabase Storage...");
-      console.log("📁 Путь:", filePath);
-      console.log("📄 Файл:", file.name, "Размер:", file.size, "Тип:", file.type);
+      logger.info("📤 Загружаем файл в Supabase Storage...");
+      logger.info("📁 Путь:", filePath);
+      logger.info("📄 Файл:", file.name, "Размер:", file.size, "Тип:", file.type);
       
       // Проверяем, существует ли файл
       const { data: existingFile } = await supabase.storage
@@ -443,25 +443,25 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         });
       
       if (existingFile && existingFile.length > 0) {
-        console.log("⚠️ Файл с похожим именем уже существует, используем уникальный путь");
+        logger.info("⚠️ Файл с похожим именем уже существует, используем уникальный путь");
       }
       
       const { data, error } = await supabase.storage.from("step2-ready-invoices").upload(filePath, file, {
         upsert: true // Перезаписываем файл, если он уже существует
       });
       if (error) {
-        console.error("❌ Ошибка загрузки в Supabase Storage:", error);
+        logger.error("❌ Ошибка загрузки в Supabase Storage:", error);
         setError(`Ошибка загрузки файла: ${error.message}`);
         setIsUploading(false);
         return;
       }
       
-      console.log("✅ Файл успешно загружен в Storage:", data);
+      logger.info("✅ Файл успешно загружен в Storage:", data);
       
       const { data: urlData } = supabase.storage.from("step2-ready-invoices").getPublicUrl(filePath);
       const fileUrl = (urlData?.publicUrl as string) || "";
       
-      console.log("🔗 Публичный URL:", fileUrl);
+      logger.info("🔗 Публичный URL:", fileUrl);
       
       if (!fileUrl) {
         setError("Не удалось получить публичную ссылку на файл");
@@ -471,9 +471,9 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       
       try {
         await addInvoice(fileUrl, role);
-        console.log("✅ Инвойс добавлен в базу данных");
+        logger.info("✅ Инвойс добавлен в базу данных");
       } catch (addError) {
-        console.error("❌ Ошибка добавления инвойса в БД:", addError);
+        logger.error("❌ Ошибка добавления инвойса в БД:", addError);
         setError("Файл загружен, но не удалось сохранить в базе данных");
         setIsUploading(false);
         return;
@@ -484,7 +484,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       let analysisText = "";
       
       try {
-        console.log("🔍 Начинаем анализ инвойса с Yandex Vision...");
+        logger.info("🔍 Начинаем анализ инвойса с Yandex Vision...");
         
         const analysisResponse = await fetch('/api/document-analysis', {
           method: 'POST',
@@ -501,11 +501,11 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           extractedData = analysisResult.suggestions;
           analysisText = analysisResult.extractedText;
           
-          console.log("✅ Данные инвойса извлечены:", extractedData);
-        console.log("📊 Детали извлеченных данных:");
-        console.log("   - invoiceInfo:", extractedData.invoiceInfo);
-        console.log("   - items count:", extractedData.items?.length || 0);
-        console.log("   - items:", extractedData.items);
+          logger.info("✅ Данные инвойса извлечены:", extractedData);
+        logger.info("📊 Детали извлеченных данных:");
+        logger.info("   - invoiceInfo:", extractedData.invoiceInfo);
+        logger.info("   - items count:", extractedData.items?.length || 0);
+        logger.info("   - items:", extractedData.items);
           
           // Автозаполнение спецификации извлеченными данными
           if (extractedData && extractedData.items && extractedData.items.length > 0) {
@@ -551,10 +551,10 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
             }
           }
         } else {
-          console.warn("⚠️ Анализ инвойса не удался, но файл загружен");
+          logger.warn("⚠️ Анализ инвойса не удался, но файл загружен");
         }
       } catch (analysisError) {
-        console.error("❌ Ошибка анализа инвойса:", analysisError);
+        logger.error("❌ Ошибка анализа инвойса:", analysisError);
         // Не прерываем загрузку файла, если анализ не удался
       }
 
@@ -611,7 +611,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           variant: "default" 
         });
       } catch (telegramError) {
-        console.error("❌ Ошибка отправки в Telegram:", telegramError);
+        logger.error("❌ Ошибка отправки в Telegram:", telegramError);
       }
       
     } catch (err: any) {
@@ -634,16 +634,16 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
 
   // ДОБАВЛЯЕМ: функция для анализа файла и показа заполненной формы
   const handleAnalyzeInvoiceFile = async (invoice: ProjectInvoice) => {
-    console.log("🚀 НАЧИНАЕМ handleAnalyzeInvoiceFile для:", invoice);
-    console.log("🔧 ProjectId:", projectId);
-    console.log("🔧 Role:", role);
-    console.log("🔧 SpecificationItems count:", specificationItems?.length || 0);
+    logger.info("🚀 НАЧИНАЕМ handleAnalyzeInvoiceFile для:", invoice);
+    logger.info("🔧 ProjectId:", projectId);
+    logger.info("🔧 Role:", role);
+    logger.info("🔧 SpecificationItems count:", specificationItems?.length || 0);
     
     setAnalyzingFile(invoice.id);
     setError(null);
     
     try {
-      console.log("🔍 Начинаем анализ инвойса для показа формы...");
+      logger.info("🔍 Начинаем анализ инвойса для показа формы...");
       
       // Определяем тип файла по URL или используем универсальный подход
       let fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'; // По умолчанию DOCX
@@ -660,10 +660,10 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         fileType = 'image/png';
       }
       
-      console.log("📄 Определенный тип файла:", fileType);
-      console.log("🌐 URL файла:", invoice.file_url);
+      logger.info("📄 Определенный тип файла:", fileType);
+      logger.info("🌐 URL файла:", invoice.file_url);
       
-      console.log("🚀 ОТПРАВЛЯЕМ ЗАПРОС К API...");
+      logger.info("🚀 ОТПРАВЛЯЕМ ЗАПРОС К API...");
       const analysisResponse = await fetch('/api/document-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -674,43 +674,43 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         })
       });
       
-      console.log("📡 Ответ от сервера получен. Status:", analysisResponse.status);
+      logger.info("📡 Ответ от сервера получен. Status:", analysisResponse.status);
 
       if (analysisResponse.ok) {
-        console.log("✅ Ответ от API успешный!");
+        logger.info("✅ Ответ от API успешный!");
         const responseText = await analysisResponse.text();
-        console.log("🔍 СЫРОЙ ОТВЕТ ОТ API:", responseText);
+        logger.info("🔍 СЫРОЙ ОТВЕТ ОТ API:", responseText);
         
         const analysisResult = JSON.parse(responseText);
-        console.log("🔍 ПАРСИНГ ОТВЕТА:", analysisResult);
+        logger.info("🔍 ПАРСИНГ ОТВЕТА:", analysisResult);
         const extractedData = analysisResult.suggestions;
         
-        console.log("✅ Данные инвойса извлечены для показа:", extractedData);
-        console.log("📊 Детали извлеченных данных для показа:");
-        console.log("   - invoiceInfo:", extractedData?.invoiceInfo);
-        console.log("   - items count:", extractedData?.items?.length || 0);
-        console.log("   - items:", extractedData?.items);
-        console.log("   - extractedText length:", analysisResult.extractedText?.length || 0);
-        console.log("   - extractedText preview:", analysisResult.extractedText?.substring(0, 200));
+        logger.info("✅ Данные инвойса извлечены для показа:", extractedData);
+        logger.info("📊 Детали извлеченных данных для показа:");
+        logger.info("   - invoiceInfo:", extractedData?.invoiceInfo);
+        logger.info("   - items count:", extractedData?.items?.length || 0);
+        logger.info("   - items:", extractedData?.items);
+        logger.info("   - extractedText length:", analysisResult.extractedText?.length || 0);
+        logger.info("   - extractedText preview:", analysisResult.extractedText?.substring(0, 200));
         
         // Автозаполнение спецификации извлеченными данными
         if (extractedData && extractedData.items && extractedData.items.length > 0) {
-          console.log("🎯 НАЧИНАЕМ АВТОЗАПОЛНЕНИЕ! Количество позиций:", extractedData.items.length);
+          logger.info("🎯 НАЧИНАЕМ АВТОЗАПОЛНЕНИЕ! Количество позиций:", extractedData.items.length);
           
           // Очищаем существующие позиции
-          console.log("🗑️ Очищаем существующие позиции...", specificationItems);
+          logger.info("🗑️ Очищаем существующие позиции...", specificationItems);
           for (const item of specificationItems) {
-            console.log("🗑️ Удаляем позицию:", item.id);
+            logger.info("🗑️ Удаляем позицию:", item.id);
             await deleteItem(item.id);
           }
           
-          console.log("✅ Существующие позиции очищены");
+          logger.info("✅ Существующие позиции очищены");
           
           // Добавляем новые позиции из инвойса
-          console.log("➕ Добавляем новые позиции из инвойса...");
+          logger.info("➕ Добавляем новые позиции из инвойса...");
           for (let i = 0; i < extractedData.items.length; i++) {
             const invoiceItem = extractedData.items[i];
-            console.log(`➕ Добавляем позицию ${i+1}/${extractedData.items.length}:`, invoiceItem);
+            logger.info(`➕ Добавляем позицию ${i+1}/${extractedData.items.length}:`, invoiceItem);
             
             const itemToAdd = {
               item_name: invoiceItem.name || "Товар из инвойса",
@@ -722,28 +722,28 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
               total: Number(invoiceItem.total) || 0,
             };
             
-            console.log(`📄 Структура позиции для добавления:`, itemToAdd);
+            logger.info(`📄 Структура позиции для добавления:`, itemToAdd);
             
             try {
               await addItem(itemToAdd);
-              console.log(`✅ Позиция ${i+1} добавлена успешно`);
+              logger.info(`✅ Позиция ${i+1} добавлена успешно`);
             } catch (addError) {
-              console.error(`❌ Ошибка добавления позиции ${i+1}:`, addError);
+              logger.error(`❌ Ошибка добавления позиции ${i+1}:`, addError);
             }
           }
           
-          console.log("✅ Все позиции из инвойса добавлены");
+          logger.info("✅ Все позиции из инвойса добавлены");
           
           // Обновляем спецификацию
-          console.log("🔄 Обновляем спецификацию...");
+          logger.info("🔄 Обновляем спецификацию...");
           await fetchSpecification();
-          console.log("🔄 Обновляем сумму проекта...");
+          logger.info("🔄 Обновляем сумму проекта...");
           await updateProjectAmountAndCurrency();
           
-          console.log("✅ Спецификация и сумма обновлены");
+          logger.info("✅ Спецификация и сумма обновлены");
           
           // Переключаемся на режим создания для показа заполненной формы
-          console.log("🎨 Переключаемся на режим создания формы...");
+          logger.info("🎨 Переключаемся на режим создания формы...");
           setInvoiceType('create');
           setShowFilledForm(true);
           
@@ -751,7 +751,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           const totalAmount = extractedData.invoiceInfo?.totalAmount || 
             extractedData.items.reduce((sum: number, item: any) => sum + (Number(item.total) || 0), 0);
           
-          console.log("🎉 Показываем toast уведомление...");
+          logger.info("🎉 Показываем toast уведомление...");
           toast({ 
             title: "✅ Форма заполнена!", 
             description: `Добавлено ${extractedData.items.length} позиций на сумму ${totalAmount} руб. Проверьте и при необходимости отредактируйте данные.`, 
@@ -759,13 +759,13 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           });
           
           // Прокручиваем к форме
-          console.log("📜 Прокручиваем к форме...");
+          logger.info("📜 Прокручиваем к форме...");
           setTimeout(() => {
             const formElement = document.querySelector('[data-form-section="specification"]');
-            console.log("📜 Элемент формы найден:", formElement);
+            logger.info("📜 Элемент формы найден:", formElement);
             if (formElement) {
               formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              console.log("📜 Прокрутка выполнена");
+              logger.info("📜 Прокрутка выполнена");
             }
           }, 100);
           
@@ -777,7 +777,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           });
         }
       } else {
-        console.warn("⚠️ Анализ инвойса не удался");
+        logger.warn("⚠️ Анализ инвойса не удался");
         toast({ 
           title: "❌ Ошибка анализа", 
           description: "Не удалось проанализировать файл. Попробуйте другой файл или добавьте позиции вручную.", 
@@ -785,7 +785,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         });
       }
     } catch (analysisError) {
-      console.error("❌ Ошибка анализа инвойса:", analysisError);
+      logger.error("❌ Ошибка анализа инвойса:", analysisError);
       toast({ 
         title: "❌ Ошибка анализа", 
         description: "Произошла ошибка при анализе файла. Попробуйте позже.", 
@@ -798,13 +798,13 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
 
   // Диагностика: логируем спецификацию при каждом изменении
   useEffect(() => {
-    console.log('[DIAG] projectId:', projectId, 'role:', role, 'specificationItems:', specificationItems);
+    logger.info('[DIAG] projectId:', projectId, 'role:', role, 'specificationItems:', specificationItems);
   }, [projectId, role, specificationItems]);
 
   useEffect(() => {
-    console.log('[DIAG:specificationItems]', specificationItems);
+    logger.info('[DIAG:specificationItems]', specificationItems);
     specificationItems.forEach((item, idx) => {
-      console.log(`[DIAG:image_url][${idx}]`, item.image_url);
+      logger.info(`[DIAG:image_url][${idx}]`, item.image_url);
     });
   }, [specificationItems]);
 
@@ -814,7 +814,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     const specId = await addItems(items);
     if (specId) {
       await supabase.from('projects').update({ specification_id: specId }).eq('id', projectId);
-      console.log('[bulkInsertSpecification] specification_id сохранён в проект:', specId);
+      logger.info('[bulkInsertSpecification] specification_id сохранён в проект:', specId);
     }
   }
 
@@ -876,13 +876,13 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
 
   // Обработчик выбора товаров из каталога
   const handleCatalogSelect = async (products: any[]) => {
-    console.log('🎯 [Step2] Получены товары из каталога:', products);
+    logger.info('🎯 [Step2] Получены товары из каталога:', products);
     
     // 🎯 ЗАГРУЖАЕМ ДАННЫЕ ПОСТАВЩИКА ДЛЯ АВТОЗАПОЛНЕНИЯ ШАГОВ 4-5
     if (products.length > 0 && products[0].supplier_id) {
       const supplierId = products[0].supplier_id;
       const supplierName = products[0].supplier_name || 'Неизвестный поставщик';
-      console.log('🔍 [Step2] Загружаем данные поставщика для автозаполнения:', { supplierId, supplierName });
+      logger.info('🔍 [Step2] Загружаем данные поставщика для автозаполнения:', { supplierId, supplierName });
       
       try {
         // Определяем тип поставщика по room_type или пытаемся найти в обеих таблицах
@@ -897,7 +897,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         
         if (verifiedSupplier && !verifiedError) {
           fullSupplierData = { ...verifiedSupplier, room_type: 'verified' };
-          console.log('✅ [Step2] Поставщик найден в verified:', fullSupplierData);
+          logger.info('✅ [Step2] Поставщик найден в verified:', fullSupplierData);
         } else {
           // Если не найден в verified, ищем в user поставщиках
           const { data: userSupplier, error: userError } = await supabase
@@ -908,20 +908,20 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           
           if (userSupplier && !userError) {
             fullSupplierData = { ...userSupplier, room_type: 'user' };
-            console.log('✅ [Step2] Поставщик найден в user:', fullSupplierData);
+            logger.info('✅ [Step2] Поставщик найден в user:', fullSupplierData);
           } else {
-            console.warn('⚠️ [Step2] Поставщик не найден в обеих таблицах:', { verifiedError, userError });
+            logger.warn('⚠️ [Step2] Поставщик не найден в обеих таблицах:', { verifiedError, userError });
           }
         }
         
         // Сохраняем данные поставщика в контекст и БД для автозаполнения
         if (fullSupplierData) {
-          console.log('💾 [Step2] Сохраняем данные поставщика в контекст для Steps 4-5');
+          logger.info('💾 [Step2] Сохраняем данные поставщика в контекст для Steps 4-5');
           setSupplierData(fullSupplierData);
           
           // 🎯 СОХРАНЯЕМ В БД ДЛЯ ВОССТАНОВЛЕНИЯ ПРИ ОБНОВЛЕНИИ СТРАНИЦЫ
           if (projectId) {
-            console.log('💾 [Step2] Сохраняем данные поставщика в БД');
+            logger.info('💾 [Step2] Сохраняем данные поставщика в БД');
             const supplierType = fullSupplierData.room_type === 'verified' ? 'catalog_verified' : 'catalog_user';
             // Не передаем supplierId чтобы избежать foreign key constraint error
             await saveSupplierData(projectId, fullSupplierData, undefined, supplierType);
@@ -929,7 +929,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         }
         
       } catch (error) {
-        console.error('❌ [Step2] Ошибка загрузки данных поставщика:', error);
+        logger.error('❌ [Step2] Ошибка загрузки данных поставщика:', error);
       }
     }
     
@@ -949,22 +949,22 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       // catalog_product_id временно отключен из-за foreign key ошибок
     }));
     
-    console.log('🔍 [Step2] Преобразованные товары для addItems:', specItems);
-    console.log('🔍 [Step2] Первый товар детально:', JSON.stringify(specItems[0], null, 2));
+    logger.info('🔍 [Step2] Преобразованные товары для addItems:', specItems);
+    logger.info('🔍 [Step2] Первый товар детально:', JSON.stringify(specItems[0], null, 2));
     
     // Добавляем товары в спецификацию
     try {
       const result = await addItems(specItems);
-      console.log('✅ [Step2] Результат addItems:', result);
+      logger.info('✅ [Step2] Результат addItems:', result);
       await fetchSpecification();
       
       if (projectId) {
         await saveSpecification({ projectId, currentStep: 2 });
       }
       
-      console.log(`✅ [Step2] Добавлено ${specItems.length} товаров в спецификацию`);
+      logger.info(`✅ [Step2] Добавлено ${specItems.length} товаров в спецификацию`);
     } catch (error) {
-      console.error('❌ [Step2] Ошибка в handleCatalogSelect:', error);
+      logger.error('❌ [Step2] Ошибка в handleCatalogSelect:', error);
     }
   };
 
@@ -993,7 +993,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       const fileName = `${Date.now()}_${sanitizedFileName}`;
       const filePath = `project_images/${projectId}/${fileName}`;
       
-      console.log(`[DEBUG] Загружаем изображение для товара ${id}:`, {
+      logger.info(`[DEBUG] Загружаем изображение для товара ${id}:`, {
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
@@ -1009,7 +1009,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         });
       
       if (error) {
-        console.error('[ERROR] Ошибка при загрузке файла:', {
+        logger.error('[ERROR] Ошибка при загрузке файла:', {
           message: error.message,
           name: error.name
         });
@@ -1020,18 +1020,18 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         throw new Error('Файл не был загружен (data is null)');
       }
       
-      console.log(`[DEBUG] Файл загружен успешно:`, data);
+      logger.info(`[DEBUG] Файл загружен успешно:`, data);
       
       // Получаем публичную ссылку на файл
       const { data: { publicUrl } } = supabase.storage
         .from('project-images')
         .getPublicUrl(filePath);
       
-      console.log(`[DEBUG] Публичная ссылка: ${publicUrl}`);
+      logger.info(`[DEBUG] Публичная ссылка: ${publicUrl}`);
       
       // Обновляем image_url товара
       const updateResult = await updateItem(id, { image_url: publicUrl });
-      console.log(`[DEBUG] Результат обновления товара:`, updateResult);
+      logger.info(`[DEBUG] Результат обновления товара:`, updateResult);
       
       await fetchSpecification();
       
@@ -1039,10 +1039,10 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         await saveSpecification({ projectId, currentStep: 2 });
       }
       
-      console.log(`[SUCCESS] Изображение успешно загружено для товара ${id}`);
+      logger.info(`[SUCCESS] Изображение успешно загружено для товара ${id}`);
       setError(null); // Очищаем ошибку при успехе
     } catch (err) {
-      console.error('[ERROR] Неожиданная ошибка при загрузке изображения:', {
+      logger.error('[ERROR] Неожиданная ошибка при загрузке изображения:', {
         error: err,
         message: err instanceof Error ? err.message : 'Неизвестная ошибка',
         stack: err instanceof Error ? err.stack : undefined
@@ -1719,17 +1719,17 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
               // Находим первый товар для тестирования
               const firstItem = specificationItems[0];
               if (firstItem) {
-                console.log('🧪 Начинаем тест загрузки изображения...');
-                console.log('Товар:', firstItem);
-                console.log('Файл:', testFile);
-                console.log('ProjectId:', projectId);
+                logger.info('🧪 Начинаем тест загрузки изображения...');
+                logger.info('Товар:', firstItem);
+                logger.info('Файл:', testFile);
+                logger.info('ProjectId:', projectId);
                 
                 await handleImageUpload(firstItem.id, testFile);
               } else {
                 setError('Нет товаров для тестирования. Добавьте товар сначала.');
               }
             } catch (err) {
-              console.error('Тест загрузки изображения:', err);
+              logger.error('Тест загрузки изображения:', err);
               setError(`Тест загрузки изображения: ${err instanceof Error ? err.message : 'Неизвестная ошибка'}`);
                 }
               }}

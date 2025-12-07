@@ -1,4 +1,6 @@
-"use client";
+"use client"
+
+import { logger } from "@/src/shared/lib/logger";
 
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -21,7 +23,6 @@ import {
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/components/ui/use-toast";
-
 interface Supplier {
   id: string;
   name: string;
@@ -150,10 +151,10 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
         .eq('is_active', true);
 
       if (verifiedError) {
-        console.error('Error loading verified suppliers:', verifiedError);
+        logger.error('Error loading verified suppliers:', verifiedError);
       }
       if (userError) {
-        console.error('Error loading user suppliers:', userError);
+        logger.error('Error loading user suppliers:', userError);
       }
 
       const allSuppliers: Supplier[] = [
@@ -164,7 +165,7 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
       setSuppliers(allSuppliers);
       setFilteredSuppliers(allSuppliers);
     } catch (error) {
-      console.error('Error loading suppliers:', error);
+      logger.error('Error loading suppliers:', error);
       toast({
         title: "❌ Ошибка загрузки",
         description: "Не удалось загрузить список поставщиков",
@@ -191,7 +192,7 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
         setTemplates([]);
       }
     } catch (error) {
-      console.error("❌ Ошибка загрузки шаблонов:", error);
+      logger.error("❌ Ошибка загрузки шаблонов:", error);
       setTemplates([]);
     } finally {
       setIsLoading(false);
@@ -298,7 +299,7 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
 
       onClose();
     } catch (error) {
-      console.error('Error generating proforma:', error);
+      logger.error('Error generating proforma:', error);
       toast({
         title: "❌ Ошибка генерации",
         description: "Не удалось создать проформу. Попробуйте позже.",

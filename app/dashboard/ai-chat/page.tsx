@@ -1,17 +1,18 @@
 "use client"
 
+import { logger } from "@/src/shared/lib/logger"
+
 // 🔥 FORCED UPDATE v2.0 - TIMESTAMP: 1734525000000
 // 🚀 AI CHAT WITH BOTHUB API INTEGRATION
 
 import React, { useState, useRef, useEffect, useCallback, memo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { 
-  MessageCircle, 
-  Plus, 
-  Search, 
+import {
+  MessageCircle,
+  Plus,
+  Search,
   Bot,
   Building2,
-  Send, 
+  Send,
   Paperclip,
   Smile,
   MessageSquare,
@@ -21,20 +22,20 @@ import {
   Trash
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabaseClient"
+import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useChatRooms } from "@/hooks/useChatRooms"
 import { useChat } from "@/hooks/useChat"
-// import { useChatRoomsPolling } from "@/hooks/useChatRoomsPolling" // ОТКЛЮЧЕН для исправления ошибок
 
 // Импортируем типы из lib
 import type { ChatMessage, ChatRoom } from '@/lib/types/chat'
-
 // 🚀 МЕМОИЗИРОВАННЫЙ компонент комнаты для предотвращения ненужных перерендеров
 const ChatRoomItem = memo(({ 
   room, 
@@ -393,7 +394,7 @@ export default function ChatHubPage() {
       }, 500);
       
     } catch (error) {
-      console.error('❌ Ошибка обновления комнат:', error);
+      logger.error('❌ Ошибка обновления комнат:', error);
       setShowUpdateIndicator(false);
     } finally {
       setTimeout(() => {
@@ -410,11 +411,11 @@ export default function ChatHubPage() {
   // 🔄 УЛЬТРА-СТАБИЛЬНОЕ переключение комнат БЕЗ телепортации
   const handleRoomSelect = useCallback((room: any, immediate: boolean = false) => {
     if (selectedRoom?.id === room.id) {
-      console.log("🚫 Попытка переключения на ту же комнату:", room.name);
+      logger.info("🚫 Попытка переключения на ту же комнату:", room.name);
       return;
     }
     
-    console.log("🔄 ПЕРЕКЛЮЧЕНИЕ КОМНАТЫ:", {
+    logger.info("🔄 ПЕРЕКЛЮЧЕНИЕ КОМНАТЫ:", {
       from: selectedRoom?.name || 'нет',
       to: room.name,
       immediate
@@ -438,7 +439,7 @@ export default function ChatHubPage() {
       // Разблокируем через увеличенное время для полной стабильности
       setTimeout(() => {
         setIsManuallySelectingRoom(false);
-        console.log("✅ Комната переключена и разблокирована:", room.name);
+        logger.info("✅ Комната переключена и разблокирована:", room.name);
       }, 800); // Увеличенное время блокировки
       
     }, 100); // Небольшая задержка для стабильности
@@ -473,7 +474,7 @@ export default function ChatHubPage() {
       
       // Проверяем не было ли недавно обновления
       if (now - lastFocusUpdate < FOCUS_DEBOUNCE_TIME) {
-        console.log('🚫 Блокировка частых обновлений при фокусе');
+        logger.info('🚫 Блокировка частых обновлений при фокусе');
         return;
       }
 
@@ -482,7 +483,7 @@ export default function ChatHubPage() {
       }
 
              focusDebounceTimer = setTimeout(() => {
-         console.log('🔄 Window focused - умное обновление комнат');
+         logger.info('🔄 Window focused - умное обновление комнат');
          loadRoomsWithIndicator();
          lastFocusUpdate = Date.now();
        }, 1000); // 1 секунда задержки для стабильности
@@ -493,7 +494,7 @@ export default function ChatHubPage() {
     // 🆕 НОВОЕ: Очень редкое обновление в фоне (2 минуты)
     const interval = setInterval(() => {
              if (!document.hidden && Date.now() - lastFocusUpdate > 120000) { // Только если давно не обновлялось
-         console.log('🔄 Фоновое обновление комнат');
+         logger.info('🔄 Фоновое обновление комнат');
          loadRoomsWithIndicator();
        }
     }, 120000); // 2 минуты
@@ -517,14 +518,14 @@ export default function ChatHubPage() {
     // Автоскролл при новых сообщениях или когда пользователь отправил сообщение
     if (messages.length === 0) return;
 
-    console.log('📜 Автоскролл:', { messageCount: messages.length, userJustSent: userJustSentMessage });
+    logger.info('📜 Автоскролл:', { messageCount: messages.length, userJustSent: userJustSentMessage });
     
     // Простой и стабильный скролл
     const scrollToBottom = () => {
       if (messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         setUserJustSentMessage(false);
-        console.log('✅ Автоскролл завершен');
+        logger.info('✅ Автоскролл завершен');
       }
     };
 
@@ -536,17 +537,17 @@ export default function ChatHubPage() {
   useEffect(() => {
     const fetchUserAndProjects = async () => {
       try {
-        console.log("🔍 Получение пользователя...");
+        logger.info("🔍 Получение пользователя...");
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         
         if (userError) {
-          console.error("❌ Ошибка получения пользователя:", userError);
+          logger.error("❌ Ошибка получения пользователя:", userError);
           return;
         }
 
         if (user) {
           setUserId(user.id);
-          console.log("✅ Пользователь получен:", user.id);
+          logger.info("✅ Пользователь получен:", user.id);
           
           // Упрощенная загрузка проектов без inner join
           try {
@@ -557,7 +558,7 @@ export default function ChatHubPage() {
               .order('created_at', { ascending: false });
 
             if (projectsError) {
-              console.warn("⚠️ Проекты не загружены:", projectsError.message);
+              logger.warn("⚠️ Проекты не загружены:", projectsError.message);
               setProjects([]); // Устанавливаем пустой массив при ошибке
             } else if (projectsData) {
               const transformedProjects = projectsData.map(project => ({
@@ -573,15 +574,15 @@ export default function ChatHubPage() {
                   : getStatusText(project.status || 'draft')
               }));
               setProjects(transformedProjects);
-              console.log("✅ Проекты загружены:", transformedProjects.length);
+              logger.info("✅ Проекты загружены:", transformedProjects.length);
             }
           } catch (projectError) {
-            console.warn("⚠️ Ошибка загрузки проектов, устанавливаем пустой список:", projectError);
+            logger.warn("⚠️ Ошибка загрузки проектов, устанавливаем пустой список:", projectError);
             setProjects([]);
           }
         }
       } catch (error) {
-        console.error("💥 Неожиданная ошибка:", error);
+        logger.error("💥 Неожиданная ошибка:", error);
       }
     };
 
@@ -597,7 +598,7 @@ export default function ChatHubPage() {
   //     const hasAIRoom = rooms.some(room => room.room_type === 'ai');
       
   //     if (!hasAIRoom) {
-  //       console.log("🤖 Создаем AI комнату при первом входе...");
+  //       logger.info("🤖 Создаем AI комнату при первом входе...");
   //       try {
   //         await createRoom({
   //           user_id: userId,
@@ -605,9 +606,9 @@ export default function ChatHubPage() {
   //           name: 'AI Помощник',
   //           description: 'Умный ассистент для закупок'
   //         });
-  //         console.log("✅ AI комната создана");
+  //         logger.info("✅ AI комната создана");
   //       } catch (error) {
-  //         console.error("❌ Ошибка создания AI комнаты:", error);
+  //         logger.error("❌ Ошибка создания AI комнаты:", error);
   //       }
   //     }
   //   };
@@ -619,7 +620,7 @@ export default function ChatHubPage() {
   const [initialRoomsLoaded, setInitialRoomsLoaded] = useState(false);
   
   useEffect(() => {
-    console.log("🔍 Auto-select effect triggered:", {
+    logger.info("🔍 Auto-select effect triggered:", {
       roomsCount: rooms.length,
       selectedRoom: selectedRoom?.id,
       initialLoaded: initialRoomsLoaded,
@@ -635,7 +636,7 @@ export default function ChatHubPage() {
         !isManuallySelectingRoom &&
         !roomsLoading // ⚡ НЕ выбираем комнату пока идет загрузка
     ) {
-      console.log("🎯 БЕЗОПАСНЫЙ автовыбор первой комнаты:", rooms[0].name);
+      logger.info("🎯 БЕЗОПАСНЫЙ автовыбор первой комнаты:", rooms[0].name);
       
       // 🚫 Блокируем повторные срабатывания
       setIsManuallySelectingRoom(true);
@@ -675,7 +676,7 @@ export default function ChatHubPage() {
       messageToSend === lastSentMessage && 
       currentTime - lastSentTime < DEBOUNCE_TIME
     ) {
-      console.log('🚫 Блокировка дублированной отправки:', messageToSend);
+      logger.info('🚫 Блокировка дублированной отправки:', messageToSend);
       return;
     }
     
@@ -686,7 +687,7 @@ export default function ChatHubPage() {
     }
     
     try {
-      console.log('📤 Отправка сообщения с защитой:', messageToSend);
+      logger.info('📤 Отправка сообщения с защитой:', messageToSend);
       
       // Сохраняем информацию о последней отправке
       setLastSentMessage(messageToSend);
@@ -710,11 +711,11 @@ export default function ChatHubPage() {
       sendingTimeoutRef.current = setTimeout(() => {
         setLastSentMessage("");
         setLastSentTime(0);
-        console.log('✅ Сброс защиты от дублирования');
+        logger.info('✅ Сброс защиты от дублирования');
       }, DEBOUNCE_TIME);
       
     } catch (error) {
-      console.error('❌ Ошибка отправки сообщения:', error);
+      logger.error('❌ Ошибка отправки сообщения:', error);
       // Если ошибка - возвращаем сообщение обратно и сбрасываем защиту
       setMessage(messageToSend);
       setLastSentMessage("");
@@ -725,7 +726,7 @@ export default function ChatHubPage() {
   // Создание AI комнаты - УЛЬТРА-ОПТИМИЗИРОВАННАЯ ВЕРСИЯ БЕЗ RACE CONDITION
   const handleCreateAIRoom = useCallback(async () => {
     if (!userId || isCreatingRoom) {
-      console.log("🚫 Создание AI комнаты заблокировано");
+      logger.info("🚫 Создание AI комнаты заблокировано");
       return;
     }
     
@@ -733,7 +734,7 @@ export default function ChatHubPage() {
     setIsManuallySelectingRoom(true); // 🔒 Блокируем автовыбор
     
     try {
-      console.log("🤖 Создание AI комнаты...");
+      logger.info("🤖 Создание AI комнаты...");
       
       const newRoom = await createRoom({
         user_id: userId,
@@ -742,13 +743,13 @@ export default function ChatHubPage() {
         description: 'Умный помощник для закупок'
       });
       
-      console.log("✅ AI комната создана:", newRoom.name);
+      logger.info("✅ AI комната создана:", newRoom.name);
       
       // 🚀 МГНОВЕННОЕ переключение БЕЗ конфликтов (используем immediate=true)
       handleRoomSelect(newRoom, true);
       
     } catch (error) {
-      console.error('❌ Ошибка создания AI комнаты:', error);
+      logger.error('❌ Ошибка создания AI комнаты:', error);
       setIsManuallySelectingRoom(false); // Разблокируем при ошибке
     } finally {
       setIsCreatingRoom(false);
@@ -758,7 +759,7 @@ export default function ChatHubPage() {
   // Создание проектной комнаты - УЛЬТРА-ОПТИМИЗИРОВАННАЯ ВЕРСИЯ БЕЗ RACE CONDITION
   const handleCreateProjectRoom = useCallback(async (projectId: string) => {
     if (!userId || isCreatingRoom) {
-      console.log("🚫 Создание проектной комнаты заблокировано");
+      logger.info("🚫 Создание проектной комнаты заблокировано");
       return;
     }
     
@@ -769,7 +770,7 @@ export default function ChatHubPage() {
     setIsManuallySelectingRoom(true); // 🔒 Блокируем автовыбор
     
     try {
-      console.log("🏗️ Создание проектной комнаты...");
+      logger.info("🏗️ Создание проектной комнаты...");
       
       const newRoom = await createRoom({
         user_id: userId,
@@ -779,13 +780,13 @@ export default function ChatHubPage() {
         project_id: projectId
       });
       
-      console.log("✅ Проектная комната создана:", newRoom.name);
+      logger.info("✅ Проектная комната создана:", newRoom.name);
       
       // 🚀 МГНОВЕННОЕ переключение БЕЗ конфликтов (используем immediate=true)
       handleRoomSelect(newRoom, true);
       
     } catch (error) {
-      console.error('❌ Ошибка создания проектной комнаты:', error);
+      logger.error('❌ Ошибка создания проектной комнаты:', error);
       setIsManuallySelectingRoom(false); // Разблокируем при ошибке
     } finally {
       setIsCreatingRoom(false);
@@ -808,9 +809,9 @@ export default function ChatHubPage() {
         }
         
         // УБИРАЕМ forceUpdateKey - хук useChatRooms сам обновит список
-        console.log("✅ Комната удалена:", room.name);
+        logger.info("✅ Комната удалена:", room.name);
       } catch (error) {
-        console.error('❌ Ошибка удаления комнаты:', error);
+        logger.error('❌ Ошибка удаления комнаты:', error);
         alert('Ошибка удаления комнаты');
       }
     }
@@ -821,7 +822,7 @@ export default function ChatHubPage() {
     if (!selectedRoom || selectedRoom.room_type !== 'ai') {
       // Создаем новую AI комнату если текущая не AI
       if (isCreatingRoom) {
-        console.log("🚫 Уже создаем комнату - быстрый промпт отклонен");
+        logger.info("🚫 Уже создаем комнату - быстрый промпт отклонен");
         return;
       }
       
@@ -846,7 +847,7 @@ export default function ChatHubPage() {
         setTimeout(() => handleSendMessage(), 200);
         
       } catch (error) {
-        console.error('❌ Ошибка создания AI комнаты:', error);
+        logger.error('❌ Ошибка создания AI комнаты:', error);
         setIsManuallySelectingRoom(false); // Разблокируем при ошибке
       } finally {
         setIsCreatingRoom(false);
