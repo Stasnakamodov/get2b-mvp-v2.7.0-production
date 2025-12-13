@@ -9,18 +9,21 @@ export async function GET(request: NextRequest) {
   try {
     // Получаем параметры запроса
     const { searchParams } = new URL(request.url)
-    const searchQuery = searchParams.get('search') || ''
-    const limit = parseInt(searchParams.get('limit') || '100')
+    const searchQuery = searchParams.get('search') || null
+    const limit = parseInt(searchParams.get('limit') || '2000')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    console.log('[API] Fetching products with params:', { limit, offset, searchQuery })
+    console.log('[API] Fetching ALL products with RPC, params:', { limit, offset, searchQuery })
 
-    // Получаем товары напрямую из таблицы
-    const { data: rawData, error } = await supabase
-      .from('catalog_verified_products')
-      .select('*')
-      .limit(limit)
-      .range(offset, offset + limit - 1)
+    // 🔥 FIX: Используем RPC функцию вместо прямого запроса
+    // Это обходит лимит Supabase REST API в 1000 строк
+    const { data: rawData, error } = await supabase.rpc('get_products_by_category', {
+      category_name: null, // null = все категории
+      user_id_param: null,
+      search_query: searchQuery,
+      limit_param: limit,
+      offset_param: offset
+    })
 
     if (error) {
       console.error('[API] Database error:', error)
@@ -38,46 +41,22 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log('[API] Fetched products:', rawData?.length || 0)
+    // RPC возвращает JSONB array напрямую
+    let products = []
+    if (Array.isArray(rawData)) {
+      products = rawData
+    } else if (rawData && typeof rawData === 'string') {
+      products = JSON.parse(rawData)
+    } else {
+      products = []
+    }
 
-    // Парсим результаты
-    const products = (rawData || []).map((item: any) => ({
-      id: item.id,
-      product_name: item.product_name || item.name,
-      description: item.description,
-      price: item.price,
-      currency: item.currency || 'RUB',
-      min_order: item.min_order,
-      in_stock: item.in_stock !== false, // по умолчанию true
-      image_url: item.image_url,
-      images: item.images || [],
-      item_code: item.item_code,
-      item_name: item.item_name,
-      category: item.category,
-      specifications: item.specifications || {},
-      supplier_id: item.supplier_id || 'verified-supplier',
-      supplier_name: item.supplier_name || 'Аккредитованный поставщик',
-      supplier_company_name: item.supplier_company_name || item.supplier_name || 'Аккредитованный поставщик',
-      supplier_country: item.supplier_country || 'Россия',
-      supplier_city: item.supplier_city || 'Москва',
-      supplier_email: item.supplier_email,
-      supplier_phone: item.supplier_phone,
-      supplier_website: item.supplier_website,
-      supplier_rating: item.supplier_rating || 4.5,
-      supplier_reviews: item.supplier_reviews || 0,
-      supplier_projects: item.supplier_projects || 0,
-      supplier_verification_status: item.supplier_verification_status || 'verified',
-      supplier_main_category: item.supplier_main_category || item.category,
-      supplier_room_type: item.supplier_room_type || 'verified',
-      room_type: item.supplier_room_type || 'verified', // дублируем для совместимости
-      room_icon: '🏢',
-      room_description: 'Аккредитованный поставщик'
-    }))
+    console.log('[API] Fetched products via RPC:', products.length)
 
     // Подсчитываем статистику
     const uniqueSuppliers = new Set(products.map((p: any) => p.supplier_id))
-    const verifiedProducts = products.filter((p: any) => p.supplier_room_type === 'verified').length
-    const userProducts = products.filter((p: any) => p.supplier_room_type === 'user').length
+    const verifiedProducts = products.filter((p: any) => p.room_type === 'verified').length
+    const userProducts = products.filter((p: any) => p.room_type === 'user').length
 
     const response = NextResponse.json({
       success: true,
