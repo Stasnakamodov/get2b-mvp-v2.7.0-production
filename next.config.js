@@ -77,12 +77,11 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      // Supabase Storage для товаров
       {
         protocol: 'https',
-        hostname: 'ejkhdhexkadecpbjjmsz.supabase.co',
+        hostname: 'images.unsplash.com',
         port: '',
-        pathname: '/storage/v1/object/public/**',
+        pathname: '/**',
       },
       {
         protocol: 'https',

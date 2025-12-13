@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 export async function POST() {
@@ -51,7 +52,7 @@ export async function POST() {
     });
     
   } catch (error) {
-    console.error("Ошибка:", error);
+    logger.error("Ошибка:", error);
     return NextResponse.json({
       success: false,
       error: "Ошибка проверки таблиц",

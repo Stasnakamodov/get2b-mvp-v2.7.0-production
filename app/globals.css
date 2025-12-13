@@ -81,3 +81,32 @@ body {
 .my-rotate-y-180 {
   transform: rotateY(180deg);
 }
+
+/* Animated gradient shift for catalog icon */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-shift {
+  background: linear-gradient(
+    90deg,
+    #6366f1,
+    #8b5cf6,
+    #a855f7,
+    #f97316,
+    #fb923c,
+    #fdba74,
+    #6366f1
+  );
+  background-size: 300% 100%;
+  animation: gradient-shift 8s linear infinite;
+  will-change: background-position;
+}

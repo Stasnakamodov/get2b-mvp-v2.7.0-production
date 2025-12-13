@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
-import { CATEGORY_CERTIFICATIONS } from '@/components/catalog-categories-and-certifications';
+import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config';
 
 // ТИПЫ ДАННЫХ ПОСТАВЩИКА
 export interface SupplierData {

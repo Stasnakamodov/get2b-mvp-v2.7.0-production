@@ -1,4 +1,5 @@
 // ⚠️ ОБНОВЛЕНО: Теперь использует новый ChatBotService
+import { logger } from "@/src/shared/lib/logger";
 
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
@@ -13,7 +14,7 @@ function getChatBotService(): ChatBotService {
     try {
       chatBotService = new ChatBotService();
     } catch (error) {
-      console.warn("❌ Не удалось инициализировать ChatBotService:", error);
+      logger.warn("❌ Не удалось инициализировать ChatBotService:", error);
       throw error;
     }
   }
@@ -23,29 +24,29 @@ function getChatBotService(): ChatBotService {
 // POST: Webhook для чат-бота Get2B ChatHub Assistant (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 export async function POST(request: NextRequest) {
   // Принудительно выводим в консоль что webhook получен
-  console.error('🚨 WEBHOOK CALL DETECTED! Time:', new Date().toISOString());
+  logger.error('🚨 WEBHOOK CALL DETECTED! Time:', new Date().toISOString());
   
   try {
     const body = await request.json();
     
-    console.error('🤖 WEBHOOK RECEIVED - FULL PAYLOAD:');
-    console.error('====================================');
-    console.error(JSON.stringify(body, null, 2));
-    console.error('====================================');
+    logger.error('🤖 WEBHOOK RECEIVED - FULL PAYLOAD:');
+    logger.error('====================================');
+    logger.error(JSON.stringify(body, null, 2));
+    logger.error('====================================');
 
     // Обрабатываем callback queries (нажатия кнопок)
     if (body.callback_query) {
-      console.log('📞 CALLBACK QUERY detected - handling...');
+      logger.info('📞 CALLBACK QUERY detected - handling...');
       return await handleCallbackQuery(body.callback_query);
     }
 
     // Проверяем что это сообщение
     if (!body.message) {
-      console.log('❌ NO MESSAGE in payload - exiting');
+      logger.info('❌ NO MESSAGE in payload - exiting');
       return NextResponse.json({ success: true, message: "No message to process" });
     }
 
-    console.log('✅ MESSAGE found in payload - processing...');
+    logger.info('✅ MESSAGE found in payload - processing...');
 
     const message = body.message;
     const chatId = message.chat.id;
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     const userId = message.from.id;
     const userName = message.from.first_name || 'Пользователь';
 
-    console.log('📩 Processing chat bot message:', {
+    logger.info('📩 Processing chat bot message:', {
       chatId,
       userId,
       userName,
@@ -64,10 +65,10 @@ export async function POST(request: NextRequest) {
 
     // Обрабатываем команды
     if (text.startsWith('/')) {
-      console.log('🔧 COMMAND detected - handling command:', text);
+      logger.info('🔧 COMMAND detected - handling command:', text);
       await handleChatBotCommand(chatId, text, userId, userName);
     } else {
-      console.log('💬 REGULAR MESSAGE detected - handling as manager reply:', text);
+      logger.info('💬 REGULAR MESSAGE detected - handling as manager reply:', text);
       // Обычное сообщение - возможно ответ менеджера клиенту
       await handleManagerReply(message, chatId, text, userId, userName);
     }
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, message: "Chat bot message processed" });
 
   } catch (error) {
-    console.error('💥 Chat bot webhook error:', error);
+    logger.error('💥 Chat bot webhook error:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }
@@ -85,35 +86,35 @@ export async function POST(request: NextRequest) {
 
 // Обработка команд чат-бота
 async function handleChatBotCommand(chatId: number, command: string, userId: number, userName: string) {
-  console.log("🔄 ОБНОВЛЕНО: handleChatBotCommand - использует новый ChatBotService");
+  logger.info("🔄 ОБНОВЛЕНО: handleChatBotCommand - использует новый ChatBotService");
 
   try {
     const service = getChatBotService();
     const responseText = service.getCommandResponse(command, userName);
     
     await service.sendMessage(chatId, responseText);
-    console.log("✅ Команда обработана через ChatBotService");
+    logger.info("✅ Команда обработана через ChatBotService");
   } catch (error) {
-    console.error('❌ Ошибка обработки команды:', error);
+    logger.error('❌ Ошибка обработки команды:', error);
   }
 }
 
 // Обработка ответов менеджеров клиентам (ULTRA DEBUG VERSION)
 async function handleManagerReply(message: any, chatId: number, text: string, userId: number, userName: string) {
-  console.log("💬 ULTRA DEBUG: handleManagerReply started");
-  console.log("📝 ULTRA DEBUG: Message text:", text);
-  console.log("👤 ULTRA DEBUG: User:", { userId, userName, chatId });
-  console.log("🔍 ULTRA DEBUG: Full message object:", JSON.stringify(message, null, 2));
+  logger.info("💬 ULTRA DEBUG: handleManagerReply started");
+  logger.info("📝 ULTRA DEBUG: Message text:", text);
+  logger.info("👤 ULTRA DEBUG: User:", { userId, userName, chatId });
+  logger.info("🔍 ULTRA DEBUG: Full message object:", JSON.stringify(message, null, 2));
   
   let webChatMessageSaved = false;
   
   try {
     // Проверяем, есть ли реплай на сообщение о новом чате
     const replyToMessage = message.reply_to_message;
-    console.log("🔍 DEBUG: Reply to message exists:", !!replyToMessage);
+    logger.info("🔍 DEBUG: Reply to message exists:", !!replyToMessage);
     
     if (replyToMessage?.text) {
-      console.log("📄 DEBUG: Reply text:", replyToMessage.text);
+      logger.info("📄 DEBUG: Reply text:", replyToMessage.text);
     }
     
     let roomId = null;
@@ -122,14 +123,14 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
     if (replyToMessage?.text) {
       // Ищем ID проекта в тексте реплая
       const projectMatch = replyToMessage.text.match(/🆔 Проект: ([a-f0-9-]+)/);
-      console.log("🎯 DEBUG: Project regex match:", projectMatch);
+      logger.info("🎯 DEBUG: Project regex match:", projectMatch);
       
       if (projectMatch) {
         projectId = projectMatch[1];
-        console.log("✅ ULTRA DEBUG: Found project ID:", projectId);
+        logger.info("✅ ULTRA DEBUG: Found project ID:", projectId);
 
         // Ищем комнату чата по проекту
-        console.log("🔍 ULTRA DEBUG: Searching for room with project_id:", projectId);
+        logger.info("🔍 ULTRA DEBUG: Searching for room with project_id:", projectId);
         
         let room = null;
         let roomError = null;
@@ -146,31 +147,31 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
           room = result.data;
           roomError = result.error;
 
-          console.log("📦 ULTRA DEBUG: Room query result:", { room, error: roomError });
-          console.log("🌐 ULTRA DEBUG: Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+          logger.info("📦 ULTRA DEBUG: Room query result:", { room, error: roomError });
+          logger.info("🌐 ULTRA DEBUG: Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
         } catch (dbError) {
-          console.error("💥 ULTRA DEBUG: Database connection error:", dbError);
+          logger.error("💥 ULTRA DEBUG: Database connection error:", dbError);
           roomError = dbError;
         }
 
         if (room) {
           roomId = room.id;
-          console.log("✅ DEBUG: Found chat room:", { roomId, roomName: room.name, userId: room.user_id });
+          logger.info("✅ DEBUG: Found chat room:", { roomId, roomName: room.name, userId: room.user_id });
         } else {
-          console.log("❌ DEBUG: No room found for project:", projectId);
+          logger.info("❌ DEBUG: No room found for project:", projectId);
           if (roomError) {
-            console.log("🚨 DEBUG: Room query error:", roomError);
+            logger.info("🚨 DEBUG: Room query error:", roomError);
           }
         }
       } else {
-        console.log("❌ DEBUG: No project ID found in reply text");
+        logger.info("❌ DEBUG: No project ID found in reply text");
       }
     } else {
-      console.log("❌ DEBUG: No reply_to_message.text");
+      logger.info("❌ DEBUG: No reply_to_message.text");
     }
 
     if (roomId) {
-      console.log("💾 DEBUG: Attempting to save message to web chat...");
+      logger.info("💾 DEBUG: Attempting to save message to web chat...");
       
       // 🚀 ОТПРАВЛЯЕМ СООБЩЕНИЕ В ВЕБ-ЧАТ (с улучшенной обработкой ошибок)
       const messageData = {
@@ -182,7 +183,7 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
         message_type: 'text' as const
       };
       
-      console.log("💾 DEBUG: Message data to save:", messageData);
+      logger.info("💾 DEBUG: Message data to save:", messageData);
       
       const { data: newMessage, error } = await supabaseService
         .from('chat_messages')
@@ -190,14 +191,14 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
         .select()
         .single();
 
-      console.log("📊 DEBUG: Database insert result:", { newMessage, error });
+      logger.info("📊 DEBUG: Database insert result:", { newMessage, error });
 
       if (error) {
-        console.error('❌ DEBUG: Database save error:', error);
+        logger.error('❌ DEBUG: Database save error:', error);
         throw new Error(`Ошибка сохранения: ${error.message}`);
       } else {
         webChatMessageSaved = true;
-        console.log('✅ DEBUG: Message saved successfully:', {
+        logger.info('✅ DEBUG: Message saved successfully:', {
           messageId: newMessage.id,
           roomId: newMessage.room_id,
           content: newMessage.content,
@@ -209,41 +210,41 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
       try {
         const service = getChatBotService();
         await service.sendMessage(chatId, `✅ Ваш ответ отправлен клиенту в веб-чат:\n\n"${text}"`);
-        console.log("✅ DEBUG: Confirmation sent to Telegram");
+        logger.info("✅ DEBUG: Confirmation sent to Telegram");
       } catch (telegramError) {
-        console.warn("⚠️ DEBUG: Failed to send Telegram confirmation (non-critical):", telegramError);
+        logger.warn("⚠️ DEBUG: Failed to send Telegram confirmation (non-critical):", telegramError);
         // НЕ ПРЕРЫВАЕМ выполнение - главное что сообщение сохранено в веб-чат!
       }
       
     } else {
-      console.log("❌ DEBUG: No room found - cannot save message");
+      logger.info("❌ DEBUG: No room found - cannot save message");
       
       // Безопасная отправка уведомления об ошибке
       try {
         const service = getChatBotService();
         await service.sendMessage(chatId, `❌ Не удалось найти комнату чата для отправки ответа.\n\nОтвечайте только на уведомления о новых сообщениях в чатах проектов.`);
       } catch (telegramError) {
-        console.warn("⚠️ DEBUG: Failed to send error to Telegram:", telegramError);
+        logger.warn("⚠️ DEBUG: Failed to send error to Telegram:", telegramError);
       }
     }
     
   } catch (error) {
-    console.error('❌ DEBUG: handleManagerReply error:', error);
+    logger.error('❌ DEBUG: handleManagerReply error:', error);
     
     // Безопасная отправка уведомления об ошибке
     try {
       const service = getChatBotService();
       await service.sendMessage(chatId, `❌ Ошибка отправки ответа: ${error instanceof Error ? error.message : String(error)}`);
     } catch (telegramError) {
-      console.warn("⚠️ DEBUG: Failed to send error to Telegram:", telegramError);
+      logger.warn("⚠️ DEBUG: Failed to send error to Telegram:", telegramError);
     }
   }
 
   // 🎯 ГЛАВНОЕ: Возвращаем успех если сообщение сохранено в веб-чат
   if (webChatMessageSaved) {
-    console.log("🎉 DEBUG: SUCCESS - Message saved to web chat!");
+    logger.info("🎉 DEBUG: SUCCESS - Message saved to web chat!");
   } else {
-    console.log("💥 DEBUG: FAILED - Message NOT saved to web chat");
+    logger.info("💥 DEBUG: FAILED - Message NOT saved to web chat");
   }
 }
 
@@ -279,7 +280,7 @@ async function getChatHubStatus(): Promise<string> {
 👥 Активных участников: ${activeParticipants}`;
 
   } catch (error) {
-    console.error('Error getting chat status:', error);
+    logger.error('Error getting chat status:', error);
     return '⚠️ Ошибка получения статистики';
   }
 }
@@ -312,7 +313,7 @@ async function getActiveProjectChats(): Promise<string> {
     ).join('\n\n');
 
   } catch (error) {
-    console.error('Error getting project chats:', error);
+    logger.error('Error getting project chats:', error);
     return '⚠️ Ошибка получения списка чатов';
   }
 }
@@ -326,7 +327,7 @@ async function handleCallbackQuery(callbackQuery: any) {
     const data = callbackQuery.data;
     const service = getChatBotService();
     
-    console.log("💬 Обработка callback query чат-бота:", data);
+    logger.info("💬 Обработка callback query чат-бота:", data);
 
     // Быстрые ответы в чате
     if (data.startsWith("quick_reply_")) {
@@ -348,13 +349,13 @@ async function handleCallbackQuery(callbackQuery: any) {
             
         await service.answerCallbackQuery(callbackQuery.id, responseText);
 
-        console.log("💬 Быстрый ответ отправлен в чат:", roomId, replyType);
+        logger.info("💬 Быстрый ответ отправлен в чат:", { roomId, replyType });
         return NextResponse.json({ 
           ok: true, 
           message: `Quick reply sent to chat ${roomId}` 
         });
       } catch (error: any) {
-        console.error("❌ Chat quick reply error:", error);
+        logger.error("❌ Chat quick reply error:", error);
         return NextResponse.json({ ok: false, error: error.message });
       }
     }
@@ -385,13 +386,13 @@ async function handleCallbackQuery(callbackQuery: any) {
 
         await service.answerCallbackQuery(callbackQuery.id, "📋 Детали проекта отправлены");
 
-        console.log("📋 Детали проекта отправлены:", projectId);
+        logger.info("📋 Детали проекта отправлены:", projectId);
         return NextResponse.json({ 
           ok: true, 
           message: `Project details sent for ${projectId}` 
         });
       } catch (error: any) {
-        console.error("❌ Project details error:", error);
+        logger.error("❌ Project details error:", error);
         return NextResponse.json({ ok: false, error: error.message });
       }
     }
@@ -469,7 +470,7 @@ async function handleCallbackQuery(callbackQuery: any) {
               detailsText += `\n`;
             }
           } catch (parseError) {
-            console.log('Ошибка парсинга profile_data:', parseError);
+            logger.info('Ошибка парсинга profile_data:', parseError);
           }
         }
         
@@ -500,7 +501,7 @@ async function handleCallbackQuery(callbackQuery: any) {
               });
             }
           } catch (parseError) {
-            console.log('Ошибка парсинга products:', parseError);
+            logger.info('Ошибка парсинга products:', parseError);
           }
         }
         
@@ -518,7 +519,7 @@ async function handleCallbackQuery(callbackQuery: any) {
               detailsText += `• Точность данных: ${legalData.confirmAccuracy ? 'Подтверждено' : 'Не подтверждено'}\n\n`;
             }
           } catch (parseError) {
-            console.log('Ошибка парсинга legal_confirmation:', parseError);
+            logger.info('Ошибка парсинга legal_confirmation:', parseError);
           }
         }
         
@@ -568,7 +569,7 @@ async function handleCallbackQuery(callbackQuery: any) {
           message: `Accreditation details sent for ${applicationId}` 
         });
       } catch (error: any) {
-        console.error("❌ Accreditation view error:", error);
+        logger.error("❌ Accreditation view error:", error);
         return NextResponse.json({ ok: false, error: error.message });
       }
     }
@@ -656,7 +657,7 @@ async function handleCallbackQuery(callbackQuery: any) {
           .single();
 
         if (createError) {
-          console.error("❌ Ошибка создания поставщика в оранжевом кабинете:", createError);
+          logger.error("❌ Ошибка создания поставщика в оранжевом кабинете:", createError);
           await service.answerCallbackQuery(callbackQuery.id, "❌ Ошибка создания поставщика", true);
           return NextResponse.json({ ok: false, error: createError.message });
         }
@@ -695,7 +696,7 @@ async function handleCallbackQuery(callbackQuery: any) {
                 .insert(verifiedProducts);
             }
           } catch (productError) {
-            console.warn("⚠️ Ошибка копирования товаров:", productError);
+            logger.warn("⚠️ Ошибка копирования товаров:", productError);
           }
         }
 
@@ -715,7 +716,7 @@ async function handleCallbackQuery(callbackQuery: any) {
           verified_supplier_id: verifiedSupplier.id
         });
       } catch (error: any) {
-        console.error("❌ Accreditation approve error:", error);
+        logger.error("❌ Accreditation approve error:", error);
         return NextResponse.json({ ok: false, error: error.message });
       }
     }
@@ -767,7 +768,7 @@ async function handleCallbackQuery(callbackQuery: any) {
           message: `Accreditation rejected for ${applicationId}` 
         });
       } catch (error: any) {
-        console.error("❌ Accreditation reject error:", error);
+        logger.error("❌ Accreditation reject error:", error);
         return NextResponse.json({ ok: false, error: error.message });
       }
     }
@@ -858,7 +859,7 @@ async function handleCallbackQuery(callbackQuery: any) {
             messageText += `🆔 ID заявки: ${filesData.applicationId}\n\n`;
             
             if (filesData.documents && filesData.documents.length > 0) {
-              console.log("🔍 DEBUG: Найдено документов:", filesData.documents.length);
+              logger.info("🔍 DEBUG: Найдено документов:", filesData.documents.length);
               
               filesData.documents.forEach((doc: any, index: number) => {
                 messageText += `${index + 1}. ${doc.name}\n`;
@@ -871,7 +872,7 @@ async function handleCallbackQuery(callbackQuery: any) {
               // Отправляем документы в Telegram
               for (let docIndex = 0; docIndex < filesData.documents.length; docIndex++) {
                 const doc = filesData.documents[docIndex];
-                console.log("🔍 DEBUG: Обработка документа:", {
+                logger.info("🔍 DEBUG: Обработка документа:", {
                   name: doc.name,
                   hasUrl: !!doc.public_url,
                   url: doc.public_url
@@ -879,7 +880,7 @@ async function handleCallbackQuery(callbackQuery: any) {
                 
                 if (doc.public_url) {
                   try {
-                    console.log("📤 DEBUG: Отправляем документ через новый API");
+                    logger.info("📤 DEBUG: Отправляем документ через новый API");
                     
                     // Используем новый API для отправки документа
                     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/send-accreditation-legal-document?applicationId=${applicationId}&docIndex=${docIndex}&chatId=${callbackQuery.message.chat.id}`, {
@@ -889,25 +890,25 @@ async function handleCallbackQuery(callbackQuery: any) {
                     const result = await response.json();
                     
                     if (result.success) {
-                      console.log("✅ DEBUG: Документ отправлен успешно через новый API");
+                      logger.info("✅ DEBUG: Документ отправлен успешно через новый API");
                     } else {
-                      console.error("❌ DEBUG: Ошибка отправки документа через новый API:", result.error);
+                      logger.error("❌ DEBUG: Ошибка отправки документа через новый API:", result.error);
                       // Fallback: отправляем ссылку
                       await service.sendMessage(callbackQuery.message.chat.id, `🔗 Ссылка на документ: ${doc.public_url}`);
                     }
                   } catch (docError) {
-                    console.error("❌ DEBUG: Ошибка отправки документа:", docError);
+                    logger.error("❌ DEBUG: Ошибка отправки документа:", docError);
                     // Если не удалось отправить документ, отправляем ссылку
                     await service.sendMessage(callbackQuery.message.chat.id, `🔗 Ссылка на документ: ${doc.public_url}`);
                   }
                 } else {
-                  console.log("❌ DEBUG: Нет public_url для документа:", doc);
+                  logger.info("❌ DEBUG: Нет public_url для документа:", doc);
                   await service.sendMessage(callbackQuery.message.chat.id, `❌ Нет URL для документа: ${doc.name}`);
                 }
               }
             } else {
               messageText += `❌ Документы не найдены\n\n`;
-              console.log("❌ DEBUG: Документы не найдены в данных");
+              logger.info("❌ DEBUG: Документы не найдены в данных");
             }
 
             replyMarkup = {
@@ -954,7 +955,7 @@ async function handleCallbackQuery(callbackQuery: any) {
           message: `Files data sent for ${applicationId}` 
         });
       } catch (error: any) {
-        console.error("❌ Accreditation files error:", error);
+        logger.error("❌ Accreditation files error:", error);
         return NextResponse.json({ ok: false, error: error.message });
       }
     }
@@ -972,13 +973,13 @@ async function handleCallbackQuery(callbackQuery: any) {
       try {
         await service.answerCallbackQuery(callbackQuery.id, "📷 Загружаем изображения...");
         
-        console.log("🔍 DEBUG: Запрос изображений для товара:", { applicationId, productIndex });
+        logger.info("🔍 DEBUG: Запрос изображений для товара:", { applicationId, productIndex });
         
         // Получаем данные изображений товара
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/telegram/get-accreditation-files?applicationId=${applicationId}&type=product_images&productIndex=${productIndex}`);
         const result = await response.json();
         
-        console.log("🔍 DEBUG: Ответ API файлов:", JSON.stringify(result, null, 2));
+        logger.info("🔍 DEBUG: Ответ API файлов:", JSON.stringify(result, null, 2));
         
         if (!result.success) {
           await service.answerCallbackQuery(callbackQuery.id, "❌ Ошибка загрузки изображений", true);
@@ -986,7 +987,7 @@ async function handleCallbackQuery(callbackQuery: any) {
         }
 
         const filesData = result.data;
-        console.log("🔍 DEBUG: Данные файлов:", JSON.stringify(filesData, null, 2));
+        logger.info("🔍 DEBUG: Данные файлов:", JSON.stringify(filesData, null, 2));
         
         let messageText = `📷 ИЗОБРАЖЕНИЯ ТОВАРА\n\n`;
         messageText += `🏢 Поставщик: ${filesData.supplierName}\n`;
@@ -994,7 +995,7 @@ async function handleCallbackQuery(callbackQuery: any) {
         messageText += `📦 Товар: ${filesData.productName}\n\n`;
         
         if (filesData.images && filesData.images.length > 0) {
-          console.log("🔍 DEBUG: Найдено изображений:", filesData.images.length);
+          logger.info("🔍 DEBUG: Найдено изображений:", filesData.images.length);
           
           filesData.images.forEach((image: any, index: number) => {
             messageText += `${index + 1}. ${image.name}\n`;
@@ -1006,7 +1007,7 @@ async function handleCallbackQuery(callbackQuery: any) {
           // Отправляем изображения в Telegram
           for (let imageIndex = 0; imageIndex < filesData.images.length; imageIndex++) {
             const image = filesData.images[imageIndex];
-            console.log("🔍 DEBUG: Обработка изображения:", {
+            logger.info("🔍 DEBUG: Обработка изображения:", {
               name: image.name,
               hasUrl: !!image.public_url,
               url: image.public_url
@@ -1014,7 +1015,7 @@ async function handleCallbackQuery(callbackQuery: any) {
             
             if (image.public_url) {
               try {
-                console.log("📤 DEBUG: Отправляем изображение через новый API");
+                logger.info("📤 DEBUG: Отправляем изображение через новый API");
                 
                 // Используем новый API для отправки документа
                 const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/send-accreditation-document?applicationId=${applicationId}&productIndex=${productIndex}&imageIndex=${imageIndex}&chatId=${callbackQuery.message.chat.id}`, {
@@ -1024,25 +1025,25 @@ async function handleCallbackQuery(callbackQuery: any) {
                 const result = await response.json();
                 
                 if (result.success) {
-                  console.log("✅ DEBUG: Изображение отправлено успешно через новый API");
+                  logger.info("✅ DEBUG: Изображение отправлено успешно через новый API");
                 } else {
-                  console.error("❌ DEBUG: Ошибка отправки через новый API:", result.error);
+                  logger.error("❌ DEBUG: Ошибка отправки через новый API:", result.error);
                   // Fallback: отправляем ссылку
                   await service.sendMessage(callbackQuery.message.chat.id, `🔗 Ссылка на изображение: ${image.public_url}`);
                 }
               } catch (photoError) {
-                console.error("❌ DEBUG: Ошибка отправки изображения:", photoError);
+                logger.error("❌ DEBUG: Ошибка отправки изображения:", photoError);
                 // Если не удалось отправить фото, отправляем ссылку
                 await service.sendMessage(callbackQuery.message.chat.id, `🔗 Ссылка на изображение: ${image.public_url}`);
               }
             } else {
-              console.log("❌ DEBUG: Нет public_url для изображения:", image);
+              logger.info("❌ DEBUG: Нет public_url для изображения:", image);
               await service.sendMessage(callbackQuery.message.chat.id, `❌ Нет URL для изображения: ${image.name}`);
             }
           }
         } else {
           messageText += `❌ Изображения не найдены\n\n`;
-          console.log("❌ DEBUG: Изображения не найдены в данных");
+          logger.info("❌ DEBUG: Изображения не найдены в данных");
         }
 
         const replyMarkup = {
@@ -1058,7 +1059,7 @@ async function handleCallbackQuery(callbackQuery: any) {
           message: `Product images sent for ${applicationId}, product ${productIndex}` 
         });
       } catch (error: any) {
-        console.error("❌ Product images error:", error);
+        logger.error("❌ Product images error:", error);
         return NextResponse.json({ ok: false, error: error.message });
       }
     }
@@ -1072,13 +1073,13 @@ async function handleCallbackQuery(callbackQuery: any) {
       try {
         await service.answerCallbackQuery(callbackQuery.id, "📋 Загружаем сертификаты...");
         
-        console.log("🔍 DEBUG: Запрос сертификатов для товара:", { applicationId, productIndex });
+        logger.info("🔍 DEBUG: Запрос сертификатов для товара:", { applicationId, productIndex });
         
         // Получаем данные сертификатов товара
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/telegram/get-accreditation-files?applicationId=${applicationId}&type=product_certificates&productIndex=${productIndex}`);
         const result = await response.json();
         
-        console.log("🔍 DEBUG: Ответ API сертификатов:", JSON.stringify(result, null, 2));
+        logger.info("🔍 DEBUG: Ответ API сертификатов:", JSON.stringify(result, null, 2));
         
         if (!result.success) {
           await service.answerCallbackQuery(callbackQuery.id, "❌ Ошибка загрузки сертификатов", true);
@@ -1086,7 +1087,7 @@ async function handleCallbackQuery(callbackQuery: any) {
         }
 
         const filesData = result.data;
-        console.log("🔍 DEBUG: Данные сертификатов:", JSON.stringify(filesData, null, 2));
+        logger.info("🔍 DEBUG: Данные сертификатов:", JSON.stringify(filesData, null, 2));
         
         let messageText = `📋 СЕРТИФИКАТЫ ТОВАРА\n\n`;
         messageText += `🏢 Поставщик: ${filesData.supplierName}\n`;
@@ -1094,7 +1095,7 @@ async function handleCallbackQuery(callbackQuery: any) {
         messageText += `📦 Товар: ${filesData.productName}\n\n`;
         
         if (filesData.certificates && filesData.certificates.length > 0) {
-          console.log("🔍 DEBUG: Найдено сертификатов:", filesData.certificates.length);
+          logger.info("🔍 DEBUG: Найдено сертификатов:", filesData.certificates.length);
           
           filesData.certificates.forEach((cert: any, index: number) => {
             messageText += `${index + 1}. ${cert.name}\n`;
@@ -1106,7 +1107,7 @@ async function handleCallbackQuery(callbackQuery: any) {
           // Отправляем сертификаты в Telegram
           for (let certIndex = 0; certIndex < filesData.certificates.length; certIndex++) {
             const cert = filesData.certificates[certIndex];
-            console.log("🔍 DEBUG: Обработка сертификата:", {
+            logger.info("🔍 DEBUG: Обработка сертификата:", {
               name: cert.name,
               hasUrl: !!cert.public_url,
               url: cert.public_url
@@ -1114,7 +1115,7 @@ async function handleCallbackQuery(callbackQuery: any) {
             
             if (cert.public_url) {
               try {
-                console.log("📤 DEBUG: Отправляем сертификат через новый API");
+                logger.info("📤 DEBUG: Отправляем сертификат через новый API");
                 
                 // Используем новый API для отправки сертификата
                 const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/send-accreditation-certificate?applicationId=${applicationId}&productIndex=${productIndex}&certIndex=${certIndex}&chatId=${callbackQuery.message.chat.id}`, {
@@ -1124,9 +1125,9 @@ async function handleCallbackQuery(callbackQuery: any) {
                 const result = await response.json();
                 
                 if (result.success) {
-                  console.log("✅ DEBUG: Сертификат отправлен успешно через новый API");
+                  logger.info("✅ DEBUG: Сертификат отправлен успешно через новый API");
                 } else {
-                  console.error("❌ DEBUG: Ошибка отправки сертификата через новый API:", result.error);
+                  logger.error("❌ DEBUG: Ошибка отправки сертификата через новый API:", result.error);
                   // Проверяем, существует ли файл
                   const fileCheckResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/find-file?fileName=${encodeURIComponent(cert.name)}`);
                   const fileCheckResult = await fileCheckResponse.json();
@@ -1140,7 +1141,7 @@ async function handleCallbackQuery(callbackQuery: any) {
                   }
                 }
               } catch (certError) {
-                console.error("❌ DEBUG: Ошибка отправки сертификата:", certError);
+                logger.error("❌ DEBUG: Ошибка отправки сертификата:", certError);
                 // Проверяем существование файла
                 try {
                   const fileCheckResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/find-file?fileName=${encodeURIComponent(cert.name)}`);
@@ -1156,13 +1157,13 @@ async function handleCallbackQuery(callbackQuery: any) {
                 }
               }
             } else {
-              console.log("❌ DEBUG: Нет public_url для сертификата:", cert);
+              logger.info("❌ DEBUG: Нет public_url для сертификата:", cert);
               await service.sendMessage(callbackQuery.message.chat.id, `❌ Нет URL для сертификата: ${cert.name}`);
             }
           }
         } else {
           messageText += `❌ Сертификаты не найдены\n\n`;
-          console.log("❌ DEBUG: Сертификаты не найдены в данных");
+          logger.info("❌ DEBUG: Сертификаты не найдены в данных");
         }
 
         const replyMarkup = {
@@ -1178,7 +1179,7 @@ async function handleCallbackQuery(callbackQuery: any) {
           message: `Product certificates sent for ${applicationId}, product ${productIndex}` 
         });
       } catch (error: any) {
-        console.error("❌ Product certificates error:", error);
+        logger.error("❌ Product certificates error:", error);
         return NextResponse.json({ ok: false, error: error.message });
       }
     }
@@ -1186,7 +1187,7 @@ async function handleCallbackQuery(callbackQuery: any) {
     return NextResponse.json({ ok: true, message: "Callback query processed" });
     
   } catch (error: any) {
-    console.error("❌ Callback query error:", error);
+    logger.error("❌ Callback query error:", error);
     return NextResponse.json({ ok: false, error: error.message });
   }
 } 

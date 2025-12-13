@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 // GET: Проверка файлов в Supabase Storage
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       
       if (bucketsError) {
-        console.error("❌ [STORAGE] Ошибка получения buckets:", bucketsError);
+        logger.error("❌ [STORAGE] Ошибка получения buckets:", bucketsError);
         return NextResponse.json({ error: bucketsError.message }, { status: 500 });
       }
 
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       });
 
     if (error) {
-      console.error("❌ [STORAGE] Ошибка получения файлов:", error);
+      logger.error("❌ [STORAGE] Ошибка получения файлов:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [STORAGE] Критическая ошибка:", error);
+    logger.error("❌ [STORAGE] Критическая ошибка:", error);
     return NextResponse.json({ 
       error: "Внутренняя ошибка сервера",
       details: error instanceof Error ? error.message : 'Неизвестная ошибка'

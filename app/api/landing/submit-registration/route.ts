@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { type NextRequest, NextResponse } from "next/server"
 import { sendTelegramMessage } from "@/lib/telegram"
-
 export async function POST(request: NextRequest) {
   try {
 
@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!formData.name || !formData.inn || !formData.phone) {
-      console.error("❌ Не все обязательные поля переданы")
+      logger.error("❌ Не все обязательные поля переданы")
       return NextResponse.json({
         error: "Заполните обязательные поля: название компании, ИНН, телефон"
       }, { status: 400 })
@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
     try {
       await sendTelegramMessage(message)
     } catch (telegramError) {
-      console.error("❌ Ошибка отправки в Telegram:", telegramError)
+      logger.error("❌ Ошибка отправки в Telegram:", telegramError)
       // Don't fail the request if Telegram fails - we still want to return success
-      console.warn("⚠️ Продолжаем несмотря на ошибку Telegram")
+      logger.warn("⚠️ Продолжаем несмотря на ошибку Telegram")
     }
 
     return NextResponse.json({
@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
       message: "Заявка успешно отправлена менеджеру"
     })
   } catch (error) {
-    console.error("❌ Ошибка в API роуте:", error)
-    console.error("❌ Детали ошибки:", {
+    logger.error("❌ Ошибка в API роуте:", error)
+    logger.error("❌ Детали ошибки:", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     })

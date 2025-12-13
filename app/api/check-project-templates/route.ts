@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from "@/src/shared/lib/logger";
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'
 
 export async function GET() {
@@ -12,7 +13,7 @@ export async function GET() {
       .eq('schemaname', 'public')
 
     if (tableError) {
-      console.error('❌ Ошибка проверки таблицы (pg_catalog):', tableError)
+      logger.error('❌ Ошибка проверки таблицы (pg_catalog):', tableError)
       return NextResponse.json({
         error: 'Ошибка проверки таблицы',
         details: tableError.message
@@ -35,7 +36,7 @@ export async function GET() {
       .select('*', { count: 'exact', head: true })
 
     if (countError) {
-      console.error('❌ Ошибка подсчета записей:', countError)
+      logger.error('❌ Ошибка подсчета записей:', countError)
       return NextResponse.json({
         error: 'Ошибка подсчета записей',
         details: countError.message
@@ -51,7 +52,7 @@ export async function GET() {
     })
     
   } catch (error) {
-    console.error('❌ Неожиданная ошибка:', error)
+    logger.error('❌ Неожиданная ошибка:', error)
     return NextResponse.json({
       error: 'Неожиданная ошибка',
       details: error instanceof Error ? error.message : 'Unknown error'

@@ -1,147 +1,189 @@
 /**
- * API для работы с поставщиками
- * Entities layer
+ * API слой для работы с поставщиками через Supabase и REST API
+ * Извлечено из монолитного supabaseApi.ts при рефакторинге на FSD архитектуру
  */
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { Supplier, SupplierFilters } from '../model/types'
+import { supabase } from '@/lib/supabaseClient'
+import type { Supplier } from '../model/types'
 
-class SupplierApi {
-  private supabase = createClientComponentClient()
+// ========================================
+// 🎯 РАБОТА С ПОСТАВЩИКАМИ
+// ========================================
 
-  async getAll(filters?: SupplierFilters): Promise<Supplier[]> {
-    let query = this.supabase
-      .from('suppliers')
-      .select('*')
-      .order('created_at', { ascending: false })
+/**
+ * Загрузка пользовательских поставщиков из API
+ */
+export const fetchUserSuppliers = async (): Promise<Supplier[]> => {
+  console.log('🔄 [API] Загрузка пользовательских поставщиков...')
 
-    if (filters?.search) {
-      query = query.or(`name.ilike.%${filters.search}%,company_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`)
+  try {
+    // Получаем токен авторизации
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      console.error('❌ [API] Нет активной сессии для загрузки поставщиков')
+      return []
     }
 
-    if (filters?.status) {
-      query = query.eq('status', filters.status)
+    console.log('✅ [API] Сессия найдена, запрос к API...')
+    const response = await fetch('/api/catalog/user-suppliers', {
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    })
+
+    console.log('📡 [API] Ответ получен, статус:', response.status)
+    const data = await response.json()
+
+    if (data.suppliers) {
+      console.log('✅ [API] Загружено пользовательских поставщиков:', data.suppliers.length)
+      return data.suppliers
+    } else {
+      console.warn('⚠️ [API] Нет пользовательских поставщиков в ответе')
+      return []
     }
-
-    if (filters?.country) {
-      query = query.eq('country', filters.country)
-    }
-
-    if (filters?.city) {
-      query = query.eq('city', filters.city)
-    }
-
-    if (filters?.minRating !== undefined) {
-      query = query.gte('rating', filters.minRating)
-    }
-
-    if (filters?.hasProducts) {
-      query = query.gt('total_products', 0)
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error('Error fetching suppliers:', error)
-      throw error
-    }
-
-    return data || []
-  }
-
-  async getById(id: number | string): Promise<Supplier | null> {
-    const { data, error } = await this.supabase
-      .from('suppliers')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    if (error) {
-      console.error('Error fetching supplier:', error)
-      return null
-    }
-
-    return data
-  }
-
-  async create(supplier: Partial<Supplier>): Promise<Supplier> {
-    const { data, error } = await this.supabase
-      .from('suppliers')
-      .insert({
-        ...supplier,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating supplier:', error)
-      throw error
-    }
-
-    return data
-  }
-
-  async update(id: number | string, updates: Partial<Supplier>): Promise<Supplier> {
-    const { data, error } = await this.supabase
-      .from('suppliers')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating supplier:', error)
-      throw error
-    }
-
-    return data
-  }
-
-  async delete(id: number | string): Promise<boolean> {
-    const { error } = await this.supabase
-      .from('suppliers')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error deleting supplier:', error)
-      throw error
-    }
-
-    return true
-  }
-
-  async getStats(): Promise<{
-    total: number
-    active: number
-    pending: number
-    averageRating: number
-  }> {
-    const { data, error } = await this.supabase
-      .from('suppliers')
-      .select('status, rating')
-
-    if (error) {
-      console.error('Error fetching supplier stats:', error)
-      throw error
-    }
-
-    const suppliers = data || []
-
-    return {
-      total: suppliers.length,
-      active: suppliers.filter(s => s.status === 'active').length,
-      pending: suppliers.filter(s => s.status === 'pending').length,
-      averageRating: suppliers.length > 0
-        ? suppliers.reduce((sum, s) => sum + (s.rating || 0), 0) / suppliers.length
-        : 0,
-    }
+  } catch (error) {
+    console.error('❌ [API] Ошибка загрузки пользовательских поставщиков:', error)
+    return []
   }
 }
 
-export const supplierApi = new SupplierApi()
+/**
+ * Загрузка аккредитованных поставщиков из API
+ */
+export const fetchVerifiedSuppliers = async (): Promise<Supplier[]> => {
+  console.log('🔄 [API] Загрузка аккредитованных поставщиков...')
+
+  try {
+    const response = await fetch('/api/catalog/verified-suppliers')
+    const data = await response.json()
+
+    if (data.suppliers) {
+      console.log('✅ [API] Загружено аккредитованных поставщиков:', data.suppliers.length)
+      return data.suppliers
+    } else {
+      console.warn('⚠️ [API] Нет аккредитованных поставщиков в ответе')
+      return []
+    }
+  } catch (error) {
+    console.error('❌ [API] Ошибка загрузки аккредитованных поставщиков:', error)
+    return []
+  }
+}
+
+/**
+ * Создание нового поставщика
+ */
+export const createSupplier = async (supplierData: Partial<Supplier>): Promise<Supplier | null> => {
+  console.log('📝 [API] Создание поставщика:', supplierData.name)
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      throw new Error('Нет активной сессии')
+    }
+
+    const response = await fetch('/api/catalog/suppliers', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(supplierData)
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.success && data.supplier) {
+      console.log('✅ [API] Поставщик создан:', data.supplier.id)
+      return data.supplier
+    } else {
+      throw new Error(data.error || 'Неизвестная ошибка')
+    }
+  } catch (error) {
+    console.error('❌ [API] Ошибка создания поставщика:', error)
+    return null
+  }
+}
+
+/**
+ * Обновление поставщика
+ */
+export const updateSupplier = async (
+  supplierId: string,
+  updates: Partial<Supplier>
+): Promise<Supplier | null> => {
+  console.log('✏️ [API] Обновление поставщика:', supplierId)
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      throw new Error('Нет активной сессии')
+    }
+
+    const response = await fetch(`/api/catalog/suppliers/${supplierId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(updates)
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.success && data.supplier) {
+      console.log('✅ [API] Поставщик обновлен')
+      return data.supplier
+    } else {
+      throw new Error(data.error || 'Неизвестная ошибка')
+    }
+  } catch (error) {
+    console.error('❌ [API] Ошибка обновления поставщика:', error)
+    return null
+  }
+}
+
+/**
+ * Удаление поставщика
+ */
+export const deleteSupplier = async (supplierId: string): Promise<boolean> => {
+  console.log('🗑️ [API] Удаление поставщика:', supplierId)
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      throw new Error('Нет активной сессии')
+    }
+
+    const response = await fetch(`/api/catalog/suppliers/${supplierId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.success) {
+      console.log('✅ [API] Поставщик удален')
+      return true
+    } else {
+      throw new Error(data.error || 'Неизвестная ошибка')
+    }
+  } catch (error) {
+    console.error('❌ [API] Ошибка удаления поставщика:', error)
+    return false
+  }
+}

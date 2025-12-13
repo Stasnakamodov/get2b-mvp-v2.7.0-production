@@ -1,39 +1,34 @@
-/**
- * Общая конфигурация приложения
- * Shared layer - самый нижний слой в FSD
- */
+// FSD: shared/config - Конфигурация приложения
 
-export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || '',
-  TIMEOUT: 30000,
-  RETRY_ATTEMPTS: 3,
-}
+// Экспорт всех констант каталога
+export * from './catalog.constants'
 
-export const PAGINATION = {
-  DEFAULT_PAGE_SIZE: 20,
-  SUPPLIERS_PER_PAGE: 10,
-  PRODUCTS_PER_PAGE: 8,
-}
+// Экспорт констант категорий и сертификатов
+export * from './categories.constants'
 
-export const VALIDATION = {
-  EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PHONE_REGEX: /^[\+]?[0-9\s\-\(\)]+$/,
-  URL_REGEX: /^(https?:\/\/)?[\da-z\.-]+\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/,
-}
-
-export const ROUTES = {
-  DASHBOARD: '/dashboard',
-  CATALOG: '/dashboard/catalog',
-  SUPPLIERS: '/dashboard/catalog/suppliers',
-  PRODUCTS: '/dashboard/catalog/products',
-  CART: '/dashboard/cart',
-  PROJECT_CONSTRUCTOR: '/dashboard/project-constructor',
-}
-
-export const STORAGE_KEYS = {
-  AUTH_TOKEN: 'auth_token',
-  CART_ITEMS: 'cart_items',
-  USER_PREFERENCES: 'user_preferences',
-  SELECTED_ROOM: 'selected_room',
-  SELECTED_CATEGORY: 'selected_category',
-}
+// Реэкспорт основных констант для удобства
+export {
+  PRODUCTS_PER_PAGE,
+  SUPPLIERS_PER_PAGE,
+  SUPPLIER_FORM_STEPS,
+  ROOM_TYPES,
+  DEFAULT_SUPPLIER_FORM_DATA,
+  DEFAULT_PRODUCT_FORM_DATA,
+  CATALOG_MODES,
+  VIEW_MODES,
+  SUPPLIER_MODAL_TABS,
+  COUNTRIES,
+  CURRENCIES,
+  DEFAULT_CURRENCY,
+  PAYMENT_METHODS,
+  CRYPTO_NETWORKS,
+  API_ENDPOINTS,
+  toRoman,
+  formatPrice,
+  formatDate,
+  getInitials,
+  isValidEmail,
+  isValidUrl,
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES
+} from './catalog.constants'

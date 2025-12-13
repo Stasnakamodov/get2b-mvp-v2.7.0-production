@@ -2,6 +2,7 @@
 
 import React from "react"
 import { useState, useEffect } from "react"
+import { logger } from '@/src/shared/lib/logger'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,7 +32,6 @@ import { supabase } from "@/lib/supabaseClient"
 import { ProjectStatus, STATUS_LABELS } from "@/lib/types/project-status"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-
 interface Project {
   id: string
   name: string
@@ -80,7 +80,7 @@ export default function HistoryPage() {
         .order("created_at", { ascending: false })
 
       if (projectsError) {
-        console.error("Error fetching projects:", projectsError)
+        logger.error("Error fetching projects:", projectsError)
         return
       }
 
@@ -97,7 +97,7 @@ export default function HistoryPage() {
           .order("changed_at", { ascending: false })
 
         if (historyError) {
-          console.error("Error fetching history:", JSON.stringify(historyError))
+          logger.error("Error fetching history:", JSON.stringify(historyError))
           return
         }
 
@@ -112,7 +112,7 @@ export default function HistoryPage() {
         setStatusHistory([])
       }
     } catch (error) {
-      console.error("Error fetching data:", JSON.stringify(error))
+      logger.error("Error fetching data:", JSON.stringify(error))
     } finally {
       setLoading(false)
     }

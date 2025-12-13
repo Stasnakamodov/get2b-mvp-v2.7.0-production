@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 // POST: Обновление импортированного поставщика из оригинала
 export async function POST(request: NextRequest) {
   try {
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error("❌ [API] Ошибка обновления поставщика:", updateError);
+      logger.error("❌ [API] Ошибка обновления поставщика:", updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при обновлении поставщика:", error);
+    logger.error("❌ [API] Критическая ошибка при обновлении поставщика:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при проверке обновления:", error);
+    logger.error("❌ [API] Критическая ошибка при проверке обновления:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 } 

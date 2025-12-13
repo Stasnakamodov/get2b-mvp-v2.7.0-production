@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: NextRequest) {
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("❌ Ошибка получения шаблонов из БД:", error);
+      logger.error("❌ Ошибка получения шаблонов из БД:", error);
       return NextResponse.json({ error: "Ошибка получения шаблонов" }, { status: 500 });
     }
 
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [API] Ошибка получения шаблонов:', error);
+    logger.error('❌ [API] Ошибка получения шаблонов:', error);
     return NextResponse.json(
       {
         error: 'Ошибка получения шаблонов',

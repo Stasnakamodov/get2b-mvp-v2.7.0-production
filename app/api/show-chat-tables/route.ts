@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(request: NextRequest) {
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при анализе таблиц чата:", error);
+    logger.error("❌ [API] Критическая ошибка при анализе таблиц чата:", error);
     return NextResponse.json({ 
       error: "Internal server error",
       details: error instanceof Error ? error.message : 'Unknown error'

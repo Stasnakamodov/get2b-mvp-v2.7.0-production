@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест блокировки поставщиков в корзине</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .product { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+        .cart { background: #f0f0f0; padding: 15px; margin: 20px 0; }
+        button { padding: 5px 10px; margin: 5px; }
+        .disabled { background: #ccc; cursor: not-allowed; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Тест блокировки поставщиков в корзине</h1>
+
+    <div class="cart">
+        <h2>Корзина</h2>
+        <div id="cartInfo">Корзина пуста</div>
+        <div id="activeSupplier">Активный поставщик: нет</div>
+        <button onclick="clearCart()">Очистить корзину</button>
+    </div>
+
+    <h2>Товары от разных поставщиков</h2>
+
+    <div class="product">
+        <h3>Товар 1 - Поставщик A</h3>
+        <p>supplier_id: supplier-a-123</p>
+        <button onclick="addToCart('product1', 'supplier-a-123', 'Товар 1')">Добавить в корзину</button>
+    </div>
+
+    <div class="product">
+        <h3>Товар 2 - Поставщик A</h3>
+        <p>supplier_id: supplier-a-123</p>
+        <button onclick="addToCart('product2', 'supplier-a-123', 'Товар 2')">Добавить в корзину</button>
+    </div>
+
+    <div class="product">
+        <h3>Товар 3 - Поставщик B</h3>
+        <p>supplier_id: supplier-b-456</p>
+        <button onclick="addToCart('product3', 'supplier-b-456', 'Товар 3')">Добавить в корзину</button>
+    </div>
+
+    <div class="product">
+        <h3>Товар 4 - Поставщик B</h3>
+        <p>supplier_id: supplier-b-456</p>
+        <button onclick="addToCart('product4', 'supplier-b-456', 'Товар 4')">Добавить в корзину</button>
+    </div>
+
+    <h2>Лог операций:</h2>
+    <div id="log"></div>
+
+    <script>
+        // Эмуляция хука useCart
+        let cart = [];
+        let activeSupplier = null;
+
+        function addToCart(productId, supplierId, productName) {
+            const logDiv = document.getElementById('log');
+
+            // Логика из useCart.ts (строки 82-111)
+            if (cart.length === 0 || activeSupplier === supplierId) {
+                // Можно добавить
+                activeSupplier = supplierId;
+
+                const existingItem = cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity++;
+                    logDiv.innerHTML += `<div class="success">✅ Увеличено количество: ${productName} (количество: ${existingItem.quantity})</div>`;
+                } else {
+                    cart.push({ id: productId, name: productName, supplierId: supplierId, quantity: 1 });
+                    logDiv.innerHTML += `<div class="success">✅ Добавлен в корзину: ${productName}</div>`;
+                }
+
+                updateCartDisplay();
+                return true;
+            } else {
+                // Другой поставщик - блокируем
+                logDiv.innerHTML += `<div class="error">❌ ЗАБЛОКИРОВАНО: ${productName} от другого поставщика (${supplierId})</div>`;
+                alert('Нельзя добавить товар другого поставщика. Сначала очистите корзину.');
+                return false;
+            }
+        }
+
+        function clearCart() {
+            cart = [];
+            activeSupplier = null;
+            document.getElementById('log').innerHTML += '<div class="info">🔄 Корзина очищена</div>';
+            updateCartDisplay();
+        }
+
+        function updateCartDisplay() {
+            const cartInfo = document.getElementById('cartInfo');
+            const supplierInfo = document.getElementById('activeSupplier');
+
+            if (cart.length > 0) {
+                cartInfo.innerHTML = `Товаров в корзине: ${cart.length}<br>` +
+                    cart.map(item => `- ${item.name} (кол-во: ${item.quantity})`).join('<br>');
+            } else {
+                cartInfo.innerHTML = 'Корзина пуста';
+            }
+
+            supplierInfo.innerHTML = `Активный поставщик: ${activeSupplier || 'нет'}`;
+        }
+    </script>
+</body>
+</html>

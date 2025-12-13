@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 
 // GET: Получение поставщиков (редирект на catalog API)
 export async function GET(request: NextRequest) {
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data);
     
   } catch (error) {
-    console.error('❌ [API] Ошибка загрузки поставщиков:', error);
+    logger.error('❌ [API] Ошибка загрузки поставщиков:', error);
     return NextResponse.json(
       { error: 'Ошибка загрузки поставщиков' },
       { status: 500 }

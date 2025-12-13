@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 import * as React from "react"
 import type { Metadata } from "next"
 
@@ -369,8 +370,8 @@ const shipmentId = "SHP-2025-003";
 const shipmentStatus = await api.shipments.getStatus(shipmentId);
 
 // Вывод информации о местоположении
-console.log(\`Текущее местоположение: \${shipmentStatus.location}\`);
-console.log(\`Ожидаемая дата доставки: \${shipmentStatus.estimatedDelivery}\`);`}
+logger.info(\`Текущее местоположение: \${shipmentStatus.location}\`);
+logger.info(\`Ожидаемая дата доставки: \${shipmentStatus.estimatedDelivery}\`);`}
               </code>
             </div>
           </section>

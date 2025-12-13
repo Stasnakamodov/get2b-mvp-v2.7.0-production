@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 // GET: Получить комнаты пользователя - УЛЬТРА-БЕЗОПАСНАЯ ВЕРСИЯ
 export async function GET(request: NextRequest) {
   try {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const { data: rooms, error } = await query;
 
     if (error) {
-      console.error('❌ DEBUG: Database error:', error);
+      logger.error('❌ DEBUG: Database error:', error);
       return NextResponse.json(
         { error: "Failed to fetch rooms", details: error.message },
         { status: 500 }
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('💥 DEBUG: Unexpected error in GET /api/chat/rooms:', error);
+    logger.error('💥 DEBUG: Unexpected error in GET /api/chat/rooms:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('❌ DEBUG: Error creating room:', error);
+      logger.error('❌ DEBUG: Error creating room:', error);
       return NextResponse.json(
         { error: "Failed to create room", details: error.message },
         { status: 500 }
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('💥 DEBUG: Unexpected error in POST /api/chat/rooms:', error);
+    logger.error('💥 DEBUG: Unexpected error in POST /api/chat/rooms:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }
@@ -216,11 +216,11 @@ export async function DELETE(request: NextRequest) {
         .eq('room_id', roomId);
 
       if (messagesError) {
-        console.warn('⚠️ DEBUG: Warning deleting messages (non-critical):', messagesError.message);
+        logger.warn('⚠️ DEBUG: Warning deleting messages (non-critical):', messagesError.message);
       } else {
       }
     } catch (msgError) {
-      console.warn('⚠️ DEBUG: Non-critical error deleting messages:', msgError);
+      logger.warn('⚠️ DEBUG: Non-critical error deleting messages:', msgError);
     }
 
     // ШАГ 3: Удаляем комнату 
@@ -231,7 +231,7 @@ export async function DELETE(request: NextRequest) {
       .eq('user_id', userId);
 
     if (roomError) {
-      console.error('❌ DEBUG: Failed to delete room:', roomError);
+      logger.error('❌ DEBUG: Failed to delete room:', roomError);
       return NextResponse.json(
         { error: "Failed to delete room", details: roomError.message },
         { status: 500 }
@@ -246,7 +246,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('💥 DEBUG: Unexpected error in DELETE /api/chat/rooms:', error);
+    logger.error('💥 DEBUG: Unexpected error in DELETE /api/chat/rooms:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }

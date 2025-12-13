@@ -1,7 +1,8 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { getYandexVisionService } from "@/lib/services/YandexVisionService";
 import { getYandexGPTService } from "@/lib/services/YandexGPTService";
-
+import { supabase } from "@/lib/supabaseClient";
 /**
  * POST /api/catalog/search-by-image
  * Поиск товаров по изображению с использованием:
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
       .limit(20);
 
     if (error) {
-      console.error("❌ [IMAGE SEARCH] Ошибка поиска товаров:", error);
+      logger.error("❌ [IMAGE SEARCH] Ошибка поиска товаров:", error);
       return NextResponse.json(
         { error: "Ошибка поиска товаров" },
         { status: 500 }
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("❌ [IMAGE SEARCH] Ошибка:", error);
+    logger.error("❌ [IMAGE SEARCH] Ошибка:", error);
     return NextResponse.json(
       {
         error: error.message || "Внутренняя ошибка сервера",

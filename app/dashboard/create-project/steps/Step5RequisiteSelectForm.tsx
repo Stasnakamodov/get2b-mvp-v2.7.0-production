@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -12,7 +13,6 @@ import { useProjectSpecification } from '../hooks/useProjectSpecification';
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import { ProjectStatus } from "@/lib/types/project-status";
 import { toast } from "@/components/ui/use-toast";
-
 const requisiteTypeMap = {
   "bank-transfer": { table: "bank_accounts", type: "bank", label: "Банковский счёт" },
   "p2p": { table: "supplier_cards", type: "p2p", label: "Карта поставщика" },
@@ -60,16 +60,16 @@ export default function Step5RequisiteSelectForm() {
   const { projectId, paymentMethod, setCurrentStep, maxStepReached, setMaxStepReached, projectName, companyData, specificationItems, setSpecificationItems, supplierData } = useCreateProjectContext();
   
   // 🔍 ВСЕГДА ЛОГИРУЕМ ПРИ КАЖДОМ РЕНДЕРЕ
-  console.log("🚨 [Step5] COMPONENT RENDER - ВСЯ ИНФОРМАЦИЯ:");
-  console.log("  projectId:", projectId);
-  console.log("  paymentMethod:", paymentMethod);
-  console.log("  supplierData:", supplierData);
-  console.log("  supplierData type:", typeof supplierData);
-  console.log("  supplierData keys:", supplierData ? Object.keys(supplierData) : "NO SUPPLIER DATA");
+  logger.info("🚨 [Step5] COMPONENT RENDER - ВСЯ ИНФОРМАЦИЯ:");
+  logger.info("  projectId:", projectId);
+  logger.info("  paymentMethod:", paymentMethod);
+  logger.info("  supplierData:", supplierData);
+  logger.info("  supplierData type:", typeof supplierData);
+  logger.info("  supplierData keys:", supplierData ? Object.keys(supplierData) : "NO SUPPLIER DATA");
   if (supplierData?.crypto_wallets) {
-    console.log("  🪙 CRYPTO WALLETS FOUND:", supplierData.crypto_wallets);
+    logger.info("  🪙 CRYPTO WALLETS FOUND:", supplierData.crypto_wallets);
   } else {
-    console.log("  ❌ NO CRYPTO WALLETS IN SUPPLIER DATA");
+    logger.info("  ❌ NO CRYPTO WALLETS IN SUPPLIER DATA");
   }
   const [requisites, setRequisites] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -89,17 +89,17 @@ export default function Step5RequisiteSelectForm() {
 
   // 🎯 Получаем реквизиты поставщика на основе выбранного метода оплаты
   const supplierRequisites = useMemo(() => {
-    console.log("[Step5] 🔍 НАЧИНАЕМ ПРОВЕРКУ РЕКВИЗИТОВ ПОСТАВЩИКА");
-    console.log("[Step5] supplierData:", supplierData);
-    console.log("[Step5] paymentMethod:", paymentMethod);
+    logger.info("[Step5] 🔍 НАЧИНАЕМ ПРОВЕРКУ РЕКВИЗИТОВ ПОСТАВЩИКА");
+    logger.info("[Step5] supplierData:", supplierData);
+    logger.info("[Step5] paymentMethod:", paymentMethod);
     
     if (!supplierData) {
-      console.log("[Step5] ❌ НЕТ ДАННЫХ ПОСТАВЩИКА");
+      logger.info("[Step5] ❌ НЕТ ДАННЫХ ПОСТАВЩИКА");
       return [];
     }
     
     if (!paymentMethod) {
-      console.log("[Step5] ❌ НЕТ ВЫБРАННОГО МЕТОДА ОПЛАТЫ");
+      logger.info("[Step5] ❌ НЕТ ВЫБРАННОГО МЕТОДА ОПЛАТЫ");
       return [];
     }
     
@@ -107,22 +107,22 @@ export default function Step5RequisiteSelectForm() {
     switch (paymentMethod) {
       case 'bank-transfer':
         result = supplierData.bank_accounts || [];
-        console.log("[Step5] 🏦 БАНКОВСКИЕ СЧЕТА ПОСТАВЩИКА:", result);
+        logger.info("[Step5] 🏦 БАНКОВСКИЕ СЧЕТА ПОСТАВЩИКА:", result);
         break;
       case 'p2p':
         result = supplierData.p2p_cards || [];
-        console.log("[Step5] 💳 P2P КАРТЫ ПОСТАВЩИКА:", result);
+        logger.info("[Step5] 💳 P2P КАРТЫ ПОСТАВЩИКА:", result);
         break;
       case 'crypto':
         result = supplierData.crypto_wallets || [];
-        console.log("[Step5] 🪙 КРИПТОКОШЕЛЬКИ ПОСТАВЩИКА:", result);
+        logger.info("[Step5] 🪙 КРИПТОКОШЕЛЬКИ ПОСТАВЩИКА:", result);
         break;
       default:
-        console.log("[Step5] ❌ НЕИЗВЕСТНЫЙ МЕТОД ОПЛАТЫ:", paymentMethod);
+        logger.info("[Step5] ❌ НЕИЗВЕСТНЫЙ МЕТОД ОПЛАТЫ:", paymentMethod);
         result = [];
     }
     
-    console.log("[Step5] ✅ ИТОГОВЫЕ РЕКВИЗИТЫ ПОСТАВЩИКА:", result);
+    logger.info("[Step5] ✅ ИТОГОВЫЕ РЕКВИЗИТЫ ПОСТАВЩИКА:", result);
     return result;
   }, [supplierData, paymentMethod]);
 
@@ -183,7 +183,7 @@ export default function Step5RequisiteSelectForm() {
   // 🎯 Умное автозаполнение при единственном реквизите поставщика
   useEffect(() => {
     if (supplierRequisites.length === 1 && !selectedId) {
-      console.log("[Step5] Автовыбираем единственный реквизит поставщика:", supplierRequisites[0]);
+      logger.info("[Step5] Автовыбираем единственный реквизит поставщика:", supplierRequisites[0]);
       // Создаем временный ID для реквизита поставщика
       const supplierId = `supplier_${paymentMethod}_0`;
       setSelectedId(supplierId);
@@ -204,7 +204,7 @@ export default function Step5RequisiteSelectForm() {
       return;
     }
 
-    console.log("🔄 Начинаем сохранение и переход на 6 шаг...");
+    logger.info("🔄 Начинаем сохранение и переход на 6 шаг...");
     setIsLoading(true);
     try {
       // Получаем текущего пользователя
@@ -231,7 +231,7 @@ export default function Step5RequisiteSelectForm() {
       if (!selectedRequisite && selectedIdString.startsWith('supplier_')) {
         const supplierIndex = parseInt(selectedIdString.split('_')[2]);
         selectedRequisite = supplierRequisites[supplierIndex];
-        console.log("[Step5] Используем реквизит поставщика:", selectedRequisite);
+        logger.info("[Step5] Используем реквизит поставщика:", selectedRequisite);
       }
       
       if (!selectedRequisite) {
@@ -243,7 +243,7 @@ export default function Step5RequisiteSelectForm() {
         return;
       }
       
-      console.log("💾 [STEP5] Сохраняем выбранный реквизит:", { 
+      logger.info("💾 [STEP5] Сохраняем выбранный реквизит:", { 
         selectedId, 
         selectedRequisite, 
         paymentMethod,
@@ -282,7 +282,7 @@ export default function Step5RequisiteSelectForm() {
           source: 'user' // Помечаем как пользовательские реквизиты
         };
 
-      console.log("✅ [STEP5] Очищенные данные для сохранения:", cleanRequisiteData);
+      logger.info("✅ [STEP5] Очищенные данные для сохранения:", cleanRequisiteData);
       
       // Сохраняем очищенные данные реквизита в project_requisites
       const { error: requisiteError } = await supabase
@@ -295,8 +295,8 @@ export default function Step5RequisiteSelectForm() {
         });
         
       if (requisiteError) {
-        console.error("❌ [STEP5] Ошибка сохранения реквизитов:", requisiteError);
-        console.error("❌ [STEP5] Детали ошибки:", JSON.stringify(requisiteError, null, 2));
+        logger.error("❌ [STEP5] Ошибка сохранения реквизитов:", requisiteError);
+        logger.error("❌ [STEP5] Детали ошибки:", JSON.stringify(requisiteError, null, 2));
         toast({
           title: "Ошибка",
           description: "Не удалось сохранить реквизиты: " + (requisiteError.message || "Неизвестная ошибка"),
@@ -305,7 +305,7 @@ export default function Step5RequisiteSelectForm() {
         return;
       }
       
-      console.log("✅ [STEP5] Реквизиты успешно сохранены в project_requisites");
+      logger.info("✅ [STEP5] Реквизиты успешно сохранены в project_requisites");
       
       // Сохраняем текущий шаг и обновляем сумму
       await saveSpecification({ 
@@ -316,7 +316,7 @@ export default function Step5RequisiteSelectForm() {
       
       // Обновляем сумму в базе данных
       if (totalAmount > 0) {
-        console.log(`💰 Обновляем сумму в БД: ${totalAmount}`);
+        logger.info(`💰 Обновляем сумму в БД: ${totalAmount}`);
         await supabase
           .from("projects")
           .update({ amount: totalAmount })
@@ -331,16 +331,16 @@ export default function Step5RequisiteSelectForm() {
         .single();
         
       if (fetchError) {
-        console.error("❌ Ошибка получения статуса проекта:", fetchError);
+        logger.error("❌ Ошибка получения статуса проекта:", fetchError);
         // Продолжаем с предположением о статусе
       }
       
       const currentStatus = currentProject?.status || "receipt_approved";
-      console.log("🔄 Текущий статус проекта:", currentStatus);
+      logger.info("🔄 Текущий статус проекта:", currentStatus);
       
       // Правильная последовательность переходов статуса
       if (currentStatus === "receipt_approved") {
-        console.log("💾 Переходим от receipt_approved к filling_requisites");
+        logger.info("💾 Переходим от receipt_approved к filling_requisites");
         await changeProjectStatus({
           projectId,
           newStatus: "filling_requisites",
@@ -349,7 +349,7 @@ export default function Step5RequisiteSelectForm() {
         });
         
         // Затем переходим к ожиданию чека от менеджера
-        console.log("💾 Переходим от filling_requisites к waiting_manager_receipt");
+        logger.info("💾 Переходим от filling_requisites к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -357,7 +357,7 @@ export default function Step5RequisiteSelectForm() {
           comment: "Реквизиты заполнены, ожидание чека от менеджера"
         });
       } else if (currentStatus === "filling_requisites") {
-        console.log("💾 Переходим от filling_requisites к waiting_manager_receipt");
+        logger.info("💾 Переходим от filling_requisites к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -365,10 +365,10 @@ export default function Step5RequisiteSelectForm() {
           comment: "Реквизиты заполнены, ожидание чека от менеджера"
         });
       } else if (currentStatus === "waiting_manager_receipt") {
-        console.log("⚠️ Проект уже в статусе waiting_manager_receipt, пропускаем изменение статуса");
+        logger.info("⚠️ Проект уже в статусе waiting_manager_receipt, пропускаем изменение статуса");
         // Не меняем статус, если уже в нужном
       } else {
-        console.log("⚠️ Неожиданный статус, пытаемся перейти к waiting_manager_receipt");
+        logger.info("⚠️ Неожиданный статус, пытаемся перейти к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -377,16 +377,16 @@ export default function Step5RequisiteSelectForm() {
         });
       }
 
-      console.log("✅ Статус изменен на waiting_manager_receipt, переходим на шаг 6");
+      logger.info("✅ Статус изменен на waiting_manager_receipt, переходим на шаг 6");
 
       // Переходим на следующий шаг
       setCurrentStep(6);
       if (6 > maxStepReached) setMaxStepReached(6);
     } catch (error: any) {
-      console.error("❌ Ошибка при сохранении:", error);
-      console.error("❌ Детали ошибки:", JSON.stringify(error, null, 2));
-      console.error("❌ Тип ошибки:", typeof error);
-      console.error("❌ Конструктор ошибки:", error?.constructor?.name);
+      logger.error("❌ Ошибка при сохранении:", error);
+      logger.error("❌ Детали ошибки:", JSON.stringify(error, null, 2));
+      logger.error("❌ Тип ошибки:", typeof error);
+      logger.error("❌ Конструктор ошибки:", error?.constructor?.name);
       toast({
         title: "Ошибка",
         description: "Не удалось сохранить данные: " + (error?.message || error?.toString() || "Неизвестная ошибка"),
@@ -410,7 +410,7 @@ export default function Step5RequisiteSelectForm() {
       return;
     }
 
-    console.log("🏦 Добавляем банковские реквизиты...");
+    logger.info("🏦 Добавляем банковские реквизиты...");
     setIsLoading(true);
 
     try {
@@ -445,7 +445,7 @@ export default function Step5RequisiteSelectForm() {
         details: addForm.details
       };
 
-      console.log("💾 [STEP5] Сохраняем новые банковские реквизиты:", { 
+      logger.info("💾 [STEP5] Сохраняем новые банковские реквизиты:", { 
         requisiteData, 
         projectId,
         paymentMethod: "bank-transfer",
@@ -463,8 +463,8 @@ export default function Step5RequisiteSelectForm() {
         });
         
       if (requisiteError) {
-        console.error("❌ Ошибка сохранения реквизитов:", requisiteError);
-        console.error("❌ Детали ошибки:", JSON.stringify(requisiteError, null, 2));
+        logger.error("❌ Ошибка сохранения реквизитов:", requisiteError);
+        logger.error("❌ Детали ошибки:", JSON.stringify(requisiteError, null, 2));
         toast({
           title: "Ошибка",
           description: "Не удалось сохранить реквизиты: " + (requisiteError.message || "Неизвестная ошибка"),
@@ -473,7 +473,7 @@ export default function Step5RequisiteSelectForm() {
         return;
       }
 
-      console.log("✅ [STEP5] Банковские реквизиты успешно сохранены в project_requisites");
+      logger.info("✅ [STEP5] Банковские реквизиты успешно сохранены в project_requisites");
 
       // Сохраняем в шаблоны, если выбрано
       if (saveAsTemplate) {
@@ -496,7 +496,7 @@ export default function Step5RequisiteSelectForm() {
       
       // Обновляем сумму в базе данных
       if (totalAmount > 0) {
-        console.log(`💰 Обновляем сумму в БД: ${totalAmount}`);
+        logger.info(`💰 Обновляем сумму в БД: ${totalAmount}`);
         await supabase
           .from("projects")
           .update({ amount: totalAmount })
@@ -511,15 +511,15 @@ export default function Step5RequisiteSelectForm() {
         .single();
         
       if (fetchError) {
-        console.error("❌ Ошибка получения статуса проекта:", fetchError);
+        logger.error("❌ Ошибка получения статуса проекта:", fetchError);
       }
       
       const currentStatus = currentProject?.status || "receipt_approved";
-      console.log("🔄 [BANK] Текущий статус проекта:", currentStatus);
+      logger.info("🔄 [BANK] Текущий статус проекта:", currentStatus);
       
       // Правильная последовательность переходов статуса для банковских реквизитов
       if (currentStatus === "receipt_approved") {
-        console.log("💾 [BANK] Переходим от receipt_approved к filling_requisites");
+        logger.info("💾 [BANK] Переходим от receipt_approved к filling_requisites");
         await changeProjectStatus({
           projectId,
           newStatus: "filling_requisites",
@@ -527,7 +527,7 @@ export default function Step5RequisiteSelectForm() {
           comment: "Начинаем заполнение банковских реквизитов"
         });
         
-        console.log("💾 [BANK] Переходим от filling_requisites к waiting_manager_receipt");
+        logger.info("💾 [BANK] Переходим от filling_requisites к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -535,7 +535,7 @@ export default function Step5RequisiteSelectForm() {
           comment: "Банковские реквизиты добавлены, ожидание чека от менеджера"
         });
       } else if (currentStatus === "filling_requisites") {
-        console.log("💾 [BANK] Переходим от filling_requisites к waiting_manager_receipt");
+        logger.info("💾 [BANK] Переходим от filling_requisites к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -543,9 +543,9 @@ export default function Step5RequisiteSelectForm() {
           comment: "Банковские реквизиты добавлены, ожидание чека от менеджера"
         });
       } else if (currentStatus === "waiting_manager_receipt") {
-        console.log("⚠️ [BANK] Проект уже в статусе waiting_manager_receipt, пропускаем изменение статуса");
+        logger.info("⚠️ [BANK] Проект уже в статусе waiting_manager_receipt, пропускаем изменение статуса");
       } else {
-        console.log("⚠️ [BANK] Неожиданный статус, пытаемся перейти к waiting_manager_receipt");
+        logger.info("⚠️ [BANK] Неожиданный статус, пытаемся перейти к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -554,15 +554,15 @@ export default function Step5RequisiteSelectForm() {
         });
       }
 
-      console.log("✅ Статус изменен на waiting_manager_receipt, переходим на шаг 6");
+      logger.info("✅ Статус изменен на waiting_manager_receipt, переходим на шаг 6");
 
       // Переходим на следующий шаг
       setCurrentStep(6);
       if (6 > maxStepReached) setMaxStepReached(6);
     } catch (error: any) {
-      console.error("❌ Ошибка при добавлении банковских реквизитов:", error);
-      console.error("❌ Детали ошибки:", JSON.stringify(error, null, 2));
-      console.error("❌ Тип ошибки:", typeof error);
+      logger.error("❌ Ошибка при добавлении банковских реквизитов:", error);
+      logger.error("❌ Детали ошибки:", JSON.stringify(error, null, 2));
+      logger.error("❌ Тип ошибки:", typeof error);
       toast({
         title: "Ошибка",
         description: "Не удалось добавить банковские реквизиты: " + (error?.message || error?.toString() || "Неизвестная ошибка"),
@@ -673,7 +673,7 @@ export default function Step5RequisiteSelectForm() {
       return;
     }
 
-    console.log("💳 Добавляем карточные реквизиты...");
+    logger.info("💳 Добавляем карточные реквизиты...");
     setIsLoading(true);
 
     try {
@@ -709,7 +709,7 @@ export default function Step5RequisiteSelectForm() {
         expiry_date: addForm.expiry_date
       };
 
-      console.log("💾 [STEP5] Сохраняем новый P2P реквизит:", { 
+      logger.info("💾 [STEP5] Сохраняем новый P2P реквизит:", { 
         requisiteData, 
         projectId,
         paymentMethod: "p2p",
@@ -727,8 +727,8 @@ export default function Step5RequisiteSelectForm() {
         });
         
       if (requisiteError) {
-        console.error("❌ [STEP5] Ошибка сохранения P2P реквизитов:", requisiteError);
-        console.error("❌ [STEP5] Детали ошибки:", JSON.stringify(requisiteError, null, 2));
+        logger.error("❌ [STEP5] Ошибка сохранения P2P реквизитов:", requisiteError);
+        logger.error("❌ [STEP5] Детали ошибки:", JSON.stringify(requisiteError, null, 2));
         toast({
           title: "Ошибка",
           description: "Не удалось сохранить реквизиты: " + (requisiteError.message || "Неизвестная ошибка"),
@@ -737,7 +737,7 @@ export default function Step5RequisiteSelectForm() {
         return;
       }
 
-      console.log("✅ [STEP5] P2P реквизиты успешно сохранены в project_requisites");
+      logger.info("✅ [STEP5] P2P реквизиты успешно сохранены в project_requisites");
 
       // Сохраняем в шаблоны, если выбрано
       if (saveToBook) {
@@ -761,7 +761,7 @@ export default function Step5RequisiteSelectForm() {
       
       // Обновляем сумму в базе данных
       if (totalAmount > 0) {
-        console.log(`💰 Обновляем сумму в БД: ${totalAmount}`);
+        logger.info(`💰 Обновляем сумму в БД: ${totalAmount}`);
         await supabase
           .from("projects")
           .update({ amount: totalAmount })
@@ -776,15 +776,15 @@ export default function Step5RequisiteSelectForm() {
         .single();
         
       if (fetchError) {
-        console.error("❌ Ошибка получения статуса проекта:", fetchError);
+        logger.error("❌ Ошибка получения статуса проекта:", fetchError);
       }
       
       const currentStatus = currentProject?.status || "receipt_approved";
-      console.log("🔄 [P2P] Текущий статус проекта:", currentStatus);
+      logger.info("🔄 [P2P] Текущий статус проекта:", currentStatus);
       
       // Правильная последовательность переходов статуса для P2P реквизитов
       if (currentStatus === "receipt_approved") {
-        console.log("💾 [P2P] Переходим от receipt_approved к filling_requisites");
+        logger.info("💾 [P2P] Переходим от receipt_approved к filling_requisites");
         await changeProjectStatus({
           projectId,
           newStatus: "filling_requisites",
@@ -792,7 +792,7 @@ export default function Step5RequisiteSelectForm() {
           comment: "Начинаем заполнение P2P реквизитов"
         });
         
-        console.log("💾 [P2P] Переходим от filling_requisites к waiting_manager_receipt");
+        logger.info("💾 [P2P] Переходим от filling_requisites к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -800,7 +800,7 @@ export default function Step5RequisiteSelectForm() {
           comment: "Карточные реквизиты добавлены, ожидание чека от менеджера"
         });
       } else if (currentStatus === "filling_requisites") {
-        console.log("💾 [P2P] Переходим от filling_requisites к waiting_manager_receipt");
+        logger.info("💾 [P2P] Переходим от filling_requisites к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -808,9 +808,9 @@ export default function Step5RequisiteSelectForm() {
           comment: "Карточные реквизиты добавлены, ожидание чека от менеджера"
         });
       } else if (currentStatus === "waiting_manager_receipt") {
-        console.log("⚠️ [P2P] Проект уже в статусе waiting_manager_receipt, пропускаем изменение статуса");
+        logger.info("⚠️ [P2P] Проект уже в статусе waiting_manager_receipt, пропускаем изменение статуса");
       } else {
-        console.log("⚠️ [P2P] Неожиданный статус, пытаемся перейти к waiting_manager_receipt");
+        logger.info("⚠️ [P2P] Неожиданный статус, пытаемся перейти к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -819,15 +819,15 @@ export default function Step5RequisiteSelectForm() {
         });
       }
 
-      console.log("✅ Статус изменен на waiting_manager_receipt, переходим на шаг 6");
+      logger.info("✅ Статус изменен на waiting_manager_receipt, переходим на шаг 6");
 
       // Переходим на следующий шаг
       setCurrentStep(6);
       if (6 > maxStepReached) setMaxStepReached(6);
     } catch (error: any) {
-      console.error("❌ Ошибка при добавлении карточных реквизитов:", error);
-      console.error("❌ Детали ошибки:", JSON.stringify(error, null, 2));
-      console.error("❌ Тип ошибки:", typeof error);
+      logger.error("❌ Ошибка при добавлении карточных реквизитов:", error);
+      logger.error("❌ Детали ошибки:", JSON.stringify(error, null, 2));
+      logger.error("❌ Тип ошибки:", typeof error);
       toast({
         title: "Ошибка",
         description: "Не удалось добавить карточные реквизиты: " + (error?.message || error?.toString() || "Неизвестная ошибка"),
@@ -883,7 +883,7 @@ export default function Step5RequisiteSelectForm() {
       return;
     }
 
-    console.log("🪙 Добавляем криптовалютные реквизиты...");
+    logger.info("🪙 Добавляем криптовалютные реквизиты...");
     setIsLoading(true);
 
     try {
@@ -918,7 +918,7 @@ export default function Step5RequisiteSelectForm() {
         network: addForm.network
       };
 
-      console.log("💾 [STEP5] Сохраняем новые криптовалютные реквизиты:", { 
+      logger.info("💾 [STEP5] Сохраняем новые криптовалютные реквизиты:", { 
         requisiteData, 
         projectId,
         paymentMethod: "crypto",
@@ -936,8 +936,8 @@ export default function Step5RequisiteSelectForm() {
         });
         
       if (requisiteError) {
-        console.error("❌ Ошибка сохранения реквизитов:", requisiteError);
-        console.error("❌ Детали ошибки:", JSON.stringify(requisiteError, null, 2));
+        logger.error("❌ Ошибка сохранения реквизитов:", requisiteError);
+        logger.error("❌ Детали ошибки:", JSON.stringify(requisiteError, null, 2));
         toast({
           title: "Ошибка",
           description: "Не удалось сохранить реквизиты: " + (requisiteError.message || "Неизвестная ошибка"),
@@ -946,7 +946,7 @@ export default function Step5RequisiteSelectForm() {
         return;
       }
 
-      console.log("✅ [STEP5] Криптовалютные реквизиты успешно сохранены в project_requisites");
+      logger.info("✅ [STEP5] Криптовалютные реквизиты успешно сохранены в project_requisites");
 
       // Сохраняем в шаблоны, если выбрано
       if (saveToBook) {
@@ -969,7 +969,7 @@ export default function Step5RequisiteSelectForm() {
       
       // Обновляем сумму в базе данных
       if (totalAmount > 0) {
-        console.log(`💰 Обновляем сумму в БД: ${totalAmount}`);
+        logger.info(`💰 Обновляем сумму в БД: ${totalAmount}`);
         await supabase
           .from("projects")
           .update({ amount: totalAmount })
@@ -984,15 +984,15 @@ export default function Step5RequisiteSelectForm() {
         .single();
         
       if (fetchError) {
-        console.error("❌ Ошибка получения статуса проекта:", fetchError);
+        logger.error("❌ Ошибка получения статуса проекта:", fetchError);
       }
       
       const currentStatus = currentProject?.status || "receipt_approved";
-      console.log("🔄 [CRYPTO] Текущий статус проекта:", currentStatus);
+      logger.info("🔄 [CRYPTO] Текущий статус проекта:", currentStatus);
       
       // Правильная последовательность переходов статуса для криптовалютных реквизитов
       if (currentStatus === "receipt_approved") {
-        console.log("💾 [CRYPTO] Переходим от receipt_approved к filling_requisites");
+        logger.info("💾 [CRYPTO] Переходим от receipt_approved к filling_requisites");
         await changeProjectStatus({
           projectId,
           newStatus: "filling_requisites",
@@ -1000,7 +1000,7 @@ export default function Step5RequisiteSelectForm() {
           comment: "Начинаем заполнение криптовалютных реквизитов"
         });
         
-        console.log("💾 [CRYPTO] Переходим от filling_requisites к waiting_manager_receipt");
+        logger.info("💾 [CRYPTO] Переходим от filling_requisites к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -1008,7 +1008,7 @@ export default function Step5RequisiteSelectForm() {
           comment: "Криптовалютные реквизиты добавлены, ожидание чека от менеджера"
         });
       } else if (currentStatus === "filling_requisites") {
-        console.log("💾 [CRYPTO] Переходим от filling_requisites к waiting_manager_receipt");
+        logger.info("💾 [CRYPTO] Переходим от filling_requisites к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -1016,9 +1016,9 @@ export default function Step5RequisiteSelectForm() {
           comment: "Криптовалютные реквизиты добавлены, ожидание чека от менеджера"
         });
       } else if (currentStatus === "waiting_manager_receipt") {
-        console.log("⚠️ [CRYPTO] Проект уже в статусе waiting_manager_receipt, пропускаем изменение статуса");
+        logger.info("⚠️ [CRYPTO] Проект уже в статусе waiting_manager_receipt, пропускаем изменение статуса");
       } else {
-        console.log("⚠️ [CRYPTO] Неожиданный статус, пытаемся перейти к waiting_manager_receipt");
+        logger.info("⚠️ [CRYPTO] Неожиданный статус, пытаемся перейти к waiting_manager_receipt");
         await changeProjectStatus({
           projectId,
           newStatus: "waiting_manager_receipt",
@@ -1027,15 +1027,15 @@ export default function Step5RequisiteSelectForm() {
         });
       }
 
-      console.log("✅ Статус изменен на waiting_manager_receipt, переходим на шаг 6");
+      logger.info("✅ Статус изменен на waiting_manager_receipt, переходим на шаг 6");
 
       // Переходим на следующий шаг
       setCurrentStep(6);
       if (6 > maxStepReached) setMaxStepReached(6);
     } catch (error: any) {
-      console.error("❌ Ошибка при добавлении криптовалютных реквизитов:", error);
-      console.error("❌ Детали ошибки:", JSON.stringify(error, null, 2));
-      console.error("❌ Тип ошибки:", typeof error);
+      logger.error("❌ Ошибка при добавлении криптовалютных реквизитов:", error);
+      logger.error("❌ Детали ошибки:", JSON.stringify(error, null, 2));
+      logger.error("❌ Тип ошибки:", typeof error);
       toast({
         title: "Ошибка",
         description: "Не удалось добавить криптовалютные реквизиты: " + (error?.message || error?.toString() || "Неизвестная ошибка"),

@@ -1,7 +1,85 @@
 'use client'
 
-import React from 'react'
+import React, { useRef, useCallback } from 'react'
 import { Search, Plus } from 'lucide-react'
+
+// Полностью неконтролируемый инпут - React НЕ управляет его значением
+// Это устраняет ВСЕ перерендеры при вводе
+const SearchInput = React.memo(function SearchInput({
+  initialValue,
+  onSearch,
+  placeholder = "Поиск поставщиков...",
+  debounceMs = 500
+}: {
+  initialValue: string
+  onSearch: (value: string) => void
+  placeholder?: string
+  debounceMs?: number
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Обработчик ввода - полностью вне React state
+  const handleInput = useCallback((e: React.FormEvent<HTMLInputElement>) => {
+    const newValue = e.currentTarget.value
+
+    // Очищаем предыдущий таймер
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+
+    // Устанавливаем новый таймер для отправки
+    timeoutRef.current = setTimeout(() => {
+      onSearch(newValue)
+    }, debounceMs)
+  }, [onSearch, debounceMs])
+
+  // Очистка поиска
+  const handleClear = useCallback(() => {
+    if (inputRef.current) {
+      inputRef.current.value = ''
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    onSearch('')
+    inputRef.current?.focus()
+  }, [onSearch])
+
+  // Обработка Enter - мгновенный поиск
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+      onSearch(e.currentTarget.value)
+    }
+  }, [onSearch])
+
+  return (
+    <div className="relative">
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+        <Search className="w-4 h-4 text-gray-400" />
+      </div>
+      <input
+        ref={inputRef}
+        type="text"
+        placeholder={placeholder}
+        defaultValue={initialValue}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        className="pl-12 pr-10 py-3 border-2 border-black focus:border-gray-400 focus:outline-none w-80 font-light tracking-wide"
+      />
+      <button
+        type="button"
+        onClick={handleClear}
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-black text-lg"
+      >
+        ×
+      </button>
+    </div>
+  )
+})
 
 interface Category {
   value: string
@@ -27,7 +105,6 @@ interface CatalogHeaderProps {
   sortOptions?: SortOption[]
   currentSort?: string
   setCurrentSort?: (sort: string) => void
-  isSearching?: boolean
   onAddSupplier: () => void
   onImportFromProjects?: () => void
   onLoadRecommendations?: () => void
@@ -49,7 +126,6 @@ export const CatalogHeader = React.memo(function CatalogHeader({
   sortOptions = [],
   currentSort = 'default',
   setCurrentSort,
-  isSearching = false,
   onAddSupplier,
   onImportFromProjects,
   onLoadRecommendations,
@@ -104,8 +180,12 @@ export const CatalogHeader = React.memo(function CatalogHeader({
             
             <div className="flex items-center gap-6">
               <div className="text-right">
-                <div className="text-2xl font-light text-black">{filteredSuppliersCount}</div>
-                <div className="text-sm text-gray-500 uppercase tracking-wider">АКТИВНЫХ</div>
+                <div className="text-2xl font-light text-black">
+                  {filteredSuppliersCount}
+                </div>
+                <div className="text-sm text-gray-500 uppercase tracking-wider">
+                  АКТИВНЫХ
+                </div>
               </div>
               <div className="w-px h-12 bg-black"></div>
               
@@ -157,37 +237,13 @@ export const CatalogHeader = React.memo(function CatalogHeader({
 
             {/* Поиск и фильтры */}
             <div className="flex items-center gap-4">
-              {/* Поиск с индикатором */}
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                  {isSearching ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  ) : (
-                    <Search className="w-4 h-4 text-gray-400" />
-                  )}
-                </div>
-                <input
-                  type="text"
-                  placeholder="Поиск поставщиков..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`pl-12 pr-4 py-3 border-2 focus:outline-none w-80 font-light tracking-wide transition-colors ${
-                    isSearching 
-                      ? 'border-blue-600 bg-blue-50' 
-                      : 'border-black focus:border-gray-400'
-                  }`}
-                />
-                {searchQuery && (
-                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="text-gray-400 hover:text-black text-lg"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-              </div>
+              {/* Изолированный поиск - не перерисовывает страницу при вводе */}
+              <SearchInput
+                initialValue={searchQuery}
+                onSearch={setSearchQuery}
+                placeholder="Поиск поставщиков..."
+                debounceMs={400}
+              />
               
               {/* Фильтр по категории */}
               <select

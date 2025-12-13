@@ -1,5 +1,18 @@
-/**
- * Public API виджета каталога поставщиков
- */
+// FSD: widgets/catalog-suppliers - Виджет каталога поставщиков
 
-export { CatalogSuppliersWidget } from './ui/CatalogSuppliersWidget'
+// Экспорт UI компонентов
+export { SupplierCard } from './ui/SupplierCard'
+export { SupplierGrid } from './ui/SupplierGrid'
+export { ProductCard } from './ui/ProductCard'
+export { CategoryView, SubcategorySelector } from './ui/CategoryView'
+export { AddSupplierModal } from './ui/AddSupplierModal'
+
+// Реэкспорт типов для удобства
+export type {
+  Supplier,
+  RoomType,
+  CatalogMode
+} from '@/src/entities/supplier'
+
+export type { Product } from '@/src/entities/product'
+export type { CatalogCategory } from '@/src/entities/category'

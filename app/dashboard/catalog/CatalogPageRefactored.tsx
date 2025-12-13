@@ -1,13 +1,13 @@
 'use client'
 
+import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { CATEGORY_CERTIFICATIONS } from '@/components/catalog-categories-and-certifications'
+import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config'
 import { CatalogHeader } from './components/CatalogHeader'
 import { SupplierGrid } from './components/SupplierGrid'
 import { AddSupplierModal } from './components/AddSupplierModal'
 import { useCatalogOptimization } from './hooks/useCatalogOptimization'
-
 interface Supplier {
   id: string
   name: string
@@ -49,6 +49,11 @@ export default function CatalogPageRefactored() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
 
+  // Простой callback для поиска - debounce уже в SearchInput
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query)
+  }, [])
+
   // === ДАННЫЕ ПОСТАВЩИКОВ ===
   const [realSuppliers, setRealSuppliers] = useState<Supplier[]>([])
   const [verifiedSuppliers, setVerifiedSuppliers] = useState<Supplier[]>([])
@@ -75,7 +80,7 @@ export default function CatalogPageRefactored() {
         const { data, error } = await supabase.auth.getSession()
         
         if (error) {
-          console.error('[SUPABASE CONNECTION ERROR]', error)
+          logger.error('[SUPABASE CONNECTION ERROR]', error)
           setSupabaseError(error.message)
           setSupabaseConnected(false)
         } else {
@@ -83,7 +88,7 @@ export default function CatalogPageRefactored() {
           setSupabaseError(null)
         }
       } catch (err) {
-        console.error('[SUPABASE IMPORT ERROR]', err)
+        logger.error('[SUPABASE IMPORT ERROR]', err)
         setSupabaseError('Ошибка загрузки Supabase клиента')
         setSupabaseConnected(false)
       }
@@ -109,11 +114,11 @@ export default function CatalogPageRefactored() {
       if (data.suppliers) {
         setRealSuppliers(data.suppliers)
       } else {
-        console.warn('⚠️ Нет пользовательских поставщиков в ответе API')
+        logger.warn('⚠️ Нет пользовательских поставщиков в ответе API')
         setRealSuppliers([])
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки пользовательских поставщиков:', error)
+      logger.error('❌ Ошибка загрузки пользовательских поставщиков:', error)
       setRealSuppliers([])
     } finally {
       setLoadingSuppliers(false)
@@ -129,11 +134,11 @@ export default function CatalogPageRefactored() {
       if (data.suppliers) {
         setVerifiedSuppliers(data.suppliers)
       } else {
-        console.warn('⚠️ Нет аккредитованных поставщиков в ответе API')
+        logger.warn('⚠️ Нет аккредитованных поставщиков в ответе API')
         setVerifiedSuppliers([])
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки аккредитованных поставщиков:', error)
+      logger.error('❌ Ошибка загрузки аккредитованных поставщиков:', error)
       setVerifiedSuppliers([])
     } finally {
       setLoadingVerified(false)
@@ -155,7 +160,7 @@ export default function CatalogPageRefactored() {
         })))
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки категорий:', error)
+      logger.error('❌ Ошибка загрузки категорий:', error)
       // Fallback на статические категории
       setApiCategories(CATEGORY_CERTIFICATIONS.map(cat => ({
         name: cat.category,
@@ -178,7 +183,7 @@ export default function CatalogPageRefactored() {
         setRecommendationsError('Не удалось получить рекомендации')
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки рекомендаций:', error)
+      logger.error('❌ Ошибка загрузки рекомендаций:', error)
       setRecommendationsError('Ошибка загрузки рекомендаций')
     } finally {
       setLoadingRecommendations(false)
@@ -249,20 +254,16 @@ export default function CatalogPageRefactored() {
 
   // === ОПТИМИЗАЦИЯ КАТАЛОГА ===
   const {
-    filteredSuppliers,
     sortedSuppliers,
     searchStats,
     sortOptions,
     currentSort,
-    setCurrentSort,
-    debouncedSearchQuery,
-    isSearching
+    setCurrentSort
   } = useCatalogOptimization({
     suppliers: currentSuppliers,
     searchQuery,
     selectedCategory,
-    mode: activeMode,
-    debounceMs: 300
+    mode: activeMode
   })
 
   return (
@@ -275,14 +276,13 @@ export default function CatalogPageRefactored() {
         verifiedSuppliersCount={verifiedSuppliers.length}
         filteredSuppliersCount={searchStats.filtered}
         searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+        setSearchQuery={handleSearchChange}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         categories={categories}
         sortOptions={sortOptions}
         currentSort={currentSort}
         setCurrentSort={setCurrentSort}
-        isSearching={isSearching}
         onAddSupplier={handleAddSupplier}
         onImportFromProjects={handleImportFromProjects}
         onLoadRecommendations={loadRecommendations}
@@ -296,7 +296,7 @@ export default function CatalogPageRefactored() {
           suppliers={sortedSuppliers}
           mode={activeMode}
           loading={isLoading}
-          searchQuery={debouncedSearchQuery}
+          searchQuery={searchQuery}
           selectedCategory={selectedCategory}
           searchStats={searchStats}
           onViewDetails={handleViewDetails}

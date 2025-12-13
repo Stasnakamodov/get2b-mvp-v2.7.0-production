@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 import React from 'react'
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -17,7 +18,6 @@ import {
   Image as ImageIcon
 } from "lucide-react"
 import { motion } from "framer-motion"
-
 interface ProductCardProps {
   product: any
   onViewDetails?: (productId: string) => void
@@ -57,7 +57,7 @@ export default function ProductCard({
               alt={product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
-                console.error(`❌ ОШИБКА ЗАГРУЗКИ ИЗОБРАЖЕНИЯ ТОВАРА ${product.name}:`, product.images[0]);
+                logger.error(`❌ ОШИБКА ЗАГРУЗКИ ИЗОБРАЖЕНИЯ ТОВАРА ${product.name}:`, product.images[0]);
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
               }}

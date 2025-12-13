@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+import { logger } from '@/src/shared/lib/logger'
 
 // 🎯 API ENDPOINT: Получение товаров по категории (Category-First подход)
 // GET /api/catalog/products-by-category/{category}
@@ -31,6 +32,8 @@ export async function GET(
         const { data: { user } } = await supabase.auth.getUser(token)
         currentUserId = user?.id || null
       } catch (error) {
+        logger.warn('Failed to get user from auth token', error)
+        // Продолжаем без авторизации - вернем только публичные товары
       }
     }
 
@@ -84,7 +87,7 @@ export async function GET(
 
     const executionTime = Date.now() - startTime
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       category: category,
       products: sortedProducts,
@@ -103,6 +106,11 @@ export async function GET(
         execution_time_ms: executionTime
       }
     })
+
+    // Добавляем заголовки кэширования
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
+
+    return response
 
   } catch (error) {
     console.error('❌ [API] Критическая ошибка получения товаров категории:', error)

@@ -1,11 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { logger } from "@/src/shared/lib/logger"
 import {
   Building,
   FileText,
@@ -30,7 +26,6 @@ import {
 
 // Add these imports at the top with the other imports
 import { useSearchParams, useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"
 import {
   sendTelegramMessageClient,
   sendTelegramDocumentClient,
@@ -39,36 +34,37 @@ import {
   sendClientConfirmationRequestToTelegramClient,
 } from "@/lib/telegram-client"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { CreateProjectProvider, useCreateProjectContext } from "./context/CreateProjectContext"
+import { Button } from "@/components/ui/button"
+import { AnimatePresence } from "framer-motion"
+import { useCreateProjectContext, CreateProjectProvider } from "./context/CreateProjectContext"
+import { useProjectSupabase } from "./hooks/useProjectSupabase"
+import { useProjectTemplates } from "./hooks/useSaveTemplate"
+import { useClientProfiles } from "@/hooks/useClientProfiles"
+import { useSupplierProfiles } from "@/hooks/useSupplierProfiles"
+import { getStepByStatus } from "@/lib/types/project-status"
+import { supabase } from "@/lib/supabaseClient"
+import ProjectTimeline from "@/components/ui/ProjectTimeline"
 import Step1CompanyForm from "./steps/Step1CompanyForm"
 import Step2SpecificationForm from "./steps/Step2SpecificationForm"
-import ProjectTimeline from "@/components/ui/ProjectTimeline"
-import { useProjectSupabase } from "./hooks/useProjectSupabase"
 import Step3PaymentForm from "./steps/Step3PaymentForm"
 import Step4PaymentMethodForm from "./steps/Step4PaymentMethodForm"
 import Step5RequisiteSelectForm from "./steps/Step5RequisiteSelectForm"
 import Step6ReceiptForClient from "./steps/Step6ReceiptForClient"
 import Step7ClientConfirmationForm from "./steps/Step7ClientConfirmationForm"
-import { useClientProfiles } from '@/hooks/useClientProfiles';
-import { useSupplierProfiles } from '@/hooks/useSupplierProfiles';
-import { useProjectTemplates } from "./hooks/useSaveTemplate";
-import { getStepByStatus } from '@/lib/types/project-status';
-
 // --- ДОБАВЬ: функция для отправки данных в Telegram ---
 async function sendCompanyDataToTelegram(companyData: any) {
   try {
     // Проверяем, что данные не пустые
     if (!companyData || !companyData.name) {
-      console.error("Данные компании пустые, отправка отменена")
+      logger.error("Данные компании пустые, отправка отменена")
       return
     }
 
     const text = `Данные клиента заполнены!\n\nНазвание: ${companyData.name}\nЮр. название: ${companyData.legalName}\nИНН: ${companyData.inn}\nКПП: ${companyData.kpp}\nОГРН: ${companyData.ogrn}\nАдрес: ${companyData.address}\nБанк: ${companyData.bankName}\nСчёт: ${companyData.bankAccount}\nEmail: ${companyData.email}\nТелефон: ${companyData.phone}`
 
-    console.log("Отправляем текст в Telegram:", text)
     await sendTelegramMessageClient(text)
   } catch (error) {
-    console.error("❌ Ошибка отправки данных компании в Telegram:", error)
+    logger.error("❌ Ошибка отправки данных компании в Telegram:", error)
     alert("Ошибка отправки данных в Telegram: " + (error instanceof Error ? error.message : String(error)))
   }
 }
@@ -112,9 +108,8 @@ async function sendSpecificationToTelegram({
     } else {
       await sendTelegramMessageClient(text)
     }
-    console.log("✅ Спецификация отправлена в Telegram")
   } catch (error) {
-    console.error("❌ Ошибка отправки спецификации в Telegram:", error)
+    logger.error("❌ Ошибка отправки спецификации в Telegram:", error)
     alert("Ошибка отправки спецификации в Telegram: " + (error instanceof Error ? error.message : String(error)))
   }
 }
@@ -165,8 +160,8 @@ function CreateProjectPageContent() {
   const { currentStep, setCurrentStep, maxStepReached, setMaxStepReached, setCompanyData, setProjectName, setSpecificationItems, projectId, setSupplierData, hasCartItems } = useCreateProjectContext();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const templateId = searchParams.get("templateId");
-  const fromCart = searchParams.get("from_cart");
+  const templateId = searchParams?.get("templateId");
+  const fromCart = searchParams?.get("from_cart");
   const defaultCompanyData = useMemo(() => ({
     name: "",
     legalName: "",
@@ -185,19 +180,16 @@ function CreateProjectPageContent() {
   useEffect(() => {
     // ❌ НЕ сбрасываем данные если пользователь пришел из корзины каталога
     if (fromCart === 'true') {
-      console.log("[CreateProjectPageContent] Пропускаем сброс данных - пользователь пришел из корзины");
       return;
     }
 
     // ❌ НЕ сбрасываем данные если в контексте есть товары из корзины
     if (hasCartItems) {
-      console.log("[CreateProjectPageContent] Пропускаем сброс данных - в контексте есть товары из корзины");
       return;
     }
 
     // Если нет templateId и projectId — сбрасываем всё в дефолт
     if (!projectId && !templateId) {
-      console.log("[CreateProjectPageContent] Сбрасываем данные в дефолт");
       setCompanyData(defaultCompanyData);
       setProjectName("");
       setSpecificationItems([]);
@@ -255,8 +247,8 @@ function CreateProjectPageContent() {
 function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const projectId = searchParams.get("projectId");
-  const stepParam = searchParams.get("step");
+  const projectId = searchParams?.get("projectId");
+  const stepParam = searchParams?.get("step");
   const { setProjectId, setCurrentStep, setProjectName, setCompanyData, setSpecificationItems, setMaxStepReached, setPaymentMethod, setSupplierData } = useCreateProjectContext();
   const { loadSpecification } = useProjectSupabase();
   const [isStepLoading, setIsStepLoading] = useState(true);
@@ -269,7 +261,6 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
         // Проверяем, есть ли товары поставщика для сохранения
         const pendingItems = localStorage.getItem('pendingSupplierItems');
         if (pendingItems) {
-          console.log('[ProjectIdLoader] Найдены товары поставщика для сохранения');
           // Очищаем localStorage
           localStorage.removeItem('pendingSupplierItems');
           
@@ -277,7 +268,6 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
           setTimeout(async () => {
             try {
               const items = JSON.parse(pendingItems);
-              console.log('[ProjectIdLoader] Сохраняем товары поставщика:', items);
               
               // Ждем создания проекта
               const checkProjectId = setInterval(async () => {
@@ -298,7 +288,6 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
                   });
                   
                   const result = await response.json();
-                  console.log('[ProjectIdLoader] Товары поставщика сохранены:', result);
                 }
               }, 100);
               
@@ -306,7 +295,7 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
               setTimeout(() => clearInterval(checkProjectId), 10000);
               
             } catch (error) {
-              console.error('[ProjectIdLoader] Ошибка сохранения товаров поставщика:', error);
+              logger.error('[ProjectIdLoader] Ошибка сохранения товаров поставщика:', error);
             }
           }, 1000);
         }
@@ -315,47 +304,37 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
         return;
       }
       
-      console.log("[ProjectIdLoader] Загружаем данные проекта:", projectId);
       const data = await loadSpecification(projectId);
       
       if (data) {
-        console.log("[ProjectIdLoader] Данные проекта:", data);
-        console.log("[ProjectIdLoader] company_data из базы:", data.company_data);
         
         if (data.name) setProjectName(data.name);
         if (data.company_data) {
-          console.log("[ProjectIdLoader] Устанавливаем company_data в контекст:", data.company_data);
           setCompanyData(data.company_data);
         }
         if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
         
         // 🎯 ВОССТАНАВЛИВАЕМ ДАННЫЕ ПОСТАВЩИКА ИЗ БД
         if (data.supplier_data) {
-          console.log("[ProjectIdLoader] ✅ Восстанавливаем supplier_data из БД:", data.supplier_data);
           setSupplierData(data.supplier_data);
         } else {
-          console.log("[ProjectIdLoader] ⚠️ supplier_data отсутствует в БД");
         }
         
         // Определяем шаг по статусу
         if (data.status) {
           const statusStep = getStepByStatus(data.status);
-          console.log("[ProjectIdLoader] Статус:", data.status, "-> шаг:", statusStep);
           
           // Не переопределяем шаг, если пользователь уже находится на том же шаге или дальше
           // Это предотвращает "возврат" при переходах между шагами
           const currentStepFromUrl = Number(stepParam) || 1;
           if (currentStepFromUrl >= statusStep) {
-            console.log("[ProjectIdLoader] Оставляем текущий шаг:", currentStepFromUrl);
             setCurrentStep(currentStepFromUrl);
             setMaxStepReached(Math.max(currentStepFromUrl, statusStep));
       } else {
-            console.log("[ProjectIdLoader] Устанавливаем шаг по статусу:", statusStep);
             setCurrentStep(statusStep);
             setMaxStepReached(statusStep);
           }
     } else {
-          console.log("[ProjectIdLoader] Нет статуса, устанавливаем шаг 1");
           setCurrentStep(1);
           setMaxStepReached(1);
         }
@@ -565,13 +544,10 @@ function ProjectStartFlow() {
     setProjectInsertError(null);
     try {
       // Создаём проект в Supabase
-      console.log('[DEBUG] Перед getUser, window:', typeof window, 'supabase:', supabase);
       const { data: userData, error: userError } = await supabase.auth.getUser();
-      console.log('[DEBUG] userData:', userData, 'userError:', userError);
       if (!userData?.user) {
         alert('Ошибка: пользователь не найден. Пожалуйста, войдите в систему заново.');
         if (typeof window !== 'undefined') {
-          console.log('[DEBUG] localStorage:', JSON.stringify(localStorage, null, 2));
         }
         setCreating(false);
         return;
@@ -581,7 +557,6 @@ function ProjectStartFlow() {
       let projectId = null;
       if (method === 'template' && templateData) {
         alert('Попытка создать проект из шаблона!');
-        console.log('Создаём проект из шаблона, данные:', templateData);
         // Создаём проект с автозаполнением из нормализованных полей шаблона
         const { data: project, error: projectError } = await supabase
           .from('projects')
@@ -612,10 +587,9 @@ function ProjectStartFlow() {
           ])
           .select('id')
           .single();
-        console.log('[DEBUG PROJECT INSERT]', { project, projectError });
         if (projectError) {
           setProjectInsertError('Ошибка создания проекта: ' + JSON.stringify(projectError));
-          console.error('Ошибка создания проекта:', projectError);
+          logger.error('Ошибка создания проекта:', projectError);
         }
         if (projectError || !project?.id) throw new Error(projectError?.message || 'Ошибка создания проекта');
         const projectId: string = project.id;
@@ -639,14 +613,9 @@ function ProjectStartFlow() {
         // --- Диагностика авторизации перед bulk insert ---
         const { data: user, error: userError } = await supabase.auth.getUser();
         const session = await supabase.auth.getSession();
-        console.log('[DEBUG AUTH] user:', user, 'userError:', userError);
-        console.log('[DEBUG AUTH] session:', session);
         // --- Копируем спецификацию из шаблона в project_specifications ---
         if (Array.isArray(templateData.specification) && templateData.specification.length > 0) {
           // --- ЛОГИРОВАНИЕ bulk insert спецификации ---
-          console.log('[BULK INSERT] projectId:', projectId);
-          console.log('[BULK INSERT] user_id:', user_id);
-          console.log('[BULK INSERT] raw specRows:', JSON.stringify(templateData.specification, null, 2));
           const specRows = templateData.specification.map((item: any) => ({
             item_name: item.name || item.item_name || "",
             item_code: item.code || item.item_code || "",
@@ -659,15 +628,12 @@ function ProjectStartFlow() {
             role: 'client',
             user_id,
           }));
-          console.log('[BULK INSERT] mapped specRows:', JSON.stringify(specRows, null, 2));
           const { data: insertData, error: specError } = await supabase
             .from('project_specifications')
             .insert(specRows);
-          console.log('[BULK INSERT] insertData:', insertData);
-          console.log('[BULK INSERT] specError:', specError);
           if (specError) {
             alert('Ошибка копирования спецификации: ' + specError.message);
-            console.error('Ошибка копирования спецификации:', specError);
+            logger.error('Ошибка копирования спецификации:', specError);
           }
           // --- Polling: ждём, пока все позиции появятся в Supabase ---
           const waitForSpec = async () => {
@@ -758,7 +724,7 @@ function ProjectStartFlow() {
     // --- Обновляем проект в Supabase ---
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
-      const projectId = url.searchParams.get('projectId');
+      const projectId = url.searchParams?.get('projectId');
       if (projectId) {
         await supabase
           .from('projects')
@@ -828,11 +794,11 @@ function TemplateModeContent() {
 
 export default function CreateProjectPage() {
   const searchParams = useSearchParams();
-  const templateId = searchParams.get("templateId");
-  const projectId = searchParams.get("projectId");
-  const mode = searchParams.get("mode");
-  const role = searchParams.get("role");
-  const fromCart = searchParams.get("from_cart");
+  const templateId = searchParams?.get("templateId");
+  const projectId = searchParams?.get("projectId");
+  const mode = searchParams?.get("mode");
+  const role = searchParams?.get("role");
+  const fromCart = searchParams?.get("from_cart");
   // Уникальный ключ для сброса контекста при новом проекте/шаблоне
   const contextKey = projectId || templateId || mode || "new";
   const [isStepLoaded, setIsStepLoaded] = useState(false);
@@ -865,8 +831,8 @@ export default function CreateProjectPage() {
 // Компонент для загрузки шаблона и автозаполнения контекста
 function TemplateLoader() {
   const searchParams = useSearchParams();
-  const templateId = searchParams.get("templateId");
-  const projectId = searchParams.get("projectId");
+  const templateId = searchParams?.get("templateId");
+  const projectId = searchParams?.get("projectId");
   const { setProjectName, setCompanyData, setSpecificationItems } = useCreateProjectContext();
   const [isTemplateLoading, setIsTemplateLoading] = useState(false);
 
@@ -874,7 +840,6 @@ function TemplateLoader() {
     // ВАЖНО: Если есть projectId, то проект уже создан и данные загружены в ProjectIdLoader
     // TemplateLoader должен работать только при создании нового проекта БЕЗ projectId
     if (projectId) {
-      console.log("[TemplateLoader] Проект уже существует, пропускаем загрузку шаблона");
       return;
     }
 
@@ -901,7 +866,6 @@ function TemplateLoader() {
     }
     async function fetchTemplate() {
       setIsTemplateLoading(true);
-      console.log("[TemplateLoader] Загружаем шаблон для нового проекта:", templateId);
       // Ищем шаблон в project_templates
       const { data, error } = await supabase
         .from("project_templates")
@@ -909,7 +873,6 @@ function TemplateLoader() {
         .eq("id", templateId)
         .single();
       if (!error && data) {
-        console.log("[TemplateLoader] Данные шаблона:", data);
         setProjectName(data.name || "");
         setCompanyData({
           name: data.company_name || "",
@@ -948,9 +911,9 @@ function TemplateLoader() {
 // Компонент для загрузки данных из корзины каталога
 function CartLoader() {
   const searchParams = useSearchParams();
-  const fromCart = searchParams.get("from_cart");
-  const cartData = searchParams.get("cart");
-  const cartId = searchParams.get("cart_id"); // Новый параметр для ID корзины из БД
+  const fromCart = searchParams?.get("from_cart");
+  const cartData = searchParams?.get("cart");
+  const cartId = searchParams?.get("cart_id"); // Новый параметр для ID корзины из БД
   const { setSpecificationItems, setCurrentStep, setMaxStepReached, setPaymentMethod, setBankDetails, setHasCartItems, setSupplierData } = useCreateProjectContext();
   const [isCartLoading, setIsCartLoading] = useState(false);
   const [cartProcessed, setCartProcessed] = useState(false);
@@ -958,41 +921,29 @@ function CartLoader() {
   // Используем импортированный supabase
 
   useEffect(() => {
-    console.log("[CartLoader] useEffect запущен", {
-      fromCart,
-      cartProcessed,
-      cartId,
-      hasCartData: !!cartData
-    });
-    
     // Проверяем что пришли из корзины
     if (fromCart !== 'true') {
-      console.log("[CartLoader] Пропускаем загрузку - не из корзины", { fromCart });
       return;
     }
 
     // Если это новый cartId, сбрасываем флаг обработки
     if (cartId && cartId !== lastProcessedCartId) {
-      console.log("[CartLoader] Новый cartId, сбрасываем обработку", { cartId, lastProcessedCartId });
       setCartProcessed(false);
       setLastProcessedCartId(cartId);
     }
 
     // Если корзина уже обработана для ЭТОГО cartId, не обрабатываем повторно
     if (cartProcessed && cartId === lastProcessedCartId) {
-      console.log("[CartLoader] Корзина уже обработана для этого ID", { cartId, lastProcessedCartId });
       return;
     }
 
     // Проверяем наличие данных (либо cart_id для новой версии, либо cart для старой)
     if (!cartId && !cartData) {
-      console.log("[CartLoader] Нет данных корзины");
       return;
     }
 
     async function loadCartData() {
       setIsCartLoading(true);
-      console.log("[CartLoader] Загружаем данные из корзины");
       
       try {
         let cartItems = [];
@@ -1002,7 +953,6 @@ function CartLoader() {
 
         // Новый способ: загрузка из БД по cart_id
         if (cartId) {
-          console.log("[CartLoader] Загружаем корзину из БД по ID:", cartId);
           
           const { data: cartFromDB, error } = await supabase
             .from('project_carts')
@@ -1011,36 +961,31 @@ function CartLoader() {
             .single();
           
           if (error) {
-            console.error("[CartLoader] Ошибка загрузки корзины из БД:", error);
+            logger.error("[CartLoader] Ошибка загрузки корзины из БД:", error);
             throw error;
           }
           
           if (cartFromDB) {
-            console.log("[CartLoader] Корзина загружена из БД:", cartFromDB);
             
             // Извлекаем товары из корзины
             cartItems = cartFromDB.cart_items?.items || [];
             supplierData = cartFromDB.supplier_data || {};
             
             // 🎯 СОХРАНЯЕМ ДАННЫЕ ПОСТАВЩИКА В КОНТЕКСТ
-            console.log("[CartLoader] Сохраняем данные поставщика в контекст:", supplierData);
             setSupplierData?.(supplierData);
             
             // 🎯 АВТОЗАПОЛНЕНИЕ ШАГА 4: Способ оплаты
             if (supplierData.payment_methods?.length === 1) {
               // Если способ оплаты один - автовыбираем
-              console.log("[CartLoader] Автовыбор единственного способа оплаты:", supplierData.payment_methods[0]);
               setPaymentMethod?.(supplierData.payment_methods[0]);
               hasPaymentData = true;
             } else if (supplierData.payment_methods?.length > 1) {
               // Если способов несколько - НЕ автовыбираем, пусть пользователь выбирает
-              console.log("[CartLoader] Найдено несколько способов оплаты:", supplierData.payment_methods, "- пользователь выберет сам");
               hasPaymentData = true;
             }
 
             // 🎯 АВТОЗАПОЛНЕНИЕ ШАГА 5: Реквизиты поставщика
             if (supplierData.bank_accounts?.length > 0 || supplierData.crypto_wallets?.length > 0 || supplierData.p2p_cards?.length > 0) {
-              console.log("[CartLoader] Автозаполнение реквизитов поставщика");
               // Устанавливаем банковские реквизиты если есть
               if (supplierData.bank_accounts?.length > 0) {
                 setBankDetails?.(supplierData.bank_accounts[0]);
@@ -1060,11 +1005,9 @@ function CartLoader() {
         } 
         // Старый способ: из URL параметра
         else if (cartData) {
-          console.log("[CartLoader] Загружаем корзину из URL");
           cartItems = JSON.parse(decodeURIComponent(cartData));
         }
         
-        console.log("[CartLoader] Данные корзины:", cartItems);
         
         if (cartItems && cartItems.length > 0) {
           // Преобразуем товары из корзины в формат спецификации
@@ -1081,7 +1024,6 @@ function CartLoader() {
             supplier_id: item.supplier_id || ""
           }));
           
-          console.log("[CartLoader] Преобразованные товары:", specItems);
           
           // Устанавливаем товары в контекст
           setSpecificationItems(specItems);
@@ -1089,7 +1031,6 @@ function CartLoader() {
 
           // Сохраняем в localStorage как запасной вариант
           localStorage.setItem('cart_items_temp', JSON.stringify(specItems));
-          console.log("[CartLoader] Товары установлены в контекст и localStorage, будут сохранены в БД после создания проекта");
 
           // Остаемся на первом шаге, но товары уже загружены и доступ к шагу 2 открыт
           setCurrentStep(1);
@@ -1104,12 +1045,11 @@ function CartLoader() {
           }
 
           setMaxStepReached(maxStep);
-          console.log("[CartLoader] Открыт доступ до шага:", maxStep);
           
           // Отмечаем что корзина обработана
           setCartProcessed(true);
 
-          console.log("[CartLoader] ✅ Автозаполнение завершено:", {
+          logger.info("[CartLoader] Данные успешно загружены", {
             товары: specItems.length,
             способыОплаты: hasPaymentData ? "✅" : "❌",
             реквизиты: hasBankData ? "✅" : "❌",
@@ -1117,7 +1057,7 @@ function CartLoader() {
           });
         }
       } catch (error) {
-        console.error("[CartLoader] Ошибка загрузки данных корзины:", error);
+        logger.error("[CartLoader] Ошибка загрузки данных корзины:", error);
       } finally {
         setIsCartLoading(false);
       }
@@ -1145,10 +1085,10 @@ function CartLoader() {
 // Добавить новый компонент SupplierLoader после TemplateLoader
 function SupplierLoader() {
   const searchParams = useSearchParams();
-  const supplierId = searchParams.get("supplierId");
-  const supplierName = searchParams.get("supplierName");
-  const mode = searchParams.get("mode");
-  const projectId = searchParams.get("projectId");
+  const supplierId = searchParams?.get("supplierId");
+  const supplierName = searchParams?.get("supplierName");
+  const mode = searchParams?.get("mode");
+  const projectId = searchParams?.get("projectId");
   const { setCompanyData, setProjectName, setSpecificationItems, fillFromEchoCard } = useCreateProjectContext();
   const [isSupplierLoading, setIsSupplierLoading] = useState(false);
 
@@ -1160,14 +1100,13 @@ function SupplierLoader() {
 
     async function loadSupplierData() {
       setIsSupplierLoading(true);
-      console.log("[SupplierLoader] Загружаем данные поставщика:", supplierId, supplierName);
       
       try {
         // Получаем данные поставщика из каталога
         // Получаем токен авторизации
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          console.error("[SupplierLoader] Нет активной сессии для загрузки поставщика");
+          logger.error("[SupplierLoader] Нет активной сессии для загрузки поставщика");
           return;
         }
 
@@ -1181,7 +1120,6 @@ function SupplierLoader() {
         
         // Если не найден в пользовательских, пробуем в аккредитованных
         if (!data.supplier) {
-          console.log("[SupplierLoader] Поставщик не найден в пользовательских, пробуем аккредитованные");
           response = await fetch(`/api/catalog/verified-suppliers?id=${supplierId}`, {
             headers: {
               'Authorization': `Bearer ${session.access_token}`,
@@ -1192,7 +1130,6 @@ function SupplierLoader() {
         
         if (data.supplier) {
           const supplier = data.supplier;
-          console.log("[SupplierLoader] Данные поставщика загружены:", supplier);
           
           // Создаем объект эхо карточки для совместимости с существующим механизмом импорта
           const supplierAsEcho = {
@@ -1279,10 +1216,6 @@ function SupplierLoader() {
             step5: true  // Импортируем реквизиты поставщика
           };
           
-          console.log("[SupplierLoader] Импортируем товары поставщика:", selectedSteps);
-          console.log("[SupplierLoader] Данные поставщика:", supplier);
-          console.log("[SupplierLoader] Товары поставщика:", supplier.catalog_user_products || supplier.catalog_verified_products);
-          console.log("[SupplierLoader] Объект supplierAsEcho:", supplierAsEcho);
           fillFromEchoCard(supplierAsEcho as any, selectedSteps);
           
           // Устанавливаем имя проекта как название поставщика для удобства
@@ -1291,7 +1224,6 @@ function SupplierLoader() {
           // Если есть товары и projectId еще не создан, сохраняем их после создания проекта
           if (selectedSteps.step2 && (supplier.catalog_user_products || supplier.catalog_verified_products) && 
               (supplier.catalog_user_products || supplier.catalog_verified_products).length > 0 && !projectId) {
-            console.log("[SupplierLoader] Товары будут сохранены после создания проекта");
             // Сохраняем товары в localStorage для последующего сохранения
             const itemsToSave = supplier.catalog_user_products.map((p: any) => ({
               name: p.name,
@@ -1307,10 +1239,10 @@ function SupplierLoader() {
           }
           
         } else {
-          console.warn("[SupplierLoader] Поставщик не найден:", supplierId);
+          logger.warn("[SupplierLoader] Поставщик не найден:", supplierId);
         }
       } catch (error) {
-        console.error("[SupplierLoader] Ошибка загрузки поставщика:", error);
+        logger.error("[SupplierLoader] Ошибка загрузки поставщика:", error);
       } finally {
         setIsSupplierLoading(false);
       }

@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { supabase } from '@/lib/supabaseClient'
 import type { CatalogCategory } from '@/lib/types'
-
 interface Product {
   id: string
   name: string
@@ -62,7 +62,7 @@ export default function NewCatalogPage() {
         setCategories(data.categories)
       }
     } catch (error) {
-      console.error('Ошибка загрузки категорий:', error)
+      logger.error('Ошибка загрузки категорий:', error)
     } finally {
       setLoading(false)
     }
@@ -104,7 +104,7 @@ export default function NewCatalogPage() {
         setProducts(filteredProducts)
       }
     } catch (error) {
-      console.error('Ошибка загрузки товаров:', error)
+      logger.error('Ошибка загрузки товаров:', error)
     } finally {
       setLoadingProducts(false)
     }

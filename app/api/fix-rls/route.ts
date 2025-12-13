@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { createClient } from '@supabase/supabase-js';
 
 // Используем service role key для административных операций
@@ -78,13 +79,13 @@ export async function POST() {
         const { error } = await supabaseAdmin.rpc('exec_sql', { sql });
         
         if (error) {
-          console.error("Ошибка SQL:", error.message);
+          logger.error("Ошибка SQL:", error.message);
           results.push({ sql: sql.slice(0, 50), error: error.message });
         } else {
           results.push({ sql: sql.slice(0, 50), success: true });
         }
       } catch (e) {
-        console.error("Исключение:", e);
+        logger.error("Исключение:", e);
         results.push({ sql: sql.slice(0, 50), exception: String(e) });
       }
     }
@@ -97,7 +98,7 @@ export async function POST() {
     });
     
   } catch (error) {
-    console.error("Критическая ошибка:", error);
+    logger.error("Критическая ошибка:", error);
     return NextResponse.json({
       success: false,
       error: "Критическая ошибка исправления RLS",

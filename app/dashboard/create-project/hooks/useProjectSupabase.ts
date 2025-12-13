@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-
 export function useProjectSupabase() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +65,7 @@ export function useProjectSupabase() {
       ]);
       
     if (historyError) {
-      console.error("Ошибка добавления записи в историю:", historyError);
+      logger.error("Ошибка добавления записи в историю:", historyError);
       // Не прерываем создание проекта, если история не добавилась
     }
     
@@ -83,7 +83,7 @@ export function useProjectSupabase() {
     status?: string;
     maxStepReached?: number;
   }) {
-    console.log("[useProjectSupabase] saveSpecification вызван с параметрами:", {
+    logger.info("[useProjectSupabase] saveSpecification вызван с параметрами:", {
       projectId,
       currentStep,
       receipts,
@@ -113,7 +113,7 @@ export function useProjectSupabase() {
       updateObj.max_step_reached = maxStepReached;
     }
     
-    console.log("[useProjectSupabase] Обновляем проект с объектом:", updateObj);
+    logger.info("[useProjectSupabase] Обновляем проект с объектом:", updateObj);
     
     const { error } = await supabase
       .from("projects")
@@ -122,12 +122,12 @@ export function useProjectSupabase() {
       
     setIsLoading(false);
     if (error) {
-      console.error("[useProjectSupabase] Ошибка обновления:", error);
+      logger.error("[useProjectSupabase] Ошибка обновления:", error);
       setError(error.message);
       return false;
     }
     
-    console.log("[useProjectSupabase] Проект успешно обновлен");
+    logger.info("[useProjectSupabase] Проект успешно обновлен");
     return true;
   }
 
@@ -158,7 +158,7 @@ export function useProjectSupabase() {
 
   // Сохранить данные поставщика
   async function saveSupplierData(projectId: string, supplierData: any, supplierId?: string, supplierType?: string) {
-    console.log("[useProjectSupabase] saveSupplierData вызван:", { projectId, supplierData, supplierId, supplierType });
+    logger.info("[useProjectSupabase] saveSupplierData вызван:", { projectId, supplierData, supplierId, supplierType });
     
     setIsLoading(true);
     setError(null);
@@ -182,18 +182,18 @@ export function useProjectSupabase() {
       
     setIsLoading(false);
     if (error) {
-      console.error("[useProjectSupabase] saveSupplierData ошибка:", error);
+      logger.error("[useProjectSupabase] saveSupplierData ошибка:", error);
       setError(error.message);
       return false;
     }
     
-    console.log("[useProjectSupabase] Данные поставщика успешно сохранены");
+    logger.info("[useProjectSupabase] Данные поставщика успешно сохранены");
     return true;
   }
 
   // Обновить шаг
   async function updateStep(projectId: string, currentStep: number, maxStepReached?: number) {
-    console.log("[useProjectSupabase] updateStep вызван:", { projectId, currentStep, maxStepReached });
+    logger.info("[useProjectSupabase] updateStep вызван:", { projectId, currentStep, maxStepReached });
     
     setIsLoading(true);
     setError(null);
@@ -205,7 +205,7 @@ export function useProjectSupabase() {
       updateObj.max_step_reached = maxStepReached;
     }
     
-    console.log("[useProjectSupabase] updateStep обновляет объект:", updateObj);
+    logger.info("[useProjectSupabase] updateStep обновляет объект:", updateObj);
     
     const { error } = await supabase
       .from("projects")
@@ -214,10 +214,10 @@ export function useProjectSupabase() {
       
     setIsLoading(false);
     if (error) {
-      console.error("[useProjectSupabase] updateStep ошибка:", error);
+      logger.error("[useProjectSupabase] updateStep ошибка:", error);
       setError(error.message);
     } else {
-      console.log("[useProjectSupabase] updateStep успешно выполнен");
+      logger.info("[useProjectSupabase] updateStep успешно выполнен");
     }
     return !error;
   }

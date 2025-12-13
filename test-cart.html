@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест корзины</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 5px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .clear-btn {
+            background: #ef4444;
+        }
+        .clear-btn:hover {
+            background: #dc2626;
+        }
+        pre {
+            background: #1f2937;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 Тест функционала корзины</h1>
+
+        <div class="section">
+            <h2>Текущее состояние localStorage:</h2>
+            <pre id="storage-info"></pre>
+        </div>
+
+        <div class="section">
+            <h2>Действия с корзиной:</h2>
+            <button onclick="addProduct('supplier1')">Добавить товар от Поставщика 1</button>
+            <button onclick="addProduct('supplier2')">Добавить товар от Поставщика 2</button>
+            <button onclick="addProduct('supplier3')">Добавить товар от Поставщика 3</button>
+            <button class="clear-btn" onclick="clearCart()">Очистить корзину</button>
+        </div>
+
+        <div class="section">
+            <h2>Лог действий:</h2>
+            <div id="log"></div>
+        </div>
+
+        <div class="section">
+            <h2>Проверка фильтрации:</h2>
+            <button onclick="checkFiltering()">Проверить состояние фильтрации</button>
+            <div id="filter-status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Функция для обновления отображения localStorage
+        function updateStorageInfo() {
+            const cart = localStorage.getItem('catalog_cart');
+            const activeSupplier = localStorage.getItem('catalog_active_supplier');
+
+            const info = {
+                cart: cart ? JSON.parse(cart) : [],
+                activeSupplier: activeSupplier || null,
+                cartLength: cart ? JSON.parse(cart).length : 0
+            };
+
+            document.getElementById('storage-info').textContent = JSON.stringify(info, null, 2);
+        }
+
+        // Функция для добавления записи в лог
+        function addToLog(message, type = 'info') {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'status ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : '');
+            entry.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            log.insertBefore(entry, log.firstChild);
+        }
+
+        // Функция добавления товара
+        function addProduct(supplierId) {
+            let cart = localStorage.getItem('catalog_cart');
+            let activeSupplier = localStorage.getItem('catalog_active_supplier');
+
+            cart = cart ? JSON.parse(cart) : [];
+
+            const product = {
+                id: 'product_' + Date.now(),
+                supplier_id: supplierId,
+                supplier_name: 'Поставщик ' + supplierId.slice(-1),
+                product_name: 'Товар от ' + supplierId,
+                price: '1000',
+                quantity: 1
+            };
+
+            if (cart.length === 0 || activeSupplier === supplierId) {
+                // Можно добавить
+                cart.push(product);
+                localStorage.setItem('catalog_cart', JSON.stringify(cart));
+                localStorage.setItem('catalog_active_supplier', supplierId);
+                addToLog(`✅ Товар добавлен от ${product.supplier_name}`, 'success');
+            } else {
+                // Нельзя добавить
+                addToLog(`❌ Нельзя добавить товар от ${product.supplier_name}. Активный поставщик: ${activeSupplier}`, 'error');
+            }
+
+            updateStorageInfo();
+        }
+
+        // Функция очистки корзины
+        function clearCart() {
+            localStorage.removeItem('catalog_cart');
+            localStorage.removeItem('catalog_active_supplier');
+            addToLog('🗑️ Корзина очищена', 'success');
+            updateStorageInfo();
+        }
+
+        // Функция проверки фильтрации
+        function checkFiltering() {
+            const activeSupplier = localStorage.getItem('catalog_active_supplier');
+            const cart = localStorage.getItem('catalog_cart');
+            const cartLength = cart ? JSON.parse(cart).length : 0;
+
+            const status = document.getElementById('filter-status');
+
+            if (activeSupplier && cartLength > 0) {
+                status.innerHTML = `
+                    <div class="status success">
+                        <strong>Фильтрация должна быть ВКЛЮЧЕНА</strong><br>
+                        Активный поставщик: ${activeSupplier}<br>
+                        Товаров в корзине: ${cartLength}<br>
+                        Ожидаемое поведение: Показывать только товары от ${activeSupplier}
+                    </div>
+                `;
+            } else {
+                status.innerHTML = `
+                    <div class="status">
+                        <strong>Фильтрация должна быть ОТКЛЮЧЕНА</strong><br>
+                        Корзина пуста или нет активного поставщика<br>
+                        Ожидаемое поведение: Показывать все товары
+                    </div>
+                `;
+            }
+        }
+
+        // Инициализация при загрузке
+        updateStorageInfo();
+        addToLog('Страница загружена', 'info');
+
+        // Автообновление каждые 2 секунды
+        setInterval(updateStorageInfo, 2000);
+    </script>
+</body>
+</html>

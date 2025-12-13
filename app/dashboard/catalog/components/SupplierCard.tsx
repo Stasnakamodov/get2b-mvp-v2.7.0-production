@@ -1,9 +1,8 @@
 'use client'
 
+import { logger } from "@/src/shared/lib/logger"
 import React from 'react'
-import { Star, MapPin, Phone, Mail, Globe, Building, Package, CheckCircle } from 'lucide-react'
-import { motion } from 'framer-motion'
-
+import { MapPin, Phone, Mail, Globe, Package } from 'lucide-react'
 interface Product {
   id: string
   name: string
@@ -86,12 +85,8 @@ export const SupplierCard = React.memo(function SupplierCard({
       }
 
   return (
-    <motion.div
-      key={supplier.id}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`border-2 ${colorScheme.border} bg-card p-8 hover:shadow-lg transition-all duration-300 group relative`}
+    <div
+      className={`border-2 ${colorScheme.border} bg-card p-8 hover:shadow-lg transition-shadow group relative`}
     >
       {/* Логотип */}
       <div className="flex items-start gap-6 mb-6">
@@ -104,7 +99,7 @@ export const SupplierCard = React.memo(function SupplierCard({
                   alt={supplierName}
                   className="w-full h-full object-contain"
                   onError={(e) => {
-                    console.error(`❌ ОШИБКА ЗАГРУЗКИ ${supplierName}:`, supplier.logo_url);
+                    logger.error(`❌ ОШИБКА ЗАГРУЗКИ ${supplierName}:`, supplier.logo_url);
                   }}
                 />
               );
@@ -307,6 +302,6 @@ export const SupplierCard = React.memo(function SupplierCard({
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }) 

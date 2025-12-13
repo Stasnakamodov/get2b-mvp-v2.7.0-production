@@ -1,7 +1,7 @@
+import { logger } from "@/src/shared/lib/logger"
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { SupplierData, ProductData } from "../context/AddSupplierContext";
-
 export interface SupplierDraft {
   id: string;
   name: string;
@@ -231,7 +231,7 @@ export function useAutoSave() {
       await saveFunction();
       setLastSaveTime(new Date());
     } catch (error) {
-      console.error("Автосохранение не удалось:", error);
+      logger.error("Автосохранение не удалось:", error);
     } finally {
       setIsSaving(false);
     }

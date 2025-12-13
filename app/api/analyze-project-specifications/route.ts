@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from "@/src/shared/lib/logger";
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -92,7 +93,7 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('❌ Ошибка анализа project_specifications:', error)
+    logger.error('❌ Ошибка анализа project_specifications:', error)
     return NextResponse.json({
       error: 'Внутренняя ошибка сервера',
       details: error instanceof Error ? error.message : 'Неизвестная ошибка'

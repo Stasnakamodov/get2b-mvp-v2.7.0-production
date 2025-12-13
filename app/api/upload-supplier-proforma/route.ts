@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("📤 API /upload-supplier-proforma вызван");
+    logger.info("📤 API /upload-supplier-proforma вызван");
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -31,14 +32,14 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (suppliersError) {
-      console.error("❌ Ошибка поиска поставщика:", suppliersError);
+      logger.error("❌ Ошибка поиска поставщика:", suppliersError);
       return NextResponse.json({ error: "Ошибка поиска поставщика" }, { status: 500 });
     }
 
     let supplierId;
     if (suppliers && suppliers.length > 0) {
       supplierId = suppliers[0].id;
-      console.log(`✅ Найден существующий поставщик: ${suppliers[0].name} (${suppliers[0].category})`);
+      logger.info(`✅ Найден существующий поставщик: ${suppliers[0].name} (${suppliers[0].category})`);
     } else {
       // Создаем нового поставщика
       const { data: newSupplier, error: createError } = await supabase
@@ -56,12 +57,12 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (createError) {
-        console.error("❌ Ошибка создания поставщика:", createError);
+        logger.error("❌ Ошибка создания поставщика:", createError);
         return NextResponse.json({ error: "Ошибка создания поставщика" }, { status: 500 });
       }
 
       supplierId = newSupplier.id;
-      console.log(`✅ Создан новый поставщик: ${supplierName} (ID: ${supplierId})`);
+      logger.info(`✅ Создан новый поставщик: ${supplierName} (ID: ${supplierId})`);
     }
 
     // Генерируем путь для файла
@@ -79,11 +80,11 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error("❌ Ошибка загрузки файла:", uploadError);
+      logger.error("❌ Ошибка загрузки файла:", uploadError);
       return NextResponse.json({ error: "Ошибка загрузки файла" }, { status: 500 });
     }
 
-    console.log("✅ Проформа-шаблон загружена:", {
+    logger.info("✅ Проформа-шаблон загружена:", {
       supplierId,
       supplierName,
       fileName,
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [API] Ошибка загрузки проформы:', error);
+    logger.error('❌ [API] Ошибка загрузки проформы:', error);
     return NextResponse.json(
       {
         error: 'Ошибка загрузки проформы',

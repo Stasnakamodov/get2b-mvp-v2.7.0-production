@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 // GET: Получить сообщения в комнате - УЛЬТРА-БЕЗОПАСНАЯ ВЕРСИЯ
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.error('❌ DEBUG: Database error:', error);
+      logger.error('❌ DEBUG: Database error:', error);
       return NextResponse.json(
         { error: "Failed to fetch messages", details: error.message },
         { status: 500 }
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('💥 DEBUG: Unexpected error in GET /api/chat/messages:', error);
+    logger.error('💥 DEBUG: Unexpected error in GET /api/chat/messages:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('❌ DEBUG: Error creating message:', error);
+      logger.error('❌ DEBUG: Error creating message:', error);
       return NextResponse.json(
         { error: "Failed to send message", details: error.message },
         { status: 500 }
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
         } else {
         }
       } catch (notifyError) {
-        console.error('⚠️ DEBUG: Error notifying managers (non-critical):', notifyError);
+        logger.error('⚠️ DEBUG: Error notifying managers (non-critical):', notifyError);
         // Не блокируем отправку сообщения из-за ошибки уведомлений
       }
     }
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('💥 DEBUG: Unexpected error in POST /api/chat/messages:', error);
+    logger.error('💥 DEBUG: Unexpected error in POST /api/chat/messages:', error);
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }

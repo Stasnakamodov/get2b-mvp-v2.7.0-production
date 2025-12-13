@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect, useRef } from "react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,6 @@ import { useRealtimeProjectData } from "../hooks/useRealtimeProjectData";
 import { getStepByStatus } from '@/lib/types/project-status';
 import { changeProjectStatus } from '@/lib/supabaseProjectStatus';
 
-
 export default function Step1CompanyForm(props: {
   isLoading?: boolean;
   isVerified?: boolean;
@@ -38,7 +38,7 @@ export default function Step1CompanyForm(props: {
   const [localError, setLocalError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const templateId = searchParams.get("templateId");
+  const templateId = searchParams?.get("templateId");
   const [uploading, setUploading] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -92,7 +92,7 @@ export default function Step1CompanyForm(props: {
         variant: "default"
       });
     } catch (error) {
-      console.error("Ошибка повторного анализа:", error);
+      logger.error("Ошибка повторного анализа:", error);
     } finally {
       setUploading(false);
     }
@@ -140,7 +140,7 @@ export default function Step1CompanyForm(props: {
   };
 
   const handleNextStep = async () => {
-    console.log("[Step1] handleNextStep вызван, specificationItems:", specificationItems);
+    logger.info("[Step1] handleNextStep вызван, specificationItems:", specificationItems);
     setLocalError(null);
     if (loadingNext) return;
     if (validate()) {
@@ -150,7 +150,7 @@ export default function Step1CompanyForm(props: {
       if (userError || !userData?.user?.id) {
         setLocalError("Не удалось получить пользователя");
         setLoadingNext(false);
-        console.error("[Step1] Ошибка получения пользователя:", userError);
+        logger.error("[Step1] Ошибка получения пользователя:", userError);
         return;
       }
       const user_id = userData.user.id;
@@ -179,7 +179,7 @@ export default function Step1CompanyForm(props: {
         if (updateError) {
           setLocalError("Ошибка обновления проекта: " + updateError.message);
           setLoadingNext(false);
-          console.error("[Step1] Ошибка update проекта:", updateError);
+          logger.error("[Step1] Ошибка update проекта:", updateError);
           return;
         }
 
@@ -190,19 +190,19 @@ export default function Step1CompanyForm(props: {
           const stored = localStorage.getItem('cart_items_temp');
           if (stored) {
             itemsToSave = JSON.parse(stored);
-            console.log("[Step1] Товары восстановлены из localStorage:", itemsToSave);
+            logger.info("[Step1] Товары восстановлены из localStorage:", itemsToSave);
           }
         }
 
         // Если есть товары (из корзины), сохраняем их в БД
         if (itemsToSave && itemsToSave.length > 0) {
-          console.log("[Step1] Сохраняем товары из корзины в БД для проекта:", currentProjectId);
-          console.log("[Step1] Товары для сохранения:", itemsToSave);
+          logger.info("[Step1] Сохраняем товары из корзины в БД для проекта:", currentProjectId);
+          logger.info("[Step1] Товары для сохранения:", itemsToSave);
           try {
             // Получаем токен авторизации
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
-              console.error("[Step1] Нет активной сессии для сохранения товаров");
+              logger.error("[Step1] Нет активной сессии для сохранения товаров");
               return;
             }
 
@@ -220,19 +220,19 @@ export default function Step1CompanyForm(props: {
             });
 
             if (!response.ok) {
-              console.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
+              logger.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
               const errorText = await response.text();
-              console.error("[Step1] Детали ошибки:", errorText);
+              logger.error("[Step1] Детали ошибки:", errorText);
               return;
             }
 
             const result = await response.json();
-            console.log("[Step1] Товары успешно сохранены в БД:", result);
+            logger.info("[Step1] Товары успешно сохранены в БД:", result);
 
             // Очищаем localStorage после успешного сохранения
             localStorage.removeItem('cart_items_temp');
           } catch (saveError) {
-            console.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
+            logger.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
           }
         }
 
@@ -246,13 +246,13 @@ export default function Step1CompanyForm(props: {
         } catch (err) {
           setLocalError("Ошибка saveSpecification: " + (err instanceof Error ? err.message : String(err)));
           setLoadingNext(false);
-          console.error("[Step1] Ошибка saveSpecification:", err);
+          logger.error("[Step1] Ошибка saveSpecification:", err);
           return;
         }
         if (!saveSpecResult) {
           setLocalError("Ошибка: saveSpecification вернул false");
           setLoadingNext(false);
-          console.error("[Step1] saveSpecification вернул false");
+          logger.error("[Step1] saveSpecification вернул false");
           return;
         }
         // --- СМЕНА СТАТУСА НА in_progress ---
@@ -265,7 +265,7 @@ export default function Step1CompanyForm(props: {
         if (statusError) {
           setLocalError("Ошибка получения статуса проекта: " + statusError.message);
           setLoadingNext(false);
-          console.error("[Step1] Ошибка select статуса перед сменой:", statusError);
+          logger.error("[Step1] Ошибка select статуса перед сменой:", statusError);
           return;
         }
         if (statusData?.status !== "in_progress") {
@@ -278,7 +278,7 @@ export default function Step1CompanyForm(props: {
           } catch (err) {
             setLocalError("Ошибка смены статуса: " + (err instanceof Error ? err.message : String(err)));
             setLoadingNext(false);
-            console.error("[Step1] Ошибка смены статуса:", err);
+            logger.error("[Step1] Ошибка смены статуса:", err);
             return;
           }
         }
@@ -292,7 +292,7 @@ export default function Step1CompanyForm(props: {
             description: err instanceof Error ? err.message : String(err),
             variant: "destructive",
           });
-          console.error("[Step1] Ошибка отправки в Telegram:", err);
+          logger.error("[Step1] Ошибка отправки в Telegram:", err);
         }
         // --- SELECT STATUS ---
         const { data: projectData, error: selectError } = await supabase
@@ -303,17 +303,17 @@ export default function Step1CompanyForm(props: {
         if (selectError) {
           setLocalError("Ошибка получения статуса проекта: " + selectError.message);
           setLoadingNext(false);
-          console.error("[Step1] Ошибка select статуса:", selectError);
+          logger.error("[Step1] Ошибка select статуса:", selectError);
           return;
         }
         if (!projectData?.status) {
           setLocalError("Статус проекта не найден после select!");
           setLoadingNext(false);
-          console.error("[Step1] Статус проекта не найден после select!", projectData);
+          logger.error("[Step1] Статус проекта не найден после select!", projectData);
           return;
         }
         const step = getStepByStatus(projectData.status);
-        console.log("[Step1] Статус из базы:", projectData.status, "→ шаг:", step);
+        logger.info("[Step1] Статус из базы:", projectData.status, "→ шаг:", step);
         setCurrentStep(step);
         setMaxStepReached(step);
         setLoadingNext(false);
@@ -333,13 +333,13 @@ export default function Step1CompanyForm(props: {
       } catch (err) {
         setLocalError("Ошибка создания проекта: " + (err instanceof Error ? err.message : String(err)));
         setLoadingNext(false);
-        console.error("[Step1] Ошибка создания проекта:", err);
+        logger.error("[Step1] Ошибка создания проекта:", err);
         return;
       }
         if (!newProjectId) {
           setLocalError(createProjectError || "Ошибка создания проекта");
         setLoadingNext(false);
-        console.error('Ошибка создания проекта:', createProjectError);
+        logger.error('Ошибка создания проекта:', createProjectError);
           return;
         }
         setProjectId(newProjectId);
@@ -350,12 +350,12 @@ export default function Step1CompanyForm(props: {
           const stored = localStorage.getItem('cart_items_temp');
           if (stored) {
             itemsToSave = JSON.parse(stored);
-            console.log("[Step1] Товары восстановлены из localStorage:", itemsToSave);
+            logger.info("[Step1] Товары восстановлены из localStorage:", itemsToSave);
           }
         }
         
         // Проверяем наличие товаров
-        console.log("[Step1] Проверка товаров:", {
+        logger.info("[Step1] Проверка товаров:", {
           itemsToSave,
           length: itemsToSave?.length,
           isEmpty: !itemsToSave || itemsToSave.length === 0,
@@ -364,13 +364,13 @@ export default function Step1CompanyForm(props: {
         
         // Если есть товары (из корзины), сохраняем их в БД
         if (itemsToSave && itemsToSave.length > 0) {
-          console.log("[Step1] Сохраняем товары из корзины в БД для проекта:", newProjectId);
-          console.log("[Step1] Товары для сохранения:", itemsToSave);
+          logger.info("[Step1] Сохраняем товары из корзины в БД для проекта:", newProjectId);
+          logger.info("[Step1] Товары для сохранения:", itemsToSave);
           try {
             // Получаем токен авторизации
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
-              console.error("[Step1] Нет активной сессии для сохранения товаров");
+              logger.error("[Step1] Нет активной сессии для сохранения товаров");
               return;
             }
 
@@ -388,19 +388,19 @@ export default function Step1CompanyForm(props: {
             });
 
             if (!response.ok) {
-              console.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
+              logger.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
               const errorText = await response.text();
-              console.error("[Step1] Детали ошибки:", errorText);
+              logger.error("[Step1] Детали ошибки:", errorText);
               return;
             }
 
             const result = await response.json();
-            console.log("[Step1] Товары успешно сохранены в БД:", result);
+            logger.info("[Step1] Товары успешно сохранены в БД:", result);
 
             // Очищаем localStorage после успешного сохранения
             localStorage.removeItem('cart_items_temp');
           } catch (saveError) {
-            console.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
+            logger.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
           }
         }
         
@@ -414,7 +414,7 @@ export default function Step1CompanyForm(props: {
       if (statusError2) {
         setLocalError("Ошибка получения статуса проекта: " + statusError2.message);
         setLoadingNext(false);
-        console.error("[Step1] Ошибка select статуса перед сменой:", statusError2);
+        logger.error("[Step1] Ошибка select статуса перед сменой:", statusError2);
         return;
       }
       if (statusData2?.status !== "in_progress") {
@@ -427,19 +427,19 @@ export default function Step1CompanyForm(props: {
         } catch (err) {
           setLocalError("Ошибка смены статуса: " + (err instanceof Error ? err.message : String(err)));
           setLoadingNext(false);
-          console.error("[Step1] Ошибка смены статуса:", err);
+          logger.error("[Step1] Ошибка смены статуса:", err);
           return;
         }
       }
       // --- ОТПРАВКА В TELEGRAM ---
         try {
-          console.log("📤 [Step1] Начинаем отправку в Telegram...");
+          logger.info("📤 [Step1] Начинаем отправку в Telegram...");
           const tgText = `🆕 Новый проект создан!\n\nНомер проекта: ${newProjectId}\nПользователь: ${user_id}\nEmail пользователя: ${user_email}\nНазвание проекта: ${projectName}\n\nДанные компании:\n- Название: ${company.name}\n- Юр. название: ${company.legalName}\n- ИНН: ${company.inn}\n- КПП: ${company.kpp}\n- ОГРН: ${company.ogrn}\n- Адрес: ${company.address}\n- Банк: ${company.bankName}\n- Счёт: ${company.bankAccount}\n- Корр. счёт: ${company.bankCorrAccount}\n- БИК: ${company.bankBik}`;
-          console.log("📝 [Step1] Текст для Telegram:", tgText.substring(0, 100) + "...");
+          logger.info("📝 [Step1] Текст для Telegram:", tgText.substring(0, 100) + "...");
           await sendTelegramMessageClient(tgText);
-          console.log("✅ [Step1] Сообщение в Telegram отправлено успешно!");
+          logger.info("✅ [Step1] Сообщение в Telegram отправлено успешно!");
         } catch (err) {
-          console.error("❌ [Step1] Ошибка отправки в Telegram:", err);
+          logger.error("❌ [Step1] Ошибка отправки в Telegram:", err);
           toast({
             title: "Не удалось отправить сообщение в Telegram",
             description: err instanceof Error ? err.message : String(err),
@@ -455,17 +455,17 @@ export default function Step1CompanyForm(props: {
       if (selectError) {
         setLocalError("Ошибка получения статуса проекта: " + selectError.message);
         setLoadingNext(false);
-        console.error("[Step1] Ошибка select статуса:", selectError);
+        logger.error("[Step1] Ошибка select статуса:", selectError);
         return;
       }
       if (!projectData?.status) {
         setLocalError("Статус проекта не найден после select!");
         setLoadingNext(false);
-        console.error("[Step1] Статус проекта не найден после select!", projectData);
+        logger.error("[Step1] Статус проекта не найден после select!", projectData);
         return;
       }
       const step = getStepByStatus(projectData.status);
-      console.log("[Step1] Статус из базы:", projectData.status, "→ шаг:", step);
+      logger.info("[Step1] Статус из базы:", projectData.status, "→ шаг:", step);
       setCurrentStep(step);
       setMaxStepReached(step);
       setLoadingNext(false);
@@ -563,8 +563,8 @@ export default function Step1CompanyForm(props: {
       let analysisText = "";
       
       try {
-        console.log("🔍 Начинаем анализ документа с Yandex Vision...");
-        console.log("📄 Параметры анализа:", {
+        logger.info("🔍 Начинаем анализ документа с Yandex Vision...");
+        logger.info("📄 Параметры анализа:", {
           fileUrl: url,
           fileType: file.type,
           fileName: file.name,
@@ -581,7 +581,7 @@ export default function Step1CompanyForm(props: {
           })
         });
 
-        console.log("📡 Ответ от API анализа:", {
+        logger.info("📡 Ответ от API анализа:", {
           status: analysisResponse.status,
           ok: analysisResponse.ok
         });
@@ -591,8 +591,8 @@ export default function Step1CompanyForm(props: {
           extractedData = analysisResult.suggestions;
           analysisText = analysisResult.extractedText;
           
-          console.log("✅ Данные извлечены:", extractedData);
-          console.log("📄 Извлеченный текст:", analysisText.substring(0, 200) + "...");
+          logger.info("✅ Данные извлечены:", extractedData);
+          logger.info("📄 Извлеченный текст:", analysisText.substring(0, 200) + "...");
           
           // Автозаполнение формы извлеченными данными с учетом confidence
           if (extractedData && Object.keys(extractedData).length > 0) {
@@ -635,11 +635,11 @@ export default function Step1CompanyForm(props: {
               newFieldConfidence.bankAccount = extractedData.bankAccountConfidence || 0;
             }
             if (extractedData.bankCorrAccount) {
-              console.log('🔍 [Step1] Заполняем bankCorrAccount:', extractedData.bankCorrAccount);
+              logger.info('🔍 [Step1] Заполняем bankCorrAccount:', extractedData.bankCorrAccount);
               newCompanyData.bankCorrAccount = extractedData.bankCorrAccount;
               newFieldConfidence.bankCorrAccount = extractedData.bankCorrAccountConfidence || 0;
             } else {
-              console.log('❌ [Step1] bankCorrAccount не найден в extractedData');
+              logger.info('❌ [Step1] bankCorrAccount не найден в extractedData');
             }
             if (extractedData.bankBik) {
               newCompanyData.bankBik = extractedData.bankBik;
@@ -675,8 +675,8 @@ export default function Step1CompanyForm(props: {
             
             // НЕ показываем форму автоматически - только после нажатия кнопки
             
-            console.log("✅ Форма автозаполнена новыми данными:", newCompanyData);
-            console.log("📋 Название проекта установлено:", extractedData.companyName);
+            logger.info("✅ Форма автозаполнена новыми данными:", newCompanyData);
+            logger.info("📋 Название проекта установлено:", extractedData.companyName);
             
             // Показываем уведомление об успешном автозаполнении с confidence информацией
             const totalFields = Object.keys(newFieldConfidence).length;
@@ -697,17 +697,17 @@ export default function Step1CompanyForm(props: {
               variant: "default" 
             });
           } else {
-            console.log("⚠️ Данные не извлечены или пусты");
+            logger.info("⚠️ Данные не извлечены или пусты");
           }
         } else {
           const errorText = await analysisResponse.text();
-          console.error("❌ Анализ документа не удался:", {
+          logger.error("❌ Анализ документа не удался:", {
             status: analysisResponse.status,
             error: errorText
           });
         }
       } catch (analysisError) {
-        console.error("❌ Ошибка анализа документа:", analysisError);
+        logger.error("❌ Ошибка анализа документа:", analysisError);
         // Не прерываем загрузку файла, если анализ не удался
         toast({ 
           title: "OCR временно недоступен", 

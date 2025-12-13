@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from "@/src/shared/lib/logger";
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'
 
 export async function GET() {
@@ -22,7 +23,7 @@ export async function GET() {
       .order('table_name')
     
     if (tablesError) {
-      console.error('❌ Ошибка получения таблиц:', tablesError)
+      logger.error('❌ Ошибка получения таблиц:', tablesError)
       return NextResponse.json({
         error: 'Ошибка получения таблиц',
         details: tablesError.message
@@ -121,7 +122,7 @@ export async function GET() {
     })
     
   } catch (error: unknown) {
-    console.error('❌ Неожиданная ошибка:', error)
+    logger.error('❌ Неожиданная ошибка:', error)
     return NextResponse.json({
       error: 'Неожиданная ошибка',
       details: error instanceof Error ? error.message : 'Unknown error'

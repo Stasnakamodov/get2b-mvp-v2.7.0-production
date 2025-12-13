@@ -1,13 +1,35 @@
-/**
- * Public API сущности Supplier
- * Экспортирует только то, что нужно другим слоям
- */
+// FSD: entities/supplier - Бизнес сущность поставщика
 
-// Types
-export type { Supplier, SupplierFilters, SupplierStats } from './model/types'
+// Экспорт всех типов
+export * from './model/types'
 
-// API
-export { supplierApi } from './api/supplierApi'
+// Реэкспорт основных типов для удобства
+export type {
+  Supplier,
+  EchoCard,
+  SupplierFormData,
+  RoomType,
+  Room,
+  CatalogMode,
+  LoadingState,
+  SmartRecommendation,
+  SuppliersResponse,
+  EchoCardsResponse
+} from './model/types'
 
-// UI Components
-export { SupplierCard } from './ui/SupplierCard/SupplierCard'
+// Экспорт API функций
+export {
+  // Поставщики
+  fetchUserSuppliers,
+  fetchVerifiedSuppliers,
+  createSupplier,
+  updateSupplier,
+  deleteSupplier,
+
+  // Эхо карточки
+  fetchEchoCards,
+  importSupplierFromEchoCard,
+
+  // Рекомендации
+  fetchRecommendations
+} from './api'

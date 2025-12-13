@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
-
 // 🎯 API ENDPOINT: Автозаполнение данных поставщика для Steps 2,4,5
 // GET /api/catalog/supplier-autofill/{supplierId}
 export async function GET(
@@ -159,7 +159,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('❌ [API] Критическая ошибка получения автозаполнения:', error)
+    logger.error('❌ [API] Критическая ошибка получения автозаполнения:', error)
     
     return NextResponse.json({
       success: false,
@@ -236,7 +236,7 @@ async function getPhantomSupplierData(supplierName: string, userId: string) {
     return phantomData
 
   } catch (error) {
-    console.error('❌ [PHANTOM] Ошибка получения фантомных данных:', error)
+    logger.error('❌ [PHANTOM] Ошибка получения фантомных данных:', error)
     return null
   }
 }

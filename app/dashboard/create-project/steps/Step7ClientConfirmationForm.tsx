@@ -1,3 +1,4 @@
+import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect, useRef } from "react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import { sendTelegramMessageClient, sendTelegramDocumentClient } from "@/lib/telegram-client";
-
 export default function Step7ClientConfirmationForm() {
   const { 
     projectId, 
@@ -41,7 +41,7 @@ export default function Step7ClientConfirmationForm() {
         .single();
         
       if (error) {
-        console.error("Ошибка загрузки проекта:", error);
+        logger.error("Ошибка загрузки проекта:", error);
         return;
       }
       
@@ -58,7 +58,7 @@ export default function Step7ClientConfirmationForm() {
             setManagerReceipt(receipts.manager_receipt);
           }
         } catch (e) {
-          console.error("Ошибка парсинга receipts:", e);
+          logger.error("Ошибка парсинга receipts:", e);
         }
       }
       
@@ -94,7 +94,7 @@ export default function Step7ClientConfirmationForm() {
       const fileName = `client-receipt-${projectId}-${Date.now()}.${fileExtension}`;
       const filePath = `${userId}/${fileName}`;
 
-      console.log("📤 Загружаем чек клиента:", {
+      logger.info("📤 Загружаем чек клиента:", {
         fileName,
         size: file.size,
         type: file.type
@@ -109,7 +109,7 @@ export default function Step7ClientConfirmationForm() {
         });
 
       if (uploadError) {
-        console.error("❌ Ошибка загрузки в Storage:", uploadError);
+        logger.error("❌ Ошибка загрузки в Storage:", uploadError);
         throw new Error("Не удалось загрузить файл: " + uploadError.message);
       }
 
@@ -119,7 +119,7 @@ export default function Step7ClientConfirmationForm() {
         .getPublicUrl(filePath);
 
       const fileUrl = urlData.publicUrl;
-      console.log("✅ Файл загружен:", fileUrl);
+      logger.info("✅ Файл загружен:", fileUrl);
 
       // Сохраняем URL в проект
       const { error: updateError } = await supabase
@@ -131,7 +131,7 @@ export default function Step7ClientConfirmationForm() {
         .eq("id", projectId);
 
       if (updateError) {
-        console.error("❌ Ошибка обновления проекта:", updateError);
+        logger.error("❌ Ошибка обновления проекта:", updateError);
         throw new Error("Не удалось сохранить ссылку на файл");
       }
 
@@ -147,9 +147,9 @@ export default function Step7ClientConfirmationForm() {
 
       try {
         await sendTelegramDocumentClient(fileUrl, telegramCaption);
-        console.log("✅ Чек отправлен менеджеру в Telegram");
+        logger.info("✅ Чек отправлен менеджеру в Telegram");
       } catch (telegramError) {
-        console.error("⚠️ Ошибка отправки в Telegram:", telegramError);
+        logger.error("⚠️ Ошибка отправки в Telegram:", telegramError);
         // Продолжаем выполнение даже если Telegram недоступен
       }
 
@@ -163,7 +163,7 @@ export default function Step7ClientConfirmationForm() {
       });
 
     } catch (error) {
-      console.error("❌ Ошибка загрузки чека:", error);
+      logger.error("❌ Ошибка загрузки чека:", error);
       setUploadError(error instanceof Error ? error.message : "Неизвестная ошибка");
       
       toast({
@@ -191,7 +191,7 @@ export default function Step7ClientConfirmationForm() {
         .eq("id", projectId);
 
       if (updateError) {
-        console.error("❌ Ошибка обновления проекта:", updateError);
+        logger.error("❌ Ошибка обновления проекта:", updateError);
         throw new Error("Не удалось удалить ссылку на файл");
       }
 
@@ -205,7 +205,7 @@ export default function Step7ClientConfirmationForm() {
       });
 
     } catch (error) {
-      console.error("❌ Ошибка удаления чека:", error);
+      logger.error("❌ Ошибка удаления чека:", error);
       toast({
         title: "Ошибка",
         description: "Не удалось удалить чек.",
@@ -254,7 +254,7 @@ export default function Step7ClientConfirmationForm() {
       });
       
     } catch (error) {
-      console.error("Ошибка завершения проекта:", error);
+      logger.error("Ошибка завершения проекта:", error);
       toast({
         title: "Ошибка",
         description: "Не удалось завершить проект. Попробуйте еще раз.",

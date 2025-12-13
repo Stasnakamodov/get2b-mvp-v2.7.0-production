@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { createClient } from '@supabase/supabase-js';
 import * as XLSX from 'xlsx';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("📤 API /upload-supplier-template вызван");
+    logger.info("📤 API /upload-supplier-template вызван");
 
     // Parse form data
     const formData = await request.formData();
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     const fillingRules = formData.get('fillingRules') as string;
     const isDefault = formData.get('isDefault') === 'true';
 
-    console.log("📋 Параметры загрузки:", {
+    logger.info("📋 Параметры загрузки:", {
       supplierId,
       supplierType,
       templateName,
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     const fileName = `${sanitizedTemplateName}_${timestamp}.${fileExtension}`;
     const storagePath = `templates/${supplierId}/${fileName}`;
 
-    console.log("💾 Загрузка файла в Storage:", storagePath);
+    logger.info("💾 Загрузка файла в Storage:", storagePath);
 
     // Convert file to buffer
     const fileBuffer = await file.arrayBuffer();
@@ -96,9 +97,9 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      console.log("✅ Excel файл валиден, листов:", workbook.SheetNames.length);
+      logger.info("✅ Excel файл валиден, листов:", workbook.SheetNames.length);
     } catch (e) {
-      console.error("❌ Ошибка чтения Excel файла:", e);
+      logger.error("❌ Ошибка чтения Excel файла:", e);
       return NextResponse.json(
         { error: "Не удается прочитать файл Excel. Проверьте его целостность." },
         { status: 400 }
@@ -114,14 +115,14 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error("❌ Ошибка загрузки файла:", uploadError);
+      logger.error("❌ Ошибка загрузки файла:", uploadError);
       return NextResponse.json(
         { error: "Ошибка загрузки файла в Storage" },
         { status: 500 }
       );
     }
 
-    console.log("✅ Файл загружен в Storage:", uploadData);
+    logger.info("✅ Файл загружен в Storage:", uploadData);
 
     // If setting as default, first unset other defaults for this supplier
     if (isDefault) {
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
         .eq('is_default', true);
 
       if (unsetError) {
-        console.warn("⚠️ Ошибка сброса предыдущего шаблона по умолчанию:", unsetError);
+        logger.warn("⚠️ Ошибка сброса предыдущего шаблона по умолчанию:", unsetError);
       }
     }
 
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (dbError) {
-      console.error("❌ Ошибка сохранения в БД:", dbError);
+      logger.error("❌ Ошибка сохранения в БД:", dbError);
 
       // Try to cleanup uploaded file
       await supabase.storage
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("✅ Шаблон сохранен в БД:", templateData);
+    logger.info("✅ Шаблон сохранен в БД:", templateData);
 
     // Return success response
     return NextResponse.json({
@@ -186,7 +187,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [API] Ошибка загрузки шаблона:', error);
+    logger.error('❌ [API] Ошибка загрузки шаблона:', error);
     return NextResponse.json(
       {
         error: 'Ошибка загрузки шаблона',
@@ -200,7 +201,7 @@ export async function POST(request: NextRequest) {
 // GET method to retrieve templates for a supplier
 export async function GET(request: NextRequest) {
   try {
-    console.log("📋 API /upload-supplier-template GET вызван");
+    logger.info("📋 API /upload-supplier-template GET вызван");
 
     const { searchParams } = new URL(request.url);
     const supplierId = searchParams.get('supplierId');
@@ -229,14 +230,14 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("❌ Ошибка получения шаблонов:", error);
+      logger.error("❌ Ошибка получения шаблонов:", error);
       return NextResponse.json(
         { error: "Ошибка получения шаблонов" },
         { status: 500 }
       );
     }
 
-    console.log("✅ Найдено шаблонов:", templates?.length || 0);
+    logger.info("✅ Найдено шаблонов:", templates?.length || 0);
 
     return NextResponse.json({
       success: true,
@@ -246,7 +247,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [API] Ошибка получения шаблонов:', error);
+    logger.error('❌ [API] Ошибка получения шаблонов:', error);
     return NextResponse.json(
       {
         error: 'Ошибка получения шаблонов',
@@ -260,7 +261,7 @@ export async function GET(request: NextRequest) {
 // DELETE method to remove a template
 export async function DELETE(request: NextRequest) {
   try {
-    console.log("🗑️ API /upload-supplier-template DELETE вызван");
+    logger.info("🗑️ API /upload-supplier-template DELETE вызван");
 
     const { searchParams } = new URL(request.url);
     const templateId = searchParams.get('templateId');
@@ -298,7 +299,7 @@ export async function DELETE(request: NextRequest) {
       .eq('id', templateId);
 
     if (dbError) {
-      console.error("❌ Ошибка удаления из БД:", dbError);
+      logger.error("❌ Ошибка удаления из БД:", dbError);
       return NextResponse.json(
         { error: "Ошибка удаления шаблона" },
         { status: 500 }
@@ -311,11 +312,11 @@ export async function DELETE(request: NextRequest) {
       .remove([template.file_path]);
 
     if (storageError) {
-      console.warn("⚠️ Ошибка удаления файла из Storage:", storageError);
+      logger.warn("⚠️ Ошибка удаления файла из Storage:", storageError);
       // Don't fail the request if storage cleanup fails
     }
 
-    console.log("✅ Шаблон удален:", template.template_name);
+    logger.info("✅ Шаблон удален:", template.template_name);
 
     return NextResponse.json({
       success: true,
@@ -323,7 +324,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [API] Ошибка удаления шаблона:', error);
+    logger.error('❌ [API] Ошибка удаления шаблона:', error);
     return NextResponse.json(
       {
         error: 'Ошибка удаления шаблона',

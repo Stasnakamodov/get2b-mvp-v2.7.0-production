@@ -1,12 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-import { CATEGORY_CERTIFICATIONS } from "@/components/catalog-categories-and-certifications";
+import { CATEGORY_CERTIFICATIONS } from "@/src/shared/config";
 
 // GET: Получение всех категорий с иерархией (Unified архитектура: catalog_categories с parent_id, без level)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const includeSubcategories = searchParams.get('includeSubcategories') !== 'false';
+    const simpleList = searchParams.get('simple') === 'true';
+
+    // Если запрошен простой список - возвращаем категории из таблицы catalog_categories
+    if (simpleList) {
+      const { data: categories, error } = await supabase
+        .from("catalog_categories")
+        .select("name")
+        .order("name");
+
+      if (error) {
+        console.error("❌ [API] Ошибка загрузки категорий:", error);
+        return NextResponse.json({
+          success: false,
+          error: error.message
+        }, { status: 500 });
+      }
+
+      // Извлекаем названия категорий
+      const categoryNames = categories?.map(c => c.name).filter(Boolean) || [];
+
+      return NextResponse.json({
+        success: true,
+        categories: categoryNames,
+        count: categoryNames.length
+      });
+    }
 
     // ПРАВИЛЬНАЯ АРХИТЕКТУРА: Используем отдельные таблицы
     // catalog_categories - корневые категории (8 штук)

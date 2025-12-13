@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -453,7 +454,7 @@ export const AccreditationModalV2: React.FC<AccreditationModalV2Props> = ({
 
       if (!response.ok) {
         const errorData = await response.text()
-        console.error('❌ [AccreditationModal] API Error:', response.status, errorData)
+        logger.error('❌ [AccreditationModal] API Error:', { status: response.status, error: errorData })
         throw new Error(`Ошибка подачи заявки: ${response.status} - ${errorData}`)
       }
 
@@ -463,7 +464,7 @@ export const AccreditationModalV2: React.FC<AccreditationModalV2Props> = ({
       onClose()
       
     } catch (error) {
-      console.error('❌ [AccreditationModal] Ошибка:', error)
+      logger.error('❌ [AccreditationModal] Ошибка:', error)
       
       let errorMessage = 'Неизвестная ошибка';
       

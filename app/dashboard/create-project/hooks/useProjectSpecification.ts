@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-
 export function useProjectSpecification(projectId: string | null, role: 'client' | 'supplier') {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -24,14 +24,14 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
   // Добавить позицию
   const addItem = async (item: any) => {
     if (!projectId) {
-      console.error('[addItem] Нет projectId!');
+      logger.error('[addItem] Нет projectId!');
       return;
     }
     const { data: userData, error: userError } = await supabase.auth.getUser();
     const user_id = userData?.user?.id;
     if (!user_id) {
       setError("Ошибка авторизации: попробуйте войти заново");
-      console.error('[addItem] Нет user_id! userData:', userData, 'error:', userError);
+      logger.error('[addItem] Нет user_id! userData:', userData, 'error:', userError);
       return;
     }
     setLoading(true);
@@ -41,7 +41,7 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
     setLoading(false);
     if (error) {
       setError(error.message);
-      console.error('[addItem] Ошибка Supabase:', error, { projectId, user_id, item, role });
+      logger.error('[addItem] Ошибка Supabase:', error, { projectId, user_id, item, role });
     } else {
     }
   };
@@ -49,14 +49,14 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
   // Bulk insert позиций
   const addItems = async (itemsToAdd: any[]) => {
     if (!projectId) {
-      console.error('[addItems] Нет projectId!');
+      logger.error('[addItems] Нет projectId!');
       return null;
     }
     const { data: userData, error: userError } = await supabase.auth.getUser();
     const user_id = userData?.user?.id;
     if (!user_id) {
       setError("Ошибка авторизации: попробуйте войти заново");
-      console.error('[addItems] Нет user_id! userData:', userData, 'error:', userError);
+      logger.error('[addItems] Нет user_id! userData:', userData, 'error:', userError);
       return null;
     }
     
@@ -71,15 +71,15 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
     
     if (error) {
       setError(error.message);
-      console.error('[addItems] Ошибка Supabase (полный объект):', error);
-      console.error('[addItems] Ошибка как строка:', JSON.stringify(error));
-      console.error('[addItems] Тип ошибки:', typeof error);
-      console.error('[addItems] Ключи объекта ошибки:', Object.keys(error));
-      console.error('[addItems] message:', error?.message);
-      console.error('[addItems] code:', error?.code);  
-      console.error('[addItems] details:', error?.details);
-      console.error('[addItems] hint:', error?.hint);
-      console.error('[addItems] Данные которые пытались вставить:', JSON.stringify(bulk, null, 2));
+      logger.error('[addItems] Ошибка Supabase (полный объект):', error);
+      logger.error('[addItems] Ошибка как строка:', JSON.stringify(error));
+      logger.error('[addItems] Тип ошибки:', typeof error);
+      logger.error('[addItems] Ключи объекта ошибки:', Object.keys(error));
+      logger.error('[addItems] message:', error?.message);
+      logger.error('[addItems] code:', error?.code);  
+      logger.error('[addItems] details:', error?.details);
+      logger.error('[addItems] hint:', error?.hint);
+      logger.error('[addItems] Данные которые пытались вставить:', JSON.stringify(bulk, null, 2));
       return null;
     } else {
       // НЕ обновляем локальное состояние здесь, так как вызовем fetchSpecification после

@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 // GET: Полное дерево категорий через SQL функцию
 export async function GET() {
   try {
@@ -8,7 +8,7 @@ export async function GET() {
     const { data, error } = await supabase.rpc('get_category_tree');
 
     if (error) {
-      console.error("❌ [API Category Tree] Ошибка:", error);
+      logger.error("❌ [API Category Tree] Ошибка:", error);
       return NextResponse.json({
         success: false,
         error: error.message
@@ -21,7 +21,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error("❌ [API Category Tree] Критическая ошибка:", error);
+    logger.error("❌ [API Category Tree] Критическая ошибка:", error);
     return NextResponse.json({
       success: false,
       error: "Ошибка сервера"

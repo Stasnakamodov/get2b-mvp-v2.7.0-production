@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
+import { logger } from '@/src/shared/lib/logger';
 // GET: Простейший тест API
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('💥 TEST: Error in test endpoint:', error);
+    logger.error('💥 TEST: Error in test endpoint:', error);
     return NextResponse.json(
       { error: "Test failed", details: String(error) },
       { status: 500 }

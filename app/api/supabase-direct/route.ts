@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/src/shared/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 
 // GET: Прямой запрос к Supabase для диагностики
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
     
     if (error) {
-      console.error(`❌ [DIRECT] Ошибка запроса к ${table}:`, error);
+      logger.error(`❌ [DIRECT] Ошибка запроса к ${table}:`, error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data || []);
     
   } catch (error: any) {
-    console.error("💥 [DIRECT] Критическая ошибка:", error);
+    logger.error("💥 [DIRECT] Критическая ошибка:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

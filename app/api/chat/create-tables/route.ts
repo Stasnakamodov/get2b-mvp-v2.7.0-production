@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 export async function POST(request: NextRequest) {
   try {
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('💥 Unexpected error:', error);
+    logger.error('💥 Unexpected error:', error);
     return NextResponse.json(
       { error: "Failed to verify tables", details: String(error) },
       { status: 500 }

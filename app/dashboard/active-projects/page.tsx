@@ -1,17 +1,22 @@
 "use client"
 
+import { logger } from "@/src/shared/lib/logger"
+
 import React, { useState, useEffect, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabaseClient"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { motion } from "framer-motion"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { supabase } from "@/lib/supabaseClient"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { STATUS_LABELS } from "@/lib/types/project-status"
+import { ProjectStatusBadge } from "@/components/ui/ProjectStatus"
 import { ProjectTimeline } from "@/components/ui/ProjectTimeline"
 import {
   Building2,
@@ -42,10 +47,6 @@ import {
   XCircle
 } from "lucide-react"
 import { ProjectStatus } from "@/lib/types/project-status"
-import { STATUS_LABELS } from "@/lib/types/project-status"
-import { ProjectStatusBadge } from "@/components/ui/ProjectStatus"
-import { cn } from "@/lib/utils"
-
 // Типы для проектов
 interface Project {
   id: string
@@ -192,7 +193,7 @@ function ActiveProjectsPageContent() {
         }
       }
     } catch (error) {
-      console.error("Error fetching history:", error);
+      logger.error("Error fetching history:", error);
     }
   };
 
@@ -407,7 +408,7 @@ function ActiveProjectsPageContent() {
         .order('changed_at', { ascending: true })
 
       if (error) {
-        console.error('Ошибка загрузки истории проекта:', error)
+        logger.error('Ошибка загрузки истории проекта:', error)
         setProjectStatusHistory([])
       } else {
         // Добавляем событие создания проекта в начало истории
@@ -425,7 +426,7 @@ function ActiveProjectsPageContent() {
         setProjectStatusHistory([projectCreation, ...(statusHistory || [])])
       }
     } catch (error) {
-      console.error('Ошибка при получении истории:', error)
+      logger.error('Ошибка при получении истории:', error)
       setProjectStatusHistory([])
     } finally {
       setHistoryLoading(false)

@@ -1,13 +1,15 @@
 "use client"
 
+import { logger } from "@/src/shared/lib/logger"
+
 import React, { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Calendar, CheckCircle, Clock, Settings } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 import { fetchProjectStatusHistory } from "@/lib/supabaseProjectStatus"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Calendar } from "lucide-react"
 import ProjectDocumentsGrid from "@/components/ui/ProjectDocumentsGrid"
 
 // Интерфейс для истории статусов
@@ -45,7 +47,7 @@ interface Project {
 export default function ProjectDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const projectId = params.id as string
+  const projectId = params?.id as string
 
   const [project, setProject] = useState<Project | null>(null)
   const [statusHistory, setStatusHistory] = useState<StatusHistoryItem[]>([])
@@ -64,7 +66,7 @@ export default function ProjectDetailPage() {
           .single()
 
         if (error) {
-          console.error("Ошибка загрузки проекта:", error)
+          logger.error("Ошибка загрузки проекта:", error)
           return
         }
 
@@ -75,11 +77,11 @@ export default function ProjectDetailPage() {
           const history = await fetchProjectStatusHistory(projectId)
           setStatusHistory(history || [])
         } catch (historyError) {
-          console.error("Ошибка загрузки истории проекта:", historyError)
+          logger.error("Ошибка загрузки истории проекта:", historyError)
           setStatusHistory([])
         }
       } catch (error) {
-        console.error("Ошибка загрузки данных:", error)
+        logger.error("Ошибка загрузки данных:", error)
       } finally {
         setLoading(false)
       }

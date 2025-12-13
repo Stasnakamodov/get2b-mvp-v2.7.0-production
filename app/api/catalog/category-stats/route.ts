@@ -1,6 +1,6 @@
+import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-
 export async function GET(request: NextRequest) {
   try {
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       .eq('is_active', true);
 
     if (verifiedError && userError) {
-      console.error("❌ [API] Ошибка получения статистики:", { verifiedError, userError });
+      logger.error("❌ [API] Ошибка получения статистики:", { verifiedError, userError });
       return NextResponse.json({ error: "Ошибка получения данных" }, { status: 500 });
     }
 
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка получения статистики:", error);
+    logger.error("❌ [API] Критическая ошибка получения статистики:", error);
     return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
   }
 }
