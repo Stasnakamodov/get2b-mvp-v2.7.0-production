@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, ShoppingCart, Star, Package, Building2, MapPin, Award, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ShoppingCart, Star, Package, Building2, MapPin, Award, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Product {
@@ -38,7 +38,7 @@ interface ProductModalProps {
   product: Product | null
   isOpen: boolean
   onClose: () => void
-  onAddToCart: (product: Product) => void
+  onAddToCart: (product: Product, quantity?: number) => void
   isInCart?: boolean
 }
 
@@ -51,6 +51,14 @@ export default function ProductModal({
 }: ProductModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [imageError, setImageError] = useState(false)
+  const [quantity, setQuantity] = useState(1)
+
+  // Сброс количества при открытии/смене товара
+  useEffect(() => {
+    if (isOpen) {
+      setQuantity(1)
+    }
+  }, [isOpen, product?.id])
 
   // Блокируем скролл страницы когда модалка открыта
   useEffect(() => {
@@ -232,7 +240,7 @@ export default function ProductModal({
                   {/* Right Column - Info */}
                   <div className="space-y-4">
                     {/* Price & CTA */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div>
                         <div className="text-3xl font-bold text-gray-900">
                           {formatPrice(product.price)}
@@ -244,8 +252,45 @@ export default function ProductModal({
                         )}
                       </div>
 
+                      {/* Количество */}
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-medium text-gray-700">Количество:</span>
+                        <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
+                          <button
+                            onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                            className="px-3 py-2 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            disabled={quantity <= 1}
+                          >
+                            <Minus className="w-4 h-4 text-gray-600" />
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            value={quantity}
+                            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-16 text-center py-2 font-semibold text-gray-900 border-x-2 border-gray-200 focus:outline-none"
+                          />
+                          <button
+                            onClick={() => setQuantity(q => q + 1)}
+                            className="px-3 py-2 hover:bg-gray-100 transition-colors"
+                          >
+                            <Plus className="w-4 h-4 text-gray-600" />
+                          </button>
+                        </div>
+                        {quantity > 1 && product.price && (
+                          <span className="text-sm text-gray-500">
+                            = {(parseFloat(product.price.toString().replace(/[^0-9.-]+/g, '')) * quantity).toLocaleString('ru-RU')} {product.currency || 'RUB'}
+                          </span>
+                        )}
+                      </div>
+
                       <button
-                        onClick={() => onAddToCart(product)}
+                        onClick={() => {
+                          // Добавляем товар с указанным количеством
+                          for (let i = 0; i < quantity; i++) {
+                            onAddToCart(product)
+                          }
+                        }}
                         disabled={isInCart}
                         className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                           isInCart
@@ -254,7 +299,7 @@ export default function ProductModal({
                         }`}
                       >
                         <ShoppingCart className="w-5 h-5" />
-                        {isInCart ? 'В корзине' : 'Добавить в корзину'}
+                        {isInCart ? 'В корзине' : `Добавить ${quantity > 1 ? `(${quantity} шт.)` : 'в корзину'}`}
                       </button>
                     </div>
 

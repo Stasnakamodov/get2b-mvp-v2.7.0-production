@@ -1,6 +1,6 @@
-import { logger } from "@/src/shared/lib/logger"
 'use client'
 
+import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config'
@@ -48,6 +48,11 @@ export default function CatalogPageRefactored() {
   const [activeMode, setActiveMode] = useState<'clients' | 'catalog'>('clients')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+
+  // Простой callback для поиска - debounce уже в SearchInput
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query)
+  }, [])
 
   // === ДАННЫЕ ПОСТАВЩИКОВ ===
   const [realSuppliers, setRealSuppliers] = useState<Supplier[]>([])
@@ -249,20 +254,16 @@ export default function CatalogPageRefactored() {
 
   // === ОПТИМИЗАЦИЯ КАТАЛОГА ===
   const {
-    filteredSuppliers,
     sortedSuppliers,
     searchStats,
     sortOptions,
     currentSort,
-    setCurrentSort,
-    debouncedSearchQuery,
-    isSearching
+    setCurrentSort
   } = useCatalogOptimization({
     suppliers: currentSuppliers,
     searchQuery,
     selectedCategory,
-    mode: activeMode,
-    debounceMs: 300
+    mode: activeMode
   })
 
   return (
@@ -275,14 +276,13 @@ export default function CatalogPageRefactored() {
         verifiedSuppliersCount={verifiedSuppliers.length}
         filteredSuppliersCount={searchStats.filtered}
         searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+        setSearchQuery={handleSearchChange}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         categories={categories}
         sortOptions={sortOptions}
         currentSort={currentSort}
         setCurrentSort={setCurrentSort}
-        isSearching={isSearching}
         onAddSupplier={handleAddSupplier}
         onImportFromProjects={handleImportFromProjects}
         onLoadRecommendations={loadRecommendations}
@@ -296,7 +296,7 @@ export default function CatalogPageRefactored() {
           suppliers={sortedSuppliers}
           mode={activeMode}
           loading={isLoading}
-          searchQuery={debouncedSearchQuery}
+          searchQuery={searchQuery}
           selectedCategory={selectedCategory}
           searchStats={searchStats}
           onViewDetails={handleViewDetails}

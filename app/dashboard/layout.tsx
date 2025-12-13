@@ -5,12 +5,40 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
-import { FileText, BarChart3, MessageSquare, User, Menu, X, Home, BookOpen, PlusCircle, Package, ChevronLeft, ChevronRight } from "lucide-react"
+import { FileText, BarChart3, MessageSquare, User, Menu, X, Home, BookOpen, PlusCircle, Package, ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
 import ThemeToggle from "@/components/theme-toggle"
 import { ProfileGuard } from "@/components/profile-guard"
-import { CartProvider } from "@/src/features/cart-management"
+import { CartProvider, useCart } from "@/src/features/cart-management"
+
+// Floating Cart Badge - отдельный компонент внутри CartProvider
+function FloatingCartBadge() {
+  const { cart, getTotalItems } = useCart()
+  const pathname = usePathname()
+
+  // Показываем только на страницах каталога
+  const showOnPages = ['/dashboard/catalog']
+  const shouldShow = showOnPages.some(page => pathname?.startsWith(page))
+
+  if (!shouldShow || getTotalItems() === 0) return null
+
+  return (
+    <Link href="/dashboard/catalog">
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-green-600 transition-all cursor-pointer"
+      >
+        <ShoppingCart className="w-5 h-5" />
+        <span className="font-semibold">{getTotalItems()}</span>
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+          {getTotalItems()}
+        </span>
+      </motion.div>
+    </Link>
+  )
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true) // По умолчанию открыт
@@ -166,6 +194,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className={`transition-all duration-300 pt-4 ${isSidebarOpen ? 'md:pl-64' : 'pl-0'}`}>
         <main className="max-w-screen-2xl mx-auto px-4 py-2">{children}</main>
       </div>
+
+      {/* Floating Cart Badge */}
+      <FloatingCartBadge />
     </div>
     </CartProvider>
     </ProfileGuard>

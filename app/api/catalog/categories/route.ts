@@ -9,29 +9,28 @@ export async function GET(request: NextRequest) {
     const includeSubcategories = searchParams.get('includeSubcategories') !== 'false';
     const simpleList = searchParams.get('simple') === 'true';
 
-    // Если запрошен простой список - возвращаем уникальные категории из продуктов
+    // Если запрошен простой список - возвращаем категории из таблицы catalog_categories
     if (simpleList) {
-      const { data: products, error } = await supabase
-        .from("catalog_verified_products")
-        .select("category")
-        .not("category", "is", null)
-        .order("category");
+      const { data: categories, error } = await supabase
+        .from("catalog_categories")
+        .select("name")
+        .order("name");
 
       if (error) {
-        console.error("❌ [API] Ошибка загрузки категорий из продуктов:", error);
+        console.error("❌ [API] Ошибка загрузки категорий:", error);
         return NextResponse.json({
           success: false,
           error: error.message
         }, { status: 500 });
       }
 
-      // Извлекаем уникальные категории
-      const uniqueCategories = [...new Set(products?.map(p => p.category))].filter(Boolean);
+      // Извлекаем названия категорий
+      const categoryNames = categories?.map(c => c.name).filter(Boolean) || [];
 
       return NextResponse.json({
         success: true,
-        categories: uniqueCategories,
-        count: uniqueCategories.length
+        categories: categoryNames,
+        count: categoryNames.length
       });
     }
 

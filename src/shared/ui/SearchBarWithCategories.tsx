@@ -44,6 +44,7 @@ const categoryIcons: Record<string, React.ReactNode> = {
   'Автотовары': '🚗',
   'Дом и быт': '🏠',
   'Здоровье и медицина': '🏥',
+  'Здоровье и красота': '💄',
   'Промышленность': '🏭',
   'ТЕСТОВАЯ': '🧪',
   'СПОРТ': '⚽',
@@ -76,6 +77,38 @@ export const SearchBarWithCategories: React.FC<SearchBarWithCategoriesProps> = (
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Блокировка скролла страницы когда список открыт
+  useEffect(() => {
+    if (isOpen) {
+      // Предотвращаем скролл колёсиком за пределами выпадающего списка
+      const handleWheel = (e: WheelEvent) => {
+        const target = e.target as HTMLElement
+        const dropdown = containerRef.current?.querySelector('.dropdown-scroll')
+
+        // Если скроллим внутри выпадающего списка - разрешаем
+        if (dropdown && dropdown.contains(target)) {
+          const { scrollTop, scrollHeight, clientHeight } = dropdown as HTMLElement
+          const isAtTop = scrollTop === 0 && e.deltaY < 0
+          const isAtBottom = scrollTop + clientHeight >= scrollHeight && e.deltaY > 0
+
+          // Предотвращаем скролл страницы только когда достигли края списка
+          if (!isAtTop && !isAtBottom) {
+            return // Разрешаем скролл внутри списка
+          }
+        }
+
+        // Предотвращаем скролл страницы
+        e.preventDefault()
+      }
+
+      document.addEventListener('wheel', handleWheel, { passive: false })
+
+      return () => {
+        document.removeEventListener('wheel', handleWheel)
+      }
+    }
+  }, [isOpen])
 
   // Обработка клика по категории
   const handleCategoryClick = (category: string) => {
@@ -160,7 +193,7 @@ export const SearchBarWithCategories: React.FC<SearchBarWithCategoriesProps> = (
             </div>
 
             {/* Список категорий */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto dropdown-scroll overscroll-contain">
               {filteredCategories.length > 0 ? (
                 <div className="py-2">
                   {/* Показать все товары */}

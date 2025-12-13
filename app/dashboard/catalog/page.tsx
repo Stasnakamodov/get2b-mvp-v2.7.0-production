@@ -86,6 +86,7 @@ export default function CatalogPage() {
     selectedCategory,
     selectedSubcategory,
     loading: loadingCategories,
+    loadingSubcategories,
     error: categoriesError,
     selectCategory,
     selectSubcategory,
@@ -120,32 +121,32 @@ export default function CatalogPage() {
     })) as any
   }, [cart])
 
-  // Мемоизированная категория из URL
-  const categoryFromUrlMemo = useMemo(() => {
-    if (!categoryFromUrl || categories.length === 0) {
-      return null
-    }
-    return categories.find(cat =>
-      cat.name === categoryFromUrl || cat.category === categoryFromUrl
-    )
-  }, [categoryFromUrl, categories])
+  // Обработка выбора категории из URL (только при первой загрузке или изменении URL)
+  // Используем ref чтобы избежать повторных срабатываний
+  const lastUrlCategoryRef = React.useRef<string | null>(null)
 
-  // Обработка выбора категории из URL (когда пользователь кликает на категорию в поиске)
   useEffect(() => {
-    if (!categoryFromUrlMemo) {
-      // Если нет категории в URL или категории не загружены - сбрасываем выбор
-      if (selectedCategory || selectedSubcategory) {
-        selectCategory(null)
-        selectSubcategory(null)
-      }
+    // Только если URL параметр реально изменился
+    if (categoryFromUrl === lastUrlCategoryRef.current) {
+      return
+    }
+    lastUrlCategoryRef.current = categoryFromUrl
+
+    // Если нет категории в URL - не трогаем текущее состояние
+    // (позволяет навигации назад работать корректно)
+    if (!categoryFromUrl || categories.length === 0) {
       return
     }
 
-    if (!selectedCategory || selectedCategory.id !== categoryFromUrlMemo.id) {
-      // Выбираем категорию - это покажет её подкатегории
+    // Находим категорию по URL
+    const categoryFromUrlMemo = categories.find(cat =>
+      cat.name === categoryFromUrl || cat.category === categoryFromUrl
+    )
+
+    if (categoryFromUrlMemo && (!selectedCategory || selectedCategory.id !== categoryFromUrlMemo.id)) {
       selectCategory(categoryFromUrlMemo)
     }
-  }, [categoryFromUrlMemo, selectedCategory, selectedSubcategory, selectCategory, selectSubcategory])
+  }, [categoryFromUrl, categories, selectedCategory, selectCategory])
 
   // Загрузка токена
   useEffect(() => {
@@ -198,7 +199,7 @@ export default function CatalogPage() {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg animate-gradient-shift">
                 <Package className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -211,19 +212,23 @@ export default function CatalogPage() {
               </div>
             </div>
 
-            {/* Корзина */}
-            {getTotalItems() > 0 && (
-              <button
-                onClick={() => setShowCartModal(true)}
-                className="relative flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl hover:from-emerald-600 hover:to-green-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                <span className="font-medium">Корзина</span>
+            {/* Корзина - всегда видна */}
+            <button
+              onClick={() => setShowCartModal(true)}
+              className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${
+                getTotalItems() > 0
+                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <ShoppingCart className="w-5 h-5" />
+              <span className="font-medium">Корзина</span>
+              {getTotalItems() > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-md animate-pulse">
                   {getTotalItems()}
                 </span>
-              </button>
-            )}
+              )}
+            </button>
           </div>
 
           {/* Переключатель режимов */}
@@ -384,8 +389,18 @@ export default function CatalogPage() {
                   </div>
                 </div>
 
-                {/* Список подкатегорий */}
-                {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 ? (
+                {/* Лоадер подкатегорий */}
+                {loadingSubcategories && (
+                  <div className="bg-white rounded-lg shadow-sm p-12">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+                      <p className="text-gray-500">Загрузка подкатегорий...</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Список подкатегорий (только когда загрузка завершена) */}
+                {!loadingSubcategories && selectedCategory.subcategories && selectedCategory.subcategories.length > 0 && (
                   <SubcategoryList
                     category={selectedCategory}
                     onSubcategorySelect={(subcategory: any) => {
@@ -397,8 +412,10 @@ export default function CatalogPage() {
                     }}
                     selectedRoom={selectedRoom}
                   />
-                ) : (
-                  // Если подкатегорий нет, показываем товары категории
+                )}
+
+                {/* Если подкатегорий нет (после загрузки), показываем товары категории */}
+                {!loadingSubcategories && (!selectedCategory.subcategories || selectedCategory.subcategories.length === 0) && (
                   <ProductGridByCategory
                     selectedCategory={selectedCategory.name}
                     token={token}

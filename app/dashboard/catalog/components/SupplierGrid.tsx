@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { SupplierCard } from './SupplierCard'
-import { motion } from 'framer-motion'
 
 interface Supplier {
   id: string
@@ -61,12 +60,12 @@ export const SupplierGrid = React.memo(function SupplierGrid({
   onImportFromProjects,
   onImportToMyList
 }: SupplierGridProps) {
-  
+
   // Используем готовых отфильтрованных поставщиков
   const filteredSuppliers = suppliers
 
-  // Состояние загрузки
-  if (loading) {
+  // Первоначальная загрузка (показываем лоадер только при отсутствии данных)
+  if (loading && suppliers.length === 0) {
     return (
       <div className="space-y-6">
         <div className="text-center py-12">
@@ -161,54 +160,38 @@ export const SupplierGrid = React.memo(function SupplierGrid({
             </>
           )}
         </div>
-        
-        {/* Информация об оптимизации */}
-        <div className="text-sm text-gray-500">
-          ⚡ Оптимизированный поиск
-        </div>
       </div>
 
-      {/* Сетка карточек поставщиков */}
-      <motion.div 
-        className="space-y-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        {filteredSuppliers.map((supplier, index) => (
-          <motion.div
+      {/* Сетка карточек поставщиков - БЕЗ анимаций */}
+      <div className="space-y-6">
+        {filteredSuppliers.map((supplier) => (
+          <SupplierCard
             key={supplier.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <SupplierCard
-              supplier={supplier}
-              mode={mode}
-              onViewDetails={onViewDetails}
-              onStartProject={onStartProject}
-              onImportToMyList={onImportToMyList}
-            />
-          </motion.div>
+            supplier={supplier}
+            mode={mode}
+            onViewDetails={onViewDetails}
+            onStartProject={onStartProject}
+            onImportToMyList={onImportToMyList}
+          />
         ))}
-      </motion.div>
+      </div>
 
       {/* Статистика внизу */}
       <div className="border-t-2 border-gray-100 pt-6 mt-8">
         <div className="text-center text-sm text-gray-500">
           {mode === 'clients' ? (
             <div>
-              💼 Ваша личная база поставщиков | 
+              Ваша личная база поставщиков |
               <span className="ml-2">
-                {suppliers.filter(s => s.source_type === 'extracted_from_7steps').length} из проектов, 
+                {suppliers.filter(s => s.source_type === 'extracted_from_7steps').length} из проектов,
                 {suppliers.filter(s => s.source_type === 'user_added').length} добавлено вручную
               </span>
             </div>
           ) : (
             <div>
-              🧠 Каталог Get2B | 
+              Каталог Get2B |
               <span className="ml-2">
-                {suppliers.filter(s => s.is_featured).length} рекомендуемых, 
+                {suppliers.filter(s => s.is_featured).length} рекомендуемых,
                 {suppliers.filter(s => s.verification_level === 'gold').length} золотых партнеров
               </span>
             </div>

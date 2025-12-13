@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useEffect } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 
 interface Supplier {
   id: string
@@ -26,10 +26,9 @@ interface Supplier {
 
 interface UseCatalogOptimizationProps {
   suppliers: Supplier[]
-  searchQuery: string
+  searchQuery: string // Ожидается уже deferred/debounced значение от родителя
   selectedCategory: string
   mode: 'clients' | 'catalog'
-  debounceMs?: number
 }
 
 interface UseCatalogOptimizationReturn {
@@ -47,35 +46,17 @@ interface UseCatalogOptimizationReturn {
   }>
   currentSort: string
   setCurrentSort: (sort: string) => void
-  debouncedSearchQuery: string
-  isSearching: boolean
 }
 
 export function useCatalogOptimization({
   suppliers,
-  searchQuery,
+  searchQuery, // Уже deferred/debounced от родителя через useDeferredValue
   selectedCategory,
-  mode,
-  debounceMs = 300
+  mode
 }: UseCatalogOptimizationProps): UseCatalogOptimizationReturn {
-  
+
   // Состояние сортировки
   const [currentSort, setCurrentSort] = useState('default')
-  
-  // Состояние для debounced поиска
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery)
-  const [isSearching, setIsSearching] = useState(false)
-
-  // Debounce для поискового запроса
-  useEffect(() => {
-    setIsSearching(true)
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery)
-      setIsSearching(false)
-    }, debounceMs)
-
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, debounceMs])
 
   // Опции сортировки в зависимости от режима
   const sortOptions = useMemo(() => {
@@ -155,6 +136,7 @@ export function useCatalogOptimization({
   }, [mode])
 
   // Оптимизированная фильтрация
+  // searchQuery уже deferred от родителя - фильтрация не блокирует UI
   const filteredSuppliers = useMemo(() => {
     if (!suppliers.length) return []
 
@@ -162,27 +144,27 @@ export function useCatalogOptimization({
       // Базовая проверка валидности
       const supplierName = supplier?.name || supplier?.company_name || ''
       const supplierCategory = supplier?.category || ''
-      
+
       if (!supplierName.trim() || supplierName === 'NULL') return false
 
-             // Поиск (используем debounced версию)
-       let matchesSearch = true
-       if (debouncedSearchQuery) {
-         const searchLower = debouncedSearchQuery.toLowerCase()
-         matchesSearch = 
-           supplierName.toLowerCase().includes(searchLower) ||
-           supplierCategory.toLowerCase().includes(searchLower) ||
-           (supplier.description?.toLowerCase().includes(searchLower) || false) ||
-           (supplier.city?.toLowerCase().includes(searchLower) || false) ||
-           (supplier.country?.toLowerCase().includes(searchLower) || false)
-       }
+      // Поиск (searchQuery уже deferred от родителя)
+      let matchesSearch = true
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase()
+        matchesSearch =
+          supplierName.toLowerCase().includes(searchLower) ||
+          supplierCategory.toLowerCase().includes(searchLower) ||
+          (supplier.description?.toLowerCase().includes(searchLower) || false) ||
+          (supplier.city?.toLowerCase().includes(searchLower) || false) ||
+          (supplier.country?.toLowerCase().includes(searchLower) || false)
+      }
 
       // Фильтр по категории
       const matchesCategory = selectedCategory === 'all' || supplierCategory === selectedCategory
 
       return matchesSearch && matchesCategory
     })
-  }, [suppliers, debouncedSearchQuery, selectedCategory])
+  }, [suppliers, searchQuery, selectedCategory])
 
   // Оптимизированная сортировка
   const sortedSuppliers = useMemo(() => {
@@ -200,8 +182,8 @@ export function useCatalogOptimization({
   const searchStats = useMemo(() => ({
     total: suppliers.length,
     filtered: filteredSuppliers.length,
-    hasActiveFilters: Boolean(debouncedSearchQuery !== '' || selectedCategory !== 'all')
-  }), [suppliers.length, filteredSuppliers.length, debouncedSearchQuery, selectedCategory])
+    hasActiveFilters: Boolean(searchQuery !== '' || selectedCategory !== 'all')
+  }), [suppliers.length, filteredSuppliers.length, searchQuery, selectedCategory])
 
   return {
     filteredSuppliers,
@@ -209,8 +191,6 @@ export function useCatalogOptimization({
     searchStats,
     sortOptions,
     currentSort,
-    setCurrentSort: useCallback((sort: string) => setCurrentSort(sort), []),
-    debouncedSearchQuery,
-    isSearching
+    setCurrentSort: useCallback((sort: string) => setCurrentSort(sort), [])
   }
 } 

@@ -23,6 +23,7 @@ interface UseCategoriesResult {
 
   // Состояния
   loading: boolean
+  loadingSubcategories: boolean
   error: string | null
 
   // Методы
@@ -48,6 +49,7 @@ export const useCategories = (): UseCategoriesResult => {
 
   // Состояния загрузки
   const [loading, setLoading] = useState(false)
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   /**
@@ -151,6 +153,7 @@ export const useCategories = (): UseCategoriesResult => {
    */
   const loadSubcategoriesForCategory = useCallback(async (categoryId: string) => {
     logger.debug('📂 Загрузка подкатегорий для категории:', categoryId)
+    setLoadingSubcategories(true)
 
     try {
       const subs = await fetchSubcategories(categoryId)
@@ -177,6 +180,8 @@ export const useCategories = (): UseCategoriesResult => {
     } catch (error) {
       logger.error('❌ Ошибка загрузки подкатегорий:', error)
       setSubcategories([])
+    } finally {
+      setLoadingSubcategories(false)
     }
   }, [])
 
@@ -276,6 +281,7 @@ export const useCategories = (): UseCategoriesResult => {
 
     // Состояния
     loading,
+    loadingSubcategories,
     error,
 
     // Методы
