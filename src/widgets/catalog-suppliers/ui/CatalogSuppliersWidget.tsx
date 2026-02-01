@@ -99,7 +99,7 @@ export function CatalogSuppliersWidget() {
             <h3 className="font-semibold text-lg mb-1">Персональные поставщики</h3>
             <p className="text-sm text-gray-600">Ваши личные поставщики</p>
             <div className="mt-2 text-2xl font-bold text-blue-600">
-              {suppliers.filter(s => s.specifications?.personal === true).length}
+              {suppliers.filter(s => s.room_type === 'user').length}
             </div>
           </button>
         </div>
