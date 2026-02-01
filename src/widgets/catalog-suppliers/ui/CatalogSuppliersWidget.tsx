@@ -29,9 +29,9 @@ export function CatalogSuppliersWidget() {
 
     // Filter by room
     if (selectedRoom === 'orange') {
-      filtered = filtered.filter(s => s.status === 'active')
+      filtered = filtered.filter(s => s.room_type === 'verified' || s.status === 'active')
     } else {
-      filtered = filtered.filter(s => s.specifications?.personal === true)
+      filtered = filtered.filter(s => s.room_type === 'user')
     }
 
     // Filter by search
@@ -40,7 +40,7 @@ export function CatalogSuppliersWidget() {
       filtered = filtered.filter(s =>
         s.name?.toLowerCase().includes(query) ||
         s.company_name?.toLowerCase().includes(query) ||
-        s.email?.toLowerCase().includes(query)
+        s.contact_email?.toLowerCase().includes(query)
       )
     }
 
