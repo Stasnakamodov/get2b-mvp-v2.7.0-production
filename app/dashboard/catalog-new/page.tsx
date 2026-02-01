@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { CatalogHeader } from './components/CatalogHeader'
 import { CatalogSidebar } from './components/CatalogSidebar'
 import { CatalogGrid } from './components/CatalogGrid'
@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Badge } from '@/components/ui/badge'
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, X } from 'lucide-react'
 import type { CatalogProduct, CatalogFilters, CatalogSort, CatalogViewMode } from '@/lib/catalog/types'
-import { formatPrice } from '@/lib/catalog/utils'
+import { formatPrice, parseFiltersFromUrl, buildCatalogUrl } from '@/lib/catalog/utils'
 
 /**
  * Главная страница каталога TechnoModern
@@ -29,12 +29,26 @@ import { formatPrice } from '@/lib/catalog/utils'
  */
 export default function CatalogPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Инициализация фильтров из URL
+  const initialFilters = useMemo(() => {
+    if (!searchParams) return {}
+    return parseFiltersFromUrl(searchParams)
+  }, [searchParams])
 
   // Состояние фильтров
-  const [filters, setFilters] = useState<CatalogFilters>({})
+  const [filters, setFilters] = useState<CatalogFilters>(initialFilters)
   const [sort, setSort] = useState<CatalogSort>({ field: 'created_at', order: 'desc' })
   const [viewMode, setViewMode] = useState<CatalogViewMode>('grid-4')
   const [isCartOpen, setIsCartOpen] = useState(false)
+
+  // Синхронизация URL при изменении фильтров
+  useEffect(() => {
+    const newUrl = buildCatalogUrl('/dashboard/catalog-new', filters)
+    // Используем replace чтобы не засорять историю
+    router.replace(newUrl, { scroll: false })
+  }, [filters, router])
 
   // Корзина
   const {
@@ -91,12 +105,10 @@ export default function CatalogPage() {
   }, [])
 
   // Переход в конструктор с товарами
+  // Корзина уже синхронизируется с localStorage через useProductCart
   const handleCreateProject = useCallback(() => {
-    // Сохраняем корзину в localStorage
-    localStorage.setItem('catalogCartForProject', JSON.stringify(cartItems))
-    // Переходим в конструктор
     router.push('/dashboard/project-constructor?fromCatalog=true')
-  }, [cartItems, router])
+  }, [router])
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950">

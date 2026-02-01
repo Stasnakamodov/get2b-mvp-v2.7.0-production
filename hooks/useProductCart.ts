@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { CatalogProduct, CartItem, CartState } from '@/lib/catalog/types'
 import { CART_STORAGE_KEY, MAX_CART_ITEMS } from '@/lib/catalog/constants'
 import { calculateCartTotal, calculateCartItemsCount } from '@/lib/catalog/utils'
+
+// Debounce timeout для предотвращения множественных быстрых добавлений
+const ADD_TO_CART_DEBOUNCE_MS = 300
 
 /**
  * Хук для управления корзиной товаров
@@ -25,6 +28,9 @@ import { calculateCartTotal, calculateCartItemsCount } from '@/lib/catalog/utils
 export function useProductCart() {
   const [items, setItems] = useState<CartItem[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
+
+  // Ref для отслеживания товаров в процессе добавления (debounce)
+  const addingProductsRef = useRef<Set<string>>(new Set())
 
   // Загрузка из localStorage при монтировании
   useEffect(() => {
@@ -56,8 +62,21 @@ export function useProductCart() {
     }
   }, [items, isLoaded])
 
-  // Добавление товара в корзину
+  // Добавление товара в корзину с debounce
   const addToCart = useCallback((product: CatalogProduct, quantity: number = 1) => {
+    // Проверяем debounce - не добавляем если товар уже в процессе добавления
+    if (addingProductsRef.current.has(product.id)) {
+      return
+    }
+
+    // Блокируем повторное добавление
+    addingProductsRef.current.add(product.id)
+
+    // Снимаем блокировку через debounce timeout
+    setTimeout(() => {
+      addingProductsRef.current.delete(product.id)
+    }, ADD_TO_CART_DEBOUNCE_MS)
+
     setItems(prev => {
       // Проверяем лимит
       if (prev.length >= MAX_CART_ITEMS) {

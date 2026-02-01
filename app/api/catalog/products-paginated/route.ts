@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+import { z } from 'zod'
 
 /**
  * API для пагинированной загрузки товаров
@@ -14,11 +15,30 @@ import { supabase } from '@/lib/supabaseClient'
  * - category: string (опционально) - фильтр по категории
  * - search: string (опционально) - поиск по названию
  * - supplier_id: string (опционально) - фильтр по поставщику
+ * - sort_field: string (опционально) - поле сортировки
+ * - sort_order: 'asc' | 'desc' (опционально) - направление сортировки
  */
 
-interface CursorData {
-  lastId: string
-  lastCreatedAt: string
+// Zod схема для валидации cursor
+const CursorDataSchema = z.object({
+  lastId: z.string().uuid(),
+  lastCreatedAt: z.string().datetime()
+})
+
+type CursorData = z.infer<typeof CursorDataSchema>
+
+// Разрешённые поля для сортировки
+const ALLOWED_SORT_FIELDS = ['created_at', 'price', 'name'] as const
+type SortField = typeof ALLOWED_SORT_FIELDS[number]
+
+/**
+ * Санитизация поискового запроса для защиты от SQL injection
+ */
+function sanitizeSearch(search: string): string {
+  return search
+    .replace(/[%_\\'"();]/g, ' ')
+    .trim()
+    .slice(0, 100)
 }
 
 function encodeCursor(data: CursorData): string {
@@ -27,7 +47,13 @@ function encodeCursor(data: CursorData): string {
 
 function decodeCursor(cursor: string): CursorData | null {
   try {
-    return JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'))
+    const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'))
+    const result = CursorDataSchema.safeParse(decoded)
+    if (!result.success) {
+      console.warn('[API] Invalid cursor format:', result.error)
+      return null
+    }
+    return result.data
   } catch {
     return null
   }
@@ -45,17 +71,25 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const supplierId = searchParams.get('supplier_id')
 
+    // Параметры сортировки с валидацией
+    const sortFieldParam = searchParams.get('sort_field')
+    const sortOrderParam = searchParams.get('sort_order')
+    const sortField: SortField = ALLOWED_SORT_FIELDS.includes(sortFieldParam as SortField)
+      ? (sortFieldParam as SortField)
+      : 'created_at'
+    const sortOrder: 'asc' | 'desc' = sortOrderParam === 'asc' ? 'asc' : 'desc'
+
     // Определяем таблицу
     const tableName = supplierType === 'verified'
       ? 'catalog_verified_products'
       : 'catalog_user_products'
 
-    // Базовый запрос
+    // Базовый запрос с настраиваемой сортировкой
     let query = supabase
       .from(tableName)
       .select('*')
       .eq('is_active', true)
-      .order('created_at', { ascending: false })
+      .order(sortField, { ascending: sortOrder === 'asc' })
       .order('id', { ascending: false })
       .limit(limit + 1) // +1 для проверки наличия следующей страницы
 
@@ -81,7 +115,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (search && search.trim()) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
+      const sanitized = sanitizeSearch(search)
+      if (sanitized) {
+        query = query.or(`name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`)
+      }
     }
 
     const { data, error } = await query
@@ -119,6 +156,8 @@ export async function GET(request: NextRequest) {
         count: products.length,
         limit,
         supplierType,
+        sortField,
+        sortOrder,
         executionTime: Date.now() - startTime
       }
     })

@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
-import type { CartItem } from '@/lib/catalog/types'
-
-const CATALOG_CART_KEY = 'catalogCartForProject'
+import type { CartItem, CatalogProduct } from '@/lib/catalog/types'
+import { CART_STORAGE_KEY } from '@/lib/catalog/constants'
 
 interface CatalogCartImportResult {
   /** Товары из корзины каталога */
@@ -64,7 +63,7 @@ export function useCatalogCartImport(): CatalogCartImportResult {
   const [hasImportedFromCatalog, setHasImportedFromCatalog] = useState(false)
 
   // Проверяем URL параметр
-  const fromCatalog = searchParams.get('fromCatalog') === 'true'
+  const fromCatalog = searchParams?.get('fromCatalog') === 'true'
 
   // Загружаем данные из localStorage при монтировании
   useEffect(() => {
@@ -74,11 +73,11 @@ export function useCatalogCartImport(): CatalogCartImportResult {
     }
 
     try {
-      const stored = localStorage.getItem(CATALOG_CART_KEY)
+      const stored = localStorage.getItem(CART_STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored)
-        // Восстанавливаем даты
-        const items = parsed.map((item: any) => ({
+        // Восстанавливаем даты с типизацией
+        const items: CartItem[] = parsed.map((item: { product: CatalogProduct; quantity: number; addedAt: string }) => ({
           ...item,
           addedAt: new Date(item.addedAt)
         }))
@@ -118,15 +117,14 @@ export function useCatalogCartImport(): CatalogCartImportResult {
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
-  // Очистка корзины
+  // Очистка корзины (только флаг импорта, корзина остаётся для повторного использования)
   const clearCatalogCart = useCallback(() => {
     try {
-      localStorage.removeItem(CATALOG_CART_KEY)
-      setCartItems([])
+      // Не удаляем корзину, а только сбрасываем флаг импорта
       setHasImportedFromCatalog(false)
-      console.log('🗑️ [CatalogImport] Корзина каталога очищена')
+      console.log('🗑️ [CatalogImport] Флаг импорта сброшен')
     } catch (e) {
-      console.error('[CatalogImport] Ошибка очистки корзины:', e)
+      console.error('[CatalogImport] Ошибка очистки:', e)
     }
   }, [])
 

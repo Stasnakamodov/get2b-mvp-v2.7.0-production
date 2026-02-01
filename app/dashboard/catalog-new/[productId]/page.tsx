@@ -29,12 +29,17 @@ interface ProductPageData {
 export default function ProductPage() {
   const router = useRouter()
   const params = useParams()
-  const productId = params.productId as string
+
+  // Безопасное извлечение productId
+  const productId = typeof params?.productId === 'string' ? params.productId : null
 
   const [data, setData] = useState<ProductPageData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
+
+  // Проверка валидности productId
+  const isValidProductId = productId && /^[a-f0-9-]{36}$/i.test(productId)
 
   // Корзина
   const {
@@ -52,7 +57,11 @@ export default function ProductPage() {
   // Загрузка данных товара
   useEffect(() => {
     async function loadProduct() {
-      if (!productId) return
+      if (!isValidProductId) {
+        setError('Некорректный ID товара')
+        setIsLoading(false)
+        return
+      }
 
       setIsLoading(true)
       setError(null)
@@ -69,16 +78,17 @@ export default function ProductPage() {
           product: result.product,
           relatedProducts: result.relatedProducts || []
         })
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to load product:', err)
-        setError(err.message || 'Ошибка загрузки товара')
+        const errorMessage = err instanceof Error ? err.message : 'Ошибка загрузки товара'
+        setError(errorMessage)
       } finally {
         setIsLoading(false)
       }
     }
 
     loadProduct()
-  }, [productId])
+  }, [productId, isValidProductId])
 
   // Добавление в корзину
   const handleAddToCart = useCallback((quantity: number) => {
@@ -101,10 +111,10 @@ export default function ProductPage() {
   }, [addToCart])
 
   // Переход в конструктор
+  // Корзина уже синхронизируется с localStorage через useProductCart
   const handleCreateProject = useCallback(() => {
-    localStorage.setItem('catalogCartForProject', JSON.stringify(cartItems))
     router.push('/dashboard/project-constructor?fromCatalog=true')
-  }, [cartItems, router])
+  }, [router])
 
   // Загрузка
   if (isLoading) {

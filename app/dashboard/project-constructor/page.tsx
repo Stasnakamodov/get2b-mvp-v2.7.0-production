@@ -214,7 +214,7 @@ function ProjectConstructorContent() {
       // Помечаем шаг 2 как заполненный из каталога
       setStepConfigs(prev => ({
         ...prev,
-        2: { source: 'CATALOG', isComplete: true }
+        2: 'catalog'
       }))
 
       // Показываем уведомление

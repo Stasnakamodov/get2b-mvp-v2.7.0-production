@@ -84,8 +84,9 @@ export function buildCatalogUrl(baseUrl: string, filters: CatalogFilters): strin
 
 /**
  * Парсинг фильтров из URL
+ * Поддерживает как URLSearchParams, так и ReadonlyURLSearchParams из Next.js
  */
-export function parseFiltersFromUrl(searchParams: URLSearchParams): CatalogFilters {
+export function parseFiltersFromUrl(searchParams: URLSearchParams | { get: (key: string) => string | null }): CatalogFilters {
   return {
     search: searchParams.get('q') || undefined,
     category: searchParams.get('category') || undefined,

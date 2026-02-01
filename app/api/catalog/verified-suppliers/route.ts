@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
+import { checkUserRole } from "@/lib/auth/checkRole";
+
+/**
+ * Санитизация поискового запроса для защиты от SQL injection
+ * Удаляет специальные символы и ограничивает длину
+ */
+function sanitizeSearch(search: string): string {
+  return search
+    .replace(/[%_\\'"();]/g, ' ')
+    .trim()
+    .slice(0, 100)
+}
 
 // GET: Получение аккредитованных поставщиков Get2B (оранжевая комната)
 export async function GET(request: NextRequest) {
@@ -57,7 +69,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,company_name.ilike.%${search}%,description.ilike.%${search}%`);
+      const sanitized = sanitizeSearch(search)
+      if (sanitized) {
+        query = query.or(`name.ilike.%${sanitized}%,company_name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`);
+      }
     }
 
     const { data, error } = await query;
@@ -81,14 +96,11 @@ export async function GET(request: NextRequest) {
 // POST: Добавление нового аккредитованного поставщика (только для менеджеров Get2B)
 export async function POST(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Проверяем роль пользователя (только admin или manager)
+    const roleCheck = await checkUserRole(['admin', 'manager'])
+    if (!roleCheck.success) {
+      return NextResponse.json({ error: roleCheck.error }, { status: roleCheck.user ? 403 : 401 });
     }
-
-    // Проверяем права менеджера (можно добавить проверку роли)
-    // TODO: Добавить проверку роли менеджера Get2B
 
     const supplierData = await request.json();
 
@@ -106,7 +118,7 @@ export async function POST(request: NextRequest) {
       .from("catalog_verified_suppliers")
       .insert([{
         ...supplierData,
-        verified_by: user.id,
+        verified_by: roleCheck.user!.id,
         is_active: true,
         public_rating: 0,
         reviews_count: 0,
@@ -131,10 +143,10 @@ export async function POST(request: NextRequest) {
 // PATCH: Обновление аккредитованного поставщика (только для менеджеров)
 export async function PATCH(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Проверяем роль пользователя (только admin или manager)
+    const roleCheck = await checkUserRole(['admin', 'manager'])
+    if (!roleCheck.success) {
+      return NextResponse.json({ error: roleCheck.error }, { status: roleCheck.user ? 403 : 401 });
     }
 
     const { id, ...updateData } = await request.json();

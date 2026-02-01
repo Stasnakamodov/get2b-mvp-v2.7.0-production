@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react'
+'use client'
+
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabaseClient'
 
 export interface Category {
@@ -9,20 +11,24 @@ export interface Category {
   description: string
   level: number
   parent_id: string | null
+  products_count?: number
 }
 
+/**
+ * Хук для загрузки и кэширования категорий каталога
+ *
+ * Использует React Query для:
+ * - Кэширования данных на 5 минут (staleTime)
+ * - Автоматического повторного запроса при ошибках
+ * - Дедупликации запросов
+ *
+ * @example
+ * const { categories, loading, error } = useCategories()
+ */
 export function useCategories() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  const fetchCategories = async () => {
-    try {
-      setLoading(true)
+  const query = useQuery<Category[]>({
+    queryKey: ['catalog-categories'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('catalog_categories')
         .select('*')
@@ -30,16 +36,24 @@ export function useCategories() {
         .eq('level', 1)
         .order('sort_order')
 
-      if (error) throw error
+      if (error) {
+        throw new Error(error.message)
+      }
 
-      setCategories(data || [])
-    } catch (err) {
-      console.error('Error fetching categories:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load categories')
-    } finally {
-      setLoading(false)
-    }
+      return data || []
+    },
+    staleTime: 5 * 60 * 1000, // 5 минут - категории редко меняются
+    gcTime: 30 * 60 * 1000, // 30 минут в кэше
+    retry: 2,
+    refetchOnWindowFocus: false, // Не перезагружать при фокусе
+  })
+
+  return {
+    categories: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch
   }
-
-  return { categories, loading, error, refetch: fetchCategories }
 }
+
+export default useCategories

@@ -5,13 +5,21 @@ interface Product {
   name: string
   description?: string
   category: string
+  subcategory?: string
+  sku?: string
   price?: number
-  currency?: string
-  images?: string[]
+  currency: string
+  min_order?: string
+  in_stock: boolean
+  images: string[]
+  specifications?: Record<string, string>
   supplier_id: string
+  supplier_name?: string
+  supplier_country?: string
+  is_featured?: boolean
   is_active: boolean
   created_at: string
-  [key: string]: any
+  updated_at?: string
 }
 
 interface ProductsResponse {
@@ -27,6 +35,9 @@ interface ProductsResponse {
   }
 }
 
+type SortField = 'created_at' | 'price' | 'name'
+type SortOrder = 'asc' | 'desc'
+
 interface UseInfiniteProductsOptions {
   supplierType?: 'verified' | 'user'
   category?: string
@@ -34,6 +45,8 @@ interface UseInfiniteProductsOptions {
   supplierId?: string
   limit?: number
   enabled?: boolean
+  sortField?: SortField
+  sortOrder?: SortOrder
 }
 
 /**
@@ -62,11 +75,13 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
     search,
     supplierId,
     limit = 50,
-    enabled = true
+    enabled = true,
+    sortField = 'created_at',
+    sortOrder = 'desc'
   } = options
 
   return useInfiniteQuery<ProductsResponse>({
-    queryKey: ['products', supplierType, category, search, supplierId, limit],
+    queryKey: ['products', supplierType, category, search, supplierId, limit, sortField, sortOrder],
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams()
       params.set('supplier_type', supplierType)
@@ -83,6 +98,12 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
       }
       if (supplierId) {
         params.set('supplier_id', supplierId)
+      }
+      if (sortField) {
+        params.set('sort_field', sortField)
+      }
+      if (sortOrder) {
+        params.set('sort_order', sortOrder)
       }
 
       const response = await fetch(`/api/catalog/products-paginated?${params}`)

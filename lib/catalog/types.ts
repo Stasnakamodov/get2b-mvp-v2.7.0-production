@@ -37,6 +37,11 @@ export interface CatalogSupplier {
   reviews_count?: number
   products_count?: number
   is_verified: boolean
+  // Дополнительные поля для аккредитованных поставщиков
+  public_rating?: number
+  projects_count?: number
+  is_featured?: boolean
+  is_active?: boolean
 }
 
 // Категория

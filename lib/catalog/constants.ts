@@ -65,8 +65,11 @@ export const SUPPLIER_COUNTRIES = [
   'Россия',
 ]
 
-// Ключ localStorage для корзины
-export const CART_STORAGE_KEY = 'catalog_cart'
+// Ключ localStorage для корзины (unified)
+export const CART_STORAGE_KEY = 'get2b_catalog_cart'
+
+// Ключ для передачи корзины в конструктор проекта (deprecated - используем CART_STORAGE_KEY)
+export const CART_FOR_PROJECT_KEY = 'get2b_catalog_cart'
 
 // Максимум товаров в корзине
 export const MAX_CART_ITEMS = 100

@@ -1,6 +1,6 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +32,10 @@ export const ProductCard = memo(function ProductCard({
   viewMode = 'grid'
 }: ProductCardProps) {
   const imageUrl = getProductImage(product)
+  const [imageError, setImageError] = useState(false)
+
+  // Сбрасываем ошибку при смене товара
+  const effectiveImageUrl = imageError ? null : imageUrl
 
   const handleClick = () => {
     onProductClick?.(product)
@@ -54,13 +58,14 @@ export const ProductCard = memo(function ProductCard({
         <CardContent className="p-3 flex gap-4">
           {/* Изображение */}
           <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-            {imageUrl ? (
+            {effectiveImageUrl ? (
               <Image
-                src={imageUrl}
+                src={effectiveImageUrl}
                 alt={product.name}
                 fill
                 className="object-cover"
                 sizes="96px"
+                onError={() => setImageError(true)}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -143,13 +148,14 @@ export const ProductCard = memo(function ProductCard({
       <CardContent className="p-0">
         {/* Изображение */}
         <div className="relative aspect-square bg-gray-100 rounded-t-lg overflow-hidden">
-          {imageUrl ? (
+          {effectiveImageUrl ? (
             <Image
-              src={imageUrl}
+              src={effectiveImageUrl}
               alt={product.name}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              onError={() => setImageError(true)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
