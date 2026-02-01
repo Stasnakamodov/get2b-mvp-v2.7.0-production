@@ -3,6 +3,9 @@
 // Экспорт всех типов
 export * from './model/types'
 
+// Экспорт UI компонентов
+export { SupplierCard } from './ui/SupplierCard/SupplierCard'
+
 // Реэкспорт основных типов для удобства
 export type {
   Supplier,
@@ -14,7 +17,9 @@ export type {
   LoadingState,
   SmartRecommendation,
   SuppliersResponse,
-  EchoCardsResponse
+  EchoCardsResponse,
+  SupplierFilters,
+  CatalogFilters
 } from './model/types'
 
 // Экспорт API функций
@@ -25,6 +30,7 @@ export {
   createSupplier,
   updateSupplier,
   deleteSupplier,
+  supplierApi,
 
   // Эхо карточки
   fetchEchoCards,

@@ -41,11 +41,11 @@ export function SupplierCard({ supplier, onClick, selected = false, compact = fa
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1 text-xs text-gray-600">
               <Package className="w-3 h-3" />
-              {supplier.total_products}
+              {supplier.total_products ?? 0}
             </span>
             <span className="flex items-center gap-1 text-xs text-yellow-600">
               <Star className="w-3 h-3 fill-current" />
-              {supplier.rating.toFixed(1)}
+              {(supplier.rating ?? 0).toFixed(1)}
             </span>
           </div>
         </div>
@@ -72,7 +72,7 @@ export function SupplierCard({ supplier, onClick, selected = false, compact = fa
             <p className="text-sm text-gray-600">{supplier.company_name}</p>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[supplier.status]}`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[supplier.status || 'active']}`}>
           {supplier.status === 'active' ? 'Активен' :
            supplier.status === 'pending' ? 'На проверке' : 'Неактивен'}
         </span>
@@ -111,12 +111,12 @@ export function SupplierCard({ supplier, onClick, selected = false, compact = fa
           </div>
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 text-yellow-500 fill-current" />
-            <span className="text-sm font-medium">{supplier.rating.toFixed(1)}</span>
+            <span className="text-sm font-medium">{(supplier.rating ?? 0).toFixed(1)}</span>
           </div>
         </div>
-        {supplier.min_order_amount && (
+        {supplier.min_order && (
           <div className="text-sm text-gray-600">
-            Мин. заказ: ${supplier.min_order_amount}
+            Мин. заказ: {supplier.min_order}
           </div>
         )}
       </div>

@@ -717,6 +717,3 @@ class ProductService {
 
 // Export singleton instance
 export const productService = new ProductService()
-
-// Export types
-export type { Product, ProductFormData, ProductSearchParams, CartItem }

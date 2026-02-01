@@ -155,7 +155,8 @@ function formatAtomicConstructorMessage({
   return message
 }
 
-function getSourceDisplayName(source: string): string {
+function getSourceDisplayName(source: string | undefined): string {
+  if (!source) return 'Не указано'
   const sourceNames: Record<string, string> = {
     'profile': 'Профиль',
     'template': 'Шаблон',

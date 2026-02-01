@@ -49,7 +49,9 @@ export function useManageSuppliers(initialFilters?: SupplierFilters): UseManageS
 
     try {
       const newSupplier = await supplierApi.create(data)
-      setSuppliers(prev => [newSupplier, ...prev])
+      if (newSupplier) {
+        setSuppliers(prev => [newSupplier, ...prev])
+      }
       return newSupplier
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create supplier'
@@ -63,16 +65,19 @@ export function useManageSuppliers(initialFilters?: SupplierFilters): UseManageS
     setError(null)
 
     try {
-      const updatedSupplier = await supplierApi.update(id, data)
-      setSuppliers(prev => prev.map(s =>
-        s.id === id ? updatedSupplier : s
-      ))
+      const success = await supplierApi.update(id, data)
+      if (success) {
+        // Update local state with new data
+        setSuppliers(prev => prev.map(s =>
+          s.id === String(id) ? { ...s, ...data } : s
+        ))
 
-      if (selectedSupplier?.id === id) {
-        setSelectedSupplier(updatedSupplier)
+        if (selectedSupplier?.id === String(id)) {
+          setSelectedSupplier(prev => prev ? { ...prev, ...data } : null)
+        }
       }
 
-      return true
+      return success
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update supplier'
       setError(message)

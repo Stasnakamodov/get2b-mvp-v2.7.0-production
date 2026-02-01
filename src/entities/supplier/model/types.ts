@@ -41,10 +41,12 @@ export interface Supplier {
   rating: number | null
   reviews: number | null
   projects: number | null
+  total_products?: number | null
 
   // Метаданные
   room_type?: 'verified' | 'user'
   source_type?: 'manual' | 'api' | 'echo_card'
+  status?: 'active' | 'pending' | 'inactive'
   created_at?: string
   updated_at?: string
 }
@@ -281,6 +283,9 @@ export interface CatalogFilters {
   rating?: number
   certified?: boolean
 }
+
+// Alias for backward compatibility
+export type SupplierFilters = CatalogFilters
 
 /**
  * Сортировка каталога

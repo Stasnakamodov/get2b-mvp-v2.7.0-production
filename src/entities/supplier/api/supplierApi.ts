@@ -187,3 +187,24 @@ export const deleteSupplier = async (supplierId: string): Promise<boolean> => {
     return false
   }
 }
+
+// ========================================
+// 🎯 SUPPLIER API OBJECT (for hooks)
+// ========================================
+
+export const supplierApi = {
+  getAll: async (filters?: { room?: string }) => {
+    if (filters?.room === 'orange') {
+      return fetchVerifiedSuppliers()
+    }
+    return fetchUserSuppliers()
+  },
+  create: createSupplier,
+  update: async (id: number | string, data: Partial<Supplier>) => {
+    const result = await updateSupplier(String(id), data)
+    return result !== null
+  },
+  delete: async (id: number | string) => {
+    return deleteSupplier(String(id))
+  }
+}
