@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { CartProvider } from "@/contexts/CartContext"
+import { QueryProvider } from "@/components/providers/QueryProvider"
 
 export const metadata: Metadata = {
   title: "Get2B",
@@ -18,11 +19,13 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <CartProvider>
-            {children}
-          </CartProvider>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <CartProvider>
+              {children}
+            </CartProvider>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   )

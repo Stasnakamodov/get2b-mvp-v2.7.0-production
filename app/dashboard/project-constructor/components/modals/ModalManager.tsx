@@ -7,7 +7,7 @@ import ProfileSelectorModal from './ProfileSelectorModal';
 import SummaryModal from './SummaryModal';
 import StageTransitionModal from './StageTransitionModal';
 import BlueRoomSupplierModal from './BlueRoomSupplierModal';
-import OrangeRoomSupplierModal from './OrangeRoomSupplierModal';
+import OrangeRoomSupplierModalV2 from './OrangeRoomSupplierModalV2';
 import StepDataModal from './StepDataModal';
 import RequisitesConfirmationModal from './RequisitesConfirmationModal';
 import Stage2SummaryModal from './Stage2SummaryModal';
@@ -114,8 +114,8 @@ export default function ModalManager(props: ModalManagerProps) {
         handleSelectBlueRoomSupplier={props.handleSelectBlueRoomSupplier}
       />
 
-      {/* Orange Room Supplier Modal */}
-      <OrangeRoomSupplierModal
+      {/* Orange Room Supplier Modal (V2 with infinite scroll) */}
+      <OrangeRoomSupplierModalV2
         isOpen={modals.orangeRoomSupplier.isOpen}
         onClose={() => closeModal('orangeRoomSupplier')}
         orangeRoomSuppliers={props.orangeRoomSuppliers}
