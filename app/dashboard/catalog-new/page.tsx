@@ -1,292 +1,251 @@
 'use client'
 
-/**
- * Тестовая страница каталога с использованием FSD архитектуры
- * Доступна по адресу /dashboard/catalog-new
- */
-
-import React, { useState, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, RefreshCw, ArrowLeft } from 'lucide-react'
+import { CatalogHeader } from './components/CatalogHeader'
+import { CatalogSidebar } from './components/CatalogSidebar'
+import { CatalogGrid } from './components/CatalogGrid'
+import { useInfiniteProducts, flattenProducts } from '@/hooks/useInfiniteProducts'
+import { useProductCart } from '@/hooks/useProductCart'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Badge } from '@/components/ui/badge'
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, X } from 'lucide-react'
+import type { CatalogProduct, CatalogFilters, CatalogSort, CatalogViewMode } from '@/lib/catalog/types'
+import { formatPrice } from '@/lib/catalog/utils'
 
-// FSD импорты
-import {
-  useSuppliers,
-  useCategories,
-  useProducts
-} from '@/src/features/supplier-management'
-
-import {
-  SupplierGrid,
-  SupplierCard,
-  ProductCard
-} from '@/src/widgets/catalog-suppliers'
-
-import type {
-  Supplier,
-  RoomType,
-  CatalogMode
-} from '@/src/entities/supplier'
-import type { Product } from '@/src/entities/product'
-
-import {
-  ROOM_TYPES,
-  CATALOG_MODES,
-  SUCCESS_MESSAGES,
-  ERROR_MESSAGES
-} from '@/src/shared/config'
-
-import { logger } from '@/src/shared/lib'
-
-export default function CatalogPageNew() {
+/**
+ * Главная страница каталога TechnoModern
+ *
+ * URL: /dashboard/catalog-new
+ *
+ * Функции:
+ * - Виртуализированный список товаров (10,000+)
+ * - Infinite scroll с cursor-based пагинацией
+ * - Фильтрация по категориям, цене, наличию
+ * - Поиск с debounce
+ * - Корзина товаров
+ * - Интеграция с конструктором проектов
+ */
+export default function CatalogPage() {
   const router = useRouter()
 
-  // Состояния страницы
-  const [selectedRoom, setSelectedRoom] = useState<RoomType>('orange')
-  const [catalogMode, setCatalogMode] = useState<CatalogMode>('suppliers')
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
-  const [showSupplierModal, setShowSupplierModal] = useState(false)
+  // Состояние фильтров
+  const [filters, setFilters] = useState<CatalogFilters>({})
+  const [sort, setSort] = useState<CatalogSort>({ field: 'created_at', order: 'desc' })
+  const [viewMode, setViewMode] = useState<CatalogViewMode>('grid-4')
+  const [isCartOpen, setIsCartOpen] = useState(false)
 
-  // Использование FSD хуков
+  // Корзина
   const {
-    userSuppliers,
-    verifiedSuppliers,
-    isLoading: loadingSuppliers,
-    userError,
-    verifiedError,
-    refreshSuppliers,
-    filterByRoom
-  } = useSuppliers()
+    items: cartItems,
+    totalItems,
+    totalAmount,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    isInCart,
+  } = useProductCart()
 
+  // Загрузка товаров
   const {
-    categories,
-    selectedCategory,
-    loading: loadingCategories,
-    selectCategory
-  } = useCategories()
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage
+  } = useInfiniteProducts({
+    supplierType: 'verified',
+    category: filters.category,
+    search: filters.search,
+    limit: 50
+  })
 
-  const {
-    products,
-    loading: loadingProducts,
-    loadProducts
-  } = useProducts()
-
-  // Инициализация
-  useEffect(() => {
-    logger.info('🚀 Страница каталога (FSD) инициализирована')
-  }, [])
-
-  // Загрузка товаров при выборе поставщика
-  useEffect(() => {
-    if (selectedSupplier && showSupplierModal) {
-      const supplierType = selectedSupplier.room_type ||
-                          (selectedRoom === 'orange' ? 'verified' : 'user')
-      loadProducts(selectedSupplier.id, supplierType)
-    }
-  }, [selectedSupplier, showSupplierModal, selectedRoom, loadProducts])
+  const products = useMemo(() => flattenProducts(data), [data])
 
   // Обработчики
-  const handleSupplierClick = (supplier: Supplier) => {
-    logger.debug('Выбран поставщик:', supplier.name)
-    setSelectedSupplier(supplier)
-    setShowSupplierModal(true)
-  }
+  const handleFiltersChange = useCallback((newFilters: CatalogFilters) => {
+    setFilters(newFilters)
+  }, [])
 
-  const handleStartProject = (supplier: Supplier) => {
-    logger.info('🚀 Начинаем проект с поставщиком:', supplier.name)
-    const params = new URLSearchParams({
-      supplierId: supplier.id,
-      supplierName: supplier.name || '',
-      mode: 'catalog'
-    })
-    router.push(`/dashboard/create-project?${params.toString()}`)
-  }
+  const handleSortChange = useCallback((newSort: CatalogSort) => {
+    setSort(newSort)
+  }, [])
 
-  const handleRefresh = () => {
-    logger.debug('🔄 Обновление данных каталога')
-    refreshSuppliers()
-  }
+  const handleViewModeChange = useCallback((mode: CatalogViewMode) => {
+    setViewMode(mode)
+  }, [])
 
-  // Определение отображаемых поставщиков
-  const displayedSuppliers = selectedRoom === 'orange'
-    ? verifiedSuppliers
-    : userSuppliers
+  const handleAddToCart = useCallback((product: CatalogProduct) => {
+    addToCart(product, 1)
+  }, [addToCart])
 
-  const roomConfig = selectedRoom === 'orange'
-    ? ROOM_TYPES.ORANGE
-    : ROOM_TYPES.BLUE
+  const handleProductClick = useCallback((product: CatalogProduct) => {
+    // Переход на детальную страницу товара
+    router.push(`/dashboard/catalog-new/${product.id}`)
+  }, [router])
+
+  const handleCategorySelect = useCallback((category: string | undefined) => {
+    setFilters(prev => ({ ...prev, category }))
+  }, [])
+
+  // Переход в конструктор с товарами
+  const handleCreateProject = useCallback(() => {
+    // Сохраняем корзину в localStorage
+    localStorage.setItem('catalogCartForProject', JSON.stringify(cartItems))
+    // Переходим в конструктор
+    router.push('/dashboard/project-constructor?fromCatalog=true')
+  }, [cartItems, router])
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Заголовок страницы */}
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          {/* Навигация */}
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => router.push('/dashboard/catalog')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              К старому каталогу
-            </button>
-            <span className="text-sm text-green-600 font-medium">
-              ✅ FSD версия
-            </span>
-          </div>
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+      {/* Header */}
+      <CatalogHeader
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        sort={sort}
+        onSortChange={handleSortChange}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+        totalProducts={products.length}
+        cartItemsCount={totalItems}
+        onCartClick={() => setIsCartOpen(true)}
+      />
 
-          <h1 className="text-2xl font-bold mb-4">
-            📦 Каталог поставщиков (новая архитектура)
-          </h1>
-
-          {/* Переключатель комнат */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setSelectedRoom('orange')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all ${
-                  selectedRoom === 'orange'
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {ROOM_TYPES.ORANGE.icon} {ROOM_TYPES.ORANGE.name}
-              </button>
-
-              <button
-                onClick={() => setSelectedRoom('blue')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all ${
-                  selectedRoom === 'blue'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {ROOM_TYPES.BLUE.icon} {ROOM_TYPES.BLUE.name}
-              </button>
-            </div>
-
-            <button
-              onClick={handleRefresh}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Обновить
-            </button>
-          </div>
-        </div>
-
-        {/* Описание комнаты */}
-        <div className={`rounded-lg p-4 mb-6 ${roomConfig.bgColor} ${roomConfig.borderColor} border`}>
-          <p className={`${roomConfig.color} font-medium`}>
-            {roomConfig.description}
-          </p>
-        </div>
-
-        {/* Ошибки */}
-        {(userError || verifiedError) && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-600">
-              ❌ {userError || verifiedError}
-            </p>
-          </div>
-        )}
-
-        {/* Сетка поставщиков */}
-        <SupplierGrid
-          suppliers={displayedSuppliers}
-          loading={loadingSuppliers}
-          onSupplierClick={handleSupplierClick}
-          onStartProject={handleStartProject}
-          showActions={true}
-          roomType={selectedRoom}
-          title={`Поставщики (${displayedSuppliers.length})`}
-          emptyMessage="В этой комнате пока нет поставщиков"
-          showSearch={true}
-          showFilters={true}
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <CatalogSidebar
+          selectedCategory={filters.category}
+          onCategorySelect={handleCategorySelect}
         />
 
-        {/* Модальное окно поставщика */}
-        {showSupplierModal && selectedSupplier && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">
-                    {selectedSupplier.name}
-                  </h2>
-                  <button
-                    onClick={() => {
-                      setShowSupplierModal(false)
-                      setSelectedSupplier(null)
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
+        {/* Product Grid */}
+        <div className="flex-1 flex flex-col overflow-hidden p-4">
+          <CatalogGrid
+            products={products}
+            isLoading={isLoading}
+            isFetchingNextPage={isFetchingNextPage}
+            hasNextPage={hasNextPage ?? false}
+            fetchNextPage={fetchNextPage}
+            viewMode={viewMode}
+            isInCart={isInCart}
+            onAddToCart={handleAddToCart}
+            onProductClick={handleProductClick}
+          />
+        </div>
+      </div>
 
-              <div className="p-6">
-                {/* Информация о поставщике */}
-                <div className="mb-6">
-                  <SupplierCard
-                    supplier={selectedSupplier}
-                    onStartProject={handleStartProject}
-                    showActions={true}
-                  />
-                </div>
+      {/* Cart Sheet */}
+      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+        <SheetContent className="w-full sm:max-w-lg flex flex-col">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5" />
+              Корзина
+              {totalItems > 0 && (
+                <Badge className="bg-orange-500">{totalItems}</Badge>
+              )}
+            </SheetTitle>
+          </SheetHeader>
 
-                {/* Товары поставщика */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">
-                    Товары поставщика ({products.length})
-                  </h3>
-
-                  {loadingProducts ? (
-                    <div className="flex items-center justify-center h-32">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                    </div>
-                  ) : products.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {products.map(product => (
-                        <ProductCard
-                          key={product.id}
-                          product={product}
-                          supplierName={selectedSupplier.name}
-                          isCompact={true}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      У этого поставщика пока нет товаров
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-6 border-t flex justify-between">
-                <button
-                  onClick={() => {
-                    setShowSupplierModal(false)
-                    setSelectedSupplier(null)
-                  }}
-                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Закрыть
-                </button>
-
-                <button
-                  onClick={() => handleStartProject(selectedSupplier)}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Начать проект
-                </button>
+          {cartItems.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                <p>Корзина пуста</p>
+                <p className="text-sm">Добавьте товары из каталога</p>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <>
+              {/* Cart Items */}
+              <div className="flex-1 overflow-auto py-4 space-y-3">
+                {cartItems.map(item => (
+                  <div
+                    key={item.product.id}
+                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  >
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm line-clamp-1">
+                        {item.product.name}
+                      </h4>
+                      <p className="text-sm text-orange-600 font-semibold">
+                        {formatPrice(item.product.price, item.product.currency)}
+                      </p>
+                    </div>
+
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <span className="w-8 text-center font-medium">
+                        {item.quantity}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Remove Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => removeFromCart(item.product.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Cart Footer */}
+              <div className="border-t pt-4 space-y-4">
+                {/* Total */}
+                <div className="flex items-center justify-between text-lg">
+                  <span className="font-medium">Итого:</span>
+                  <span className="font-bold text-orange-600">
+                    {formatPrice(totalAmount, 'RUB')}
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={clearCart}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Очистить
+                  </Button>
+                  <Button
+                    className="flex-1 bg-orange-500 hover:bg-orange-600"
+                    onClick={handleCreateProject}
+                  >
+                    Создать проект
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

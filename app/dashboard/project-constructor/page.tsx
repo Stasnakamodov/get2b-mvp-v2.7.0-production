@@ -94,6 +94,7 @@ import { useFileUpload } from "@/hooks/useFileUpload"
 import { useProjectPolling } from "@/hooks/useProjectPolling"
 import { useCatalogData } from "@/hooks/useCatalogData"
 import { useReceiptRemoval } from "@/hooks/useReceiptRemoval"
+import { useCatalogCartImport } from "@/hooks/useCatalogCartImport"
 import { cleanProjectRequestId } from "@/utils/IdUtils"
 import { generateFileDate } from "@/utils/DateUtils"
 import { cleanFileName } from "@/utils/FileUtils"
@@ -188,6 +189,45 @@ function ProjectConstructorContent() {
 
   // Хук для уведомлений
   const { toast } = useToast()
+
+  // Хук для импорта товаров из каталога
+  const {
+    step2Data: catalogStep2Data,
+    hasImportedFromCatalog,
+    isLoaded: catalogCartLoaded,
+    clearCatalogCart,
+    totalItems: catalogTotalItems,
+    totalAmount: catalogTotalAmount
+  } = useCatalogCartImport()
+
+  // Автоматический импорт товаров из каталога при загрузке
+  useEffect(() => {
+    if (catalogCartLoaded && hasImportedFromCatalog && catalogStep2Data) {
+      console.log('📦 [Constructor] Импорт товаров из каталога:', catalogStep2Data.items.length)
+
+      // Заполняем шаг 2 данными из каталога
+      setManualData(prev => ({
+        ...prev,
+        2: catalogStep2Data
+      }))
+
+      // Помечаем шаг 2 как заполненный из каталога
+      setStepConfigs(prev => ({
+        ...prev,
+        2: { source: 'CATALOG', isComplete: true }
+      }))
+
+      // Показываем уведомление
+      toast({
+        title: '🛒 Товары загружены из каталога',
+        description: `Добавлено ${catalogTotalItems} товаров на сумму ${catalogTotalAmount.toLocaleString('ru-RU')} ₽`,
+        duration: 5000
+      })
+
+      // Очищаем корзину каталога
+      clearCatalogCart()
+    }
+  }, [catalogCartLoaded, hasImportedFromCatalog, catalogStep2Data, catalogTotalItems, catalogTotalAmount, clearCatalogCart, toast])
 
   // Состояние для выбора профиля клиента
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
