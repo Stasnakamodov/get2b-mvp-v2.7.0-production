@@ -349,10 +349,10 @@ export default function Step3PaymentForm() {
             )}
           </div>
         )}
-        {/* Дебаг-поле для вывода ошибок и логов */}
+        {/* Сообщение об ошибке */}
         {error && (
           <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded text-red-800 text-sm whitespace-pre-wrap">
-            <b>DEBUG:</b> {error}
+            {error}
           </div>
         )}
       </div>

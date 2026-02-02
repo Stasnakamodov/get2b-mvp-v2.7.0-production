@@ -5,10 +5,13 @@
 
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react'
 import type { Product } from '@/src/entities/product'
 import type { CartItem, UseCartResult } from '../model/types'
 import { logger } from '@/src/shared/lib'
+
+// Debounce timeout для предотвращения множественных быстрых добавлений
+const ADD_TO_CART_DEBOUNCE_MS = 300
 
 // Создаем контекст
 const CartContext = createContext<UseCartResult | undefined>(undefined)
@@ -24,6 +27,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([])
   const [activeSupplier, setActiveSupplier] = useState<string | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
+
+  // Ref для отслеживания товаров в процессе добавления (debounce)
+  const addingProductsRef = useRef<Set<string>>(new Set())
 
   /**
    * Загрузка корзины из localStorage при монтировании
@@ -125,40 +131,66 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, [activeSupplier, isInitialized])
 
   /**
-   * Добавление товара в корзину
+   * Добавление товара в корзину с debounce защитой
    */
   const addToCart = useCallback((product: Product, quantity: number = 1): boolean => {
+    // Проверяем debounce - не добавляем если товар уже в процессе добавления
+    if (addingProductsRef.current.has(product.id)) {
+      logger.debug('⏳ Товар уже добавляется, пропускаем повторный вызов')
+      return true // Возвращаем true чтобы не показывать ошибку
+    }
+
+    // Блокируем повторное добавление
+    addingProductsRef.current.add(product.id)
+
+    // Снимаем блокировку через debounce timeout
+    setTimeout(() => {
+      addingProductsRef.current.delete(product.id)
+    }, ADD_TO_CART_DEBOUNCE_MS)
+
     const supplierId = product.supplier_id
 
-    // Если корзина пустая или это тот же поставщик
-    if (cart.length === 0 || activeSupplier === supplierId) {
-      setActiveSupplier(supplierId)
+    // Используем функциональное обновление для избежания race conditions
+    let result = false
 
-      const existingItem = cart.find(item => item.id === product.id)
+    setCart(prev => {
+      // Получаем актуальный activeSupplier из текущего состояния корзины
+      const currentSupplier = prev.length > 0 ? prev[0].supplier_id : null
 
-      if (existingItem) {
-        // Увеличиваем количество
-        const newQuantity = existingItem.quantity + quantity
-        setCart(prev => prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: newQuantity }
-            : item
-        ))
-        logger.info(`✅ Количество товара увеличено в корзине: ${existingItem.quantity} → ${newQuantity}`)
+      // Если корзина пустая или это тот же поставщик
+      if (prev.length === 0 || currentSupplier === supplierId) {
+        // Обновляем activeSupplier
+        setActiveSupplier(supplierId)
+
+        const existingItem = prev.find(item => item.id === product.id)
+
+        if (existingItem) {
+          // Увеличиваем количество
+          const newQuantity = existingItem.quantity + quantity
+          logger.info(`✅ Количество товара увеличено в корзине: ${existingItem.quantity} → ${newQuantity}`)
+          result = true
+          return prev.map(item =>
+            item.id === product.id
+              ? { ...item, quantity: newQuantity }
+              : item
+          )
+        } else {
+          // Добавляем новый товар
+          const newItem: CartItem = { ...product, quantity }
+          logger.info(`✅ Товар добавлен в корзину с количеством: ${quantity}`)
+          result = true
+          return [...prev, newItem]
+        }
       } else {
-        // Добавляем новый товар
-        const newItem: CartItem = { ...product, quantity }
-        setCart(prev => [...prev, newItem])
-        logger.info(`✅ Товар добавлен в корзину с количеством: ${quantity}`)
+        // Другой поставщик
+        logger.warn('⚠️ Нельзя добавить товар другого поставщика в корзину')
+        result = false
+        return prev
       }
+    })
 
-      return true
-    } else {
-      // Другой поставщик
-      logger.warn('⚠️ Нельзя добавить товар другого поставщика в корзину')
-      return false
-    }
-  }, [cart, activeSupplier])
+    return result
+  }, []) // Убрали зависимости - используем functional updates
 
   /**
    * Удаление товара из корзины

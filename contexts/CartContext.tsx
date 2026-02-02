@@ -1,7 +1,10 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+
+// Debounce timeout для предотвращения множественных быстрых добавлений
+const ADD_TO_CART_DEBOUNCE_MS = 300
 
 /**
  * CartContext - централизованное управление состоянием корзины
@@ -70,6 +73,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [activeSupplier, setActiveSupplier] = useState<string | null>(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
+
+  // Ref для отслеживания товаров в процессе добавления (debounce)
+  const addingProductsRef = useRef<Set<string>>(new Set())
 
   // Загрузка корзины из localStorage при монтировании
   useEffect(() => {
@@ -152,15 +158,39 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [cart, activeSupplier])
 
   /**
-   * Добавление товара в корзину
+   * Добавление товара в корзину с debounce защитой
    */
   const addToCart = useCallback((product: any, quantity: number = 1) => {
-    if (!canAddProduct(product)) {
-      alert(`Можно добавлять товары только от поставщика "${activeSupplier}"`)
+    // Проверяем debounce - не добавляем если товар уже в процессе добавления
+    if (addingProductsRef.current.has(product.id)) {
       return
     }
 
+    // Блокируем повторное добавление
+    addingProductsRef.current.add(product.id)
+
+    // Снимаем блокировку через debounce timeout
+    setTimeout(() => {
+      addingProductsRef.current.delete(product.id)
+    }, ADD_TO_CART_DEBOUNCE_MS)
+
+    // Используем функциональное обновление для избежания race conditions
     setCart(prevCart => {
+      // Проверка поставщика внутри функционального обновления
+      const productSupplier = product.supplier_name || product.supplier_company_name
+      const currentActiveSupplier = prevCart.length > 0
+        ? prevCart[0].supplier_name || prevCart[0].supplier_company_name
+        : null
+
+      // Если корзина не пуста и поставщик другой - отклоняем
+      if (prevCart.length > 0 && currentActiveSupplier && productSupplier !== currentActiveSupplier) {
+        // Показываем алерт асинхронно чтобы не блокировать setState
+        setTimeout(() => {
+          alert(`Можно добавлять товары только от поставщика "${currentActiveSupplier}"`)
+        }, 0)
+        return prevCart
+      }
+
       const existingItem = prevCart.find(item => item.id === product.id)
 
       if (existingItem) {
@@ -204,7 +234,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return [...prevCart, newItem]
       }
     })
-  }, [canAddProduct, activeSupplier])
+  }, []) // Убрали зависимости - используем functional updates
 
   /**
    * Удаление товара из корзины

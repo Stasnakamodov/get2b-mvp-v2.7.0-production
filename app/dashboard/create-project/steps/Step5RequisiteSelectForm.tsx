@@ -1189,12 +1189,7 @@ export default function Step5RequisiteSelectForm() {
             <Button onClick={handleSave} disabled={!selectedId}>Отправить</Button>
           )}
         </div>
-        {debugLog.length > 0 && (
-          <div style={{ background: "#f9f9f9", padding: 12, marginTop: 24, fontSize: 12, borderRadius: 8 }}>
-            <b>DEBUG:</b>
-            <pre>{debugLog.join('\n')}</pre>
-          </div>
-        )}
+        {/* Debug logs removed for production */}
       </div>
     );
   }
@@ -1302,12 +1297,7 @@ export default function Step5RequisiteSelectForm() {
             <Button onClick={handleSave} disabled={!selectedId}>Отправить</Button>
           )}
         </div>
-        {debugLog.length > 0 && (
-          <div style={{ background: "#f9f9f9", padding: 12, marginTop: 24, fontSize: 12, borderRadius: 8 }}>
-            <b>DEBUG:</b>
-            <pre>{debugLog.join('\n')}</pre>
-          </div>
-        )}
+        {/* Debug logs removed for production */}
       </div>
     );
   }
@@ -1437,12 +1427,7 @@ export default function Step5RequisiteSelectForm() {
           <Button onClick={handleSave} disabled={!selectedId}>Отправить</Button>
         )}
       </div>
-      {debugLog.length > 0 && (
-        <div style={{ background: "#f9f9f9", padding: 12, marginTop: 24, fontSize: 12, borderRadius: 8 }}>
-          <b>DEBUG:</b>
-          <pre>{debugLog.join('\n')}</pre>
-        </div>
-      )}
+      {/* Debug logs removed for production */}
     </div>
   );
 } 

@@ -139,7 +139,7 @@ interface CatalogModalProps {
 }
 
 // Компоненты карточек
-const VerifiedSupplierCard = ({ supplier, onRequestQuote, onViewProfile, onImport, onAddToCart }: any) => {
+const VerifiedSupplierCard = ({ supplier, onImport, onAddToCart }: any) => {
   const [showProducts, setShowProducts] = useState(false)
   
   return (
@@ -525,10 +525,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
     }
   }, [cart, open])
 
-  // Диагностика состояний
-  useEffect(() => {
-    console.log('🔍 [CATALOG MODAL DEBUG] Активный режим:', activeMode, 'Количества:', verifiedSuppliers.length, personalSuppliers.length, echoCards.length);
-  }, [activeMode, verifiedSuppliers.length, personalSuppliers.length, echoCards.length, categoryFilter, sortBy, loadingVerified]);
+  // Debug diagnostics removed for production
 
   // Загрузка персональных поставщиков
   const loadPersonalSuppliers = async () => {
@@ -676,12 +673,8 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
         const data = await response.json();
         
         if (data.products) {
-          console.log('✅ [CATALOG MODAL] Загружено товаров поставщика:', data.products.length)
-          console.log('🔍 [CATALOG MODAL DEBUG] Первый товар из API:', data.products[0])
-          console.log('🔍 [CATALOG MODAL DEBUG] Поле images у первого товара:', data.products[0]?.images)
           setSupplierProducts(data.products)
         } else {
-          console.log('⚠️ [CATALOG MODAL] Нет товаров в ответе API')
           setSupplierProducts([])
         }
       }
@@ -760,8 +753,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   // Функция сортировки для персональных поставщиков
   const sortPersonalSuppliers = (suppliers: Supplier[]) => {
     const sorted = [...suppliers]
-    console.log('🔍 [SORT DEBUG] Сортировка персональных поставщиков по:', sortBy, 'Количество:', sorted.length)
-    
+
     switch (sortBy) {
       case 'name_asc':
         return sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
@@ -776,7 +768,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       case 'spent_asc':
         return sorted.sort((a, b) => (a.total_spent || 0) - (b.total_spent || 0))
       default:
-        console.log('🔍 [SORT DEBUG] Персональные - сортировка по умолчанию')
         return sorted
     }
   }
@@ -784,8 +775,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   // Функция сортировки для эхо карточек
   const sortEchoCards = (cards: EchoCard[]) => {
     const sorted = [...cards]
-    console.log('🔍 [SORT DEBUG] Сортировка эхо карточек по:', sortBy, 'Количество карточек:', sorted.length)
-    
+
     switch (sortBy) {
       case 'name_asc':
         return sorted.sort((a, b) => (a.supplier_info.name || '').localeCompare(b.supplier_info.name || ''))
@@ -800,40 +790,30 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       case 'success_asc':
         return sorted.sort((a, b) => (a.statistics.success_rate || 0) - (b.statistics.success_rate || 0))
       case 'time_desc':
-        // Сортировка по последнему проекту (новые сначала)
-        console.log('🔍 [SORT DEBUG] Сортировка по time_desc (новые проекты сначала)')
         return sorted.sort((a, b) => {
           const dateA = a.statistics?.last_project_date ? new Date(a.statistics.last_project_date).getTime() : 0
           const dateB = b.statistics?.last_project_date ? new Date(b.statistics.last_project_date).getTime() : 0
-          console.log('🔍 [SORT DEBUG] Сравнение дат:', a.supplier_info.name, dateA, 'vs', b.supplier_info.name, dateB)
           return dateB - dateA
         })
       case 'time_asc':
-        // Сортировка по последнему проекту (старые сначала)
-        console.log('🔍 [SORT DEBUG] Сортировка по time_asc (старые проекты сначала)')
         return sorted.sort((a, b) => {
           const dateA = a.statistics?.last_project_date ? new Date(a.statistics.last_project_date).getTime() : 0
           const dateB = b.statistics?.last_project_date ? new Date(b.statistics.last_project_date).getTime() : 0
           return dateA - dateB
         })
       case 'first_time_desc':
-        // Сортировка по первому проекту (новые сначала)
-        console.log('🔍 [SORT DEBUG] Сортировка по first_time_desc (новые поставщики)')
         return sorted.sort((a, b) => {
           const dateA = a.statistics?.last_project_date ? new Date(a.statistics.last_project_date).getTime() : 0
           const dateB = b.statistics?.last_project_date ? new Date(b.statistics.last_project_date).getTime() : 0
           return dateB - dateA
         })
       case 'first_time_asc':
-        // Сортировка по первому проекту (старые сначала)
-        console.log('🔍 [SORT DEBUG] Сортировка по first_time_asc (старые поставщики)')
         return sorted.sort((a, b) => {
           const dateA = a.statistics?.last_project_date ? new Date(a.statistics.last_project_date).getTime() : 0
           const dateB = b.statistics?.last_project_date ? new Date(b.statistics.last_project_date).getTime() : 0
           return dateA - dateB
         })
       default:
-        console.log('🔍 [SORT DEBUG] Сортировка по умолчанию')
         return sorted
     }
   }
@@ -841,8 +821,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   // Функция сортировки для аккредитованных поставщиков
   const sortVerifiedSuppliers = (suppliers: VerifiedSupplier[]) => {
     const sorted = [...suppliers]
-    console.log('🔍 [SORT DEBUG] Сортировка аккредитованных поставщиков по:', sortBy, 'Количество:', sorted.length)
-    
+
     switch (sortBy) {
       case 'name_asc':
         return sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
@@ -863,7 +842,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
           return (b.public_rating || 0) - (a.public_rating || 0)
         })
       default:
-        console.log('🔍 [SORT DEBUG] Аккредитованные - сортировка по умолчанию (рекомендуемые)')
         return sorted.sort((a, b) => {
           // Сначала избранные, потом по рейтингу
           if (a.is_featured && !b.is_featured) return -1
@@ -911,38 +889,13 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
     return matchesSearch && matchesCategory
   })
 
-  // Debug для фильтрации verified suppliers
-  if (activeMode === 'verified' && verifiedSuppliers.length > 0) {
-    console.log('🔍 [FILTER DEBUG] verifiedSuppliers:', verifiedSuppliers.length, 'filteredVerifiedSuppliers:', filteredVerifiedSuppliers.length)
-    console.log('🔍 [FILTER DEBUG] searchQuery:', searchQuery, 'categoryFilter:', categoryFilter)
-    if (filteredVerifiedSuppliers.length === 0 && verifiedSuppliers.length > 0) {
-      console.log('❌ [FILTER DEBUG] ВСЕ ПОСТАВЩИКИ ОТФИЛЬТРОВАНЫ!')
-      verifiedSuppliers.slice(0, 2).forEach(s => {
-        const matchesSearch = s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.description?.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter
-        console.log(`🔍 [FILTER DEBUG] ${s.name}: matchesSearch=${matchesSearch}, matchesCategory=${matchesCategory}, category="${s.category}"`)
-      })
-    }
-  }
-
   // Обработка добавления товара в проект
   const handleAddProduct = (product: Product) => {
-    console.log('🔍 [CATALOG MODAL DEBUG] Добавляем товар:', product)
-    console.log('🔍 [CATALOG MODAL DEBUG] Поле images товара:', product.images)
-    console.log('🔍 [CATALOG MODAL DEBUG] Передаем в onAddProducts:', [product])
-    console.log('🚨🚨🚨 [CATALOG MODAL] Вызываем onAddProducts с товаром:', product.name)
-    onAddProducts([product]) // Передаем как массив
-    console.log('✅ [CATALOG MODAL] onAddProducts вызван успешно для товара:', product.name)
+    onAddProducts([product])
   }
 
   // Обработка импорта данных из эхо карточки в текущий проект
   const handleImportFromEchoCard = (echoCard: EchoCard) => {
-    console.log('🔍 [CATALOG MODAL] Показываем окно выбора шагов для эхо карточки:', echoCard)
-    
-    // Сохраняем данные для импорта и показываем модальное окно выбора шагов
     setCurrentImportData({ type: 'echo', data: echoCard })
     setSelectedSteps({ step1: false, step2: false, step4: false, step5: false })
     setShowStepsModal(true)
@@ -950,9 +903,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
 
   // Обработка импорта данных из обычного поставщика в текущий проект
   const handleImportFromSupplier = (supplier: Supplier) => {
-    console.log('📋 [CATALOG MODAL] Показываем окно выбора шагов для поставщика:', supplier)
-    
-    // Сохраняем данные для импорта и показываем модальное окно выбора шагов
     setCurrentImportData({ type: 'supplier', data: supplier })
     setSelectedSteps({ step1: false, step2: false, step4: false, step5: false })
     setShowStepsModal(true)
@@ -960,9 +910,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
 
   // Обработка импорта данных из аккредитованного поставщика в текущий проект
   const handleImportFromVerifiedSupplier = (supplier: VerifiedSupplier) => {
-    console.log('🧠 [CATALOG MODAL] Показываем окно выбора шагов для аккредитованного поставщика:', supplier)
-    
-    // Сохраняем данные для импорта и показываем модальное окно выбора шагов
     setCurrentImportData({ type: 'verified', data: supplier })
     setSelectedSteps({ step1: false, step2: false, step4: false, step5: false })
     setShowStepsModal(true)
@@ -971,8 +918,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   // Выполнение импорта выбранных шагов
   const executeImport = () => {
     if (!currentImportData) return
-
-    console.log('🎯 [CATALOG MODAL] Выполняем импорт выбранных шагов:', selectedSteps)
 
     const { type, data } = currentImportData
 
@@ -1434,11 +1379,9 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                     // Показываем аккредитованных поставщиков
                     <div className="grid gap-6">
                       {filteredVerifiedSuppliers.map((supplier) => (
-                        <VerifiedSupplierCard 
+                        <VerifiedSupplierCard
                           key={supplier.id}
                           supplier={supplier}
-                          onRequestQuote={() => {}}
-                          onViewProfile={() => {}}
                           onImport={() => handleImportFromVerifiedSupplier(supplier)}
                           onAddToCart={(product: any) => handleAddProduct(product)}
                         />

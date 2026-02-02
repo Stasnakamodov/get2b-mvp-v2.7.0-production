@@ -38,7 +38,7 @@ interface ProductModalProps {
   product: Product | null
   isOpen: boolean
   onClose: () => void
-  onAddToCart: (product: Product, quantity?: number) => void
+  onAddToCart: (product: Product, quantity: number) => void
   isInCart?: boolean
 }
 
@@ -286,10 +286,8 @@ export default function ProductModal({
 
                       <button
                         onClick={() => {
-                          // Добавляем товар с указанным количеством
-                          for (let i = 0; i < quantity; i++) {
-                            onAddToCart(product)
-                          }
+                          // Добавляем товар с указанным количеством (передаём quantity напрямую)
+                          onAddToCart(product, quantity)
                         }}
                         disabled={isInCart}
                         className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${

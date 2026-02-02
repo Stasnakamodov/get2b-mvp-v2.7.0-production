@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { SearchBarWithCategories } from "@/src/shared/ui"
@@ -14,8 +14,6 @@ import {
   Building2,
   Image as ImageIcon,
   Loader2,
-  Globe,
-  Camera,
   Check,
   X
 } from "lucide-react"
@@ -57,7 +55,7 @@ interface CartItem extends Product {
 interface ProductGridByCategoryProps {
   selectedCategory: string
   token: string
-  onAddToCart: (product: Product) => void
+  onAddToCart: (product: Product, quantity?: number) => void
   cart: CartItem[]
   className?: string
   activeSupplier?: string | null
@@ -572,47 +570,17 @@ export default function ProductGridByCategory({
             categories={availableCategories}
           />
 
-          {/* Дополнительные кнопки поверх поисковой строки */}
-          <div className="absolute right-14 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            {/* Кнопка глобуса (планетка) */}
-            <button
-              onClick={() => {
-                // TODO: Открыть поиск по URL
-              }}
-              className="p-1.5 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 rounded-full transition-all shadow-md hover:shadow-lg"
-              title="Поиск по ссылке из интернета"
-            >
-              <Globe className="h-5 w-5 text-white" />
-            </button>
-
-            {/* Кнопка камеры */}
-            <button
-              onClick={() => {
-                // TODO: Открыть поиск по изображению
-              }}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-              title="Поиск по изображению"
-            >
-              <Camera className="h-5 w-5 text-blue-600" />
-            </button>
-
-            {/* Кнопка корзины */}
-            <button
-              onClick={() => {
-                // Показываем количество товаров в корзине
-              }}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <div className="relative">
-                <ShoppingCart className="h-5 w-5 text-green-600" />
-                {cart.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-md">
-                    {cart.length}
-                  </span>
-                )}
+          {/* Индикатор корзины в поисковой строке */}
+          {cart.length > 0 && (
+            <div className="absolute right-14 top-1/2 -translate-y-1/2 flex items-center">
+              <div className="relative p-1.5 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full shadow-md">
+                <ShoppingCart className="h-4 w-4 text-white" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-md">
+                  {cart.length}
+                </span>
               </div>
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -828,7 +796,10 @@ export default function ProductGridByCategory({
   )
 }
 
-// Компонент карточки товара в режиме сетки
+// Debounce timeout для кнопок добавления в корзину
+const ADD_TO_CART_DEBOUNCE_MS = 300
+
+// Компонент карточки товара в режиме сетки с optimistic UI
 function ProductCardGrid({
   product,
   onProductClick,
@@ -844,6 +815,27 @@ function ProductCardGrid({
   cartQuantity: number
   isDisabled?: boolean
 }) {
+  const [isAdding, setIsAdding] = useState(false)
+  const addingRef = useRef(false)
+
+  const handleAddToCart = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    // Debounce: блокируем повторные клики
+    if (addingRef.current || isDisabled || isInCart) return
+    addingRef.current = true
+    setIsAdding(true)
+
+    // Optimistic UI: сразу показываем состояние "добавляется"
+    onAddToCart(product)
+
+    // Снимаем блокировку через debounce timeout
+    setTimeout(() => {
+      addingRef.current = false
+      setIsAdding(false)
+    }, ADD_TO_CART_DEBOUNCE_MS)
+  }, [product, onAddToCart, isDisabled, isInCart])
+
   return (
     <div
       onClick={() => onProductClick && onProductClick(product)}
@@ -855,8 +847,8 @@ function ProductCardGrid({
         {/* Изображение товара */}
         <div className="relative h-48 bg-gray-100 overflow-hidden flex-shrink-0">
           {(product.images && product.images.length > 0) ? (
-            <img 
-              src={product.images[0]} 
+            <img
+              src={product.images[0]}
               alt={product.product_name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
@@ -865,8 +857,8 @@ function ProductCardGrid({
               }}
             />
           ) : product.image_url ? (
-            <img 
-              src={product.image_url} 
+            <img
+              src={product.image_url}
               alt={product.product_name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
@@ -878,7 +870,7 @@ function ProductCardGrid({
           <div className={`flex items-center justify-center h-full fallback-icon ${((product.images && product.images.length > 0) || product.image_url) ? 'hidden' : ''}`}>
             <ImageIcon className="h-16 w-16 text-gray-300 dark:text-gray-600" />
           </div>
-          
+
           {/* Индикатор комнаты */}
           <div className="absolute top-3 left-3">
             <span className="px-2 py-1 text-xs font-medium bg-white/95 backdrop-blur-sm rounded-md shadow-sm">
@@ -930,13 +922,15 @@ function ProductCardGrid({
             </div>
           </div>
 
-          {/* Кнопка добавления в корзину - всегда внизу */}
+          {/* Кнопка добавления в корзину - всегда внизу с optimistic UI */}
           <button
-            onClick={() => onAddToCart(product)}
-            disabled={isDisabled}
+            onClick={handleAddToCart}
+            disabled={isDisabled || isAdding}
             className={`w-full py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 mt-3 flex items-center justify-center gap-2 ${
               isInCart
                 ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 shadow-md'
+                : isAdding
+                  ? 'bg-gradient-to-r from-violet-400 to-indigo-400 text-white cursor-wait'
                 : isDisabled
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 transform hover:scale-[1.02] hover:shadow-lg'
@@ -946,6 +940,11 @@ function ProductCardGrid({
               <>
                 <Check className="w-4 h-4" />
                 В корзине ({cartQuantity})
+              </>
+            ) : isAdding ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Добавляю...
               </>
             ) : isDisabled ? (
               <>
@@ -964,7 +963,7 @@ function ProductCardGrid({
   )
 }
 
-// Компонент карточки товара в режиме списка
+// Компонент карточки товара в режиме списка с optimistic UI
 function ProductCardList({
   product,
   onProductClick,
@@ -980,6 +979,27 @@ function ProductCardList({
   cartQuantity: number
   isDisabled?: boolean
 }) {
+  const [isAdding, setIsAdding] = useState(false)
+  const addingRef = useRef(false)
+
+  const handleAddToCart = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    // Debounce: блокируем повторные клики
+    if (addingRef.current || isDisabled || isInCart) return
+    addingRef.current = true
+    setIsAdding(true)
+
+    // Optimistic UI: сразу показываем состояние "добавляется"
+    onAddToCart(product)
+
+    // Снимаем блокировку через debounce timeout
+    setTimeout(() => {
+      addingRef.current = false
+      setIsAdding(false)
+    }, ADD_TO_CART_DEBOUNCE_MS)
+  }, [product, onAddToCart, isDisabled, isInCart])
+
   return (
     <div
       onClick={() => onProductClick && onProductClick(product)}
@@ -1019,7 +1039,7 @@ function ProductCardList({
               </div>
             </div>
           </div>
-          
+
           {/* Основная информация */}
           <div className="flex-grow">
             <div className="flex items-start justify-between">
@@ -1058,11 +1078,13 @@ function ProductCardList({
               </div>
 
               <button
-                onClick={() => onAddToCart(product)}
-                disabled={isDisabled}
+                onClick={handleAddToCart}
+                disabled={isDisabled || isAdding}
                 className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 flex items-center gap-1.5 ${
                   isInCart
                     ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600'
+                    : isAdding
+                      ? 'bg-gradient-to-r from-violet-400 to-indigo-400 text-white cursor-wait'
                     : isDisabled
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 hover:shadow-md transform hover:scale-[1.02]'
@@ -1072,6 +1094,11 @@ function ProductCardList({
                   <>
                     <Check className="w-3.5 h-3.5" />
                     В корзине ({cartQuantity})
+                  </>
+                ) : isAdding ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Добавляю...
                   </>
                 ) : isDisabled ? (
                   <>
