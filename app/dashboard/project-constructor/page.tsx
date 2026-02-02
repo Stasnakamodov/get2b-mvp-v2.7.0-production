@@ -14,7 +14,7 @@ import type {
 import { validateStepData } from '@/types/project-constructor.types'
 
 // CSS стили извлечены в отдельный файл
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { uploadFileToStorage, sendTelegramMessage, fetchFromApi, fetchCatalogData } from '@/utils/ApiUtils'
 import { findSupplierInAnyStep } from '@/utils/project-constructor/SupplierFinder'
 import { isStepEnabled as isStepEnabledUtil } from '@/utils/project-constructor/StepValidation'
@@ -265,6 +265,9 @@ function ProjectConstructorContent() {
   const [dealAnimationStatus, setDealAnimationStatus] = useState<string>('') // статус анимации
   const [dealAnimationComplete, setDealAnimationComplete] = useState<boolean>(false)
 
+  // Ref для таймеров анимации (cleanup memory leak fix)
+  const dealAnimationTimersRef = useRef<NodeJS.Timeout[]>([])
+
   // Состояния для степера инфраструктуры (шаги 3, 6, 7)
   const [infrastructureStepperStep, setInfrastructureStepperStep] = useState<number>(0) // 0-2: шаги степера
   const [infrastructureStepperStatus, setInfrastructureStepperStatus] = useState<string>('') // статус степера
@@ -323,8 +326,8 @@ function ProjectConstructorContent() {
     projectRequestId
   })
 
-  // Объявление sendManagerReceiptRequest для useProjectPolling
-  const sendManagerReceiptRequest = async () => {
+  // Объявление sendManagerReceiptRequest для useProjectPolling (мемоизировано для предотвращения перезапуска polling)
+  const sendManagerReceiptRequest = useCallback(async () => {
     if (!projectRequestId || isRequestSent) {
       console.log('🔄 Запрос уже отправлен или нет projectRequestId')
       return
@@ -401,7 +404,7 @@ function ProjectConstructorContent() {
       console.error('❌ Ошибка отправки запроса менеджеру:', error)
       setIsRequestSent(false)
     }
-  }
+  }, [projectRequestId, isRequestSent])
 
   // Project Polling хук
   const {
@@ -1050,29 +1053,44 @@ function ProjectConstructorContent() {
   // Функция для запуска анимации сделки
   const startDealAnimation = () => {
     console.log('🎬 Запускаем анимацию сделки...')
+
+    // Очищаем предыдущие таймеры перед запуском новых
+    dealAnimationTimersRef.current.forEach(clearTimeout)
+    dealAnimationTimersRef.current = []
+
     setDealAnimationStep(0)
     setDealAnimationStatus('Начинаем анимацию...')
     setDealAnimationComplete(false)
-    
+
     // Шаг 1: Клиент и поставщик начинают движение
-    setTimeout(() => {
+    const timer1 = setTimeout(() => {
       setDealAnimationStep(1)
       setDealAnimationStatus('Клиент и поставщик идут к центру...')
     }, 1000)
-    
+
     // Шаг 2: Менеджер проверяет перевод
-    setTimeout(() => {
+    const timer2 = setTimeout(() => {
       setDealAnimationStep(2)
       setDealAnimationStatus('Менеджер проверяет перевод...')
     }, 3000)
-    
+
     // Шаг 3: Все встречаются в центре
-    setTimeout(() => {
+    const timer3 = setTimeout(() => {
       setDealAnimationStep(3)
       setDealAnimationStatus('Сделка завершена!')
       setDealAnimationComplete(true)
     }, 5000)
+
+    // Сохраняем таймеры для cleanup
+    dealAnimationTimersRef.current = [timer1, timer2, timer3]
   }
+
+  // Cleanup таймеров анимации при unmount
+  useEffect(() => {
+    return () => {
+      dealAnimationTimersRef.current.forEach(clearTimeout)
+    }
+  }, [])
 
 
 
