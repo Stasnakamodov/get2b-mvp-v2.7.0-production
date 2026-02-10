@@ -124,7 +124,7 @@ export default function CatalogPage() {
   const handleModalAddToCart = useCallback((p: CatalogProduct, q: number) => addToCart(p, q), [addToCart])
   const handleProductClick = useCallback((p: CatalogProduct) => setSelectedProduct(p), [])
   const handleCategorySelect = useCallback((c: string | undefined, subcategory?: string) => {
-    setFilters(prev => ({ ...prev, category: c, subcategory }))
+    setFilters(prev => ({ ...prev, category: c, subcategory, search: undefined }))
   }, [])
   const handleCreateProject = useCallback(() => {
     router.push('/dashboard/project-constructor?fromCatalog=true')

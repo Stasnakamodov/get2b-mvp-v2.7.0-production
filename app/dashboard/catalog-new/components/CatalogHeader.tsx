@@ -52,6 +52,13 @@ export function CatalogHeader({
   const [searchInput, setSearchInput] = useState(filters.search || '')
   const [showFilters, setShowFilters] = useState(false)
 
+  // Синхронизация searchInput при внешнем сбросе filters.search (например, при клике по категории)
+  useEffect(() => {
+    if (!filters.search && searchInput) {
+      setSearchInput('')
+    }
+  }, [filters.search]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Debounce поиска
   useEffect(() => {
     const timer = setTimeout(() => {

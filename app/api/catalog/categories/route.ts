@@ -78,24 +78,32 @@ export async function GET(request: NextRequest) {
 
     if (includeSubcategories) {
 
-      // Подсчитываем количество товаров для каждой подкатегории
-      const subcategoriesWithCounts = await Promise.all(
-        (subcategories || []).map(async (sub) => {
-          const { count, error } = await supabase
-            .from("catalog_verified_products")
-            .select("*", { count: 'exact', head: true })
-            .eq('subcategory_id', sub.id);
+      // Подсчитываем количество товаров для всех подкатегорий ОДНИМ запросом
+      // вместо N отдельных COUNT запросов (было ~40 запросов)
+      const subcategoryIds = (subcategories || []).map(s => s.id);
+      const countsBySubcategory: Record<string, number> = {};
 
-          if (error) {
-            console.error(`❌ [API] Ошибка подсчёта товаров для ${sub.name}:`, error);
+      if (subcategoryIds.length > 0) {
+        const { data: products, error: prodError } = await supabase
+          .from("catalog_verified_products")
+          .select("subcategory_id")
+          .in('subcategory_id', subcategoryIds)
+          .eq('is_active', true)
+          .limit(10000);
+
+        if (!prodError && products) {
+          for (const p of products) {
+            if (p.subcategory_id) {
+              countsBySubcategory[p.subcategory_id] = (countsBySubcategory[p.subcategory_id] || 0) + 1;
+            }
           }
+        }
+      }
 
-          return {
-            ...sub,
-            products_count: count || 0
-          };
-        })
-      );
+      const subcategoriesWithCounts = (subcategories || []).map(sub => ({
+        ...sub,
+        products_count: countsBySubcategory[sub.id] || 0
+      }));
 
 
       // Добавляем подкатегории к корневым категориям

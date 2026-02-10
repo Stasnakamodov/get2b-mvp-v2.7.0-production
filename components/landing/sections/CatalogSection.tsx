@@ -29,7 +29,7 @@ export function CatalogSection() {
               {[
                 { title: "Проверенные поставщики", desc: "Работаем только с надёжными партнёрами" },
                 { title: "Актуальные цены в юанях", desc: "Обновляем еженедельно" },
-                { title: "Электроника, Мебель, Одежда", desc: "И ещё 15+ категорий товаров" },
+                { title: "Электроника, Дом и быт, Строительство", desc: "И ещё 5 категорий товаров" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
@@ -63,7 +63,7 @@ export function CatalogSection() {
                   { cat: "Дом и быт", items: "2,245 товаров", color: "orange", image: "/images/categories/furniture.png", overlay: "bg-black/0" },
                   { cat: "Строительство", items: "856 товаров", color: "green", image: "/images/categories/construction.png", overlay: "bg-black/0" },
                   { cat: "Электроника", items: "500 товаров", color: "blue", image: "/images/categories/electronics.jpg", overlay: "bg-black/0" },
-                  { cat: "Здоровье и красота", items: "481 товар", color: "purple", image: "/images/categories/clothing.png", overlay: "bg-black/0" },
+                  { cat: "Здоровье и красота", items: "481 товар", color: "purple", image: "/images/categories/clothing.png", overlay: "bg-black/20" },
                 ].map((item, i) => (
                   <div key={i} className="relative border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all group h-40">
                     {/* Background Image */}
