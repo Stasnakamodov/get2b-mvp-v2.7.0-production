@@ -64,6 +64,7 @@ import {
   Check,
   Loader,
   User,
+  GitBranch,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useProjectTemplates } from "../create-project/hooks/useSaveTemplate"
@@ -113,9 +114,11 @@ import { useOcrUpload } from "@/hooks/project-constructor/useOcrUpload"
 import { useStepData } from "@/hooks/project-constructor/useStepData"
 import { useManagerPolling } from "@/hooks/project-constructor/useManagerPolling"
 import { useReceiptPolling } from "@/hooks/project-constructor/useReceiptPolling"
+import { useScenarioMode } from "@/hooks/project-constructor/useScenarioMode"
 import { POLLING_INTERVALS, TIMEOUTS } from "@/components/project-constructor/config/PollingConstants"
 import { ModalProvider, useModals } from "./components/modals/ModalContext"
 import ModalManager from "./components/modals/ModalManager"
+import { ScenarioTreePanel } from "@/components/project-constructor/scenario/ScenarioTreePanel"
 
 // Константы конфигурации извлечены в отдельный файл
 
@@ -582,6 +585,25 @@ function ProjectConstructorContent() {
   )
 
   // Polling чека от менеджера - теперь обрабатывается хуком useProjectPolling
+
+  // Сценарный режим (Scenario Mode)
+  const scenarioMode = useScenarioMode(projectDetails?.id || null)
+
+  // Загрузка дерева сценариев при наличии проекта
+  React.useEffect(() => {
+    if (projectDetails?.id && scenarioMode.enabled) {
+      scenarioMode.fetchScenarioTree()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectDetails?.id])
+
+  // Обработчик переключения сценария — загружает resolved данные
+  const handleSwitchScenario = useCallback((scenarioId: string) => {
+    scenarioMode.switchScenario(scenarioId, (newStepConfigs, newManualData) => {
+      setStepConfigs(newStepConfigs)
+      setManualData(newManualData)
+    })
+  }, [scenarioMode.switchScenario])
 
   // Функция для загрузки чека клиента о получении средств
   const handleClientReceiptUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2014,7 +2036,21 @@ function ProjectConstructorContent() {
             Этап: {currentStage} | Статус менеджера: {managerApprovalStatus || 'null'} | Статус чека: {receiptApprovalStatus || 'null'}
           </div>
         </div>
-        <div className="flex gap-4 justify-end">
+        <div className="flex gap-4 justify-end items-center">
+          {/* Кнопка режима сценариев */}
+          <Button
+            variant="outline"
+            className="gap-2 relative"
+            onClick={scenarioMode.toggleSidePanel}
+          >
+            <GitBranch className="w-4 h-4" />
+            Сценарии
+            {scenarioMode.treeData.length > 0 && (
+              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+                {scenarioMode.treeData.length}
+              </Badge>
+            )}
+          </Button>
           <Button className="gap-2">
             Запустить проект
             <ArrowRight className="w-4 h-4" />
@@ -2040,6 +2076,8 @@ function ProjectConstructorContent() {
         handleStepClick={handleStepClick}
         stepIcons={stepIcons}
         dataSources={dataSources}
+        scenarioHighlightedSteps={scenarioMode.highlightedSteps}
+        scenarioMode={scenarioMode.enabled}
       />
 
       {/* Block 2: Интерактивная область с вариантами заполнения или анимация сделки */}
@@ -3087,6 +3125,21 @@ function ProjectConstructorContent() {
         editRequisites={editRequisites}
         confirmRequisites={confirmRequisites}
         proceedToStage3={proceedToStage3}
+      />
+
+      {/* Боковая панель дерева сценариев */}
+      <ScenarioTreePanel
+        open={scenarioMode.sidePanelOpen}
+        onOpenChange={(open) => {
+          if (!open) scenarioMode.toggleSidePanel()
+        }}
+        treeData={scenarioMode.treeData}
+        activeScenarioId={scenarioMode.activeScenarioId}
+        onCreateBranch={scenarioMode.createScenarioBranch}
+        onSelectScenario={scenarioMode.selectScenario}
+        onSwitchScenario={handleSwitchScenario}
+        onDeleteScenario={scenarioMode.deleteScenario}
+        loading={scenarioMode.loading}
       />
 
     </div>

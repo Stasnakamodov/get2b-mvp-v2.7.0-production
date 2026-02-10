@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, ArrowRight } from "lucide-react"
 
@@ -68,11 +67,10 @@ export function CatalogSection() {
                 ].map((item, i) => (
                   <div key={i} className="relative border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all group h-40">
                     {/* Background Image */}
-                    <Image
+                    <img
                       src={item.image}
                       alt={item.cat}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
 
                     {/* Dark overlay */}

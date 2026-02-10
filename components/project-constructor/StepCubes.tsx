@@ -4,6 +4,8 @@ import * as React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Lock } from 'lucide-react'
+import { ScenarioStepHighlight, getScenarioStepClasses } from './scenario/ScenarioStepHighlight'
+import type { StepHighlightType } from './scenario/ScenarioStepHighlight'
 
 interface ConstructorStep {
   id: number
@@ -27,6 +29,8 @@ interface StepCubesProps {
   handleStepClick: (stepId: number) => void
   stepIcons: Record<number, any>
   dataSources: Record<string, { name: string }>
+  scenarioHighlightedSteps?: Record<number, StepHighlightType>
+  scenarioMode?: boolean
 }
 
 export function StepCubes({
@@ -43,7 +47,9 @@ export function StepCubes({
   handleStepHover,
   handleStepClick,
   stepIcons,
-  dataSources
+  dataSources,
+  scenarioHighlightedSteps = {},
+  scenarioMode = false,
 }: StepCubesProps) {
   return (
     <Card className="mb-8">
@@ -83,8 +89,11 @@ export function StepCubes({
               <div className={`
                   aspect-square rounded-lg border-2 p-4 flex flex-col items-center justify-center relative group
                 ${
-                  // ОРАНЖЕВАЯ подсветка для рекомендаций из каталога (Steps 4 и 5) - остаётся даже после выбора
-                  catalogSuggestions[step.id]
+                  // Scenario mode highlight takes priority when active
+                  scenarioMode && scenarioHighlightedSteps[step.id]
+                    ? getScenarioStepClasses(scenarioHighlightedSteps[step.id], scenarioMode)
+                    : // ОРАНЖЕВАЯ подсветка для рекомендаций из каталога (Steps 4 и 5) - остаётся даже после выбора
+                      catalogSuggestions[step.id]
                     ? 'border-orange-400 border-2 bg-orange-50 animate-pulse shadow-lg shadow-orange-200'
                     : (stepConfigs[step.id] && manualData[step.id]?.user_choice) ||
                       (stepConfigs[step.id] && (step.id === 1 || step.id === 2 || step.id === 4 || step.id === 5)) ||
@@ -98,6 +107,11 @@ export function StepCubes({
                     : 'border-gray-200 bg-gray-50'
                 }
                 `}>
+                {/* Scenario mode overlay indicator */}
+                <ScenarioStepHighlight
+                  type={scenarioHighlightedSteps[step.id]}
+                  scenarioMode={scenarioMode}
+                />
                              {/* Индикатор заблокированного шага с tooltip */}
            {!isEnabled && (
              <div className="absolute inset-0 bg-gray-100/80 rounded-lg flex items-center justify-center group">

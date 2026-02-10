@@ -73,10 +73,8 @@ export async function GET(request: NextRequest) {
       query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
-    // Ограничение количества результатов
-    if (limit) {
-      query = query.limit(limit);
-    }
+    // Ограничение количества результатов (дефолт 50 для производительности)
+    query = query.limit(limit || 50);
 
     const { data, error } = await query;
 

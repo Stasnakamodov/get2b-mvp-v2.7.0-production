@@ -1,7 +1,6 @@
 "use client"
 
 import React from 'react'
-import Image from 'next/image'
 
 /**
  * Профессиональная секция с бегущей лентой логотипов маркетплейсов
@@ -70,15 +69,12 @@ export function MarketplacesSection() {
             {[...marketplaces, ...marketplaces, ...marketplaces].map((marketplace, index) => (
               <div
                 key={`${marketplace.name}-${index}`}
-                className="flex-shrink-0 relative mx-4 md:mx-6 w-[120px] md:w-[160px] h-[60px] md:h-[80px]"
+                className="flex-shrink-0 mx-4 md:mx-6 w-[120px] md:w-[160px] h-[60px] md:h-[80px]"
               >
-                <Image
+                <img
                   src={marketplace.logo}
                   alt={`${marketplace.name} логотип`}
-                  fill
-                  className="object-contain opacity-70 transition-all duration-300 hover:opacity-100 hover:scale-110"
-                  sizes="(max-width: 768px) 120px, 160px"
-                  priority={index < 8}
+                  className="w-full h-full object-contain opacity-70 transition-all duration-300 hover:opacity-100 hover:scale-110"
                 />
               </div>
             ))}
