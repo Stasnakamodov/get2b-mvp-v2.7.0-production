@@ -113,8 +113,8 @@ export default function ProductGridByCategory({
       }
 
       const url = selectedCategory
-        ? `/api/catalog/products-by-category/${encodeURIComponent(selectedCategory)}?search=${searchQuery || ''}&limit=2000`
-        : `/api/catalog/products-by-category?search=${searchQuery || ''}&limit=2000`
+        ? `/api/catalog/products-by-category/${encodeURIComponent(selectedCategory)}?search=${searchQuery || ''}&limit=6000`
+        : `/api/catalog/products-by-category?search=${searchQuery || ''}&limit=6000`
 
       console.log('🔍 Загружаю категорию:', selectedCategory, 'URL:', url) // Отладка категории
       const response = await fetch(url, { headers })

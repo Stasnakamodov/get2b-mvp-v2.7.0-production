@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     // Получаем параметры запроса
     const { searchParams } = new URL(request.url)
     const searchQuery = searchParams.get('search') || null
-    const limit = parseInt(searchParams.get('limit') || '2000')
+    const limit = parseInt(searchParams.get('limit') || '6000')
     const offset = parseInt(searchParams.get('offset') || '0')
 
     console.log('[API] Fetching ALL products with RPC, params:', { limit, offset, searchQuery })
