@@ -196,6 +196,11 @@ export default function ProductGridByCategory({
     }
   }, [selectedCategory, token, searchQuery])
 
+  // Сброс поиска при смене категории
+  useEffect(() => {
+    setSearchQuery('')
+  }, [selectedCategory])
+
   // Загрузка товаров при изменении категории
   useEffect(() => {
     // Загружаем товары всегда, даже если категория пустая (для отображения всех товаров)

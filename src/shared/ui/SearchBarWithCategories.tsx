@@ -115,11 +115,10 @@ export const SearchBarWithCategories: React.FC<SearchBarWithCategoriesProps> = (
     if (onCategoryClick) {
       onCategoryClick(category)
     }
-    // Устанавливаем категорию в поисковую строку
-    onChange(category)
+    // Очищаем поисковую строку при навигации по категориям
+    // (не засоряем searchQuery названием категории)
+    onChange('')
     setIsOpen(false)
-    // Фокусируемся обратно на поисковой строке
-    inputRef.current?.focus()
   }
 
   // Фильтрация категорий по поисковому запросу

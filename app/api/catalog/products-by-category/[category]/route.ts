@@ -17,7 +17,7 @@ export async function GET(
     // Получаем параметры запроса
     const { searchParams } = new URL(request.url)
     const searchQuery = searchParams.get('search') || null
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = parseInt(searchParams.get('limit') || '6000')
     const offset = parseInt(searchParams.get('offset') || '0')
     const userId = searchParams.get('user_id') || null
     const sortBy = searchParams.get('sort') || 'default'
@@ -51,6 +51,15 @@ export async function GET(
     })
 
 
+    if (error) {
+      console.error('❌ [API] Ошибка получения товаров категории:', error)
+      return NextResponse.json({
+        success: false,
+        error: 'Ошибка получения товаров категории',
+        details: error.message
+      }, { status: 500 })
+    }
+
     // Функция возвращает JSONB array напрямую через Supabase JS client
     let products = []
 
@@ -67,16 +76,6 @@ export async function GET(
       // Неожиданный формат
       console.error('❌ [API] Неожиданный формат данных:', typeof rawData, rawData)
       products = []
-    }
-
-
-    if (error) {
-      console.error('❌ [API] Ошибка получения товаров категории:', error)
-      return NextResponse.json({
-        success: false,
-        error: 'Ошибка получения товаров категории',
-        details: error.message
-      }, { status: 500 })
     }
 
     // Сортируем товары согласно параметру sort
