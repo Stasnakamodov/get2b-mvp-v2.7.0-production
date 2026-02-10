@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест загрузки изображений</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .image-test {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        img {
+            max-width: 300px;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            display: block;
+            margin: 10px 0;
+        }
+        .error {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .console-log {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Диагностика загрузки изображений</h1>
+
+    <div class="test-section">
+        <h2>1️⃣ Прямая загрузка через &lt;img&gt; (без Next.js)</h2>
+        <div class="image-test">
+            <p><strong>URL:</strong> <code id="direct-url"></code></p>
+            <p><strong>Статус:</strong> <span id="direct-status">Загружаем...</span></p>
+            <img
+                id="direct-img"
+                src="https://ejkhdhexkadecpbjjmsz.supabase.co/storage/v1/object/public/product-images/imported/1764245612544_smartfon_apple_iphone_15_pro_max_256gb.jpeg"
+                alt="Тест прямой загрузки"
+                onload="imageLoaded('direct')"
+                onerror="imageError('direct')"
+            />
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>2️⃣ Загрузка через fetch API</h2>
+        <div class="image-test">
+            <p><strong>Статус:</strong> <span id="fetch-status">Загружаем...</span></p>
+            <div id="fetch-result"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>3️⃣ Проверка API endpoint</h2>
+        <div class="image-test">
+            <p><strong>Endpoint:</strong> <code>/api/catalog/products-by-category/ТЕСТОВАЯ</code></p>
+            <p><strong>Статус:</strong> <span id="api-status">Загружаем...</span></p>
+            <div id="api-result"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>4️⃣ Browser Console Logs</h2>
+        <div id="console-logs"></div>
+    </div>
+
+    <script>
+        const IMAGE_URL = 'https://ejkhdhexkadecpbjjmsz.supabase.co/storage/v1/object/public/product-images/imported/1764245612544_smartfon_apple_iphone_15_pro_max_256gb.jpeg';
+        const logs = [];
+
+        // Перехватываем console.log
+        const originalLog = console.log;
+        const originalError = console.error;
+
+        console.log = function(...args) {
+            logs.push({ type: 'log', message: args.join(' '), time: new Date().toISOString() });
+            updateConsoleLogs();
+            originalLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            logs.push({ type: 'error', message: args.join(' '), time: new Date().toISOString() });
+            updateConsoleLogs();
+            originalError.apply(console, args);
+        };
+
+        function updateConsoleLogs() {
+            const container = document.getElementById('console-logs');
+            container.innerHTML = logs.map(log =>
+                `<div class="console-log" style="border-color: ${log.type === 'error' ? '#d32f2f' : '#ffc107'}">
+                    [${log.time}] <strong>${log.type.toUpperCase()}:</strong> ${log.message}
+                </div>`
+            ).join('');
+        }
+
+        // Тест 1: Прямая загрузка
+        document.getElementById('direct-url').textContent = IMAGE_URL;
+
+        function imageLoaded(type) {
+            console.log(`✅ [${type}] Изображение успешно загружено`);
+            document.getElementById(`${type}-status`).innerHTML = '<span class="success">✅ Загружено успешно!</span>';
+        }
+
+        function imageError(type) {
+            console.error(`❌ [${type}] Ошибка загрузки изображения`);
+            document.getElementById(`${type}-status`).innerHTML = '<span class="error">❌ Ошибка загрузки!</span>';
+        }
+
+        // Тест 2: Fetch API
+        async function testFetch() {
+            try {
+                console.log('🔄 Тестируем fetch API...');
+                const response = await fetch(IMAGE_URL);
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', JSON.stringify([...response.headers.entries()]));
+
+                const blob = await response.blob();
+                console.log('📦 Blob size:', blob.size, 'bytes');
+                console.log('📦 Blob type:', blob.type);
+
+                const objectURL = URL.createObjectURL(blob);
+                const img = document.createElement('img');
+                img.src = objectURL;
+                img.style.maxWidth = '300px';
+                img.onload = () => console.log('✅ Blob image loaded');
+                img.onerror = () => console.error('❌ Blob image error');
+
+                document.getElementById('fetch-result').appendChild(img);
+                document.getElementById('fetch-status').innerHTML = '<span class="success">✅ Успешно загружено через fetch</span>';
+
+                // Показываем заголовки
+                const headersDiv = document.createElement('pre');
+                headersDiv.textContent = `Status: ${response.status}\nHeaders:\n${[...response.headers.entries()].map(([k,v]) => `  ${k}: ${v}`).join('\n')}`;
+                document.getElementById('fetch-result').appendChild(headersDiv);
+
+            } catch (error) {
+                console.error('❌ Fetch error:', error);
+                document.getElementById('fetch-status').innerHTML = `<span class="error">❌ Ошибка: ${error.message}</span>`;
+            }
+        }
+
+        // Тест 3: API endpoint
+        async function testAPI() {
+            try {
+                console.log('🔄 Тестируем API endpoint...');
+                const response = await fetch('/api/catalog/products-by-category/ТЕСТОВАЯ?limit=1');
+                const data = await response.json();
+
+                console.log('📡 API Response:', JSON.stringify(data, null, 2));
+
+                const resultDiv = document.getElementById('api-result');
+
+                if (data.success && data.products.length > 0) {
+                    const product = data.products[0];
+                    console.log('📦 Product image_url:', product.image_url);
+
+                    const pre = document.createElement('pre');
+                    pre.textContent = JSON.stringify(product, null, 2);
+                    resultDiv.appendChild(pre);
+
+                    // Пробуем загрузить image_url
+                    if (product.image_url) {
+                        console.log('🖼️ Пробуем загрузить image_url из API...');
+                        const img = document.createElement('img');
+                        img.src = product.image_url;
+                        img.onload = () => {
+                            console.log('✅ API image_url загружена успешно');
+                            document.getElementById('api-status').innerHTML = '<span class="success">✅ API работает, изображение загружено</span>';
+                        };
+                        img.onerror = (e) => {
+                            console.error('❌ API image_url ошибка загрузки', e);
+                            document.getElementById('api-status').innerHTML = '<span class="error">❌ API работает, но изображение НЕ загрузилось</span>';
+                        };
+                        resultDiv.appendChild(img);
+                    }
+                } else {
+                    throw new Error('Товары не найдены');
+                }
+
+            } catch (error) {
+                console.error('❌ API error:', error);
+                document.getElementById('api-status').innerHTML = `<span class="error">❌ Ошибка: ${error.message}</span>`;
+            }
+        }
+
+        // Запускаем тесты
+        window.addEventListener('load', () => {
+            console.log('🚀 Страница загружена, запускаем тесты...');
+            testFetch();
+            testAPI();
+        });
+
+        // Проверяем CSP
+        console.log('🔒 Checking CSP...');
+        const metaCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+        if (metaCSP) {
+            console.log('⚠️ CSP meta tag found:', metaCSP.content);
+        } else {
+            console.log('✅ No CSP meta tag');
+        }
+    </script>
+</body>
+</html>
