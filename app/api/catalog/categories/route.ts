@@ -114,11 +114,16 @@ export async function GET(request: NextRequest) {
       total_subcategories: totalSubcategories,
     };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       categories: categoriesWithSubcategories,
       stats
     });
+
+    // Cache for 60s, serve stale for 5 min
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+
+    return response;
   } catch (error) {
     console.error("❌ [API] Критическая ошибка загрузки категорий:", error);
     return NextResponse.json({ success: false, error: "Ошибка сервера" }, { status: 500 });

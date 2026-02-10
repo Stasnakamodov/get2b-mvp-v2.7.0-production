@@ -11,7 +11,8 @@ import { DEFAULT_CATEGORIES } from '@/lib/catalog/constants'
 interface CatalogSidebarProps {
   categories?: CatalogCategory[]
   selectedCategory?: string
-  onCategorySelect: (category: string | undefined) => void
+  selectedSubcategory?: string
+  onCategorySelect: (category: string | undefined, subcategory?: string) => void
   isLoading?: boolean
 }
 
@@ -21,6 +22,7 @@ interface CatalogSidebarProps {
 export function CatalogSidebar({
   categories,
   selectedCategory,
+  selectedSubcategory,
   onCategorySelect,
   isLoading = false
 }: CatalogSidebarProps) {
@@ -49,10 +51,18 @@ export function CatalogSidebar({
   }
 
   const handleCategoryClick = (categoryName: string) => {
-    if (selectedCategory === categoryName) {
+    if (selectedCategory === categoryName && !selectedSubcategory) {
       onCategorySelect(undefined) // Снять выбор
     } else {
-      onCategorySelect(categoryName)
+      onCategorySelect(categoryName) // Root category, no subcategory
+    }
+  }
+
+  const handleSubcategoryClick = (parentCategoryName: string, subcategoryId: string) => {
+    if (selectedSubcategory === subcategoryId) {
+      onCategorySelect(parentCategoryName) // Deselect subcategory, keep parent
+    } else {
+      onCategorySelect(parentCategoryName, subcategoryId)
     }
   }
 
@@ -71,7 +81,7 @@ export function CatalogSidebar({
         <Button
           variant={!selectedCategory ? 'default' : 'ghost'}
           className={`w-full justify-start ${!selectedCategory ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
-          onClick={() => onCategorySelect(undefined)}
+          onClick={() => onCategorySelect(undefined, undefined)}
         >
           Все товары
         </Button>
@@ -91,7 +101,7 @@ export function CatalogSidebar({
                 {/* Категория */}
                 <div
                   className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                    selectedCategory === category.name
+                    selectedCategory === category.name && !selectedSubcategory
                       ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
@@ -143,11 +153,11 @@ export function CatalogSidebar({
                       <button
                         key={sub.id}
                         className={`w-full flex items-center gap-2 p-2 rounded-lg text-sm transition-colors ${
-                          selectedCategory === sub.name
+                          selectedSubcategory === sub.id
                             ? 'bg-orange-100 text-orange-700'
                             : 'hover:bg-gray-100 text-gray-600'
                         }`}
-                        onClick={() => handleCategoryClick(sub.name)}
+                        onClick={() => handleSubcategoryClick(category.name, sub.id)}
                       >
                         <span className="w-4 h-4 rounded-full border-2 border-current" />
                         <span className="flex-1 text-left truncate">{sub.name}</span>

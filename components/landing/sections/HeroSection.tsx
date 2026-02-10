@@ -61,7 +61,7 @@ export function HeroSection() {
           </h1>
 
           <p className="text-xl md:text-2xl text-gray-400 max-w-3xl leading-relaxed font-light mb-12">
-            Каталог 10,000+ товаров · Собственная B2B сеть · CRM система · Заградительные документы на всех этапах проекта
+            Каталог 4,800+ товаров · Собственная B2B сеть · CRM система · Заградительные документы на всех этапах проекта
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-20">

@@ -1,76 +1,53 @@
 'use client'
 
-/**
- * Страница каталога с использованием FSD архитектуры
- * Поддерживает режимы: поставщики и категории
- */
-
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import dynamic from 'next/dynamic'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, RefreshCw, ArrowLeft, Package, Grid3X3, Users, ShoppingCart, ChevronRight } from 'lucide-react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-
-// FSD импорты
+import React, { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { Package, Grid3X3, Users, ShoppingCart, Plus, RefreshCw } from 'lucide-react'
+// FSD imports for supplier mode
 import {
   useSuppliers,
-  useCategories
 } from '@/src/features/supplier-management'
-
-import { useCart } from '@/src/features/cart-management'
 import { useSupplierModal, SupplierModal } from '@/src/features/supplier-modal'
-
 import {
   SupplierGrid,
-  SupplierCard,
-  ProductCard,
   AddSupplierModal
 } from '@/src/widgets/catalog-suppliers'
-
-import type {
-  Supplier,
-  RoomType,
-  CatalogMode
-} from '@/src/entities/supplier'
+import type { Supplier, RoomType, CatalogMode } from '@/src/entities/supplier'
 import type { Product } from '@/src/entities/product'
-
-import {
-  ROOM_TYPES,
-  CATALOG_MODES
-} from '@/src/shared/config'
-
+import { ROOM_TYPES } from '@/src/shared/config'
 import { logger } from '@/src/shared/lib'
 
-// Динамические импорты для оптимизации
-const SubcategoryList = dynamic(
-  () => import('@/components/catalog/SubcategoryList'),
-  { ssr: false }
-)
+// New catalog components for categories mode
+import { CatalogHeader } from '@/app/dashboard/catalog-new/components/CatalogHeader'
+import { CatalogSidebar } from '@/app/dashboard/catalog-new/components/CatalogSidebar'
+import { CatalogGrid } from '@/app/dashboard/catalog-new/components/CatalogGrid'
+import { ProductModal } from '@/app/dashboard/catalog-new/components/ProductModal'
+import { useInfiniteProducts, flattenProducts } from '@/hooks/useInfiniteProducts'
+import { useProductCart } from '@/hooks/useProductCart'
+import { useCatalogCategories } from '@/hooks/useCatalogCategories'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Trash2, Minus, Plus as PlusIcon, ArrowRight, X } from 'lucide-react'
+import type { CatalogProduct, CatalogFilters, CatalogSort, CatalogViewMode } from '@/lib/catalog/types'
+import { formatPrice } from '@/lib/catalog/utils'
 
-// Импорт существующих компонентов для категорий
-const ProductGridByCategory = dynamic(
-  () => import('@/components/catalog/ProductGridByCategory'),
-  { loading: () => <div className="animate-pulse h-96 bg-gray-100 rounded-lg"></div> }
-)
+import { useMemo, useEffect } from 'react'
 
+/**
+ * Unified catalog page:
+ * - "Categories" mode: uses catalog-new (virtualized, cursor pagination)
+ * - "Suppliers" mode: keeps existing SupplierGrid (not slow)
+ */
 export default function CatalogPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const supabase = createClientComponentClient()
-
-  // Получаем категорию из URL параметров
-  const categoryFromUrl = searchParams?.get('category') || ''
-
-  // Основные состояния страницы
+  const [catalogMode, setCatalogMode] = useState<CatalogMode>('categories')
   const [selectedRoom, setSelectedRoom] = useState<RoomType>('orange')
-  const [catalogMode, setCatalogMode] = useState<CatalogMode>('categories') // По умолчанию категории (товары)
-  const [showCartModal, setShowCartModal] = useState(false)
+
+  // ========== Supplier mode state ==========
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false)
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
-  const [token, setToken] = useState<string>('')
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null) // Для модального окна товара
 
-  // Использование FSD хуков
   const {
     userSuppliers,
     verifiedSuppliers,
@@ -81,83 +58,8 @@ export default function CatalogPage() {
     filterByRoom
   } = useSuppliers()
 
-  const {
-    categories,
-    selectedCategory,
-    selectedSubcategory,
-    loading: loadingCategories,
-    loadingSubcategories,
-    error: categoriesError,
-    selectCategory,
-    selectSubcategory,
-    loadCategories
-  } = useCategories()
-
-  const {
-    cart,
-    activeSupplier,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    clearCart,
-    getTotalAmount,
-    getTotalItems
-  } = useCart()
-
   const supplierModal = useSupplierModal()
-
-  // Удалено: избыточный useEffect для urlCategory - используем categoryFromUrl напрямую
-
-  // Мемоизированная функция для mapping корзины (используется 3 раза)
-  const cartMapped = useMemo(() => {
-    return cart.map(item => ({
-      ...item,
-      description: item.description || undefined,
-      total_price: parseFloat(String(item.price || 0).replace(/[^0-9.-]+/g, '')) * item.quantity,
-      supplier_name: (item as any).supplier_name || '',
-      room_type: (item as any).room_type || 'user',
-      room_icon: (item as any).room_icon || '',
-      room_description: (item as any).room_description || ''
-    })) as any
-  }, [cart])
-
-  // Обработка выбора категории из URL (только при первой загрузке или изменении URL)
-  // Используем ref чтобы избежать повторных срабатываний
-  const lastUrlCategoryRef = React.useRef<string | null>(null)
-
-  useEffect(() => {
-    // Только если URL параметр реально изменился
-    if (categoryFromUrl === lastUrlCategoryRef.current) {
-      return
-    }
-    lastUrlCategoryRef.current = categoryFromUrl
-
-    // Если нет категории в URL - не трогаем текущее состояние
-    // (позволяет навигации назад работать корректно)
-    if (!categoryFromUrl || categories.length === 0) {
-      return
-    }
-
-    // Находим категорию по URL
-    const categoryFromUrlMemo = categories.find(cat =>
-      cat.name === categoryFromUrl || cat.category === categoryFromUrl
-    )
-
-    if (categoryFromUrlMemo && (!selectedCategory || selectedCategory.id !== categoryFromUrlMemo.id)) {
-      selectCategory(categoryFromUrlMemo)
-    }
-  }, [categoryFromUrl, categories, selectedCategory, selectCategory])
-
-  // Загрузка токена
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.access_token) {
-        setToken(session.access_token)
-      }
-    }
-    fetchUserData()
-  }, [supabase])
+  const displayedSuppliers = filterByRoom(selectedRoom)
 
   const handleSupplierClick = (supplier: Supplier) => {
     supplierModal.open(supplier)
@@ -170,33 +72,69 @@ export default function CatalogPage() {
         router.push('/dashboard/project-constructor')
       }
     } catch (error) {
-      logger.error('Ошибка при создании проекта', error)
+      logger.error('Error creating project', error)
     }
   }
 
-  const handleRefresh = async () => {
-    if (catalogMode === 'suppliers') {
-      await refreshSuppliers()
-    } else {
-      await loadCategories()
-    }
-    logger.info('✅ Каталог обновлен')
-  }
+  // ========== Categories mode state (catalog-new) ==========
+  const [filters, setFilters] = useState<CatalogFilters>({})
+  const [sort, setSort] = useState<CatalogSort>({ field: 'created_at', order: 'desc' })
+  const [viewMode, setViewMode] = useState<CatalogViewMode>('grid-4')
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
 
-  // Фильтрация поставщиков по комнате
-  const suppliersToFilter = selectedRoom === 'orange' ? verifiedSuppliers : userSuppliers
-  const displayedSuppliers = filterByRoom(selectedRoom)
+  const { categories, isLoading: categoriesLoading } = useCatalogCategories()
 
-  // Формируем номер комнаты для передачи в API
-  const roomTypeForApi = selectedRoom === 'orange'
-    ? ROOM_TYPES.ORANGE
-    : ROOM_TYPES.BLUE
+  const {
+    items: cartItems,
+    totalItems,
+    totalAmount,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    isInCart,
+    getQuantity,
+  } = useProductCart()
+
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage
+  } = useInfiniteProducts({
+    supplierType: 'verified',
+    category: filters.category,
+    subcategory: filters.subcategory,
+    search: filters.search,
+    inStock: filters.inStock,
+    sortField: sort.field === 'popularity' ? 'created_at' : sort.field,
+    sortOrder: sort.order,
+    limit: 50,
+    enabled: catalogMode === 'categories',
+  })
+
+  const products = useMemo(() => flattenProducts(data), [data])
+
+  const handleFiltersChange = useCallback((f: CatalogFilters) => setFilters(f), [])
+  const handleSortChange = useCallback((s: CatalogSort) => setSort(s), [])
+  const handleViewModeChange = useCallback((m: CatalogViewMode) => setViewMode(m), [])
+  const handleAddToCart = useCallback((p: CatalogProduct) => addToCart(p, 1), [addToCart])
+  const handleModalAddToCart = useCallback((p: CatalogProduct, q: number) => addToCart(p, q), [addToCart])
+  const handleProductClick = useCallback((p: CatalogProduct) => setSelectedProduct(p), [])
+  const handleCategorySelect = useCallback((c: string | undefined, subcategory?: string) => {
+    setFilters(prev => ({ ...prev, category: c, subcategory }))
+  }, [])
+  const handleCreateProject = useCallback(() => {
+    router.push('/dashboard/project-constructor?fromCatalog=true')
+  }, [router])
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Заголовок страницы */}
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        {/* Page Header */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-0">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg animate-gradient-shift">
@@ -212,29 +150,28 @@ export default function CatalogPage() {
               </div>
             </div>
 
-            {/* Корзина - всегда видна */}
+            {/* Cart button */}
             <button
-              onClick={() => setShowCartModal(true)}
+              onClick={() => setIsCartOpen(true)}
               className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${
-                getTotalItems() > 0
+                totalItems > 0
                   ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               <ShoppingCart className="w-5 h-5" />
               <span className="font-medium">Корзина</span>
-              {getTotalItems() > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-md animate-pulse">
-                  {getTotalItems()}
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                  {totalItems}
                 </span>
               )}
             </button>
           </div>
 
-          {/* Переключатель режимов */}
+          {/* Mode switcher */}
           <div className="flex items-center justify-between">
             <div className="flex gap-3">
-              {/* Стильная группа переключателей режимов */}
               <div className="flex bg-gray-100 rounded-xl p-1">
                 <button
                   onClick={() => setCatalogMode('categories')}
@@ -261,12 +198,10 @@ export default function CatalogPage() {
                 </button>
               </div>
 
-              {/* Разделитель и переключатель комнат */}
+              {/* Room switcher (suppliers only) */}
               {catalogMode === 'suppliers' && (
                 <>
                   <div className="w-px bg-gray-300 mx-1"></div>
-
-                  {/* Переключатель комнат в том же стиле */}
                   <div className="flex bg-gray-100 rounded-xl p-1">
                     <button
                       onClick={() => setSelectedRoom('orange')}
@@ -301,7 +236,6 @@ export default function CatalogPage() {
             </div>
 
             <div className="flex gap-2">
-              {/* Кнопка добавления поставщика (только для синей комнаты в режиме поставщиков) */}
               {catalogMode === 'suppliers' && selectedRoom === 'blue' && (
                 <button
                   onClick={() => {
@@ -315,223 +249,70 @@ export default function CatalogPage() {
                 </button>
               )}
 
-              <button
-                onClick={handleRefresh}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span className="font-medium">Обновить</span>
-              </button>
+              {catalogMode === 'suppliers' && (
+                <button
+                  onClick={() => refreshSuppliers()}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span className="font-medium">Обновить</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Контент в зависимости от режима */}
+        {/* Content */}
         {catalogMode === 'categories' ? (
-          <>
-            {/* ПРАВИЛЬНАЯ НАВИГАЦИЯ ПО КАТЕГОРИЯМ */}
+          /* ========== CATEGORIES MODE (catalog-new) ========== */
+          <div className="h-[calc(100vh-200px)] flex flex-col">
+            <CatalogHeader
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              sort={sort}
+              onSortChange={handleSortChange}
+              viewMode={viewMode}
+              onViewModeChange={handleViewModeChange}
+              totalProducts={products.length}
+              cartItemsCount={totalItems}
+              onCartClick={() => setIsCartOpen(true)}
+            />
 
-            {/* 1. НЕ ВЫБРАНА КАТЕГОРИЯ - показываем ВСЕ ТОВАРЫ */}
-            {!selectedCategory && !selectedSubcategory && (
-              <ProductGridByCategory
-                selectedCategory=""
-                token={token}
-                cart={cartMapped}
-                selectedRoom={selectedRoom}
-                activeSupplier={activeSupplier}
-                onProductClick={(product: any) => {
-                  setSelectedProduct(product)
-                }}
-                onAddToCart={(product: any) => {
-                  if (addToCart(product)) {
-                    logger.info('✅ Товар добавлен в корзину')
-                  } else {
-                    const activeSupplierProduct = cart[0] as any
-                    const activeSupplierName = activeSupplierProduct?.supplier_name ||
-                                              activeSupplierProduct?.supplier_company_name ||
-                                              'текущего поставщика'
-
-                    const confirmSwitch = window.confirm(
-                      `В корзине уже есть товары от поставщика "${activeSupplierName}".\n\n` +
-                      `Хотите очистить корзину и добавить товары от поставщика "${product.supplier_name || product.supplier_company_name}"?`
-                    )
-
-                    if (confirmSwitch) {
-                      clearCart()
-                      addToCart(product)
-                      logger.info('✅ Корзина очищена и добавлен новый товар')
-                    }
-                  }
-                }}
-                isProductInCart={(productId: string) => cart.some(item => item.id === productId)}
+            <div className="flex-1 flex overflow-hidden">
+              <CatalogSidebar
+                categories={categories}
+                selectedCategory={filters.category}
+                selectedSubcategory={filters.subcategory}
+                onCategorySelect={handleCategorySelect}
+                isLoading={categoriesLoading}
               />
-            )}
 
-            {/* 2. ВЫБРАНА КАТЕГОРИЯ, НО НЕ ПОДКАТЕГОРИЯ - показываем подкатегории */}
-            {selectedCategory && !selectedSubcategory && (
-              <>
-                {/* Навигация */}
-                <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        selectCategory(null)
-                        selectSubcategory(null)
-                        router.push('/dashboard/catalog', { scroll: false })
-                      }}
-                      className="text-blue-600 hover:underline flex items-center gap-1"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Все товары
-                    </button>
-                    <span className="text-gray-400">/</span>
-                    <span className="font-medium text-lg">{selectedCategory.name}</span>
-                  </div>
-                </div>
-
-                {/* Лоадер подкатегорий */}
-                {loadingSubcategories && (
-                  <div className="bg-white rounded-lg shadow-sm p-12">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
-                      <p className="text-gray-500">Загрузка подкатегорий...</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Список подкатегорий (только когда загрузка завершена) */}
-                {!loadingSubcategories && selectedCategory.subcategories && selectedCategory.subcategories.length > 0 && (
-                  <SubcategoryList
-                    category={selectedCategory}
-                    onSubcategorySelect={(subcategory: any) => {
-                      selectSubcategory(subcategory)
-                    }}
-                    onBack={() => {
-                      selectCategory(null)
-                      selectSubcategory(null)
-                    }}
-                    selectedRoom={selectedRoom}
-                  />
-                )}
-
-                {/* Если подкатегорий нет (после загрузки), показываем товары категории */}
-                {!loadingSubcategories && (!selectedCategory.subcategories || selectedCategory.subcategories.length === 0) && (
-                  <ProductGridByCategory
-                    selectedCategory={selectedCategory.name}
-                    token={token}
-                    cart={cartMapped}
-                    selectedRoom={selectedRoom}
-                    activeSupplier={activeSupplier}
-                    onProductClick={(product: any) => {
-                      setSelectedProduct(product)
-                    }}
-                    onAddToCart={(product: any) => {
-                      if (addToCart(product)) {
-                        logger.info('✅ Товар добавлен в корзину')
-                      } else {
-                        const activeSupplierProduct = cart[0] as any
-                        const activeSupplierName = activeSupplierProduct?.supplier_name ||
-                                                  activeSupplierProduct?.supplier_company_name ||
-                                                  'текущего поставщика'
-
-                        const confirmSwitch = window.confirm(
-                          `В корзине уже есть товары от поставщика "${activeSupplierName}".\n\n` +
-                          `Хотите очистить корзину и добавить товары от поставщика "${product.supplier_name || product.supplier_company_name}"?`
-                        )
-
-                        if (confirmSwitch) {
-                          clearCart()
-                          addToCart(product)
-                          logger.info('✅ Корзина очищена и добавлен новый товар')
-                        }
-                      }
-                    }}
-                    isProductInCart={(productId: string) => cart.some(item => item.id === productId)}
-                  />
-                )}
-              </>
-            )}
-
-            {/* 3. ВЫБРАНА И КАТЕГОРИЯ, И ПОДКАТЕГОРИЯ - показываем товары подкатегории */}
-            {selectedCategory && selectedSubcategory && (
-              <>
-                {/* Навигация */}
-                <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        selectCategory(null)
-                        selectSubcategory(null)
-                        router.push('/dashboard/catalog', { scroll: false })
-                      }}
-                      className="text-blue-600 hover:underline flex items-center gap-1"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Все товары
-                    </button>
-                    <span className="text-gray-400">/</span>
-                    <button
-                      onClick={() => {
-                        selectSubcategory(null)
-                      }}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {selectedCategory.name}
-                    </button>
-                    <span className="text-gray-400">/</span>
-                    <span className="font-medium text-lg">{selectedSubcategory.name}</span>
-                  </div>
-                </div>
-
-                {/* Товары подкатегории */}
-                <ProductGridByCategory
-                  selectedCategory={selectedSubcategory.name}
-                  token={token}
-                  cart={cartMapped}
-                  selectedRoom={selectedRoom}
-                  activeSupplier={activeSupplier}
-                  onProductClick={(product: any) => {
-                    setSelectedProduct(product)
-                  }}
-                  onAddToCart={(product: any) => {
-                    if (addToCart(product)) {
-                      logger.info('✅ Товар добавлен в корзину')
-                    } else {
-                      const activeSupplierProduct = cart[0] as any
-                      const activeSupplierName = activeSupplierProduct?.supplier_name ||
-                                                activeSupplierProduct?.supplier_company_name ||
-                                                'текущего поставщика'
-
-                      const confirmSwitch = window.confirm(
-                        `В корзине уже есть товары от поставщика "${activeSupplierName}".\n\n` +
-                        `Хотите очистить корзину и добавить товары от поставщика "${product.supplier_name || product.supplier_company_name}"?`
-                      )
-
-                      if (confirmSwitch) {
-                        clearCart()
-                        addToCart(product)
-                        logger.info('✅ Корзина очищена и добавлен новый товар')
-                      }
-                    }
-                  }}
-                  isProductInCart={(productId: string) => cart.some(item => item.id === productId)}
+              <div className="flex-1 flex flex-col overflow-hidden p-4">
+                <CatalogGrid
+                  products={products}
+                  isLoading={isLoading}
+                  isFetchingNextPage={isFetchingNextPage}
+                  hasNextPage={hasNextPage ?? false}
+                  fetchNextPage={fetchNextPage}
+                  viewMode={viewMode}
+                  isInCart={isInCart}
+                  onAddToCart={handleAddToCart}
+                  onProductClick={handleProductClick}
                 />
-              </>
-            )}
-          </>
+              </div>
+            </div>
+          </div>
         ) : (
+          /* ========== SUPPLIERS MODE (existing) ========== */
           <>
-            {/* Режим поставщиков */}
-            {/* Ошибки */}
             {(userError || verifiedError) && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                 <p className="text-red-600">
-                  ❌ {userError || verifiedError}
+                  {userError || verifiedError}
                 </p>
               </div>
             )}
 
-            {/* Сетка поставщиков */}
             <SupplierGrid
               suppliers={displayedSuppliers}
               loading={loadingSuppliers}
@@ -542,7 +323,6 @@ export default function CatalogPage() {
                 setShowAddSupplierModal(true)
               }}
               onDeleteSupplier={async () => {
-                // Удаление будет обработано внутри SupplierCard
                 await refreshSuppliers()
               }}
               showActions={true}
@@ -555,7 +335,17 @@ export default function CatalogPage() {
           </>
         )}
 
-        {/* Модальное окно поставщика */}
+        {/* Product Modal (categories mode) */}
+        <ProductModal
+          product={selectedProduct}
+          open={!!selectedProduct}
+          onOpenChange={(open) => { if (!open) setSelectedProduct(null) }}
+          isInCart={selectedProduct ? isInCart(selectedProduct.id) : false}
+          cartQuantity={selectedProduct ? getQuantity(selectedProduct.id) : 0}
+          onAddToCart={handleModalAddToCart}
+        />
+
+        {/* Supplier Modal (suppliers mode) */}
         <SupplierModal
           isOpen={supplierModal.isOpen}
           supplier={supplierModal.selectedSupplier}
@@ -563,108 +353,110 @@ export default function CatalogPage() {
           loading={supplierModal.loading}
           onClose={supplierModal.close}
           onStartProject={handleStartProject}
-          onAddToCart={addToCart}
+          onAddToCart={(product: any) => { addToCart(product, 1); return true }}
           onProductClick={(product: Product) => {
-            setSelectedProduct(product)
+            // For supplier modal product clicks, open the product modal
+            setSelectedProduct(product as any)
           }}
         />
 
-        {/* Модальное окно корзины */}
-        {showCartModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-              <div className="p-6 border-b">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">Корзина ({getTotalItems()} товаров)</h2>
-                  <button
-                    onClick={() => setShowCartModal(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    ✕
-                  </button>
+        {/* Cart Sheet */}
+        <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+          <SheetContent className="w-full sm:max-w-lg flex flex-col">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5" />
+                Корзина
+                {totalItems > 0 && (
+                  <Badge className="bg-orange-500">{totalItems}</Badge>
+                )}
+              </SheetTitle>
+            </SheetHeader>
+
+            {cartItems.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p>Корзина пуста</p>
+                  <p className="text-sm">Добавьте товары из каталога</p>
                 </div>
               </div>
-
-              <div className="p-6">
-                {cart.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">Корзина пуста</p>
-                ) : (
-                  <>
-                    {cart.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 mb-4 p-4 border rounded-lg">
-                        {(item as any).images && (item as any).images[0] && (
-                          <img
-                            src={(item as any).images[0]}
-                            alt={item.name}
-                            className="w-16 h-16 object-cover rounded"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h4 className="font-medium">{item.name}</h4>
-                          <p className="text-sm text-gray-500">
-                            {item.price} × {item.quantity}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                            className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
-                          >
-                            -
-                          </button>
-                          <span className="px-3">{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
-                          >
-                            +
-                          </button>
-                          <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="ml-2 text-red-500 hover:text-red-600"
-                          >
-                            Удалить
-                          </button>
-                        </div>
+            ) : (
+              <>
+                <div className="flex-1 overflow-auto py-4 space-y-3">
+                  {cartItems.map(item => (
+                    <div
+                      key={item.product.id}
+                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm line-clamp-1">
+                          {item.product.name}
+                        </h4>
+                        <p className="text-sm text-orange-600 font-semibold">
+                          {formatPrice(item.product.price, item.product.currency)}
+                        </p>
                       </div>
-                    ))}
-
-                    <div className="mt-6 pt-6 border-t">
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-lg font-semibold">Итого:</span>
-                        <span className="text-2xl font-bold text-green-600">
-                          {getTotalAmount().toLocaleString('ru-RU')} ₽
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">
+                          {item.quantity}
                         </span>
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => {
-                            clearCart()
-                            setShowCartModal(false)
-                          }}
-                          className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                         >
-                          Очистить корзину
-                        </button>
-                        <button
-                          onClick={() => {
-                            router.push('/dashboard/project-constructor')
-                            setShowCartModal(false)
-                          }}
-                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          Оформить заказ
-                        </button>
+                          <PlusIcon className="h-4 w-4" />
+                        </Button>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => removeFromCart(item.product.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+                  ))}
+                </div>
 
-        {/* Модальное окно добавления/редактирования поставщика */}
+                <div className="border-t pt-4 space-y-4">
+                  <div className="flex items-center justify-between text-lg">
+                    <span className="font-medium">Итого:</span>
+                    <span className="font-bold text-orange-600">
+                      {formatPrice(totalAmount, 'RUB')}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={clearCart}>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Очистить
+                    </Button>
+                    <Button
+                      className="flex-1 bg-orange-500 hover:bg-orange-600"
+                      onClick={handleCreateProject}
+                    >
+                      Создать проект
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </SheetContent>
+        </Sheet>
+
+        {/* Add/Edit Supplier Modal */}
         {showAddSupplierModal && (
           <AddSupplierModal
             isOpen={showAddSupplierModal}

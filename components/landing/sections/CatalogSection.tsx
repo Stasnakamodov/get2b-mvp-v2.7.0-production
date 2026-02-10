@@ -17,7 +17,7 @@ export function CatalogSection() {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
             <h2 className="text-[56px] md:text-[72px] leading-[0.95] font-light tracking-tight text-white mb-6">
-              10,000+ товаров от проверенных{" "}
+              4,800+ товаров от проверенных{" "}
               <span className="font-normal bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">поставщиков</span>
             </h2>
 
@@ -60,10 +60,10 @@ export function CatalogSection() {
               {/* Catalog preview */}
               <div className="p-8 space-y-4">
                 {[
-                  { cat: "Электроника", items: "2,347 товаров", color: "blue", image: "/images/categories/electronics.jpg", overlay: "bg-black/0" },
-                  { cat: "Мебель", items: "1,892 товара", color: "orange", image: "/images/categories/furniture.png", overlay: "bg-black/0" },
-                  { cat: "Одежда", items: "3,156 товаров", color: "purple", image: "/images/categories/clothing.png", overlay: "bg-black/0" },
-                  { cat: "Строительство", items: "1,423 товара", color: "green", image: "/images/categories/construction.png", overlay: "bg-black/0" },
+                  { cat: "Дом и быт", items: "2,245 товаров", color: "orange", image: "/images/categories/furniture.png", overlay: "bg-black/0" },
+                  { cat: "Строительство", items: "856 товаров", color: "green", image: "/images/categories/construction.png", overlay: "bg-black/0" },
+                  { cat: "Электроника", items: "500 товаров", color: "blue", image: "/images/categories/electronics.jpg", overlay: "bg-black/0" },
+                  { cat: "Здоровье и красота", items: "481 товар", color: "purple", image: "/images/categories/clothing.png", overlay: "bg-black/0" },
                 ].map((item, i) => (
                   <div key={i} className="relative border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all group h-40">
                     {/* Background Image */}

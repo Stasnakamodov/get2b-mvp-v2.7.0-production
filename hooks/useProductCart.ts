@@ -32,13 +32,44 @@ export function useProductCart() {
   // Ref для отслеживания товаров в процессе добавления (debounce)
   const addingProductsRef = useRef<Set<string>>(new Set())
 
-  // Загрузка из localStorage при монтировании
+  // Загрузка из localStorage при монтировании + миграция старого ключа
   useEffect(() => {
     try {
+      // Migrate from old key if new key is empty
+      const OLD_CART_KEY = 'catalog_cart'
       const stored = localStorage.getItem(CART_STORAGE_KEY)
-      if (stored) {
+      if (!stored) {
+        const oldStored = localStorage.getItem(OLD_CART_KEY)
+        if (oldStored) {
+          try {
+            const oldParsed = JSON.parse(oldStored)
+            // Old format: array of products with id, name, price, quantity directly
+            const migrated = oldParsed.map((item: any) => ({
+              product: {
+                id: item.id,
+                name: item.name,
+                price: typeof item.price === 'string'
+                  ? parseFloat(item.price.replace(/[^0-9.-]+/g, ''))
+                  : item.price,
+                currency: 'RUB',
+                category: item.category || '',
+                in_stock: true,
+                images: item.images || [],
+                supplier_id: item.supplier_id || '',
+                supplier_name: item.supplier_name || '',
+                created_at: new Date().toISOString(),
+              },
+              quantity: item.quantity || 1,
+              addedAt: new Date(),
+            }))
+            setItems(migrated)
+            localStorage.removeItem(OLD_CART_KEY)
+          } catch {
+            // Old data corrupt, ignore
+          }
+        }
+      } else {
         const parsed = JSON.parse(stored)
-        // Восстанавливаем даты
         const restoredItems = parsed.map((item: any) => ({
           ...item,
           addedAt: new Date(item.addedAt)

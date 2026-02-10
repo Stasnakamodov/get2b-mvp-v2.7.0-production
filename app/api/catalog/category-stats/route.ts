@@ -1,76 +1,50 @@
-import { logger } from "@/src/shared/lib/logger"
-import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { NextRequest, NextResponse } from "next/server"
+import { supabase } from "@/lib/supabaseClient"
+
+/**
+ * GET /api/catalog/category-stats
+ *
+ * Optimized: parallel count queries per known category (head:true = no row data)
+ * instead of fetching all 5000+ product rows.
+ */
+
+const BASE_CATEGORIES = [
+  'Автотовары', 'Электроника', 'Дом и быт',
+  'Здоровье и красота', 'Продукты питания', 'Промышленность',
+  'Строительство', 'Текстиль и одежда'
+]
+
 export async function GET(request: NextRequest) {
   try {
+    // Parallel count queries — 8 lightweight HEAD requests instead of loading all rows
+    const countPromises = BASE_CATEGORIES.map(async (category) => {
+      const { count, error } = await supabase
+        .from('catalog_verified_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true)
+        .eq('category', category)
 
-    // Получаем статистику по товарам в verified (оранжевая комната)
-    const { data: verifiedStats, error: verifiedError } = await supabase
-      .from('catalog_verified_products')
-      .select('category')
-      .eq('is_active', true);
+      return { category, count: error ? 0 : (count || 0) }
+    })
 
-    // Получаем статистику по товарам в user (синяя комната) 
-    const { data: userStats, error: userError } = await supabase
-      .from('catalog_user_products')
-      .select('category')
-      .eq('is_active', true);
+    const results = await Promise.all(countPromises)
 
-    if (verifiedError && userError) {
-      logger.error("❌ [API] Ошибка получения статистики:", { verifiedError, userError });
-      return NextResponse.json({ error: "Ошибка получения данных" }, { status: 500 });
+    const categoryCounts: Record<string, { verified: number; user: number; total: number }> = {}
+    for (const { category, count } of results) {
+      categoryCounts[category] = { verified: count, user: 0, total: count }
     }
 
-    // Подсчитываем товары по категориям
-    const categoryCounts: { [key: string]: { verified: number, user: number, total: number } } = {};
-    
-    // Счетчики для verified products
-    if (verifiedStats) {
-      verifiedStats.forEach((product: { category: string }) => {
-        if (product.category) {
-          if (!categoryCounts[product.category]) {
-            categoryCounts[product.category] = { verified: 0, user: 0, total: 0 };
-          }
-          categoryCounts[product.category].verified++;
-          categoryCounts[product.category].total++;
-        }
-      });
-    }
-
-    // Счетчики для user products
-    if (userStats) {
-      userStats.forEach((product: { category: string }) => {
-        if (product.category) {
-          if (!categoryCounts[product.category]) {
-            categoryCounts[product.category] = { verified: 0, user: 0, total: 0 };
-          }
-          categoryCounts[product.category].user++;
-          categoryCounts[product.category].total++;
-        }
-      });
-    }
-
-    // Добавляем базовые категории с нулевыми счетчиками если их нет
-    const baseCategories = [
-      'Автотовары', 'Электроника', 'Дом и быт', 
-      'Здоровье и медицина', 'Продукты питания', 'Промышленность', 
-      'Строительство', 'Текстиль и одежда'
-    ];
-
-    baseCategories.forEach(category => {
-      if (!categoryCounts[category]) {
-        categoryCounts[category] = { verified: 0, user: 0, total: 0 };
-      }
-    });
-
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       categoryStats: categoryCounts
-    });
+    })
 
+    // Cache for 60s, serve stale for 5 min while revalidating
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+
+    return response
   } catch (error) {
-    logger.error("❌ [API] Критическая ошибка получения статистики:", error);
-    return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
+    console.error("[API] category-stats error:", error)
+    return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 })
   }
 }

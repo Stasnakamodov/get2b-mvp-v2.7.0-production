@@ -41,8 +41,10 @@ type SortOrder = 'asc' | 'desc'
 interface UseInfiniteProductsOptions {
   supplierType?: 'verified' | 'user'
   category?: string
+  subcategory?: string
   search?: string
   supplierId?: string
+  inStock?: boolean
   limit?: number
   enabled?: boolean
   sortField?: SortField
@@ -72,8 +74,10 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
   const {
     supplierType = 'verified',
     category,
+    subcategory,
     search,
     supplierId,
+    inStock,
     limit = 50,
     enabled = true,
     sortField = 'created_at',
@@ -81,7 +85,7 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
   } = options
 
   return useInfiniteQuery<ProductsResponse>({
-    queryKey: ['products', supplierType, category, search, supplierId, limit, sortField, sortOrder],
+    queryKey: ['products', supplierType, category, subcategory, search, supplierId, inStock, limit, sortField, sortOrder],
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams()
       params.set('supplier_type', supplierType)
@@ -93,11 +97,17 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
       if (category) {
         params.set('category', category)
       }
+      if (subcategory) {
+        params.set('subcategory', subcategory)
+      }
       if (search) {
         params.set('search', search)
       }
       if (supplierId) {
         params.set('supplier_id', supplierId)
+      }
+      if (inStock) {
+        params.set('in_stock', 'true')
       }
       if (sortField) {
         params.set('sort_field', sortField)

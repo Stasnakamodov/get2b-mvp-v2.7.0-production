@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { CatalogHeader } from './components/CatalogHeader'
 import { CatalogSidebar } from './components/CatalogSidebar'
 import { CatalogGrid } from './components/CatalogGrid'
+import { ProductModal } from './components/ProductModal'
 import { useInfiniteProducts, flattenProducts } from '@/hooks/useInfiniteProducts'
 import { useProductCart } from '@/hooks/useProductCart'
+import { useCatalogCategories } from '@/hooks/useCatalogCategories'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
@@ -15,42 +17,35 @@ import type { CatalogProduct, CatalogFilters, CatalogSort, CatalogViewMode } fro
 import { formatPrice, parseFiltersFromUrl, buildCatalogUrl } from '@/lib/catalog/utils'
 
 /**
- * Главная страница каталога TechnoModern
- *
- * URL: /dashboard/catalog-new
- *
- * Функции:
- * - Виртуализированный список товаров (10,000+)
- * - Infinite scroll с cursor-based пагинацией
- * - Фильтрация по категориям, цене, наличию
- * - Поиск с debounce
- * - Корзина товаров
- * - Интеграция с конструктором проектов
+ * Catalog page with virtualized grid, cursor pagination, and product modal.
+ * Replaces the old catalog for "Categories" mode.
  */
-export default function CatalogPage() {
+export default function CatalogNewPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Инициализация фильтров из URL
+  // Filters from URL
   const initialFilters = useMemo(() => {
     if (!searchParams) return {}
     return parseFiltersFromUrl(searchParams)
   }, [searchParams])
 
-  // Состояние фильтров
   const [filters, setFilters] = useState<CatalogFilters>(initialFilters)
   const [sort, setSort] = useState<CatalogSort>({ field: 'created_at', order: 'desc' })
   const [viewMode, setViewMode] = useState<CatalogViewMode>('grid-4')
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
 
-  // Синхронизация URL при изменении фильтров
+  // Sync URL
   useEffect(() => {
     const newUrl = buildCatalogUrl('/dashboard/catalog-new', filters)
-    // Используем replace чтобы не засорять историю
     router.replace(newUrl, { scroll: false })
   }, [filters, router])
 
-  // Корзина
+  // Categories with real counts
+  const { categories, isLoading: categoriesLoading } = useCatalogCategories()
+
+  // Cart
   const {
     items: cartItems,
     totalItems,
@@ -60,9 +55,10 @@ export default function CatalogPage() {
     updateQuantity,
     clearCart,
     isInCart,
+    getQuantity,
   } = useProductCart()
 
-  // Загрузка товаров
+  // Products with cursor pagination + all filters
   const {
     data,
     isLoading,
@@ -72,13 +68,17 @@ export default function CatalogPage() {
   } = useInfiniteProducts({
     supplierType: 'verified',
     category: filters.category,
+    subcategory: filters.subcategory,
     search: filters.search,
+    inStock: filters.inStock,
+    sortField: sort.field === 'popularity' ? 'created_at' : sort.field,
+    sortOrder: sort.order,
     limit: 50
   })
 
   const products = useMemo(() => flattenProducts(data), [data])
 
-  // Обработчики
+  // Handlers
   const handleFiltersChange = useCallback((newFilters: CatalogFilters) => {
     setFilters(newFilters)
   }, [])
@@ -95,17 +95,18 @@ export default function CatalogPage() {
     addToCart(product, 1)
   }, [addToCart])
 
-  const handleProductClick = useCallback((product: CatalogProduct) => {
-    // Переход на детальную страницу товара
-    router.push(`/dashboard/catalog-new/${product.id}`)
-  }, [router])
+  const handleModalAddToCart = useCallback((product: CatalogProduct, quantity: number) => {
+    addToCart(product, quantity)
+  }, [addToCart])
 
-  const handleCategorySelect = useCallback((category: string | undefined) => {
-    setFilters(prev => ({ ...prev, category }))
+  const handleProductClick = useCallback((product: CatalogProduct) => {
+    setSelectedProduct(product)
   }, [])
 
-  // Переход в конструктор с товарами
-  // Корзина уже синхронизируется с localStorage через useProductCart
+  const handleCategorySelect = useCallback((category: string | undefined, subcategory?: string) => {
+    setFilters(prev => ({ ...prev, category, subcategory }))
+  }, [])
+
   const handleCreateProject = useCallback(() => {
     router.push('/dashboard/project-constructor?fromCatalog=true')
   }, [router])
@@ -127,10 +128,13 @@ export default function CatalogPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
+        {/* Sidebar with real categories */}
         <CatalogSidebar
+          categories={categories}
           selectedCategory={filters.category}
+          selectedSubcategory={filters.subcategory}
           onCategorySelect={handleCategorySelect}
+          isLoading={categoriesLoading}
         />
 
         {/* Product Grid */}
@@ -148,6 +152,16 @@ export default function CatalogPage() {
           />
         </div>
       </div>
+
+      {/* Product Modal */}
+      <ProductModal
+        product={selectedProduct}
+        open={!!selectedProduct}
+        onOpenChange={(open) => { if (!open) setSelectedProduct(null) }}
+        isInCart={selectedProduct ? isInCart(selectedProduct.id) : false}
+        cartQuantity={selectedProduct ? getQuantity(selectedProduct.id) : 0}
+        onAddToCart={handleModalAddToCart}
+      />
 
       {/* Cart Sheet */}
       <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
@@ -179,7 +193,6 @@ export default function CatalogPage() {
                     key={item.product.id}
                     className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
                   >
-                    {/* Product Info */}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm line-clamp-1">
                         {item.product.name}
@@ -189,7 +202,6 @@ export default function CatalogPage() {
                       </p>
                     </div>
 
-                    {/* Quantity Controls */}
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
@@ -212,7 +224,6 @@ export default function CatalogPage() {
                       </Button>
                     </div>
 
-                    {/* Remove Button */}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -227,7 +238,6 @@ export default function CatalogPage() {
 
               {/* Cart Footer */}
               <div className="border-t pt-4 space-y-4">
-                {/* Total */}
                 <div className="flex items-center justify-between text-lg">
                   <span className="font-medium">Итого:</span>
                   <span className="font-bold text-orange-600">
@@ -235,7 +245,6 @@ export default function CatalogPage() {
                   </span>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-2">
                   <Button
                     variant="outline"

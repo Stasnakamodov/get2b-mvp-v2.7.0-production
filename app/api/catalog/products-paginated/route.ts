@@ -68,8 +68,10 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100) // Max 100
     const supplierType = searchParams.get('supplier_type') || 'verified'
     const category = searchParams.get('category')
+    const subcategory = searchParams.get('subcategory')
     const search = searchParams.get('search')
     const supplierId = searchParams.get('supplier_id')
+    const inStock = searchParams.get('in_stock')
 
     // Параметры сортировки с валидацией
     const sortFieldParam = searchParams.get('sort_field')
@@ -108,6 +110,14 @@ export async function GET(request: NextRequest) {
     // Фильтры
     if (category) {
       query = query.eq('category', category)
+    }
+
+    if (subcategory) {
+      query = query.eq('subcategory_id', subcategory)
+    }
+
+    if (inStock === 'true') {
+      query = query.eq('in_stock', true)
     }
 
     if (supplierId) {

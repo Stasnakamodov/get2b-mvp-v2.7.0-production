@@ -76,11 +76,12 @@ export function CatalogHeader({
     onFiltersChange({ ...filters, search: undefined })
   }, [filters, onFiltersChange])
 
-  // Изменение категории
+  // Изменение категории (очищаем subcategory при смене)
   const handleCategoryChange = useCallback((value: string) => {
     onFiltersChange({
       ...filters,
-      category: value === 'all' ? undefined : value
+      category: value === 'all' ? undefined : value,
+      subcategory: undefined
     })
   }, [filters, onFiltersChange])
 
@@ -168,6 +169,19 @@ export function CatalogHeader({
             ))}
           </SelectContent>
         </Select>
+
+        {/* Quick: In Stock */}
+        <Button
+          variant={filters.inStock ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => onFiltersChange({
+            ...filters,
+            inStock: filters.inStock ? undefined : true
+          })}
+          className={filters.inStock ? 'bg-green-500 hover:bg-green-600' : ''}
+        >
+          В наличии
+        </Button>
 
         {/* Кнопка фильтров */}
         <Button
