@@ -41,8 +41,14 @@ function FloatingCartBadge() {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true) // По умолчанию открыт
   const pathname = usePathname()
+  const isCatalogPage = pathname?.startsWith('/dashboard/catalog') ?? false
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!isCatalogPage) // Скрыт на странице каталога
+
+  // Автоматически скрываем/показываем сайдбар при переходе на/из каталога
+  React.useEffect(() => {
+    setIsSidebarOpen(!isCatalogPage)
+  }, [isCatalogPage])
 
   // Navigation items в нужном порядке
   const navItems = [
