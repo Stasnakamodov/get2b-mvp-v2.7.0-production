@@ -57,14 +57,8 @@ export default function ProductCard({
               alt={product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
-                // Фоллбэк: при ошибке загрузки показываем picsum placeholder
-                const fallbackUrl = `https://picsum.photos/seed/${encodeURIComponent(product.id || product.name)}/600/600`
-                if (e.currentTarget.src !== fallbackUrl) {
-                  e.currentTarget.src = fallbackUrl
-                } else {
-                  e.currentTarget.style.display = 'none'
-                  e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden')
-                }
+                e.currentTarget.style.display = 'none'
+                e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden')
               }}
             />
           ) : null}

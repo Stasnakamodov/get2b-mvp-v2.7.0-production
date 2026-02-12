@@ -32,11 +32,9 @@ export const ProductCard = memo(function ProductCard({
   viewMode = 'grid'
 }: ProductCardProps) {
   const imageUrl = getProductImage(product)
-  const [imageFailed, setImageFailed] = useState(0) // 0=ok, 1=try fallback, 2=give up
+  const [imageError, setImageError] = useState(false)
 
-  // Фоллбэк: оригинал → picsum placeholder → иконка
-  const fallbackUrl = `https://picsum.photos/seed/${encodeURIComponent(product.id || product.name)}/600/600`
-  const effectiveImageUrl = imageFailed === 0 ? imageUrl : imageFailed === 1 ? fallbackUrl : null
+  const effectiveImageUrl = imageError ? null : imageUrl
 
   const handleClick = () => {
     onProductClick?.(product)
@@ -66,7 +64,7 @@ export const ProductCard = memo(function ProductCard({
                 fill
                 className="object-cover"
                 sizes="96px"
-                onError={() => setImageFailed(prev => prev + 1)}
+                onError={() => setImageError(true)}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -156,7 +154,7 @@ export const ProductCard = memo(function ProductCard({
               fill
               className="object-cover"
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              onError={() => setImageFailed(prev => prev + 1)}
+              onError={() => setImageError(true)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">

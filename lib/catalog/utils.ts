@@ -16,24 +16,34 @@ export function formatPrice(price: number | undefined, currency: string = 'RUB')
   return `${price.toLocaleString('ru-RU')} ${symbol}`
 }
 
+/** Количество локальных placeholder SVG в /public/images/products/ */
+const PLACEHOLDER_COUNT = 12
+
 /**
- * Проверяет, является ли URL фейковым alicdn (сгенерированным seed-скриптом)
+ * Проверяет, является ли URL нерабочим внешним placeholder-ом
+ * (picsum.photos возвращает 403 из РФ, alicdn — фейковые URL)
  */
-function isFakeAlicdnUrl(url: string): boolean {
-  return /img\.alicdn\.com\/imgextra\/i\d\/(smart_device|iot_product|home_auto|sensor)_/.test(url)
+function isUnreachableUrl(url: string): boolean {
+  return url.includes('picsum.photos/')
+    || /img\.alicdn\.com\/imgextra\/i\d\/(smart_device|iot_product|home_auto|sensor)_/.test(url)
     || /ae04\.alicdn\.com\/kf\/smart_/.test(url)
 }
 
 /**
- * Генерирует рабочий placeholder на основе product id/name
+ * Генерирует локальный placeholder на основе product id/name.
+ * Использует SVG из /public/images/products/ — не зависит от внешних сервисов.
  */
-function getPlaceholderImage(product: CatalogProduct): string {
-  const seed = product.id || product.name || 'default'
-  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/600/600`
+function getLocalPlaceholder(seed: string): string {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0
+  }
+  const index = Math.abs(hash) % PLACEHOLDER_COUNT
+  return `/images/products/placeholder-${index}.svg`
 }
 
 /**
- * Очищает массив изображений: заменяет фейковые alicdn URL на picsum placeholders.
+ * Очищает массив изображений: заменяет нерабочие URL на локальные placeholder-ы.
  * Используется в компонентах, которые итерируют по всему массиву images (модалки, карусели).
  */
 export function getCleanImages(product: CatalogProduct): string[] {
@@ -41,10 +51,10 @@ export function getCleanImages(product: CatalogProduct): string[] {
 
   return product.images.map((img, index) => {
     if (typeof img !== 'string' || !img.startsWith('http')) {
-      return `https://picsum.photos/seed/${encodeURIComponent(product.id || 'default')}_${index}/600/600`
+      return getLocalPlaceholder(`${product.id || 'default'}_${index}`)
     }
-    if (isFakeAlicdnUrl(img)) {
-      return `https://picsum.photos/seed/${encodeURIComponent(product.id || 'default')}_${index}/600/600`
+    if (isUnreachableUrl(img)) {
+      return getLocalPlaceholder(`${product.id || 'default'}_${index}`)
     }
     return img
   })
@@ -61,21 +71,20 @@ export function getProductImage(product: CatalogProduct): string | null {
   // Если это объект с url
   if (typeof firstImage === 'object' && firstImage !== null) {
     const url = (firstImage as any).url
-    if (!url) return getPlaceholderImage(product)
-    if (isFakeAlicdnUrl(url)) return getPlaceholderImage(product)
+    if (!url) return getLocalPlaceholder(product.id || product.name || 'default')
+    if (isUnreachableUrl(url)) return getLocalPlaceholder(product.id || product.name || 'default')
     return url
   }
 
   // Проверяем что это валидный URL
   if (typeof firstImage === 'string' && firstImage.startsWith('http')) {
-    // Заменяем фейковые alicdn URL на рабочие placeholder-ы
-    if (isFakeAlicdnUrl(firstImage)) {
-      return getPlaceholderImage(product)
+    if (isUnreachableUrl(firstImage)) {
+      return getLocalPlaceholder(product.id || product.name || 'default')
     }
     return firstImage
   }
 
-  return getPlaceholderImage(product)
+  return getLocalPlaceholder(product.id || product.name || 'default')
 }
 
 /**
