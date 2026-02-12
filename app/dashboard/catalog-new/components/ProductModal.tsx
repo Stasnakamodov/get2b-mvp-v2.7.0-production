@@ -24,7 +24,7 @@ import {
   Plus,
 } from 'lucide-react'
 import type { CatalogProduct } from '@/lib/catalog/types'
-import { formatPrice, formatMinOrder } from '@/lib/catalog/utils'
+import { formatPrice, formatMinOrder, getCleanImages } from '@/lib/catalog/utils'
 
 interface ProductModalProps {
   product: CatalogProduct | null
@@ -51,7 +51,7 @@ export function ProductModal({
 
   if (!product) return null
 
-  const images = product.images || []
+  const images = getCleanImages(product)
   const hasImages = images.length > 0
 
   const nextImage = () => setCurrentImageIndex(prev => (prev + 1) % images.length)

@@ -19,7 +19,7 @@ import {
   Plus
 } from 'lucide-react'
 import type { CatalogProduct, CatalogSupplier } from '@/lib/catalog/types'
-import { formatPrice, formatMinOrder, getProductImage } from '@/lib/catalog/utils'
+import { formatPrice, formatMinOrder, getProductImage, getCleanImages } from '@/lib/catalog/utils'
 
 interface ProductDetailProps {
   product: CatalogProduct & { supplier?: CatalogSupplier | null }
@@ -42,7 +42,7 @@ export function ProductDetail({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
 
-  const images = product.images || []
+  const images = getCleanImages(product)
   const hasImages = images.length > 0
 
   // Навигация по изображениям

@@ -17,6 +17,40 @@ export function formatPrice(price: number | undefined, currency: string = 'RUB')
 }
 
 /**
+ * Проверяет, является ли URL фейковым alicdn (сгенерированным seed-скриптом)
+ */
+function isFakeAlicdnUrl(url: string): boolean {
+  return /img\.alicdn\.com\/imgextra\/i\d\/(smart_device|iot_product|home_auto|sensor)_/.test(url)
+    || /ae04\.alicdn\.com\/kf\/smart_/.test(url)
+}
+
+/**
+ * Генерирует рабочий placeholder на основе product id/name
+ */
+function getPlaceholderImage(product: CatalogProduct): string {
+  const seed = product.id || product.name || 'default'
+  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/600/600`
+}
+
+/**
+ * Очищает массив изображений: заменяет фейковые alicdn URL на picsum placeholders.
+ * Используется в компонентах, которые итерируют по всему массиву images (модалки, карусели).
+ */
+export function getCleanImages(product: CatalogProduct): string[] {
+  if (!product.images || product.images.length === 0) return []
+
+  return product.images.map((img, index) => {
+    if (typeof img !== 'string' || !img.startsWith('http')) {
+      return `https://picsum.photos/seed/${encodeURIComponent(product.id || 'default')}_${index}/600/600`
+    }
+    if (isFakeAlicdnUrl(img)) {
+      return `https://picsum.photos/seed/${encodeURIComponent(product.id || 'default')}_${index}/600/600`
+    }
+    return img
+  })
+}
+
+/**
  * Получение первого изображения товара
  */
 export function getProductImage(product: CatalogProduct): string | null {
@@ -24,17 +58,24 @@ export function getProductImage(product: CatalogProduct): string | null {
 
   const firstImage = product.images[0]
 
+  // Если это объект с url
+  if (typeof firstImage === 'object' && firstImage !== null) {
+    const url = (firstImage as any).url
+    if (!url) return getPlaceholderImage(product)
+    if (isFakeAlicdnUrl(url)) return getPlaceholderImage(product)
+    return url
+  }
+
   // Проверяем что это валидный URL
   if (typeof firstImage === 'string' && firstImage.startsWith('http')) {
+    // Заменяем фейковые alicdn URL на рабочие placeholder-ы
+    if (isFakeAlicdnUrl(firstImage)) {
+      return getPlaceholderImage(product)
+    }
     return firstImage
   }
 
-  // Если это объект с url
-  if (typeof firstImage === 'object' && firstImage !== null) {
-    return (firstImage as any).url || null
-  }
-
-  return null
+  return getPlaceholderImage(product)
 }
 
 /**

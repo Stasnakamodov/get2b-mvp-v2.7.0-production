@@ -63,7 +63,10 @@ const nextConfig = {
   },
   
   // Конфигурируем внешние изображения
+  // unoptimized: true — отключает /_next/image проксирование,
+  // картинки грузятся напрямую. Необходимо для self-hosted (PM2) без sharp.
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -100,7 +103,19 @@ const nextConfig = {
         hostname: 'fastly.picsum.photos',
         port: '',
         pathname: '/**',
-      }
+      },
+      {
+        protocol: 'https',
+        hostname: '*.alicdn.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'alicdn.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

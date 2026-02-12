@@ -76,8 +76,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {
                 const target = e.target as HTMLImageElement
-                target.onerror = null
-                target.src = '/placeholder.svg'
+                const fallback = `https://picsum.photos/seed/${encodeURIComponent(product.id || product.name || 'default')}/600/600`
+                if (target.src !== fallback) {
+                  target.src = fallback
+                } else {
+                  target.onerror = null
+                  target.style.display = 'none'
+                }
               }}
             />
           ) : (
@@ -133,8 +138,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               className="w-full h-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement
-                target.onerror = null
-                target.src = '/placeholder.svg'
+                const fallback = `https://picsum.photos/seed/${encodeURIComponent(product.id || product.name || 'default')}/600/600`
+                if (target.src !== fallback) {
+                  target.src = fallback
+                } else {
+                  target.onerror = null
+                  target.style.display = 'none'
+                }
               }}
             />
           ) : (
