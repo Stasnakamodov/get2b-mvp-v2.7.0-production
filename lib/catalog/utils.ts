@@ -16,49 +16,27 @@ export function formatPrice(price: number | undefined, currency: string = 'RUB')
   return `${price.toLocaleString('ru-RU')} ${symbol}`
 }
 
-/** Количество локальных placeholder SVG в /public/images/products/ */
-const PLACEHOLDER_COUNT = 12
-
 /**
- * Проверяет, является ли URL нерабочим внешним placeholder-ом
- * (picsum.photos возвращает 403 из РФ, alicdn — фейковые URL)
- */
-function isUnreachableUrl(url: string): boolean {
-  return url.includes('picsum.photos/')
-    || /img\.alicdn\.com\/imgextra\/i\d\/(smart_device|iot_product|home_auto|sensor)_/.test(url)
-    || /ae04\.alicdn\.com\/kf\/smart_/.test(url)
-}
-
-/**
- * Генерирует локальный placeholder на основе product id/name.
- * Использует SVG из /public/images/products/ — не зависит от внешних сервисов.
- */
-function getLocalPlaceholder(seed: string): string {
-  let hash = 0
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0
-  }
-  const index = Math.abs(hash) % PLACEHOLDER_COUNT
-  return `/images/products/placeholder-${index}.svg`
-}
-
-/**
- * Очищает массив изображений: заменяет нерабочие URL на локальные placeholder-ы.
- * Используется в компонентах, которые итерируют по всему массиву images (модалки, карусели).
+ * Получение массива изображений товара.
+ * Теперь все URL в БД рабочие (loremflickr.com).
  */
 export function getCleanImages(product: CatalogProduct): string[] {
   if (!product.images || product.images.length === 0) {
-    return [getLocalPlaceholder(product.id || product.name || 'default')]
+    // Fallback если нет изображений (не должно происходить после обновления БД)
+    return ['/images/products/placeholder-0.svg']
   }
 
-  return product.images.map((img, index) => {
-    if (typeof img !== 'string' || !img.startsWith('http')) {
-      return getLocalPlaceholder(`${product.id || 'default'}_${index}`)
+  return product.images.map(img => {
+    // Если это объект с url
+    if (typeof img === 'object' && img !== null && (img as any).url) {
+      return (img as any).url
     }
-    if (isUnreachableUrl(img)) {
-      return getLocalPlaceholder(`${product.id || 'default'}_${index}`)
+    // Если это строка
+    if (typeof img === 'string' && img.startsWith('http')) {
+      return img
     }
-    return img
+    // Fallback
+    return '/images/products/placeholder-0.svg'
   })
 }
 
@@ -67,7 +45,8 @@ export function getCleanImages(product: CatalogProduct): string[] {
  */
 export function getProductImage(product: CatalogProduct): string {
   if (!product.images || product.images.length === 0) {
-    return getLocalPlaceholder(product.id || product.name || 'default')
+    // Fallback если нет изображений (не должно происходить после обновления БД)
+    return '/images/products/placeholder-0.svg'
   }
 
   const firstImage = product.images[0]
@@ -75,20 +54,16 @@ export function getProductImage(product: CatalogProduct): string {
   // Если это объект с url
   if (typeof firstImage === 'object' && firstImage !== null) {
     const url = (firstImage as any).url
-    if (!url) return getLocalPlaceholder(product.id || product.name || 'default')
-    if (isUnreachableUrl(url)) return getLocalPlaceholder(product.id || product.name || 'default')
-    return url
+    return url || '/images/products/placeholder-0.svg'
   }
 
-  // Проверяем что это валидный URL
+  // Если это строка с URL
   if (typeof firstImage === 'string' && firstImage.startsWith('http')) {
-    if (isUnreachableUrl(firstImage)) {
-      return getLocalPlaceholder(product.id || product.name || 'default')
-    }
     return firstImage
   }
 
-  return getLocalPlaceholder(product.id || product.name || 'default')
+  // Fallback
+  return '/images/products/placeholder-0.svg'
 }
 
 /**
