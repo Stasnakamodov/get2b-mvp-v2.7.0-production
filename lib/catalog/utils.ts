@@ -47,7 +47,9 @@ function getLocalPlaceholder(seed: string): string {
  * Используется в компонентах, которые итерируют по всему массиву images (модалки, карусели).
  */
 export function getCleanImages(product: CatalogProduct): string[] {
-  if (!product.images || product.images.length === 0) return []
+  if (!product.images || product.images.length === 0) {
+    return [getLocalPlaceholder(product.id || product.name || 'default')]
+  }
 
   return product.images.map((img, index) => {
     if (typeof img !== 'string' || !img.startsWith('http')) {
@@ -63,8 +65,10 @@ export function getCleanImages(product: CatalogProduct): string[] {
 /**
  * Получение первого изображения товара
  */
-export function getProductImage(product: CatalogProduct): string | null {
-  if (!product.images || product.images.length === 0) return null
+export function getProductImage(product: CatalogProduct): string {
+  if (!product.images || product.images.length === 0) {
+    return getLocalPlaceholder(product.id || product.name || 'default')
+  }
 
   const firstImage = product.images[0]
 
