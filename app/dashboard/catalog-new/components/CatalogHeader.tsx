@@ -13,14 +13,13 @@ import {
 } from '@/components/ui/select'
 import {
   Search,
-  SlidersHorizontal,
   Grid3X3,
   Grid2X2,
   List,
   X,
   ShoppingCart
 } from 'lucide-react'
-import { SORT_OPTIONS, DEFAULT_CATEGORIES, SEARCH_DEBOUNCE_MS } from '@/lib/catalog/constants'
+import { SORT_OPTIONS, SEARCH_DEBOUNCE_MS } from '@/lib/catalog/constants'
 import type { CatalogFilters, CatalogSort, CatalogViewMode } from '@/lib/catalog/types'
 
 interface CatalogHeaderProps {
@@ -50,7 +49,6 @@ export function CatalogHeader({
   onCartClick
 }: CatalogHeaderProps) {
   const [searchInput, setSearchInput] = useState(filters.search || '')
-  const [showFilters, setShowFilters] = useState(false)
 
   // Синхронизация searchInput при внешнем сбросе filters.search (например, при клике по категории)
   useEffect(() => {
@@ -81,15 +79,6 @@ export function CatalogHeader({
   const handleClearSearch = useCallback(() => {
     setSearchInput('')
     onFiltersChange({ ...filters, search: undefined })
-  }, [filters, onFiltersChange])
-
-  // Изменение категории (очищаем subcategory при смене)
-  const handleCategoryChange = useCallback((value: string) => {
-    onFiltersChange({
-      ...filters,
-      category: value === 'all' ? undefined : value,
-      subcategory: undefined
-    })
   }, [filters, onFiltersChange])
 
   // Изменение сортировки
@@ -157,26 +146,8 @@ export function CatalogHeader({
         </Button>
       </div>
 
-      {/* Нижняя строка: фильтры и сортировка */}
+      {/* Нижняя строка: быстрые фильтры и сортировка */}
       <div className="px-4 py-2 flex items-center gap-3 flex-wrap border-t">
-        {/* Категория */}
-        <Select
-          value={filters.category || 'all'}
-          onValueChange={handleCategoryChange}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Категория" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Все категории</SelectItem>
-            {DEFAULT_CATEGORIES.map(cat => (
-              <SelectItem key={cat.key} value={cat.name}>
-                {cat.icon} {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         {/* Quick: In Stock */}
         <Button
           variant={filters.inStock ? 'default' : 'outline'}
@@ -188,20 +159,6 @@ export function CatalogHeader({
           className={filters.inStock ? 'bg-green-500 hover:bg-green-600' : ''}
         >
           В наличии
-        </Button>
-
-        {/* Кнопка фильтров */}
-        <Button
-          variant={showFilters ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-          className={showFilters ? 'bg-orange-500 hover:bg-orange-600' : ''}
-        >
-          <SlidersHorizontal className="h-4 w-4 mr-2" />
-          Фильтры
-          {activeFiltersCount > 0 && (
-            <Badge className="ml-2 bg-orange-600">{activeFiltersCount}</Badge>
-          )}
         </Button>
 
         {/* Сброс фильтров */}
@@ -266,58 +223,7 @@ export function CatalogHeader({
             <List className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Счётчик товаров */}
-        <span className="text-sm text-gray-500">
-          {totalProducts.toLocaleString()} товаров
-        </span>
       </div>
-
-      {/* Расширенные фильтры */}
-      {showFilters && (
-        <div className="px-4 py-3 border-t bg-gray-50 dark:bg-gray-800">
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* Цена от */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Цена:</span>
-              <Input
-                type="number"
-                placeholder="от"
-                className="w-24"
-                value={filters.minPrice || ''}
-                onChange={(e) => onFiltersChange({
-                  ...filters,
-                  minPrice: e.target.value ? Number(e.target.value) : undefined
-                })}
-              />
-              <span>—</span>
-              <Input
-                type="number"
-                placeholder="до"
-                className="w-24"
-                value={filters.maxPrice || ''}
-                onChange={(e) => onFiltersChange({
-                  ...filters,
-                  maxPrice: e.target.value ? Number(e.target.value) : undefined
-                })}
-              />
-            </div>
-
-            {/* В наличии */}
-            <Button
-              variant={filters.inStock ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onFiltersChange({
-                ...filters,
-                inStock: filters.inStock ? undefined : true
-              })}
-              className={filters.inStock ? 'bg-orange-500 hover:bg-orange-600' : ''}
-            >
-              В наличии
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

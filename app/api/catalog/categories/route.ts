@@ -78,24 +78,36 @@ export async function GET(request: NextRequest) {
 
     if (includeSubcategories) {
 
-      // Подсчитываем количество товаров для всех подкатегорий ОДНИМ запросом
-      // вместо N отдельных COUNT запросов (было ~40 запросов)
+      // Подсчитываем количество товаров через RPC (GROUP BY на сервере, без загрузки строк)
       const subcategoryIds = (subcategories || []).map(s => s.id);
       const countsBySubcategory: Record<string, number> = {};
 
       if (subcategoryIds.length > 0) {
-        const { data: products, error: prodError } = await supabase
-          .from("catalog_verified_products")
-          .select("subcategory_id")
-          .in('subcategory_id', subcategoryIds)
-          .eq('is_active', true)
-          .limit(10000);
+        const { data: countData, error: rpcError } = await supabase.rpc(
+          'count_products_by_subcategory',
+          { subcategory_ids: subcategoryIds }
+        );
 
-        if (!prodError && products) {
-          for (const p of products) {
-            if (p.subcategory_id) {
-              countsBySubcategory[p.subcategory_id] = (countsBySubcategory[p.subcategory_id] || 0) + 1;
+        if (!rpcError && countData) {
+          for (const row of countData) {
+            if (row.subcategory_id) {
+              countsBySubcategory[row.subcategory_id] = Number(row.count);
             }
+          }
+        } else if (rpcError) {
+          console.warn("⚠️ [API] RPC fallback: count_products_by_subcategory failed:", rpcError.message);
+          // Fallback: parallel HEAD count queries
+          const countPromises = subcategoryIds.map(async (id) => {
+            const { count } = await supabase
+              .from("catalog_verified_products")
+              .select("*", { count: 'exact', head: true })
+              .eq('subcategory_id', id)
+              .eq('is_active', true);
+            return { id, count: count || 0 };
+          });
+          const counts = await Promise.all(countPromises);
+          for (const { id, count } of counts) {
+            countsBySubcategory[id] = count;
           }
         }
       }
@@ -105,12 +117,35 @@ export async function GET(request: NextRequest) {
         products_count: countsBySubcategory[sub.id] || 0
       }));
 
+      // Also count products directly by category name (for products without subcategory_id)
+      const countsByCategory: Record<string, number> = {};
+      if (rootCategories && rootCategories.length > 0) {
+        const countPromises = rootCategories.map(async (cat) => {
+          const { count } = await supabase
+            .from("catalog_verified_products")
+            .select("*", { count: 'exact', head: true })
+            .eq('category', cat.name)
+            .eq('is_active', true);
+          return { name: cat.name, count: count || 0 };
+        });
+        const catCounts = await Promise.all(countPromises);
+        for (const { name, count } of catCounts) {
+          countsByCategory[name] = count;
+        }
+      }
 
       // Добавляем подкатегории к корневым категориям
-      categoriesWithSubcategories = rootCategories.map(category => ({
-        ...category,
-        subcategories: subcategoriesWithCounts?.filter(sub => sub.category_id === category.id) || []
-      }));
+      categoriesWithSubcategories = rootCategories.map(category => {
+        const catSubs = subcategoriesWithCounts?.filter(sub => sub.category_id === category.id) || [];
+        const subcategoryTotal = catSubs.reduce((sum, s) => sum + (s.products_count || 0), 0);
+        // Use direct category count when subcategory count is 0
+        const directCount = countsByCategory[category.name] || 0;
+        return {
+          ...category,
+          products_count: Math.max(subcategoryTotal, directCount),
+          subcategories: catSubs,
+        };
+      });
 
       totalSubcategories = subcategories?.length || 0;
     } else {

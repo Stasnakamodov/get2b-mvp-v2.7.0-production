@@ -4,10 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import type { CatalogCategory, CatalogSubcategory } from '@/lib/catalog/types'
 import { DEFAULT_CATEGORIES } from '@/lib/catalog/constants'
 
-interface CategoryStats {
-  [category: string]: { verified: number; user: number; total: number }
-}
-
 interface ApiSubcategory {
   id: string
   name: string
@@ -24,42 +20,31 @@ interface ApiCategory {
   subcategories?: ApiSubcategory[]
 }
 
+// Build ordering/icon lookup from DEFAULT_CATEGORIES
+const DEFAULT_BY_NAME = new Map(
+  DEFAULT_CATEGORIES.map((d, i) => [d.name, { ...d, order: i }])
+)
+
 /**
- * Hook for fetching real category counts and subcategories from the API.
- * Fetches the full category tree (with subcategories) and root-level stats,
- * then merges them into CatalogCategory[] with children populated.
+ * Hook for fetching real categories from the API.
+ * API-first: uses ALL categories from API, not just those in DEFAULT_CATEGORIES.
+ * DEFAULT_CATEGORIES provides icon and ordering fallback only.
  */
 export function useCatalogCategories() {
   const { data, isLoading, error } = useQuery<CatalogCategory[]>({
     queryKey: ['catalog-categories'],
     queryFn: async () => {
-      // Fetch both endpoints in parallel
-      const [treeRes, statsRes] = await Promise.all([
-        fetch('/api/catalog/categories?includeSubcategories=true'),
-        fetch('/api/catalog/category-stats'),
-      ])
-
+      const treeRes = await fetch('/api/catalog/categories?includeSubcategories=true')
       if (!treeRes.ok) throw new Error('Failed to fetch category tree')
-      if (!statsRes.ok) throw new Error('Failed to fetch category stats')
 
       const treeJson = await treeRes.json()
-      const statsJson = await statsRes.json()
-
       const apiCategories: ApiCategory[] = treeJson.categories || []
-      const stats: CategoryStats = statsJson.categoryStats || {}
 
-      // Build a lookup from API categories by name for subcategories
-      const apiByName = new Map<string, ApiCategory>()
-      for (const cat of apiCategories) {
-        apiByName.set(cat.name, cat)
-      }
+      // Map ALL API categories, using DEFAULT_CATEGORIES for icon/ordering
+      const mapped: (CatalogCategory & { _order: number })[] = apiCategories.map(api => {
+        const def = DEFAULT_BY_NAME.get(api.name)
 
-      // Map DEFAULT_CATEGORIES (which define icon + ordering) with real data
-      return DEFAULT_CATEGORIES.map(def => {
-        const api = apiByName.get(def.name)
-        const rootCount = stats[def.name]?.total || 0
-
-        const children: CatalogSubcategory[] = (api?.subcategories || []).map(sub => ({
+        const children: CatalogSubcategory[] = (api.subcategories || []).map(sub => ({
           id: sub.id,
           key: sub.key || sub.name.toLowerCase().replace(/\s+/g, '_'),
           name: sub.name,
@@ -67,18 +52,32 @@ export function useCatalogCategories() {
           products_count: sub.products_count || 0,
         }))
 
+        const childrenTotal = children.reduce((sum, c) => sum + c.products_count, 0)
+        // Use API-provided products_count (direct category count) when children sum is 0
+        const totalProducts = childrenTotal > 0 ? childrenTotal : ((api as any).products_count || 0)
+
         return {
-          id: api?.id || def.key,
-          key: def.key,
-          name: def.name,
-          icon: def.icon,
-          products_count: rootCount,
+          id: api.id,
+          key: api.key || (def?.key ?? api.name.toLowerCase().replace(/\s+/g, '_')),
+          name: api.name,
+          icon: api.icon || def?.icon || '📦',
+          products_count: totalProducts,
           children,
+          _order: def?.order ?? 999,
         }
       })
+
+      // Sort: known categories first (by DEFAULT order), then unknown alphabetically
+      mapped.sort((a, b) => {
+        if (a._order !== b._order) return a._order - b._order
+        return a.name.localeCompare(b.name, 'ru')
+      })
+
+      // Strip internal _order field
+      return mapped.map(({ _order, ...cat }) => cat)
     },
-    staleTime: 60 * 1000, // 1 min
-    gcTime: 5 * 60 * 1000, // 5 min
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   })
 
   return {

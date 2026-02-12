@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Package, Grid3X3, Users, ShoppingCart, Plus, RefreshCw } from 'lucide-react'
+import { Package, Grid3X3, Users, ShoppingCart, Plus, RefreshCw, SlidersHorizontal } from 'lucide-react'
 // FSD imports for supplier mode
 import {
   useSuppliers,
@@ -25,9 +25,18 @@ import { ProductModal } from '@/app/dashboard/catalog-new/components/ProductModa
 import { useInfiniteProducts, flattenProducts } from '@/hooks/useInfiniteProducts'
 import { useProductCart } from '@/hooks/useProductCart'
 import { useCatalogCategories } from '@/hooks/useCatalogCategories'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { Trash2, Minus, Plus as PlusIcon, ArrowRight, X } from 'lucide-react'
 import type { CatalogProduct, CatalogFilters, CatalogSort, CatalogViewMode } from '@/lib/catalog/types'
 import { formatPrice } from '@/lib/catalog/utils'
@@ -81,8 +90,10 @@ export default function CatalogPage() {
   const [sort, setSort] = useState<CatalogSort>({ field: 'created_at', order: 'desc' })
   const [viewMode, setViewMode] = useState<CatalogViewMode>('grid-4')
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
 
+  const isMobile = useIsMobile()
   const { categories, isLoading: categoriesLoading } = useCatalogCategories()
 
   const {
@@ -125,10 +136,21 @@ export default function CatalogPage() {
   const handleProductClick = useCallback((p: CatalogProduct) => setSelectedProduct(p), [])
   const handleCategorySelect = useCallback((c: string | undefined, subcategory?: string) => {
     setFilters(prev => ({ ...prev, category: c, subcategory, search: undefined }))
+    setIsSidebarOpen(false)
   }, [])
   const handleCreateProject = useCallback(() => {
     router.push('/dashboard/project-constructor?fromCatalog=true')
   }, [router])
+
+  // Find selected subcategory name for breadcrumbs
+  const selectedSubcategoryName = useMemo(() => {
+    if (!filters.subcategory || !categories) return undefined
+    for (const cat of categories) {
+      const sub = cat.children?.find(s => s.id === filters.subcategory)
+      if (sub) return sub.name
+    }
+    return undefined
+  }, [filters.subcategory, categories])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -278,14 +300,88 @@ export default function CatalogPage() {
               onCartClick={() => setIsCartOpen(true)}
             />
 
+            {/* Breadcrumbs + mobile filter button */}
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 border-b">
+              {/* Mobile filter button */}
+              <button
+                className="md:hidden flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors shrink-0"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Фильтры
+              </button>
+
+              <Breadcrumb className="flex-1">
+                <BreadcrumbList className="text-sm">
+                  <BreadcrumbItem>
+                    {filters.category ? (
+                      <BreadcrumbLink
+                        className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium"
+                        onClick={() => handleCategorySelect(undefined)}
+                      >
+                        Каталог
+                      </BreadcrumbLink>
+                    ) : (
+                      <BreadcrumbPage className="font-semibold text-gray-900">Каталог</BreadcrumbPage>
+                    )}
+                  </BreadcrumbItem>
+                  {filters.category && (
+                    <>
+                      <BreadcrumbSeparator className="text-gray-400">/</BreadcrumbSeparator>
+                      <BreadcrumbItem>
+                        {filters.subcategory ? (
+                          <BreadcrumbLink
+                            className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium"
+                            onClick={() => handleCategorySelect(filters.category)}
+                          >
+                            {filters.category}
+                          </BreadcrumbLink>
+                        ) : (
+                          <BreadcrumbPage className="font-semibold text-gray-900">{filters.category}</BreadcrumbPage>
+                        )}
+                      </BreadcrumbItem>
+                    </>
+                  )}
+                  {filters.subcategory && selectedSubcategoryName && (
+                    <>
+                      <BreadcrumbSeparator className="text-gray-400">/</BreadcrumbSeparator>
+                      <BreadcrumbItem>
+                        <BreadcrumbPage className="font-semibold text-gray-900">{selectedSubcategoryName}</BreadcrumbPage>
+                      </BreadcrumbItem>
+                    </>
+                  )}
+                </BreadcrumbList>
+              </Breadcrumb>
+
+              <span className="text-xs text-gray-500 shrink-0 font-medium">
+                {products.length > 0 && `${products.length.toLocaleString('ru-RU')} товаров`}
+              </span>
+            </div>
+
             <div className="flex-1 flex overflow-hidden">
-              <CatalogSidebar
-                categories={categories}
-                selectedCategory={filters.category}
-                selectedSubcategory={filters.subcategory}
-                onCategorySelect={handleCategorySelect}
-                isLoading={categoriesLoading}
-              />
+              {/* Desktop sidebar */}
+              <div className="hidden md:block">
+                <CatalogSidebar
+                  categories={categories}
+                  selectedCategory={filters.category}
+                  selectedSubcategory={filters.subcategory}
+                  onCategorySelect={handleCategorySelect}
+                  isLoading={categoriesLoading}
+                />
+              </div>
+
+              {/* Mobile sidebar sheet */}
+              <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+                <SheetContent side="left" className="p-0 w-[280px]">
+                  <CatalogSidebar
+                    categories={categories}
+                    selectedCategory={filters.category}
+                    selectedSubcategory={filters.subcategory}
+                    onCategorySelect={handleCategorySelect}
+                    isLoading={categoriesLoading}
+                  />
+                </SheetContent>
+              </Sheet>
 
               <div className="flex-1 flex flex-col overflow-hidden p-4">
                 <CatalogGrid

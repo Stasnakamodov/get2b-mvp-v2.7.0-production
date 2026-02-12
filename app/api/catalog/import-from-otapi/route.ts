@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
 import { getOtapiService } from '@/lib/services/OtapiService'
+import { getDeduplicationService, normalizeImageUrl } from '@/lib/services/ImportDeduplicationService'
+import { getProductQualityEnricher } from '@/lib/services/ProductQualityEnricher'
 import { logger } from '@/src/shared/lib/logger'
 
 /**
@@ -112,28 +114,43 @@ export async function POST(request: NextRequest) {
       throw new Error('Не удалось получить или создать поставщика')
     }
 
-    // 4. Форматируем и импортируем товары
+    // 4. Инициализируем сервисы дедупликации и обогащения
+    const dedupService = getDeduplicationService()
+    await dedupService.initialize(category)
+
+    const enricher = getProductQualityEnricher()
+    const batchNames = new Set<string>()
+
+    // 5. Форматируем и фильтруем товары
     const productsToImport = []
-    const skippedProducts = []
-    const errors = []
+    const skippedProducts: Array<{ name: string; reason: string }> = []
+    const errors: Array<{ product: string; error: string }> = []
 
     for (const product of products) {
       try {
-        // Проверяем дубликаты по SKU
-        if (product.id) {
-          const { data: existing } = await supabase
-            .from('catalog_verified_products')
-            .select('id')
-            .eq('sku', product.id)
-            .single()
+        // 5-layer duplicate check
+        const images = product.images.slice(0, 10).map(normalizeImageUrl)
+        const dupResult = dedupService.checkDuplicate({
+          sku: product.id,
+          name: product.name,
+          images,
+          price: product.price,
+          category,
+        })
 
-          if (existing) {
-            skippedProducts.push(product.name)
-            continue
-          }
+        if (dupResult.isDuplicate) {
+          skippedProducts.push({
+            name: product.name,
+            reason: dupResult.reason || 'duplicate',
+          })
+          continue
         }
 
-        // Создаем specifications с правильной типизацией
+        // Enrich name and description
+        const enrichedName = enricher.enrichName(product, batchNames)
+        const enrichedDescription = enricher.enrichDescription(product, category)
+
+        // Создаем specifications
         const specifications: Record<string, any> = {
           ...product.specifications,
           'Бренд': product.brand,
@@ -146,41 +163,31 @@ export async function POST(request: NextRequest) {
           'Город поставщика': product.seller.city
         }
 
-        // Очищаем null значения из specifications
+        // Очищаем null значения
         Object.keys(specifications).forEach(key => {
-          if (specifications[key] === null ||
-              specifications[key] === undefined) {
+          if (specifications[key] === null || specifications[key] === undefined) {
             delete specifications[key]
           }
         })
 
         // Форматируем товар для БД
         const formattedProduct = {
-          // Основная информация
-          name: product.name,
-          description: product.description || `${product.name}\n\nИмпортировано с ${provider} через OTAPI`,
+          name: enrichedName,
+          description: enrichedDescription,
           category: category,
           sku: product.id,
-
-          // Цены
           price: product.price,
           currency: 'RUB',
           min_order: product.minOrderQuantity ? `${product.minOrderQuantity} шт.` : '1 шт.',
           in_stock: product.inStock,
-
-          // Характеристики
           specifications: specifications,
-          images: product.images.slice(0, 10), // Максимум 10 изображений
-
-          // Связь с поставщиком
+          images: images,
           supplier_id: supplier.id,
-
-          // Статус
           is_active: true,
-          is_featured: product.rating && product.rating >= 4.5 // Выделяем товары с высоким рейтингом
+          is_featured: product.rating != null && product.rating >= 4.5
         }
 
-        productsToImport.push(formattedProduct)
+        productsToImport.push({ formatted: formattedProduct, original: product })
 
       } catch (error: any) {
         errors.push({
@@ -190,24 +197,80 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. Массовая вставка в БД
+    // 6. Массовая вставка в БД с fallback на one-by-one
     let imported = 0
+    const insertedIds: Array<{ id: string; images: string[] }> = []
+
     if (productsToImport.length > 0) {
+      const rows = productsToImport.map(p => p.formatted)
+
+      // Try batch insert first
       const { data: insertedProducts, error: insertError } = await supabase
         .from('catalog_verified_products')
-        .insert(productsToImport)
-        .select('id, name')
+        .insert(rows)
+        .select('id, name, images')
 
       if (insertError) {
-        throw new Error(`Ошибка импорта в БД: ${insertError.message}`)
+        // Fallback: insert one-by-one, skip constraint violations
+        console.warn(`[API] Batch insert failed: ${insertError.message}. Falling back to one-by-one.`)
+
+        for (const row of rows) {
+          const { data: single, error: singleError } = await supabase
+            .from('catalog_verified_products')
+            .insert([row])
+            .select('id, name, images')
+            .single()
+
+          if (singleError) {
+            skippedProducts.push({
+              name: row.name,
+              reason: `db_constraint: ${singleError.message}`,
+            })
+          } else if (single) {
+            imported++
+            insertedIds.push({ id: single.id, images: single.images || [] })
+            // Register in dedup cache for within-batch dedup
+            dedupService.registerProduct({
+              id: single.id,
+              name: single.name,
+              sku: row.sku,
+              price: row.price,
+              images: single.images || [],
+            })
+          }
+        }
+      } else if (insertedProducts) {
+        imported = insertedProducts.length
+        for (const p of insertedProducts) {
+          insertedIds.push({ id: p.id, images: p.images || [] })
+          dedupService.registerProduct({
+            id: p.id,
+            name: p.name,
+            sku: rows.find(r => r.name === p.name)?.sku || '',
+            price: rows.find(r => r.name === p.name)?.price || 0,
+            images: p.images || [],
+          })
+        }
       }
 
-      imported = insertedProducts?.length || 0
       logger.info(`[API] Импортировано товаров: ${imported}`)
     }
 
-    // 6. Формируем ответ
+    // 7. Регистрация картинок в image registry (fire-and-forget, non-blocking)
+    if (insertedIds.length > 0) {
+      Promise.all(
+        insertedIds.map(({ id, images }) => dedupService.registerImages(id, images))
+      ).catch(err => console.warn('[API] Image registry error:', err))
+    }
+
+    // 8. Формируем ответ с расширенной статистикой
     const executionTime = Date.now() - startTime
+
+    // Breakdown skipped by reason
+    const skipReasons: Record<string, number> = {}
+    for (const s of skippedProducts) {
+      skipReasons[s.reason] = (skipReasons[s.reason] || 0) + 1
+    }
 
     return NextResponse.json({
       success: true,
@@ -217,15 +280,17 @@ export async function POST(request: NextRequest) {
         imported: imported,
         skipped: skippedProducts.length,
         errors: errors.length,
-        executionTimeMs: executionTime
+        executionTimeMs: executionTime,
+        skipReasons,
+        dedupCacheStats: dedupService.stats,
       },
       details: {
         supplier: {
           id: supplier.id,
           name: supplier.name
         },
-        skippedProducts: skippedProducts.slice(0, 5), // Показываем первые 5
-        errors: errors.slice(0, 5) // Показываем первые 5 ошибок
+        skippedProducts: skippedProducts.slice(0, 10),
+        errors: errors.slice(0, 5)
       }
     })
 

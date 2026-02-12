@@ -108,3 +108,4 @@ nextjs.log
 
 # SQL files (development only)
 *.sql
+.vercel
