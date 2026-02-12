@@ -155,164 +155,59 @@ export default function CatalogPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {/* Page Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-0">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg animate-gradient-shift">
-                <Package className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Каталог товаров
-                </h1>
-                <p className="text-sm text-gray-500">
-                  {catalogMode === 'suppliers' ? 'Просмотр поставщиков' : 'Все категории товаров'}
-                </p>
-              </div>
-            </div>
 
-            {/* Cart button */}
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${
-                totalItems > 0
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <ShoppingCart className="w-5 h-5" />
-              <span className="font-medium">Корзина</span>
-              {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                  {totalItems}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Mode switcher */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-3">
-              <div className="flex bg-gray-100 rounded-xl p-1">
+        {/* Content */}
+        {catalogMode === 'categories' ? (
+          /* ========== CATEGORIES MODE — compact header ========== */
+          <div className="h-[calc(100vh-64px)] flex flex-col">
+            {/* Row 1: Tabs + Search + Cart */}
+            <div className="bg-white border-b px-4 py-2 flex items-center gap-3">
+              <div className="flex bg-gray-100 rounded-lg p-0.5 shrink-0">
                 <button
                   onClick={() => setCatalogMode('categories')}
-                  className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
                     catalogMode === 'categories'
                       ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      : 'text-gray-500 hover:text-gray-900'
                   }`}
                 >
-                  <Grid3X3 className={`w-4 h-4 ${catalogMode === 'categories' ? 'text-indigo-600' : ''}`} />
+                  <Grid3X3 className="w-3.5 h-3.5" />
                   Категории
                 </button>
-
                 <button
                   onClick={() => setCatalogMode('suppliers')}
-                  className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                    catalogMode === 'suppliers'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all flex items-center gap-1.5"
                 >
-                  <Users className={`w-4 h-4 ${catalogMode === 'suppliers' ? 'text-indigo-600' : ''}`} />
+                  <Users className="w-3.5 h-3.5" />
                   Поставщики
                 </button>
               </div>
 
-              {/* Room switcher (suppliers only) */}
-              {catalogMode === 'suppliers' && (
-                <>
-                  <div className="w-px bg-gray-300 mx-1"></div>
-                  <div className="flex bg-gray-100 rounded-xl p-1">
-                    <button
-                      onClick={() => setSelectedRoom('orange')}
-                      className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                        selectedRoom === 'orange'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      <span className={selectedRoom === 'orange' ? 'text-orange-500' : ''}>
-                        {ROOM_TYPES.ORANGE.icon}
-                      </span>
-                      Аккредитованные
-                    </button>
-
-                    <button
-                      onClick={() => setSelectedRoom('blue')}
-                      className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                        selectedRoom === 'blue'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      <span className={selectedRoom === 'blue' ? 'text-blue-500' : ''}>
-                        {ROOM_TYPES.BLUE.icon}
-                      </span>
-                      Мои поставщики
-                    </button>
-                  </div>
-                </>
-              )}
+              <CatalogHeader
+                filters={filters}
+                onFiltersChange={handleFiltersChange}
+                sort={sort}
+                onSortChange={handleSortChange}
+                viewMode={viewMode}
+                onViewModeChange={handleViewModeChange}
+                totalProducts={products.length}
+                cartItemsCount={totalItems}
+                onCartClick={() => setIsCartOpen(true)}
+              />
             </div>
 
-            <div className="flex gap-2">
-              {catalogMode === 'suppliers' && selectedRoom === 'blue' && (
-                <button
-                  onClick={() => {
-                    setEditingSupplier(null)
-                    setShowAddSupplierModal(true)
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-xl hover:from-indigo-600 hover:to-blue-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="font-medium">Добавить поставщика</span>
-                </button>
-              )}
-
-              {catalogMode === 'suppliers' && (
-                <button
-                  onClick={() => refreshSuppliers()}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span className="font-medium">Обновить</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        {catalogMode === 'categories' ? (
-          /* ========== CATEGORIES MODE (catalog-new) ========== */
-          <div className="h-[calc(100vh-200px)] flex flex-col">
-            <CatalogHeader
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-              sort={sort}
-              onSortChange={handleSortChange}
-              viewMode={viewMode}
-              onViewModeChange={handleViewModeChange}
-              totalProducts={products.length}
-              cartItemsCount={totalItems}
-              onCartClick={() => setIsCartOpen(true)}
-            />
-
-            {/* Breadcrumbs + mobile filter button */}
-            <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 border-b">
-              {/* Mobile filter button */}
+            {/* Row 2: Breadcrumbs + mobile filter + count */}
+            <div className="flex items-center gap-3 px-4 py-1.5 bg-gray-50 border-b">
               <button
-                className="md:hidden flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors shrink-0"
+                className="md:hidden flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors shrink-0"
                 onClick={() => setIsSidebarOpen(true)}
               >
-                <SlidersHorizontal className="w-4 h-4" />
+                <SlidersHorizontal className="w-3.5 h-3.5" />
                 Фильтры
               </button>
 
               <Breadcrumb className="flex-1">
-                <BreadcrumbList className="text-sm">
+                <BreadcrumbList className="text-xs">
                   <BreadcrumbItem>
                     {filters.category ? (
                       <BreadcrumbLink
@@ -322,7 +217,7 @@ export default function CatalogPage() {
                         Каталог
                       </BreadcrumbLink>
                     ) : (
-                      <BreadcrumbPage className="font-semibold text-gray-900">Каталог</BreadcrumbPage>
+                      <BreadcrumbPage className="font-medium text-gray-900">Каталог</BreadcrumbPage>
                     )}
                   </BreadcrumbItem>
                   {filters.category && (
@@ -337,7 +232,7 @@ export default function CatalogPage() {
                             {filters.category}
                           </BreadcrumbLink>
                         ) : (
-                          <BreadcrumbPage className="font-semibold text-gray-900">{filters.category}</BreadcrumbPage>
+                          <BreadcrumbPage className="font-medium text-gray-900">{filters.category}</BreadcrumbPage>
                         )}
                       </BreadcrumbItem>
                     </>
@@ -346,14 +241,14 @@ export default function CatalogPage() {
                     <>
                       <BreadcrumbSeparator className="text-gray-400">/</BreadcrumbSeparator>
                       <BreadcrumbItem>
-                        <BreadcrumbPage className="font-semibold text-gray-900">{selectedSubcategoryName}</BreadcrumbPage>
+                        <BreadcrumbPage className="font-medium text-gray-900">{selectedSubcategoryName}</BreadcrumbPage>
                       </BreadcrumbItem>
                     </>
                   )}
                 </BreadcrumbList>
               </Breadcrumb>
 
-              <span className="text-xs text-gray-500 shrink-0 font-medium">
+              <span className="text-xs text-gray-400 shrink-0">
                 {products.length > 0 && `${products.length.toLocaleString('ru-RU')} товаров`}
               </span>
             </div>
@@ -401,6 +296,80 @@ export default function CatalogPage() {
         ) : (
           /* ========== SUPPLIERS MODE (existing) ========== */
           <>
+            {/* Supplier mode header */}
+            <div className="bg-white border-b px-4 py-2 flex items-center gap-3">
+              <div className="flex bg-gray-100 rounded-lg p-0.5 shrink-0">
+                <button
+                  onClick={() => setCatalogMode('categories')}
+                  className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all flex items-center gap-1.5"
+                >
+                  <Grid3X3 className="w-3.5 h-3.5" />
+                  Категории
+                </button>
+                <button
+                  onClick={() => setCatalogMode('suppliers')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
+                    catalogMode === 'suppliers'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  Поставщики
+                </button>
+              </div>
+
+              <div className="w-px h-6 bg-gray-200" />
+
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setSelectedRoom('orange')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
+                    selectedRoom === 'orange'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  <span className={selectedRoom === 'orange' ? 'text-orange-500' : ''}>
+                    {ROOM_TYPES.ORANGE.icon}
+                  </span>
+                  Аккредитованные
+                </button>
+                <button
+                  onClick={() => setSelectedRoom('blue')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
+                    selectedRoom === 'blue'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  <span className={selectedRoom === 'blue' ? 'text-blue-500' : ''}>
+                    {ROOM_TYPES.BLUE.icon}
+                  </span>
+                  Мои
+                </button>
+              </div>
+
+              <div className="flex-1" />
+
+              {selectedRoom === 'blue' && (
+                <button
+                  onClick={() => { setEditingSupplier(null); setShowAddSupplierModal(true) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 text-white rounded-lg text-sm font-medium hover:bg-indigo-600 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Добавить
+                </button>
+              )}
+
+              <button
+                onClick={() => refreshSuppliers()}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             {(userError || verifiedError) && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                 <p className="text-red-600">

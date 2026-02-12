@@ -108,123 +108,112 @@ export function CatalogHeader({
   ].filter(Boolean).length
 
   return (
-    <div className="bg-white dark:bg-gray-900 border-b sticky top-0 z-10">
-      {/* Верхняя строка: поиск и корзина */}
-      <div className="px-4 py-3 flex items-center gap-4">
-        {/* Поиск */}
-        <div className="relative flex-1 max-w-xl">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Поиск товаров..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            className="pl-10 pr-10"
-          />
-          {searchInput && (
-            <button
-              onClick={handleClearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2"
-            >
-              <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-            </button>
-          )}
-        </div>
-
-        {/* Корзина */}
-        <Button
-          variant="outline"
-          className="relative"
-          onClick={onCartClick}
-        >
-          <ShoppingCart className="h-5 w-5" />
-          {cartItemsCount > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-orange-500">
-              {cartItemsCount}
-            </Badge>
-          )}
-        </Button>
-      </div>
-
-      {/* Нижняя строка: быстрые фильтры и сортировка */}
-      <div className="px-4 py-2 flex items-center gap-3 flex-wrap border-t">
-        {/* Quick: In Stock */}
-        <Button
-          variant={filters.inStock ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFiltersChange({
-            ...filters,
-            inStock: filters.inStock ? undefined : true
-          })}
-          className={filters.inStock ? 'bg-green-500 hover:bg-green-600' : ''}
-        >
-          В наличии
-        </Button>
-
-        {/* Сброс фильтров */}
-        {activeFiltersCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleResetFilters}
+    <>
+      {/* Search */}
+      <div className="relative flex-1 min-w-0 max-w-md">
+        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+        <Input
+          placeholder="Поиск товаров..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
+          className="pl-8 pr-8 h-8 text-sm"
+        />
+        {searchInput && (
+          <button
+            onClick={handleClearSearch}
+            className="absolute right-2.5 top-1/2 transform -translate-y-1/2"
           >
-            <X className="h-4 w-4 mr-1" />
-            Сбросить
-          </Button>
+            <X className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600" />
+          </button>
         )}
-
-        {/* Разделитель */}
-        <div className="flex-1" />
-
-        {/* Сортировка */}
-        <Select
-          value={`${sort.field}-${sort.order}`}
-          onValueChange={handleSortChange}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Сортировка" />
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map(option => (
-              <SelectItem
-                key={`${option.value.field}-${option.value.order}`}
-                value={`${option.value.field}-${option.value.order}`}
-              >
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Переключатель вида */}
-        <div className="flex items-center border rounded-lg">
-          <Button
-            variant={viewMode === 'grid-4' ? 'default' : 'ghost'}
-            size="sm"
-            className={`rounded-r-none ${viewMode === 'grid-4' ? 'bg-orange-500' : ''}`}
-            onClick={() => onViewModeChange('grid-4')}
-          >
-            <Grid3X3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'grid-2' ? 'default' : 'ghost'}
-            size="sm"
-            className={`rounded-none border-x ${viewMode === 'grid-2' ? 'bg-orange-500' : ''}`}
-            onClick={() => onViewModeChange('grid-2')}
-          >
-            <Grid2X2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'ghost'}
-            size="sm"
-            className={`rounded-l-none ${viewMode === 'list' ? 'bg-orange-500' : ''}`}
-            onClick={() => onViewModeChange('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
-    </div>
+
+      {/* In Stock filter */}
+      <Button
+        variant={filters.inStock ? 'default' : 'outline'}
+        size="sm"
+        className={`h-8 text-xs shrink-0 ${filters.inStock ? 'bg-green-500 hover:bg-green-600' : ''}`}
+        onClick={() => onFiltersChange({
+          ...filters,
+          inStock: filters.inStock ? undefined : true
+        })}
+      >
+        В наличии
+      </Button>
+
+      {activeFiltersCount > 0 && (
+        <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0" onClick={handleResetFilters}>
+          <X className="h-3.5 w-3.5 mr-1" />
+          Сбросить
+        </Button>
+      )}
+
+      <div className="flex-1" />
+
+      {/* Sort */}
+      <Select
+        value={`${sort.field}-${sort.order}`}
+        onValueChange={handleSortChange}
+      >
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectValue placeholder="Сортировка" />
+        </SelectTrigger>
+        <SelectContent>
+          {SORT_OPTIONS.map(option => (
+            <SelectItem
+              key={`${option.value.field}-${option.value.order}`}
+              value={`${option.value.field}-${option.value.order}`}
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* View mode */}
+      <div className="flex items-center border rounded-md shrink-0">
+        <Button
+          variant={viewMode === 'grid-4' ? 'default' : 'ghost'}
+          size="sm"
+          className={`rounded-r-none h-8 w-8 p-0 ${viewMode === 'grid-4' ? 'bg-orange-500' : ''}`}
+          onClick={() => onViewModeChange('grid-4')}
+        >
+          <Grid3X3 className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant={viewMode === 'grid-2' ? 'default' : 'ghost'}
+          size="sm"
+          className={`rounded-none border-x h-8 w-8 p-0 ${viewMode === 'grid-2' ? 'bg-orange-500' : ''}`}
+          onClick={() => onViewModeChange('grid-2')}
+        >
+          <Grid2X2 className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant={viewMode === 'list' ? 'default' : 'ghost'}
+          size="sm"
+          className={`rounded-l-none h-8 w-8 p-0 ${viewMode === 'list' ? 'bg-orange-500' : ''}`}
+          onClick={() => onViewModeChange('list')}
+        >
+          <List className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      {/* Cart */}
+      <button
+        onClick={onCartClick}
+        className={`relative shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+          cartItemsCount > 0
+            ? 'bg-orange-500 text-white hover:bg-orange-600'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+      >
+        <ShoppingCart className="h-4 w-4" />
+        {cartItemsCount > 0 && (
+          <span>{cartItemsCount}</span>
+        )}
+      </button>
+    </>
   )
 }
 
