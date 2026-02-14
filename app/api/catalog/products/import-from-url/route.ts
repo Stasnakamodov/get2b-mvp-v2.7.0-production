@@ -51,17 +51,14 @@ function transliterate(text: string): string {
  */
 async function downloadAndUploadImage(imageUrl: string, productName: string): Promise<string | null> {
   try {
-    console.log('📥 [IMAGE] Скачиваем картинку:', imageUrl)
-
     // Скачиваем картинку
     const response = await fetch(imageUrl)
     if (!response.ok) {
-      console.error('❌ [IMAGE] Ошибка скачивания:', response.status, response.statusText)
+      console.error('[IMAGE] Ошибка скачивания:', response.status, response.statusText)
       return null
     }
 
     const blob = await response.blob()
-    console.log('✅ [IMAGE] Картинка скачана, размер:', blob.size, 'bytes')
 
     // Определяем расширение файла
     const contentType = response.headers.get('content-type') || 'image/jpeg'
@@ -75,8 +72,6 @@ async function downloadAndUploadImage(imageUrl: string, productName: string): Pr
       .substring(0, 50)
     const fileName = `imported/${timestamp}_${sanitizedName}.${extension}`
 
-    console.log('📤 [IMAGE] Загружаем в Storage:', fileName)
-
     // Загружаем в Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('product-images')
@@ -87,11 +82,9 @@ async function downloadAndUploadImage(imageUrl: string, productName: string): Pr
       })
 
     if (uploadError) {
-      console.error('❌ [IMAGE] Ошибка загрузки в Storage:', uploadError)
+      console.error('[IMAGE] Ошибка загрузки в Storage:', uploadError)
       return null
     }
-
-    console.log('✅ [IMAGE] Загружено в Storage:', uploadData.path)
 
     // Получаем публичный URL
     const { data: urlData } = supabase.storage
@@ -99,15 +92,14 @@ async function downloadAndUploadImage(imageUrl: string, productName: string): Pr
       .getPublicUrl(fileName)
 
     if (!urlData?.publicUrl) {
-      console.error('❌ [IMAGE] Не удалось получить публичный URL')
+      console.error('[IMAGE] Не удалось получить публичный URL')
       return null
     }
 
-    console.log('✅ [IMAGE] Публичный URL:', urlData.publicUrl)
     return urlData.publicUrl
 
   } catch (error) {
-    console.error('❌ [IMAGE] Критическая ошибка:', error)
+    console.error('[IMAGE] Критическая ошибка:', error)
     return null
   }
 }
@@ -116,12 +108,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { metadata, analysis, supplier_id } = body
-
-    console.log('📦 [IMPORT] Импорт товара:', {
-      title: metadata?.title?.substring(0, 50),
-      hasImage: !!metadata?.imageUrl,
-      supplier_id
-    })
 
     // Валидация
     if (!metadata?.title) {
@@ -145,8 +131,6 @@ export async function POST(request: NextRequest) {
     let finalSupplierId = supplier_id
 
     if (!finalSupplierId) {
-      console.log('⚠️ [IMPORT] supplier_id не указан, ищем/создаем default...')
-
       // Ищем default поставщика
       const { data: defaultSupplier } = await supabase
         .from('catalog_verified_suppliers')
@@ -156,10 +140,8 @@ export async function POST(request: NextRequest) {
 
       if (defaultSupplier) {
         finalSupplierId = defaultSupplier.id
-        console.log('✅ [IMPORT] Используем существующего default поставщика:', finalSupplierId)
       } else {
         // Создаем default поставщика
-        console.log('🔨 [IMPORT] Создаем default поставщика...')
         const { data: newSupplier, error: createError } = await supabase
           .from('catalog_verified_suppliers')
           .insert({
@@ -175,7 +157,7 @@ export async function POST(request: NextRequest) {
           .single()
 
         if (createError) {
-          console.error('❌ [IMPORT] Ошибка создания поставщика:', createError)
+          console.error('[IMPORT] Ошибка создания поставщика:', createError)
           return NextResponse.json(
             { error: 'Не удалось создать поставщика' },
             { status: 500 }
@@ -183,21 +165,18 @@ export async function POST(request: NextRequest) {
         }
 
         finalSupplierId = newSupplier.id
-        console.log('✅ [IMPORT] Создан default поставщик:', finalSupplierId)
       }
     }
 
     // Скачиваем и загружаем картинку в Storage
     const images: string[] = []
     if (metadata.imageUrl) {
-      console.log('🖼️ [IMPORT] Обрабатываем картинку товара...')
       const uploadedImageUrl = await downloadAndUploadImage(metadata.imageUrl, metadata.title)
 
       if (uploadedImageUrl) {
         images.push(uploadedImageUrl)
-        console.log('✅ [IMPORT] Картинка загружена в Storage:', uploadedImageUrl)
       } else {
-        console.warn('⚠️ [IMPORT] Не удалось загрузить картинку, сохраняем оригинальный URL')
+        console.warn('[IMPORT] Не удалось загрузить картинку, сохраняем оригинальный URL')
         images.push(metadata.imageUrl) // Fallback на оригинальный URL
       }
     }
@@ -215,13 +194,6 @@ export async function POST(request: NextRequest) {
       // Убираем подкатегорию если есть (например "Электроника - Смартфоны" → "Электроника")
       category = analysis.category.split(' - ')[0]
     }
-
-    console.log('💾 [IMPORT] Сохраняем товар в БД...')
-    console.log('   Название:', metadata.title)
-    console.log('   Категория:', category)
-    console.log('   Цена:', parsedPrice)
-    console.log('   Картинок:', images.length)
-    console.log('   Поставщик:', finalSupplierId)
 
     // Сохраняем в БД
     const { data: product, error: insertError } = await supabase
@@ -242,7 +214,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (insertError) {
-      console.error('❌ [IMPORT] Ошибка сохранения:', insertError)
+      console.error('[IMPORT] Ошибка сохранения:', insertError)
       return NextResponse.json(
         {
           error: 'Ошибка сохранения товара в БД',
@@ -251,8 +223,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log('✅ [IMPORT] Товар успешно добавлен! ID:', product.id)
 
     return NextResponse.json({
       success: true,
@@ -268,7 +238,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ [IMPORT] Критическая ошибка:', error)
+    console.error('[IMPORT] Критическая ошибка:', error)
     return NextResponse.json(
       {
         error: 'Критическая ошибка при импорте товара',

@@ -1403,9 +1403,9 @@ function ProjectConstructorContent() {
         console.log('🎯 [ATOMIC] Товары добавлены из каталога - приоритет данных каталога над эхо данными')
 
         // Сначала загружаем АКТУАЛЬНЫЕ данные каталога
-        fetchCatalogData('verified-suppliers', { search: firstProduct.supplier_name })
+        fetchCatalogData('suppliers', { verified: 'true', search: firstProduct.supplier_name })
           .then(data => {
-            console.log('🔍 [ATOMIC] Ответ API verified-suppliers:', data)
+            console.log('🔍 [ATOMIC] Ответ API suppliers:', data)
             const supplier = data.suppliers?.find((s: any) =>
               s.name.toLowerCase().includes(firstProduct.supplier_name.toLowerCase())
             )

@@ -28,8 +28,8 @@ export function getCleanImages(product: CatalogProduct): string[] {
 
   return product.images.map(img => {
     // Если это объект с url
-    if (typeof img === 'object' && img !== null && (img as any).url) {
-      return (img as any).url
+    if (typeof img === 'object' && img !== null && 'url' in img) {
+      return img.url
     }
     // Если это строка
     if (typeof img === 'string' && img.startsWith('http')) {
@@ -52,9 +52,8 @@ export function getProductImage(product: CatalogProduct): string {
   const firstImage = product.images[0]
 
   // Если это объект с url
-  if (typeof firstImage === 'object' && firstImage !== null) {
-    const url = (firstImage as any).url
-    return url || '/images/products/placeholder-0.svg'
+  if (typeof firstImage === 'object' && firstImage !== null && 'url' in firstImage) {
+    return firstImage.url || '/images/products/placeholder-0.svg'
   }
 
   // Если это строка с URL

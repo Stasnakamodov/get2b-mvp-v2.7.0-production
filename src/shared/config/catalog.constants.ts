@@ -244,11 +244,10 @@ export const CRYPTO_NETWORKS = [
 
 export const API_ENDPOINTS = {
   USER_SUPPLIERS: '/api/catalog/user-suppliers',
-  VERIFIED_SUPPLIERS: '/api/catalog/verified-suppliers',
+  VERIFIED_SUPPLIERS: '/api/catalog/suppliers?verified=true',
   CATEGORIES: '/api/catalog/categories',
   PRODUCTS: '/api/catalog/products',
   RECOMMENDATIONS: '/api/catalog/recommendations',
-  ECHO_CARDS: '/api/catalog/echo-cards',
   SUBCATEGORIES: (categoryId: string) => `/api/catalog/categories/${categoryId}/subcategories`
 }
 

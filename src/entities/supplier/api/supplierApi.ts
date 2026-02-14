@@ -14,35 +14,28 @@ import type { Supplier } from '../model/types'
  * Загрузка пользовательских поставщиков из API
  */
 export const fetchUserSuppliers = async (): Promise<Supplier[]> => {
-  console.log('🔄 [API] Загрузка пользовательских поставщиков...')
-
+  
   try {
     // Получаем токен авторизации
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      console.error('❌ [API] Нет активной сессии для загрузки поставщиков')
       return []
     }
 
-    console.log('✅ [API] Сессия найдена, запрос к API...')
     const response = await fetch('/api/catalog/user-suppliers', {
       headers: {
         'Authorization': `Bearer ${session.access_token}`,
       },
     })
 
-    console.log('📡 [API] Ответ получен, статус:', response.status)
     const data = await response.json()
 
     if (data.suppliers) {
-      console.log('✅ [API] Загружено пользовательских поставщиков:', data.suppliers.length)
       return data.suppliers
     } else {
-      console.warn('⚠️ [API] Нет пользовательских поставщиков в ответе')
       return []
     }
   } catch (error) {
-    console.error('❌ [API] Ошибка загрузки пользовательских поставщиков:', error)
     return []
   }
 }
@@ -51,21 +44,17 @@ export const fetchUserSuppliers = async (): Promise<Supplier[]> => {
  * Загрузка аккредитованных поставщиков из API
  */
 export const fetchVerifiedSuppliers = async (): Promise<Supplier[]> => {
-  console.log('🔄 [API] Загрузка аккредитованных поставщиков...')
 
   try {
-    const response = await fetch('/api/catalog/verified-suppliers')
+    const response = await fetch('/api/catalog/suppliers?verified=true')
     const data = await response.json()
 
     if (data.suppliers) {
-      console.log('✅ [API] Загружено аккредитованных поставщиков:', data.suppliers.length)
       return data.suppliers
     } else {
-      console.warn('⚠️ [API] Нет аккредитованных поставщиков в ответе')
       return []
     }
   } catch (error) {
-    console.error('❌ [API] Ошибка загрузки аккредитованных поставщиков:', error)
     return []
   }
 }
@@ -74,7 +63,6 @@ export const fetchVerifiedSuppliers = async (): Promise<Supplier[]> => {
  * Создание нового поставщика
  */
 export const createSupplier = async (supplierData: Partial<Supplier>): Promise<Supplier | null> => {
-  console.log('📝 [API] Создание поставщика:', supplierData.name)
 
   try {
     const { data: { session } } = await supabase.auth.getSession()
@@ -98,13 +86,11 @@ export const createSupplier = async (supplierData: Partial<Supplier>): Promise<S
     const data = await response.json()
 
     if (data.success && data.supplier) {
-      console.log('✅ [API] Поставщик создан:', data.supplier.id)
       return data.supplier
     } else {
       throw new Error(data.error || 'Неизвестная ошибка')
     }
   } catch (error) {
-    console.error('❌ [API] Ошибка создания поставщика:', error)
     return null
   }
 }
@@ -116,7 +102,6 @@ export const updateSupplier = async (
   supplierId: string,
   updates: Partial<Supplier>
 ): Promise<Supplier | null> => {
-  console.log('✏️ [API] Обновление поставщика:', supplierId)
 
   try {
     const { data: { session } } = await supabase.auth.getSession()
@@ -140,13 +125,11 @@ export const updateSupplier = async (
     const data = await response.json()
 
     if (data.success && data.supplier) {
-      console.log('✅ [API] Поставщик обновлен')
       return data.supplier
     } else {
       throw new Error(data.error || 'Неизвестная ошибка')
     }
   } catch (error) {
-    console.error('❌ [API] Ошибка обновления поставщика:', error)
     return null
   }
 }
@@ -155,7 +138,6 @@ export const updateSupplier = async (
  * Удаление поставщика
  */
 export const deleteSupplier = async (supplierId: string): Promise<boolean> => {
-  console.log('🗑️ [API] Удаление поставщика:', supplierId)
 
   try {
     const { data: { session } } = await supabase.auth.getSession()
@@ -177,13 +159,11 @@ export const deleteSupplier = async (supplierId: string): Promise<boolean> => {
     const data = await response.json()
 
     if (data.success) {
-      console.log('✅ [API] Поставщик удален')
       return true
     } else {
       throw new Error(data.error || 'Неизвестная ошибка')
     }
   } catch (error) {
-    console.error('❌ [API] Ошибка удаления поставщика:', error)
     return false
   }
 }

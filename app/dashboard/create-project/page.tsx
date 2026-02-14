@@ -1120,7 +1120,7 @@ function SupplierLoader() {
         
         // Если не найден в пользовательских, пробуем в аккредитованных
         if (!data.supplier) {
-          response = await fetch(`/api/catalog/verified-suppliers?id=${supplierId}`, {
+          response = await fetch(`/api/catalog/suppliers?verified=true&id=${supplierId}`, {
             headers: {
               'Authorization': `Bearer ${session.access_token}`,
             },

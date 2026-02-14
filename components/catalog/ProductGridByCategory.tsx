@@ -113,10 +113,9 @@ export default function ProductGridByCategory({
       }
 
       const url = selectedCategory
-        ? `/api/catalog/products-by-category/${encodeURIComponent(selectedCategory)}?search=${searchQuery || ''}&limit=6000`
-        : `/api/catalog/products-by-category?search=${searchQuery || ''}&limit=6000`
+        ? `/api/catalog/products?category=${encodeURIComponent(selectedCategory)}&search=${searchQuery || ''}&limit=100`
+        : `/api/catalog/products?search=${searchQuery || ''}&limit=100`
 
-      console.log('🔍 Загружаю категорию:', selectedCategory, 'URL:', url) // Отладка категории
       const response = await fetch(url, { headers })
 
 
@@ -125,10 +124,8 @@ export default function ProductGridByCategory({
       }
 
       const data = await response.json()
-      console.log('📡 Ответ API:', { success: data.success, count: data.products?.length }) // Временная отладка
 
       if (data.error) {
-        console.error('❌ [ProductGrid] Ошибка в ответе API:', data.error)
         throw new Error(data.error)
       }
 
@@ -184,11 +181,9 @@ export default function ProductGridByCategory({
     }
   )
 
-      console.log('📦 Загружено товаров:', formattedProducts.length) // Временная отладка
       setProducts(formattedProducts)
 
     } catch (err) {
-      console.error('❌ [ProductGrid] Ошибка загрузки товаров:', err)
       setError(err instanceof Error ? err.message : 'Ошибка загрузки товаров')
       setProducts([])
     } finally {
@@ -221,7 +216,6 @@ export default function ProductGridByCategory({
         setAvailableCategories(filteredCats)
       }
     } catch (err) {
-      console.error('Ошибка загрузки категорий:', err)
       // Используем дефолтные категории в случае ошибки
       setAvailableCategories([
         'Электроника',

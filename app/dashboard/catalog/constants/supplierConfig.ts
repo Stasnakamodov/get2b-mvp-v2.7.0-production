@@ -4,13 +4,13 @@
  * Безопасно для выноса - статические данные
  */
 
-import { Building, Phone, Users, CheckCircle, Package, Zap } from 'lucide-react'
+import { Building, Phone, Users, CheckCircle, Package, Zap, type LucideIcon } from 'lucide-react'
 
 export interface SupplierStep {
   id: number
   title: string
   description: string
-  icon: any // TODO: типизировать иконки
+  icon: LucideIcon
 }
 
 // Структура шагов для SupplierTimeline

@@ -106,7 +106,9 @@ export function useCatalogCartImport(): CatalogCartImportResult {
       supplier_id: item.product.supplier_id,
       product_id: item.product.id,
       category: item.product.category,
-      images: item.product.images
+      images: item.product.images?.map(img =>
+        typeof img === 'string' ? img : 'url' in img ? img.url : ''
+      ).filter(Boolean)
     }))
   } : null
 
@@ -120,11 +122,8 @@ export function useCatalogCartImport(): CatalogCartImportResult {
   // Очистка корзины (только флаг импорта, корзина остаётся для повторного использования)
   const clearCatalogCart = useCallback(() => {
     try {
-      // Не удаляем корзину, а только сбрасываем флаг импорта
       setHasImportedFromCatalog(false)
-      console.log('🗑️ [CatalogImport] Флаг импорта сброшен')
-    } catch (e) {
-      console.error('[CatalogImport] Ошибка очистки:', e)
+    } catch {
     }
   }, [])
 

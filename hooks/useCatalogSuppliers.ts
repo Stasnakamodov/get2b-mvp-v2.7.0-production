@@ -105,7 +105,8 @@ export function useVerifiedSuppliers(filters: CatalogFilters = {}) {
       if (filters.featured) params.append('featured', 'true');
       if (filters.search) params.append('search', filters.search);
 
-      const response = await fetch(`/api/catalog/verified-suppliers?${params}`);
+      params.append('verified', 'true');
+      const response = await fetch(`/api/catalog/suppliers?${params}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -116,7 +117,6 @@ export function useVerifiedSuppliers(filters: CatalogFilters = {}) {
       setTotal(data.total || 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
-      console.error('❌ Ошибка загрузки аккредитованных поставщиков:', err);
     } finally {
       setLoading(false);
     }
@@ -164,7 +164,6 @@ export function useUserSuppliers(filters: UserCatalogFilters = {}) {
       setTotal(data.total || 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
-      console.error('❌ Ошибка загрузки личных поставщиков:', err);
     } finally {
       setLoading(false);
     }
@@ -213,7 +212,6 @@ export function useImportSupplier() {
       return data.supplier;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
-      console.error('❌ Ошибка импорта поставщика:', err);
       return null;
     } finally {
       setLoading(false);
@@ -231,7 +229,6 @@ export function useImportSupplier() {
 
       return data;
     } catch (err) {
-      console.error('❌ Ошибка проверки импорта:', err);
       return { can_import: false, reason: 'Ошибка проверки' };
     }
   };
@@ -269,7 +266,6 @@ export function useCatalogSync() {
       return data.result;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
-      console.error('❌ Ошибка синхронизации каталога:', err);
       return null;
     } finally {
       setLoading(false);
@@ -287,7 +283,6 @@ export function useCatalogSync() {
 
       return data;
     } catch (err) {
-      console.error('❌ Ошибка получения статистики:', err);
       return null;
     }
   };

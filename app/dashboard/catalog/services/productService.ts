@@ -181,7 +181,6 @@ class ProductService {
         .single()
 
       if (error) {
-        console.error('Error creating product:', error)
         return {
           success: false,
           error: error.message
@@ -198,7 +197,6 @@ class ProductService {
         product: this.formatProduct(newProduct)
       }
     } catch (err) {
-      console.error('Error in createProduct:', err)
       return {
         success: false,
         error: err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
@@ -272,7 +270,6 @@ class ProductService {
       const { data, error, count } = await query
 
       if (error) {
-        console.error('Error searching products:', error)
         throw error
       }
 
@@ -291,7 +288,6 @@ class ProductService {
         total: count || 0
       }
     } catch (err) {
-      console.error('Error in searchProducts:', err)
       return {
         products: [],
         total: 0
@@ -343,7 +339,6 @@ class ProductService {
 
       return stats
     } catch (err) {
-      console.error('Error getting product statistics:', err)
       return {
         totalProducts: 0,
         verifiedProducts: 0,
@@ -383,7 +378,6 @@ class ProductService {
         product: result.product
       }
     } catch (err) {
-      console.error('Error importing from URL:', err)
       return {
         success: false,
         error: err instanceof Error ? err.message : 'Import failed'
@@ -450,13 +444,11 @@ class ProductService {
         .eq('id', productId)
 
       if (updateError) {
-        console.error('Error updating stock:', updateError)
         return false
       }
 
       return true
     } catch (err) {
-      console.error('Error in updateStock:', err)
       return false
     }
   }
@@ -475,13 +467,11 @@ class ProductService {
         .eq('id', productId)
 
       if (error) {
-        console.error('Error verifying product:', error)
         return false
       }
 
       return true
     } catch (err) {
-      console.error('Error in verifyProduct:', err)
       return false
     }
   }
@@ -546,7 +536,6 @@ class ProductService {
         available: true
       }
     } catch (err) {
-      console.error('Error checking availability:', err)
       return {
         available: false,
         message: 'Error checking availability'
@@ -580,13 +569,11 @@ class ProductService {
         .limit(limit)
 
       if (relatedError) {
-        console.error('Error loading related products:', relatedError)
         return []
       }
 
       return (related || []).map(p => this.formatProduct(p))
     } catch (err) {
-      console.error('Error in getRelatedProducts:', err)
       return []
     }
   }
@@ -710,7 +697,6 @@ class ProductService {
           .eq('id', supplierId)
       }
     } catch (err) {
-      console.error('Error updating supplier product count:', err)
     }
   }
 }

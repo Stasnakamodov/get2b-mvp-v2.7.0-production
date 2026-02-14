@@ -146,7 +146,6 @@ class SupplierService {
         .single()
 
       if (error) {
-        console.error('Error creating supplier:', error)
         return {
           success: false,
           error: error.message
@@ -158,7 +157,6 @@ class SupplierService {
         supplier: newSupplier
       }
     } catch (err) {
-      console.error('Error in createSupplier:', err)
       return {
         success: false,
         error: err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
@@ -221,7 +219,6 @@ class SupplierService {
       const { data, error, count } = await query
 
       if (error) {
-        console.error('Error searching suppliers:', error)
         throw error
       }
 
@@ -230,7 +227,6 @@ class SupplierService {
         total: count || 0
       }
     } catch (err) {
-      console.error('Error in searchSuppliers:', err)
       return {
         suppliers: [],
         total: 0
@@ -271,7 +267,6 @@ class SupplierService {
 
       return stats
     } catch (err) {
-      console.error('Error getting supplier statistics:', err)
       return {
         totalSuppliers: 0,
         activeSuppliers: 0,
@@ -297,13 +292,11 @@ class SupplierService {
         .in('id', supplierIds)
 
       if (error) {
-        console.error('Error updating supplier status:', error)
         return false
       }
 
       return true
     } catch (err) {
-      console.error('Error in bulkUpdateStatus:', err)
       return false
     }
   }
@@ -367,7 +360,6 @@ class SupplierService {
         .limit(100)
 
       if (productsError) {
-        console.error('Error loading supplier products:', productsError)
       }
 
       return {
@@ -375,7 +367,6 @@ class SupplierService {
         products: products || []
       }
     } catch (err) {
-      console.error('Error in getSupplierWithProducts:', err)
       return { supplier: null, products: [] }
     }
   }
@@ -397,13 +388,11 @@ class SupplierService {
       const { count, error } = await query
 
       if (error) {
-        console.error('Error checking email:', error)
         return false
       }
 
       return (count || 0) > 0
     } catch (err) {
-      console.error('Error in isEmailTaken:', err)
       return false
     }
   }
@@ -430,13 +419,11 @@ class SupplierService {
         .eq('id', id)
 
       if (error) {
-        console.error('Error updating supplier rating:', error)
         return false
       }
 
       return true
     } catch (err) {
-      console.error('Error in updateSupplierRating:', err)
       return false
     }
   }
@@ -460,13 +447,11 @@ class SupplierService {
         .select()
 
       if (error) {
-        console.error('Error archiving suppliers:', error)
         return 0
       }
 
       return data?.length || 0
     } catch (err) {
-      console.error('Error in archiveInactiveSuppliers:', err)
       return 0
     }
   }

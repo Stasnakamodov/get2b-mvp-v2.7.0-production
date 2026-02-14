@@ -78,11 +78,11 @@ export default function CatalogAdminPage() {
     setIsLoading(true)
     try {
       // Загружаем верифицированных поставщиков
-      const verifiedRes = await fetch('/api/catalog/verified-suppliers')
+      const verifiedRes = await fetch('/api/catalog/suppliers?verified=true')
       const verifiedData = await verifiedRes.json()
 
       // Загружаем статистику товаров
-      const productsRes = await fetch('/api/catalog/products-paginated?supplier_type=verified&limit=1')
+      const productsRes = await fetch('/api/catalog/products?supplier_type=verified&limit=1')
       const productsData = await productsRes.json()
 
       // Формируем данные
@@ -128,10 +128,10 @@ export default function CatalogAdminPage() {
     if (!confirm(`Удалить поставщика "${supplier.name}"?`)) return
 
     try {
-      const response = await fetch('/api/catalog/verified-suppliers', {
+      const response = await fetch('/api/catalog/suppliers?verified=true', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: supplier.id })
+        body: JSON.stringify({ id: supplier.id, verified: true })
       })
 
       if (response.ok) {
@@ -178,7 +178,7 @@ export default function CatalogAdminPage() {
   }
 
   const handleViewProducts = (supplier: Supplier) => {
-    window.open(`/dashboard/catalog-new?supplier=${supplier.id}`, '_blank')
+    window.open(`/dashboard/catalog?supplier=${supplier.id}`, '_blank')
   }
 
   return (

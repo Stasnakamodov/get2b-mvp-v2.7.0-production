@@ -139,7 +139,6 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error loading suppliers:', err)
     } finally {
       setLoading(false)
     }
@@ -179,7 +178,6 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error creating supplier:', err)
       return null
     }
   }, [supabase])
@@ -210,7 +208,6 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error updating supplier:', err)
       return false
     }
   }, [supabase])
@@ -236,14 +233,13 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error deleting supplier:', err)
       return false
     }
   }, [supabase])
 
   // Load suppliers on mount
   useEffect(() => {
-    // loadSuppliers() // TODO: Enable when suppliers table is created in DB
+    loadSuppliers()
   }, [loadSuppliers])
 
   // Reset page when filters change

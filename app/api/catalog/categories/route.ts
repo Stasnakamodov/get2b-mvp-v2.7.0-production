@@ -2,14 +2,52 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 import { CATEGORY_CERTIFICATIONS } from "@/src/shared/config";
 
-// GET: Получение всех категорий с иерархией (Unified архитектура: catalog_categories с parent_id, без level)
+const BASE_CATEGORIES = [
+  'Автотовары', 'Электроника', 'Дом и быт',
+  'Здоровье и красота', 'Продукты питания', 'Промышленность',
+  'Строительство', 'Текстиль и одежда'
+]
+
+// GET: Categories with hierarchy, tree, and stats support
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const includeSubcategories = searchParams.get('includeSubcategories') !== 'false';
     const simpleList = searchParams.get('simple') === 'true';
+    const treeMode = searchParams.get('tree') === 'true';
+    const statsMode = searchParams.get('stats') === 'true';
 
-    // Если запрошен простой список - возвращаем категории из таблицы catalog_categories
+    // ?stats=true — return product counts per category (replaces category-stats)
+    if (statsMode) {
+      const countPromises = BASE_CATEGORIES.map(async (category) => {
+        const { count, error } = await supabase
+          .from('catalog_verified_products')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_active', true)
+          .eq('category', category)
+        return { category, count: error ? 0 : (count || 0) }
+      })
+      const results = await Promise.all(countPromises)
+      const categoryStats: Record<string, { verified: number; user: number; total: number }> = {}
+      for (const { category, count } of results) {
+        categoryStats[category] = { verified: count, user: 0, total: count }
+      }
+      const response = NextResponse.json({ success: true, categoryStats })
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+      return response
+    }
+
+    // ?tree=true — return full category tree via RPC (replaces category-tree)
+    if (treeMode) {
+      const { data, error } = await supabase.rpc('get_category_tree')
+      if (error) {
+        console.error("[API] Category tree error:", error)
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+      }
+      return NextResponse.json({ success: true, tree: data })
+    }
+
+    // ?simple=true — return just category names
     if (simpleList) {
       const { data: categories, error } = await supabase
         .from("catalog_categories")
@@ -17,7 +55,7 @@ export async function GET(request: NextRequest) {
         .order("name");
 
       if (error) {
-        console.error("❌ [API] Ошибка загрузки категорий:", error);
+        console.error("[API] Ошибка загрузки категорий:", error);
         return NextResponse.json({
           success: false,
           error: error.message
@@ -45,7 +83,7 @@ export async function GET(request: NextRequest) {
       .order("name");
 
     if (categoriesError) {
-      console.error("❌ [API] Ошибка загрузки категорий:", categoriesError);
+      console.error("[API] Ошибка загрузки категорий:", categoriesError);
       return NextResponse.json({
         success: false,
         error: categoriesError.message
@@ -62,7 +100,7 @@ export async function GET(request: NextRequest) {
         .order("name");
 
       if (subcategoriesError) {
-        console.error("❌ [API] Ошибка загрузки подкатегорий:", subcategoriesError);
+        console.error("[API] Ошибка загрузки подкатегорий:", subcategoriesError);
         return NextResponse.json({
           success: false,
           error: subcategoriesError.message
@@ -95,7 +133,7 @@ export async function GET(request: NextRequest) {
             }
           }
         } else if (rpcError) {
-          console.warn("⚠️ [API] RPC fallback: count_products_by_subcategory failed:", rpcError.message);
+          console.warn("[API] RPC fallback: count_products_by_subcategory failed:", rpcError.message);
           // Fallback: parallel HEAD count queries
           const countPromises = subcategoryIds.map(async (id) => {
             const { count } = await supabase
@@ -168,7 +206,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка загрузки категорий:", error);
+    console.error("[API] Критическая ошибка загрузки категорий:", error);
     return NextResponse.json({ success: false, error: "Ошибка сервера" }, { status: 500 });
   }
 }
@@ -183,7 +221,7 @@ export async function POST() {
       .select("key, name, id");
 
     if (selectError) {
-      console.error("❌ [API] Ошибка получения существующих категорий:", selectError);
+      console.error("[API] Ошибка получения существующих категорий:", selectError);
       return NextResponse.json({ error: selectError.message }, { status: 500 });
     }
 
@@ -215,7 +253,7 @@ export async function POST() {
       .select();
 
     if (error) {
-      console.error("❌ [API] Ошибка создания категорий:", error);
+      console.error("[API] Ошибка создания категорий:", error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
@@ -228,7 +266,7 @@ export async function POST() {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка синхронизации:", error);
+    console.error("[API] Критическая ошибка синхронизации:", error);
     return NextResponse.json({ success: false, error: "Ошибка сервера" }, { status: 500 });
   }
 }

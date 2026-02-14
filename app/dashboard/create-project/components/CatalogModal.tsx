@@ -561,30 +561,10 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
     }
   }
 
-  // Загрузка эхо карточек
+  // Загрузка эхо карточек (API /api/catalog/echo-cards-simple удалён при рефакторинге)
   const loadEchoCards = async () => {
     setLoadingEcho(true)
     try {
-      // Получаем текущего пользователя
-      const { data: userData, error: userError } = await supabase.auth.getUser()
-      if (userError || !userData?.user?.id) {
-        console.error('❌ [CATALOG MODAL] Не удалось получить ID пользователя:', userError)
-        setEchoCards([])
-        return
-      }
-
-      const response = await fetch(`/api/catalog/echo-cards-simple?user_id=${userData.user.id}`)
-      const data = await response.json()
-      
-      if (data.success && data.echo_cards) {
-        console.log('✅ [CATALOG MODAL] Загружено эхо карточек из реальных проектов:', data.echo_cards.length)
-        setEchoCards(data.echo_cards)
-      } else {
-        console.log('⚠️ [CATALOG MODAL] Эхо карточки не найдены:', data.summary?.message || 'Нет проектов')
-        setEchoCards([])
-      }
-    } catch (error) {
-      console.error('❌ [CATALOG MODAL] Ошибка загрузки эхо карточек:', error)
       setEchoCards([])
     } finally {
       setLoadingEcho(false)
@@ -596,7 +576,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
     console.log('🚀🚀🚀 [CATALOG MODAL] *** ВЫЗОВ loadVerifiedSuppliers() ***')
     setLoadingVerified(true)
     try {
-      const response = await fetch('/api/catalog/verified-suppliers')
+      const response = await fetch('/api/catalog/suppliers?verified=true')
       const data = await response.json()
       
       if (data.suppliers) {
@@ -622,7 +602,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       setLoadingStats(true)
       console.log('📊📊📊 [CatalogModal] *** ВЫЗОВ loadCategoryStats() ***')
 
-      const response = await fetch(`/api/catalog/category-stats?t=${Date.now()}`)
+      const response = await fetch(`/api/catalog/categories?stats=true&t=${Date.now()}`)
       const data = await response.json()
 
       if (data.success) {

@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (createError) {
-      console.error("❌ [API] Ошибка создания заявки на аккредитацию:", createError);
+      console.error("[API] Ошибка создания заявки на аккредитацию:", createError);
       return NextResponse.json({ error: createError.message }, { status: 500 });
     }
 
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         })
       });
     } catch (telegramError) {
-      console.warn("⚠️ [API] Ошибка отправки уведомления в Telegram:", telegramError);
+      console.warn("[API] Ошибка отправки уведомления в Telegram:", telegramError);
       // Не прерываем процесс, если Telegram недоступен
     }
 
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при подаче заявки:", error);
+    console.error("[API] Критическая ошибка при подаче заявки:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 } 

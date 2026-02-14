@@ -179,7 +179,7 @@ function ProductsCarousel({ onProductClick }: { onProductClick: (product: any) =
         // Загружаем товары из ВСЕХ категорий
         const allProducts: CategoryProduct[] = []
 
-        const response = await fetch(`/api/catalog/products-by-category/all?limit=100`)
+        const response = await fetch(`/api/catalog/products?supplier_type=verified&limit=100`)
         if (response.ok) {
           const data = await response.json()
 
@@ -363,7 +363,7 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
     try {
       setLoadingProducts(true)
 
-      const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(categoryName)}?limit=100`)
+      const response = await fetch(`/api/catalog/products?supplier_type=verified&category=${encodeURIComponent(categoryName)}&limit=100`)
       if (response.ok) {
         const data = await response.json()
 
@@ -397,7 +397,7 @@ export function CatalogModalLanding({ open, onClose }: CatalogModalLandingProps)
     try {
       setLoadingSuppliers(true)
 
-      const response = await fetch(`/api/catalog/products-by-category/${encodeURIComponent(categoryName)}?limit=100`)
+      const response = await fetch(`/api/catalog/suppliers?verified=true&category=${encodeURIComponent(categoryName)}`)
       if (response.ok) {
         const data = await response.json()
 

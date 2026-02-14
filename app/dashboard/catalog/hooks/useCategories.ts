@@ -100,7 +100,6 @@ export function useCategories(): UseCategoriesReturn {
         .order('name')
 
       if (catalogError) {
-        console.warn('Error loading catalog_categories:', catalogError)
       }
 
       // Also get unique categories from products
@@ -110,7 +109,6 @@ export function useCategories(): UseCategoriesReturn {
         .not('category', 'is', null)
 
       if (productError) {
-        console.warn('Error loading product categories:', productError)
       }
 
       // Combine and deduplicate
@@ -167,7 +165,6 @@ export function useCategories(): UseCategoriesReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error loading categories:', err)
     } finally {
       setLoading(false)
     }
@@ -225,7 +222,6 @@ export function useCategories(): UseCategoriesReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error loading subcategories:', err)
     } finally {
       setLoading(false)
     }
@@ -274,7 +270,6 @@ export function useCategories(): UseCategoriesReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error creating category:', err)
       return null
     }
   }, [supabase])
@@ -312,7 +307,6 @@ export function useCategories(): UseCategoriesReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error updating category:', err)
       return false
     }
   }, [supabase])
@@ -338,7 +332,6 @@ export function useCategories(): UseCategoriesReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error deleting category:', err)
       return false
     }
   }, [supabase])
@@ -437,7 +430,6 @@ export function useCategoryProducts(category: string | null) {
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.SERVER_ERROR
       setError(message)
-      console.error('Error loading products:', err)
     } finally {
       setLoading(false)
     }
