@@ -27,6 +27,7 @@ interface ProductsResponse {
   products: Product[]
   nextCursor: string | null
   hasMore: boolean
+  totalCount: number
   meta: {
     count: number
     limit: number
@@ -159,4 +160,11 @@ export function flattenProducts(data: { pages: ProductsResponse[] } | undefined)
  */
 export function getTotalLoadedCount(data: { pages: ProductsResponse[] } | undefined): number {
   return data?.pages.reduce((sum, page) => sum + page.products.length, 0) ?? 0
+}
+
+/**
+ * Утилита для получения totalCount (общее количество товаров по фильтрам)
+ */
+export function getTotalCount(data: { pages: ProductsResponse[] } | undefined): number {
+  return data?.pages[0]?.totalCount ?? 0
 }

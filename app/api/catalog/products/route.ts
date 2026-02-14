@@ -107,6 +107,7 @@ export async function GET(request: NextRequest) {
       ? 'catalog_verified_products'
       : 'catalog_user_products'
 
+    // Build data query
     let query = supabase
       .from(tableName)
       .select('*')
@@ -115,7 +116,13 @@ export async function GET(request: NextRequest) {
       .order('id', { ascending: false })
       .limit(limit + 1) // +1 to detect hasMore
 
-    // Cursor-based keyset pagination
+    // Build parallel count query (same filters, head-only)
+    let countQuery = supabase
+      .from(tableName)
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+
+    // Cursor-based keyset pagination (data query only)
     if (cursor) {
       const cursorData = decodeCursor(cursor)
       if (cursorData) {
@@ -126,25 +133,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Filters
-    if (category) query = query.eq('category', category)
-    if (subcategory) query = query.eq('subcategory_id', subcategory)
-    if (inStock === 'true') query = query.eq('in_stock', true)
-    if (supplierId) query = query.eq('supplier_id', supplierId)
-    if (supplierType === 'user' && userId) query = query.eq('user_id', userId)
+    // Apply filters to both queries
+    if (category) { query = query.eq('category', category); countQuery = countQuery.eq('category', category) }
+    if (subcategory) { query = query.eq('subcategory_id', subcategory); countQuery = countQuery.eq('subcategory_id', subcategory) }
+    if (inStock === 'true') { query = query.eq('in_stock', true); countQuery = countQuery.eq('in_stock', true) }
+    if (supplierId) { query = query.eq('supplier_id', supplierId); countQuery = countQuery.eq('supplier_id', supplierId) }
+    if (supplierType === 'user' && userId) { query = query.eq('user_id', userId); countQuery = countQuery.eq('user_id', userId) }
 
-    if (minPrice) query = query.gte('price', parseFloat(minPrice))
-    if (maxPrice) query = query.lte('price', parseFloat(maxPrice))
-    if (supplierCountry) query = query.eq('supplier_country', supplierCountry)
+    if (minPrice) { query = query.gte('price', parseFloat(minPrice)); countQuery = countQuery.gte('price', parseFloat(minPrice)) }
+    if (maxPrice) { query = query.lte('price', parseFloat(maxPrice)); countQuery = countQuery.lte('price', parseFloat(maxPrice)) }
+    if (supplierCountry) { query = query.eq('supplier_country', supplierCountry); countQuery = countQuery.eq('supplier_country', supplierCountry) }
 
     if (search && search.trim()) {
       const sanitized = sanitizeSearch(search)
       if (sanitized) {
         query = query.or(`name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`)
+        countQuery = countQuery.or(`name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`)
       }
     }
 
-    const { data, error } = await query
+    // Execute both queries in parallel
+    const [dataResult, countResult] = await Promise.all([query, countQuery])
+    const { data, error } = dataResult
+    const totalCount = countResult.count ?? 0
 
     if (error) {
       logger.error(`[API] Products error:`, error)
@@ -167,6 +178,7 @@ export async function GET(request: NextRequest) {
       products,
       nextCursor,
       hasMore,
+      totalCount,
       meta: {
         count: products.length,
         limit,

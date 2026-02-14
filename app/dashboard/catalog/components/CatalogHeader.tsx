@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { SORT_OPTIONS, SEARCH_DEBOUNCE_MS, SUPPLIER_COUNTRIES } from '@/lib/catalog/constants'
 import { PriceFilterPopover } from './PriceFilterPopover'
-import type { CatalogFilters, CatalogSort, CatalogViewMode } from '@/lib/catalog/types'
+import type { CatalogFilters, CatalogSort, CatalogViewMode, FacetCount } from '@/lib/catalog/types'
 
 interface CatalogHeaderProps {
   filters: CatalogFilters
@@ -36,6 +36,7 @@ interface CatalogHeaderProps {
   onCartClick?: () => void
   wishlistCount?: number
   onWishlistClick?: () => void
+  countryCounts?: FacetCount[]
 }
 
 export function CatalogHeader({
@@ -50,6 +51,7 @@ export function CatalogHeader({
   onCartClick,
   wishlistCount = 0,
   onWishlistClick,
+  countryCounts,
 }: CatalogHeaderProps) {
   const [searchInput, setSearchInput] = useState(filters.search || '')
 
@@ -167,9 +169,14 @@ export function CatalogHeader({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">Все страны</SelectItem>
-            {SUPPLIER_COUNTRIES.map(c => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
-            ))}
+            {SUPPLIER_COUNTRIES.map(c => {
+              const count = countryCounts?.find(fc => fc.name === c)?.count
+              return (
+                <SelectItem key={c} value={c}>
+                  {c}{count !== undefined ? ` (${count})` : ''}
+                </SelectItem>
+              )
+            })}
           </SelectContent>
         </Select>
       </div>

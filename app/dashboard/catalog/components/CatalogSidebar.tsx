@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight, Folder } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { CatalogCategory } from '@/lib/catalog/types'
+import type { CatalogCategory, FacetCount } from '@/lib/catalog/types'
 import { DEFAULT_CATEGORIES } from '@/lib/catalog/constants'
 
 interface CatalogSidebarProps {
@@ -13,6 +13,7 @@ interface CatalogSidebarProps {
   selectedSubcategory?: string
   onCategorySelect: (category: string | undefined, subcategory?: string) => void
   isLoading?: boolean
+  facetCounts?: FacetCount[]
 }
 
 function formatCount(n: number): string {
@@ -30,7 +31,8 @@ export function CatalogSidebar({
   selectedCategory,
   selectedSubcategory,
   onCategorySelect,
-  isLoading = false
+  isLoading = false,
+  facetCounts,
 }: CatalogSidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
@@ -58,7 +60,25 @@ export function CatalogSidebar({
     }
   }, [selectedCategory, displayCategories])
 
-  const totalProducts = displayCategories.reduce((sum, cat) => sum + cat.products_count, 0)
+  // Build a map of facet counts by category name for quick lookup
+  const facetCountMap = new Map<string, number>()
+  if (facetCounts) {
+    for (const fc of facetCounts) {
+      facetCountMap.set(fc.name, fc.count)
+    }
+  }
+
+  // Helper: get count for a category (facet-based when available, static otherwise)
+  const getCategoryCount = (cat: CatalogCategory) => {
+    if (facetCounts) {
+      return facetCountMap.get(cat.name) ?? 0
+    }
+    return cat.products_count
+  }
+
+  const totalProducts = facetCounts
+    ? facetCounts.reduce((sum, fc) => sum + fc.count, 0)
+    : displayCategories.reduce((sum, cat) => sum + cat.products_count, 0)
 
   const toggleExpand = (categoryId: string) => {
     setExpandedCategories(prev => {
@@ -133,6 +153,7 @@ export function CatalogSidebar({
               const isParentOfSelected = selectedCategory === category.name && !!selectedSubcategory
               const isExpanded = expandedCategories.has(category.id)
               const hasChildren = category.children && category.children.length > 0
+              const dynamicCount = getCategoryCount(category)
 
               return (
                 <div key={category.id}>
@@ -179,7 +200,7 @@ export function CatalogSidebar({
                     </button>
 
                     {/* Count badge */}
-                    {category.products_count > 0 && (
+                    {dynamicCount > 0 && (
                       <Badge
                         variant="secondary"
                         className={`text-[10px] px-1.5 py-0 h-5 font-normal ${
@@ -188,7 +209,7 @@ export function CatalogSidebar({
                             : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                         }`}
                       >
-                        {formatCount(category.products_count)}
+                        {formatCount(dynamicCount)}
                       </Badge>
                     )}
                   </div>

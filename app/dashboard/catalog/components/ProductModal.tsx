@@ -24,7 +24,7 @@ import {
   Plus,
   Heart,
 } from 'lucide-react'
-import type { CatalogProduct } from '@/lib/catalog/types'
+import type { CatalogProduct, ProductVariant } from '@/lib/catalog/types'
 import { formatPrice, formatMinOrder, getCleanImages } from '@/lib/catalog/utils'
 
 interface ProductModalProps {
@@ -53,17 +53,30 @@ export function ProductModal({
 }: ProductModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
 
   // Reset state when product changes
   useEffect(() => {
     setCurrentImageIndex(0)
     setQuantity(1)
+    setSelectedVariant(null)
   }, [product?.id])
 
   if (!product) return null
 
-  const images = getCleanImages(product)
+  const variants = product.variants || []
+  const hasVariants = variants.length > 0
+
+  // Use variant images if selected and available, otherwise product images
+  const variantImages = selectedVariant?.images?.filter(Boolean)
+  const images = variantImages && variantImages.length > 0
+    ? variantImages
+    : getCleanImages(product)
   const hasImages = images.length > 0
+
+  // Effective price/stock from variant or product
+  const effectivePrice = selectedVariant?.price ?? product.price
+  const effectiveInStock = selectedVariant?.in_stock ?? product.in_stock
 
   const nextImage = () => setCurrentImageIndex(prev => (prev + 1) % images.length)
   const prevImage = () => setCurrentImageIndex(prev => (prev - 1 + images.length) % images.length)
@@ -180,10 +193,10 @@ export function ProductModal({
               <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl p-4 mb-4">
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold">
-                    {product.price?.toLocaleString('ru-RU') || '—'}
+                    {effectivePrice?.toLocaleString('ru-RU') || '—'}
                   </span>
                   <span className="text-xl">
-                    {product.currency || 'RUB'}
+                    {selectedVariant?.currency || product.currency || 'RUB'}
                   </span>
                 </div>
                 {product.min_order && (
@@ -191,7 +204,47 @@ export function ProductModal({
                     Мин. заказ: {formatMinOrder(product.min_order)}
                   </p>
                 )}
+                {selectedVariant && !effectiveInStock && (
+                  <p className="text-orange-200 text-sm mt-1">Нет в наличии</p>
+                )}
               </div>
+
+              {/* Variant selector */}
+              {hasVariants && (
+                <div className="mb-4">
+                  <h4 className="font-semibold text-sm mb-2">Варианты</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {variants.map(variant => {
+                      const isSelected = selectedVariant?.id === variant.id
+                      const label = variant.name || Object.values(variant.attributes).join(' / ')
+                      return (
+                        <button
+                          key={variant.id}
+                          onClick={() => {
+                            setSelectedVariant(isSelected ? null : variant)
+                            setCurrentImageIndex(0)
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
+                            isSelected
+                              ? 'border-orange-500 bg-orange-50 text-orange-700 font-medium'
+                              : variant.in_stock
+                                ? 'border-gray-200 hover:border-orange-300 text-gray-700'
+                                : 'border-gray-200 text-gray-400 line-through opacity-60'
+                          }`}
+                          disabled={!variant.in_stock}
+                        >
+                          {label}
+                          {variant.price && variant.price !== product.price && (
+                            <span className="ml-1 text-xs opacity-70">
+                              {variant.price.toLocaleString('ru-RU')} {variant.currency || '₽'}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Quantity + Add to cart */}
               <div className="flex items-center gap-3 mb-4">

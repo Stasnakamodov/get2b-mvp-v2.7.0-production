@@ -1,41 +1,48 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { CatalogProduct, CartItem, CartState } from '@/lib/catalog/types'
+import type { CatalogProduct, CartItem, CartState, ProductVariant } from '@/lib/catalog/types'
 import { CART_STORAGE_KEY, MAX_CART_ITEMS } from '@/lib/catalog/constants'
 import { calculateCartTotal, calculateCartItemsCount } from '@/lib/catalog/utils'
+import { supabase } from '@/lib/supabaseClient'
+import { useServerCart } from './useServerCart'
 
-// Debounce timeout для предотвращения множественных быстрых добавлений
 const ADD_TO_CART_DEBOUNCE_MS = 300
 
 /**
- * Хук для управления корзиной товаров
+ * Dual-mode cart hook:
+ * - If user is authenticated → delegates to useServerCart (server-side persistence)
+ * - If anonymous → uses localStorage (existing behavior)
+ * - On login transition → auto-merges localStorage into server cart, then clears local
  *
- * Сохраняет данные в localStorage для persistence
- *
- * @example
- * const { items, addToCart, removeFromCart, totalAmount } = useProductCart()
- *
- * // Добавить товар
- * addToCart(product, 1)
- *
- * // Удалить товар
- * removeFromCart(product.id)
- *
- * // Очистить корзину
- * clearCart()
+ * Public API stays identical — no changes needed in consuming components.
  */
 export function useProductCart() {
-  const [items, setItems] = useState<CartItem[]>([])
+  const [localItems, setLocalItems] = useState<CartItem[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
-
-  // Ref для отслеживания товаров в процессе добавления (debounce)
+  const [userId, setUserId] = useState<string | null>(null)
   const addingProductsRef = useRef<Set<string>>(new Set())
+  const hasMergedRef = useRef(false)
 
-  // Загрузка из localStorage при монтировании + миграция старого ключа
+  // Check auth state
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id ?? null)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const isAuthenticated = !!userId
+  const serverCart = useServerCart(isAuthenticated)
+
+  // Load from localStorage
   useEffect(() => {
     try {
-      // Migrate from old key if new key is empty
       const OLD_CART_KEY = 'catalog_cart'
       const stored = localStorage.getItem(CART_STORAGE_KEY)
       if (!stored) {
@@ -43,7 +50,6 @@ export function useProductCart() {
         if (oldStored) {
           try {
             const oldParsed = JSON.parse(oldStored)
-            // Old format: array of products with id, name, price, quantity directly
             const migrated = oldParsed.map((item: any) => ({
               product: {
                 id: item.id,
@@ -62,7 +68,7 @@ export function useProductCart() {
               quantity: item.quantity || 1,
               addedAt: new Date(),
             }))
-            setItems(migrated)
+            setLocalItems(migrated)
             localStorage.removeItem(OLD_CART_KEY)
           } catch {
             // Old data corrupt, ignore
@@ -74,127 +80,128 @@ export function useProductCart() {
           ...item,
           addedAt: new Date(item.addedAt)
         }))
-        setItems(restoredItems)
+        setLocalItems(restoredItems)
       }
-    } catch (e) {
-      // localStorage read failed, ignore
+    } catch {
+      // localStorage read failed
     }
     setIsLoaded(true)
   }, [])
 
-  // Сохранение в localStorage при изменении
+  // Save localStorage items
   useEffect(() => {
     if (isLoaded) {
       try {
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
-      } catch (e) {
-        // localStorage write failed, ignore
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(localItems))
+      } catch {
+        // localStorage write failed
       }
     }
-  }, [items, isLoaded])
+  }, [localItems, isLoaded])
 
-  // Добавление товара в корзину с debounce
-  const addToCart = useCallback((product: CatalogProduct, quantity: number = 1) => {
-    // Проверяем debounce - не добавляем если товар уже в процессе добавления
-    if (addingProductsRef.current.has(product.id)) {
+  // Auto-merge localStorage → server on login
+  useEffect(() => {
+    if (isAuthenticated && isLoaded && localItems.length > 0 && !hasMergedRef.current) {
+      hasMergedRef.current = true
+      serverCart.mergeLocalCart(localItems)
+      // Clear local cart after merge
+      setLocalItems([])
+      try { localStorage.removeItem(CART_STORAGE_KEY) } catch {}
+    }
+  }, [isAuthenticated, isLoaded, localItems, serverCart])
+
+  // Reset merge flag on logout
+  useEffect(() => {
+    if (!isAuthenticated) {
+      hasMergedRef.current = false
+    }
+  }, [isAuthenticated])
+
+  // ---- Unified API ----
+
+  const items = isAuthenticated ? serverCart.items : localItems
+
+  const addToCart = useCallback((product: CatalogProduct, quantity: number = 1, variant?: ProductVariant) => {
+    if (isAuthenticated) {
+      serverCart.addToCart(product, quantity, variant)
       return
     }
 
-    // Блокируем повторное добавление
+    // Local mode with debounce
+    if (addingProductsRef.current.has(product.id)) return
     addingProductsRef.current.add(product.id)
+    setTimeout(() => { addingProductsRef.current.delete(product.id) }, ADD_TO_CART_DEBOUNCE_MS)
 
-    // Снимаем блокировку через debounce timeout
-    setTimeout(() => {
-      addingProductsRef.current.delete(product.id)
-    }, ADD_TO_CART_DEBOUNCE_MS)
-
-    setItems(prev => {
-      // Проверяем лимит
-      if (prev.length >= MAX_CART_ITEMS) {
-        // cart limit reached
-        return prev
-      }
-
-      // Ищем существующий товар
+    setLocalItems(prev => {
+      if (prev.length >= MAX_CART_ITEMS) return prev
       const existingIndex = prev.findIndex(item => item.product.id === product.id)
-
       if (existingIndex >= 0) {
-        // Обновляем количество
         const updated = [...prev]
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          quantity: updated[existingIndex].quantity + quantity
-        }
+        updated[existingIndex] = { ...updated[existingIndex], quantity: updated[existingIndex].quantity + quantity }
         return updated
       }
-
-      // Добавляем новый товар
-      return [...prev, {
-        product,
-        quantity,
-        addedAt: new Date()
-      }]
+      return [...prev, { product, quantity, addedAt: new Date(), variant }]
     })
-  }, [])
+  }, [isAuthenticated, serverCart])
 
-  // Удаление товара из корзины
   const removeFromCart = useCallback((productId: string) => {
-    setItems(prev => prev.filter(item => item.product.id !== productId))
-  }, [])
+    if (isAuthenticated) {
+      serverCart.removeFromCart(productId)
+      return
+    }
+    setLocalItems(prev => prev.filter(item => item.product.id !== productId))
+  }, [isAuthenticated, serverCart])
 
-  // Обновление количества
   const updateQuantity = useCallback((productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId)
       return
     }
-
-    setItems(prev => prev.map(item =>
-      item.product.id === productId
-        ? { ...item, quantity }
-        : item
+    if (isAuthenticated) {
+      serverCart.updateQuantity(productId, quantity)
+      return
+    }
+    setLocalItems(prev => prev.map(item =>
+      item.product.id === productId ? { ...item, quantity } : item
     ))
-  }, [removeFromCart])
+  }, [isAuthenticated, serverCart, removeFromCart])
 
-  // Очистка корзины
   const clearCart = useCallback(() => {
-    setItems([])
-  }, [])
+    if (isAuthenticated) {
+      serverCart.clearCart()
+      return
+    }
+    setLocalItems([])
+  }, [isAuthenticated, serverCart])
 
-  // Проверка наличия товара
   const isInCart = useCallback((productId: string) => {
-    return items.some(item => item.product.id === productId)
-  }, [items])
+    if (isAuthenticated) return serverCart.isInCart(productId)
+    return localItems.some(item => item.product.id === productId)
+  }, [isAuthenticated, serverCart, localItems])
 
-  // Получение количества товара
   const getQuantity = useCallback((productId: string) => {
-    const item = items.find(item => item.product.id === productId)
+    if (isAuthenticated) return serverCart.getQuantity(productId)
+    const item = localItems.find(item => item.product.id === productId)
     return item?.quantity || 0
-  }, [items])
+  }, [isAuthenticated, serverCart, localItems])
 
-  // Подсчёт итогов
   const totalItems = calculateCartItemsCount(items)
   const totalAmount = calculateCartTotal(items)
 
-  // Состояние корзины для передачи в конструктор
-  const cartState: CartState = {
-    items,
-    totalItems,
-    totalAmount
-  }
+  const cartState: CartState = { items, totalItems, totalAmount }
 
   return {
     items,
     totalItems,
     totalAmount,
-    isLoaded,
+    isLoaded: isAuthenticated ? !serverCart.isLoading : isLoaded,
     cartState,
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
     isInCart,
-    getQuantity
+    getQuantity,
   }
 }
 

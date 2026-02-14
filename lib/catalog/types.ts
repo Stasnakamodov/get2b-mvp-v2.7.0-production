@@ -20,6 +20,8 @@ export interface CatalogProduct {
   supplier_name?: string
   supplier_country?: string
   is_featured?: boolean
+  has_variants?: boolean
+  variants?: ProductVariant[]
   created_at: string
   updated_at?: string
 }
@@ -94,6 +96,7 @@ export interface PaginatedProductsResponse {
   products: CatalogProduct[]
   nextCursor: string | null
   hasMore: boolean
+  totalCount: number
   meta: {
     count: number
     limit: number
@@ -106,6 +109,7 @@ export interface CartItem {
   product: CatalogProduct
   quantity: number
   addedAt: Date
+  variant?: ProductVariant
 }
 
 // Состояние корзины
@@ -119,4 +123,83 @@ export interface CartState {
 export interface WishlistItem {
   product: CatalogProduct
   addedAt: Date
+}
+
+// ========== Feature 2: Faceted Search ==========
+
+export interface FacetCount {
+  name: string
+  count: number
+}
+
+export interface FacetData {
+  categories: FacetCount[]
+  countries: FacetCount[]
+  stock: { in_stock: boolean; count: number }[]
+  priceRange: { min_price: number; max_price: number }
+  totalCount: number
+}
+
+// ========== Feature 3: Server-Side Cart ==========
+
+export interface ServerCartItem {
+  id: string
+  cart_id: string
+  product_id: string
+  product_table: string
+  quantity: number
+  added_at: string
+  variant_id?: string
+  product?: CatalogProduct
+}
+
+export interface ServerCart {
+  id: string
+  user_id: string
+  items: ServerCartItem[]
+  created_at: string
+  updated_at: string
+}
+
+// ========== Feature 4: Dynamic Collections ==========
+
+export interface CollectionCondition {
+  field: string
+  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'like'
+  value: string | number | boolean | string[]
+}
+
+export interface CatalogCollection {
+  id: string
+  slug: string
+  name: string
+  description?: string
+  image_url?: string
+  rules: Record<string, CollectionCondition[]>
+  rule_type: 'auto' | 'manual'
+  sort_field: string
+  sort_order: string
+  max_products: number
+  is_active: boolean
+  is_featured: boolean
+  position: number
+  created_at: string
+  preview_products?: CatalogProduct[]
+}
+
+// ========== Feature 5: Product Variants ==========
+
+export interface ProductVariant {
+  id: string
+  product_id: string
+  sku?: string
+  name: string
+  attributes: Record<string, string>
+  price?: number
+  currency: string
+  in_stock: boolean
+  stock_quantity?: number
+  images?: string[]
+  is_active: boolean
+  created_at: string
 }

@@ -4,15 +4,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { CartItem, CatalogProduct } from '@/lib/catalog/types'
 import { CART_STORAGE_KEY } from '@/lib/catalog/constants'
+import { supabase } from '@/lib/supabaseClient'
 
 interface CatalogCartImportResult {
-  /** Товары из корзины каталога */
   cartItems: CartItem[]
-  /** Был ли импорт из каталога */
   hasImportedFromCatalog: boolean
-  /** Загрузка завершена */
   isLoaded: boolean
-  /** Данные для шага 2 конструктора */
   step2Data: {
     supplier: string
     currency: string
@@ -29,32 +26,14 @@ interface CatalogCartImportResult {
       images?: string[]
     }>
   } | null
-  /** Очистить данные корзины после использования */
   clearCatalogCart: () => void
-  /** Общая сумма */
   totalAmount: number
-  /** Количество товаров */
   totalItems: number
 }
 
 /**
- * Хук для импорта товаров из корзины каталога в конструктор проектов
- *
- * Использование:
- * 1. Пользователь добавляет товары в корзину каталога
- * 2. Нажимает "Создать проект"
- * 3. Переходит в конструктор с ?fromCatalog=true
- * 4. Хук читает данные из localStorage и преобразует в формат шага 2
- *
- * @example
- * const { step2Data, hasImportedFromCatalog, clearCatalogCart } = useCatalogCartImport()
- *
- * useEffect(() => {
- *   if (hasImportedFromCatalog && step2Data) {
- *     setManualData(prev => ({ ...prev, 2: step2Data }))
- *     clearCatalogCart()
- *   }
- * }, [hasImportedFromCatalog, step2Data])
+ * Hook for importing cart items into the project constructor.
+ * Reads from server cart when authenticated, localStorage otherwise.
  */
 export function useCatalogCartImport(): CatalogCartImportResult {
   const searchParams = useSearchParams()
@@ -62,69 +41,95 @@ export function useCatalogCartImport(): CatalogCartImportResult {
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasImportedFromCatalog, setHasImportedFromCatalog] = useState(false)
 
-  // Проверяем URL параметр
   const fromCatalog = searchParams?.get('fromCatalog') === 'true'
 
-  // Загружаем данные из localStorage при монтировании
   useEffect(() => {
     if (!fromCatalog) {
       setIsLoaded(true)
       return
     }
 
-    try {
-      const stored = localStorage.getItem(CART_STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        // Восстанавливаем даты с типизацией
-        const items: CartItem[] = parsed.map((item: { product: CatalogProduct; quantity: number; addedAt: string }) => ({
-          ...item,
-          addedAt: new Date(item.addedAt)
-        }))
-        setCartItems(items)
-        setHasImportedFromCatalog(items.length > 0)
-        // items loaded from catalog cart
+    async function loadCart() {
+      // Try server cart first if authenticated
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const response = await fetch('/api/catalog/cart')
+          if (response.ok) {
+            const json = await response.json()
+            const serverItems = json.cart?.items || []
+            if (serverItems.length > 0) {
+              const items: CartItem[] = serverItems
+                .filter((item: any) => item.product)
+                .map((item: any) => ({
+                  product: item.product as CatalogProduct,
+                  quantity: item.quantity,
+                  addedAt: new Date(item.added_at),
+                }))
+              setCartItems(items)
+              setHasImportedFromCatalog(items.length > 0)
+              setIsLoaded(true)
+              return
+            }
+          }
+        }
+      } catch {
+        // Fall through to localStorage
       }
-    } catch (e) {
-      // localStorage read failed, ignore
+
+      // Fallback: localStorage
+      try {
+        const stored = localStorage.getItem(CART_STORAGE_KEY)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          const items: CartItem[] = parsed.map((item: { product: CatalogProduct; quantity: number; addedAt: string }) => ({
+            ...item,
+            addedAt: new Date(item.addedAt)
+          }))
+          setCartItems(items)
+          setHasImportedFromCatalog(items.length > 0)
+        }
+      } catch {
+        // localStorage read failed
+      }
+      setIsLoaded(true)
     }
 
-    setIsLoaded(true)
+    loadCart()
   }, [fromCatalog])
 
-  // Преобразование в формат шага 2
   const step2Data = cartItems.length > 0 ? {
     supplier: cartItems[0]?.product.supplier_name || 'Каталог Get2B',
     currency: cartItems[0]?.product.currency || 'RUB',
-    items: cartItems.map(item => ({
-      item_name: item.product.name,
-      quantity: item.quantity,
-      price: item.product.price || 0,
-      unit: 'шт',
-      total: (item.product.price || 0) * item.quantity,
-      supplier_name: item.product.supplier_name,
-      supplier_id: item.product.supplier_id,
-      product_id: item.product.id,
-      category: item.product.category,
-      images: item.product.images?.map(img =>
-        typeof img === 'string' ? img : 'url' in img ? img.url : ''
-      ).filter(Boolean)
-    }))
+    items: cartItems.map(item => {
+      const variantSuffix = item.variant
+        ? ` (${Object.values(item.variant.attributes).join(', ')})`
+        : ''
+      return {
+        item_name: item.product.name + variantSuffix,
+        quantity: item.quantity,
+        price: (item.variant?.price ?? item.product.price) || 0,
+        unit: 'шт',
+        total: ((item.variant?.price ?? item.product.price) || 0) * item.quantity,
+        supplier_name: item.product.supplier_name,
+        supplier_id: item.product.supplier_id,
+        product_id: item.product.id,
+        category: item.product.category,
+        images: item.product.images?.map(img =>
+          typeof img === 'string' ? img : 'url' in img ? img.url : ''
+        ).filter(Boolean)
+      }
+    })
   } : null
 
-  // Подсчёт итогов
   const totalAmount = cartItems.reduce((sum, item) => {
-    return sum + (item.product.price || 0) * item.quantity
+    return sum + ((item.variant?.price ?? item.product.price) || 0) * item.quantity
   }, 0)
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
-  // Очистка корзины (только флаг импорта, корзина остаётся для повторного использования)
   const clearCatalogCart = useCallback(() => {
-    try {
-      setHasImportedFromCatalog(false)
-    } catch {
-    }
+    setHasImportedFromCatalog(false)
   }, [])
 
   return {

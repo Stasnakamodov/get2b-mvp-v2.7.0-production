@@ -174,7 +174,7 @@ export const ProductCard = memo(function ProductCard({
             </div>
           )}
 
-          {/* Left stack: In stock + Featured */}
+          {/* Left stack: In stock + Featured + Variants */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {product.in_stock && (
               <Badge className="bg-green-500">
@@ -184,6 +184,11 @@ export const ProductCard = memo(function ProductCard({
             {product.is_featured && (
               <Badge className="bg-orange-500">
                 Топ
+              </Badge>
+            )}
+            {product.has_variants && (
+              <Badge className="bg-blue-500">
+                Варианты
               </Badge>
             )}
           </div>
@@ -209,9 +214,25 @@ export const ProductCard = memo(function ProductCard({
           </Badge>
 
           <div className="mb-2">
-            <p className="font-bold text-lg text-orange-600">
-              {formatPrice(product.price, product.currency)}
-            </p>
+            {product.has_variants && product.variants && product.variants.length > 0 ? (
+              <p className="font-bold text-lg text-orange-600">
+                {(() => {
+                  const prices = product.variants
+                    .map(v => v.price)
+                    .filter((p): p is number => p != null)
+                  if (prices.length === 0) return formatPrice(product.price, product.currency)
+                  const min = Math.min(...prices)
+                  const max = Math.max(...prices)
+                  return min === max
+                    ? formatPrice(min, product.currency)
+                    : `${formatPrice(min, product.currency)} — ${formatPrice(max, product.currency)}`
+                })()}
+              </p>
+            ) : (
+              <p className="font-bold text-lg text-orange-600">
+                {formatPrice(product.price, product.currency)}
+              </p>
+            )}
             {product.min_order && (
               <p className="text-xs text-gray-500">
                 {formatMinOrder(product.min_order)}

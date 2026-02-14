@@ -24,10 +24,12 @@ import { CatalogGrid } from './components/CatalogGrid'
 import { ProductModal } from './components/ProductModal'
 import { FilterTags } from './components/FilterTags'
 import { WishlistSheet } from './components/WishlistSheet'
-import { useInfiniteProducts, flattenProducts } from '@/hooks/useInfiniteProducts'
+import { useInfiniteProducts, flattenProducts, getTotalCount } from '@/hooks/useInfiniteProducts'
 import { useProductCart } from '@/hooks/useProductCart'
 import { useWishlist } from '@/hooks/useWishlist'
 import { useCatalogCategories } from '@/hooks/useCatalogCategories'
+import { useFacets } from '@/hooks/useFacets'
+import { useCollections } from '@/hooks/useCollections'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -41,7 +43,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Trash2, Minus, Plus as PlusIcon, ArrowRight, X } from 'lucide-react'
-import type { CatalogProduct, CatalogFilters, CatalogSort, CatalogViewMode } from '@/lib/catalog/types'
+import type { CatalogProduct, CatalogFilters, CatalogSort, CatalogViewMode, CatalogCollection } from '@/lib/catalog/types'
 import { formatPrice } from '@/lib/catalog/utils'
 
 import { useMemo, useEffect } from 'react'
@@ -117,6 +119,7 @@ export default function CatalogPage() {
 
   const isMobile = useIsMobile()
   const { categories, isLoading: categoriesLoading } = useCatalogCategories()
+  const { data: collections } = useCollections(catalogMode === 'categories')
 
   const {
     items: cartItems,
@@ -160,7 +163,10 @@ export default function CatalogPage() {
     enabled: catalogMode === 'categories',
   })
 
+  const { data: facetData } = useFacets(filters, catalogMode === 'categories')
+
   const products = useMemo(() => flattenProducts(data), [data])
+  const totalCount = facetData?.totalCount ?? getTotalCount(data)
 
   const handleFiltersChange = useCallback((f: CatalogFilters) => setFilters(f), [])
   const handleSortChange = useCallback((s: CatalogSort) => setSort(s), [])
@@ -183,6 +189,17 @@ export default function CatalogPage() {
   const handleCreateProject = useCallback(() => {
     router.push('/dashboard/project-constructor?fromCatalog=true')
   }, [router])
+
+  const handleCollectionClick = useCallback((collection: CatalogCollection) => {
+    const rules = collection.rules as Record<string, unknown>
+    const newFilters: CatalogFilters = {}
+    if (rules.in_stock) newFilters.inStock = true
+    if (rules.price_max) newFilters.maxPrice = rules.price_max as number
+    if (rules.price_min) newFilters.minPrice = rules.price_min as number
+    if (rules.category) newFilters.category = rules.category as string
+    if (rules.supplier_country) newFilters.country = rules.supplier_country as string
+    setFilters(newFilters)
+  }, [])
 
   // Find selected subcategory name for breadcrumbs
   const selectedSubcategoryName = useMemo(() => {
@@ -237,6 +254,7 @@ export default function CatalogPage() {
                 onCartClick={() => setIsCartOpen(true)}
                 wishlistCount={wishlistCount}
                 onWishlistClick={() => setIsWishlistOpen(true)}
+                countryCounts={facetData?.countries}
               />
             </div>
 
@@ -300,7 +318,12 @@ export default function CatalogPage() {
               />
 
               <span className="text-xs text-gray-400 shrink-0">
-                {products.length > 0 && `${products.length.toLocaleString('ru-RU')} товаров`}
+                {totalCount > 0
+                  ? `${products.length.toLocaleString('ru-RU')} из ${totalCount.toLocaleString('ru-RU')} товаров`
+                  : products.length > 0
+                    ? `${products.length.toLocaleString('ru-RU')} товаров`
+                    : ''
+                }
               </span>
             </div>
 
@@ -313,6 +336,7 @@ export default function CatalogPage() {
                   selectedSubcategory={filters.subcategory}
                   onCategorySelect={handleCategorySelect}
                   isLoading={categoriesLoading}
+                  facetCounts={facetData?.categories}
                 />
               </div>
 
@@ -325,11 +349,27 @@ export default function CatalogPage() {
                     selectedSubcategory={filters.subcategory}
                     onCategorySelect={handleCategorySelect}
                     isLoading={categoriesLoading}
+                    facetCounts={facetData?.categories}
                   />
                 </SheetContent>
               </Sheet>
 
               <div className="flex-1 flex flex-col overflow-hidden p-4">
+                {/* Collection chips */}
+                {collections && collections.length > 0 && (
+                  <div className="flex gap-2 mb-3 overflow-x-auto pb-1 shrink-0">
+                    {collections.filter(c => c.is_featured).map(collection => (
+                      <button
+                        key={collection.id}
+                        onClick={() => handleCollectionClick(collection)}
+                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all whitespace-nowrap shrink-0"
+                      >
+                        {collection.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <CatalogGrid
                   products={products}
                   isLoading={isLoading}

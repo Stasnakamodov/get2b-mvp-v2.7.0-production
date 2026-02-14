@@ -40,6 +40,19 @@ export async function GET(
       supplier = supplierData
     }
 
+    // Fetch variants if product has them
+    let variants = null
+    if (product.has_variants) {
+      const { data: variantData } = await supabase
+        .from('catalog_product_variants')
+        .select('*')
+        .eq('product_id', id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+
+      variants = variantData
+    }
+
     // Get related products (same category)
     const { data: relatedProducts } = await supabase
       .from('catalog_verified_products')
@@ -51,7 +64,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      product: { ...product, supplier },
+      product: { ...product, supplier, variants },
       relatedProducts: relatedProducts || []
     })
 
