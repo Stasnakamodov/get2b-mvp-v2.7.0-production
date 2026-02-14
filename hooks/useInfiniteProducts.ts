@@ -45,6 +45,9 @@ interface UseInfiniteProductsOptions {
   search?: string
   supplierId?: string
   inStock?: boolean
+  minPrice?: number
+  maxPrice?: number
+  country?: string
   limit?: number
   enabled?: boolean
   sortField?: SortField
@@ -78,6 +81,9 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
     search,
     supplierId,
     inStock,
+    minPrice,
+    maxPrice,
+    country,
     limit = 50,
     enabled = true,
     sortField = 'created_at',
@@ -85,7 +91,7 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
   } = options
 
   return useInfiniteQuery<ProductsResponse>({
-    queryKey: ['products', supplierType, category, subcategory, search, supplierId, inStock, limit, sortField, sortOrder],
+    queryKey: ['products', supplierType, category, subcategory, search, supplierId, inStock, minPrice, maxPrice, country, limit, sortField, sortOrder],
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams()
       params.set('supplier_type', supplierType)
@@ -115,8 +121,17 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
       if (sortOrder) {
         params.set('sort_order', sortOrder)
       }
+      if (minPrice !== undefined) {
+        params.set('min_price', String(minPrice))
+      }
+      if (maxPrice !== undefined) {
+        params.set('max_price', String(maxPrice))
+      }
+      if (country) {
+        params.set('supplier_country', country)
+      }
 
-      const response = await fetch(`/api/catalog/products-paginated?${params}`)
+      const response = await fetch(`/api/catalog/products?${params}`)
 
       if (!response.ok) {
         throw new Error('Failed to fetch products')

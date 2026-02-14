@@ -73,3 +73,7 @@ export const CART_FOR_PROJECT_KEY = 'get2b_catalog_cart'
 
 // Максимум товаров в корзине
 export const MAX_CART_ITEMS = 100
+
+// Wishlist
+export const WISHLIST_STORAGE_KEY = 'get2b_catalog_wishlist'
+export const MAX_WISHLIST_ITEMS = 200

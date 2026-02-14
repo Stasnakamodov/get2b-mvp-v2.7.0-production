@@ -17,13 +17,16 @@ import type { Product } from '@/src/entities/product'
 import { ROOM_TYPES } from '@/src/shared/config'
 import { logger } from '@/src/shared/lib'
 
-// New catalog components for categories mode
-import { CatalogHeader } from '@/app/dashboard/catalog-new/components/CatalogHeader'
-import { CatalogSidebar } from '@/app/dashboard/catalog-new/components/CatalogSidebar'
-import { CatalogGrid } from '@/app/dashboard/catalog-new/components/CatalogGrid'
-import { ProductModal } from '@/app/dashboard/catalog-new/components/ProductModal'
+// Catalog components for categories mode
+import { CatalogHeader } from './components/CatalogHeader'
+import { CatalogSidebar } from './components/CatalogSidebar'
+import { CatalogGrid } from './components/CatalogGrid'
+import { ProductModal } from './components/ProductModal'
+import { FilterTags } from './components/FilterTags'
+import { WishlistSheet } from './components/WishlistSheet'
 import { useInfiniteProducts, flattenProducts } from '@/hooks/useInfiniteProducts'
 import { useProductCart } from '@/hooks/useProductCart'
+import { useWishlist } from '@/hooks/useWishlist'
 import { useCatalogCategories } from '@/hooks/useCatalogCategories'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Badge } from '@/components/ui/badge'
@@ -43,9 +46,27 @@ import { formatPrice } from '@/lib/catalog/utils'
 
 import { useMemo, useEffect } from 'react'
 
+/** Adapts FSD Product to CatalogProduct for cart/modal use */
+function productToCatalogProduct(p: Product): CatalogProduct {
+  return {
+    id: p.id,
+    name: p.product_name || p.name || '',
+    description: p.description ?? undefined,
+    category: p.category || '',
+    price: p.price ? parseFloat(p.price) : undefined,
+    currency: p.currency || 'RUB',
+    min_order: p.min_order ?? undefined,
+    in_stock: p.in_stock,
+    images: p.images || [],
+    supplier_id: p.supplier_id,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+  }
+}
+
 /**
  * Unified catalog page:
- * - "Categories" mode: uses catalog-new (virtualized, cursor pagination)
+ * - "Categories" mode: virtualized, cursor pagination
  * - "Suppliers" mode: keeps existing SupplierGrid (not slow)
  */
 export default function CatalogPage() {
@@ -85,11 +106,12 @@ export default function CatalogPage() {
     }
   }
 
-  // ========== Categories mode state (catalog-new) ==========
+  // ========== Categories mode state ==========
   const [filters, setFilters] = useState<CatalogFilters>({})
   const [sort, setSort] = useState<CatalogSort>({ field: 'created_at', order: 'desc' })
   const [viewMode, setViewMode] = useState<CatalogViewMode>('grid-4')
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
 
@@ -109,6 +131,15 @@ export default function CatalogPage() {
   } = useProductCart()
 
   const {
+    items: wishlistItems,
+    count: wishlistCount,
+    toggleWishlist,
+    removeFromWishlist,
+    isInWishlist,
+    clearWishlist,
+  } = useWishlist()
+
+  const {
     data,
     isLoading,
     isFetchingNextPage,
@@ -120,6 +151,9 @@ export default function CatalogPage() {
     subcategory: filters.subcategory,
     search: filters.search,
     inStock: filters.inStock,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    country: filters.country,
     sortField: sort.field === 'popularity' ? 'created_at' : sort.field,
     sortOrder: sort.order,
     limit: 50,
@@ -137,6 +171,14 @@ export default function CatalogPage() {
   const handleCategorySelect = useCallback((c: string | undefined, subcategory?: string) => {
     setFilters(prev => ({ ...prev, category: c, subcategory, search: undefined }))
     setIsSidebarOpen(false)
+  }, [])
+  const handleToggleWishlist = useCallback((p: CatalogProduct) => toggleWishlist(p), [toggleWishlist])
+  const handleRemoveFilter = useCallback((key: keyof CatalogFilters) => {
+    if (key === 'minPrice') {
+      setFilters(prev => ({ ...prev, minPrice: undefined, maxPrice: undefined }))
+    } else {
+      setFilters(prev => ({ ...prev, [key]: undefined }))
+    }
   }, [])
   const handleCreateProject = useCallback(() => {
     router.push('/dashboard/project-constructor?fromCatalog=true')
@@ -193,6 +235,8 @@ export default function CatalogPage() {
                 totalProducts={products.length}
                 cartItemsCount={totalItems}
                 onCartClick={() => setIsCartOpen(true)}
+                wishlistCount={wishlistCount}
+                onWishlistClick={() => setIsWishlistOpen(true)}
               />
             </div>
 
@@ -248,6 +292,13 @@ export default function CatalogPage() {
                 </BreadcrumbList>
               </Breadcrumb>
 
+              <FilterTags
+                filters={filters}
+                selectedCategoryName={filters.category}
+                selectedSubcategoryName={selectedSubcategoryName}
+                onRemoveFilter={handleRemoveFilter}
+              />
+
               <span className="text-xs text-gray-400 shrink-0">
                 {products.length > 0 && `${products.length.toLocaleString('ru-RU')} товаров`}
               </span>
@@ -289,6 +340,8 @@ export default function CatalogPage() {
                   isInCart={isInCart}
                   onAddToCart={handleAddToCart}
                   onProductClick={handleProductClick}
+                  isInWishlist={isInWishlist}
+                  onToggleWishlist={handleToggleWishlist}
                 />
               </div>
             </div>
@@ -408,6 +461,8 @@ export default function CatalogPage() {
           isInCart={selectedProduct ? isInCart(selectedProduct.id) : false}
           cartQuantity={selectedProduct ? getQuantity(selectedProduct.id) : 0}
           onAddToCart={handleModalAddToCart}
+          isInWishlist={selectedProduct ? isInWishlist(selectedProduct.id) : false}
+          onToggleWishlist={handleToggleWishlist}
         />
 
         {/* Supplier Modal (suppliers mode) */}
@@ -418,11 +473,20 @@ export default function CatalogPage() {
           loading={supplierModal.loading}
           onClose={supplierModal.close}
           onStartProject={handleStartProject}
-          onAddToCart={(product: any) => { addToCart(product, 1); return true }}
+          onAddToCart={(product: Product) => { addToCart(productToCatalogProduct(product), 1); return true }}
           onProductClick={(product: Product) => {
-            // For supplier modal product clicks, open the product modal
-            setSelectedProduct(product as any)
+            setSelectedProduct(productToCatalogProduct(product))
           }}
+        />
+
+        {/* Wishlist Sheet */}
+        <WishlistSheet
+          open={isWishlistOpen}
+          onOpenChange={setIsWishlistOpen}
+          items={wishlistItems}
+          onRemove={removeFromWishlist}
+          onClear={clearWishlist}
+          onAddToCart={handleAddToCart}
         />
 
         {/* Cart Sheet */}

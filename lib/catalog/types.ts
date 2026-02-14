@@ -14,7 +14,7 @@ export interface CatalogProduct {
   currency: string
   min_order?: string
   in_stock: boolean
-  images: string[]
+  images: (string | { url: string })[]
   specifications?: Record<string, string>
   supplier_id: string
   supplier_name?: string
@@ -113,4 +113,10 @@ export interface CartState {
   items: CartItem[]
   totalItems: number
   totalAmount: number
+}
+
+// Элемент избранного
+export interface WishlistItem {
+  product: CatalogProduct
+  addedAt: Date
 }

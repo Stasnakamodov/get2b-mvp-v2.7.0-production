@@ -1,0 +1,209 @@
+'use client'
+
+import { useRef, useEffect, useCallback, memo } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { Loader2, Package } from 'lucide-react'
+import { ProductCard } from './ProductCard'
+import { ProductCardSkeleton } from './ProductCardSkeleton'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
+import type { CatalogProduct, CatalogViewMode } from '@/lib/catalog/types'
+import { CARD_HEIGHTS } from '@/lib/catalog/constants'
+
+const GRID_COLS_MAP: Record<number, string> = {
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+}
+
+interface CatalogGridProps {
+  products: CatalogProduct[]
+  isLoading: boolean
+  isFetchingNextPage: boolean
+  hasNextPage: boolean
+  fetchNextPage: () => void
+  viewMode: CatalogViewMode
+  isInCart: (productId: string) => boolean
+  onAddToCart: (product: CatalogProduct) => void
+  onProductClick: (product: CatalogProduct) => void
+  isInWishlist?: (productId: string) => boolean
+  onToggleWishlist?: (product: CatalogProduct) => void
+}
+
+/**
+ * Virtualized product grid with skeleton loading and responsive columns
+ */
+export const CatalogGrid = memo(function CatalogGrid({
+  products,
+  isLoading,
+  isFetchingNextPage,
+  hasNextPage,
+  fetchNextPage,
+  viewMode,
+  isInCart,
+  onAddToCart,
+  onProductClick,
+  isInWishlist,
+  onToggleWishlist,
+}: CatalogGridProps) {
+  const parentRef = useRef<HTMLDivElement>(null)
+  const breakpoint = useBreakpoint()
+
+  const getColumns = () => {
+    if (viewMode === 'list') return 1
+    if (breakpoint === 'mobile') return 2
+    if (breakpoint === 'tablet') return 3
+    // desktop — by viewMode
+    switch (viewMode) {
+      case 'grid-4': return 4
+      case 'grid-3': return 3
+      case 'grid-2': return 2
+      default: return 4
+    }
+  }
+
+  const columns = getColumns()
+  const rowCount = Math.ceil(products.length / columns)
+
+  const getItemHeight = () => {
+    if (viewMode === 'list') return CARD_HEIGHTS['list']
+    if (breakpoint === 'mobile') return 280
+    if (breakpoint === 'tablet') return 300
+    return CARD_HEIGHTS[viewMode] || 320
+  }
+
+  const itemHeight = getItemHeight()
+
+  const virtualizer = useVirtualizer({
+    count: hasNextPage ? rowCount + 1 : rowCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => itemHeight,
+    overscan: 3,
+  })
+
+  const virtualItems = virtualizer.getVirtualItems()
+
+  useEffect(() => {
+    const lastItem = virtualItems[virtualItems.length - 1]
+    if (!lastItem) return
+    if (lastItem.index >= rowCount - 1 && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [hasNextPage, fetchNextPage, isFetchingNextPage, virtualItems, rowCount])
+
+  const getRowProducts = useCallback((rowIndex: number): CatalogProduct[] => {
+    const start = rowIndex * columns
+    return products.slice(start, start + columns)
+  }, [products, columns])
+
+  // Skeleton loading state
+  if (isLoading && products.length === 0) {
+    const skeletonCount = viewMode === 'list' ? 6 : columns * 2
+    return (
+      <div className="flex-1 overflow-auto p-1">
+        {viewMode === 'list' ? (
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: skeletonCount }).map((_, i) => (
+              <ProductCardSkeleton key={i} viewMode="list" />
+            ))}
+          </div>
+        ) : (
+          <div className={`grid gap-4 ${GRID_COLS_MAP[columns] || 'grid-cols-4'}`}>
+            {Array.from({ length: skeletonCount }).map((_, i) => (
+              <ProductCardSkeleton key={i} viewMode="grid" />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Empty state
+  if (!isLoading && products.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-700 mb-2">
+            Товары не найдены
+          </h3>
+          <p className="text-gray-500">
+            Попробуйте изменить параметры поиска или фильтры
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const gridClass = GRID_COLS_MAP[columns] || 'grid-cols-4'
+
+  return (
+    <div
+      ref={parentRef}
+      className="flex-1 overflow-auto"
+      style={{ contain: 'strict' }}
+    >
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {virtualItems.map(virtualRow => {
+          const isLoaderRow = virtualRow.index >= rowCount
+          const rowProducts = isLoaderRow ? [] : getRowProducts(virtualRow.index)
+
+          return (
+            <div
+              key={virtualRow.key}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+                padding: '8px',
+              }}
+            >
+              {isLoaderRow ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-6 h-6 animate-spin text-orange-500 mr-2" />
+                  <span className="text-gray-500">Загрузка...</span>
+                </div>
+              ) : (
+                <div className={`h-full ${
+                  viewMode === 'list'
+                    ? 'flex flex-col gap-3'
+                    : `grid gap-4 ${gridClass}`
+                }`}>
+                  {rowProducts.map(product => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isInCart={isInCart(product.id)}
+                      onAddToCart={onAddToCart}
+                      onProductClick={onProductClick}
+                      viewMode={viewMode === 'list' ? 'list' : 'grid'}
+                      isInWishlist={isInWishlist?.(product.id)}
+                      onToggleWishlist={onToggleWishlist}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {isFetchingNextPage && (
+        <div className="p-4 text-center">
+          <Loader2 className="w-6 h-6 animate-spin text-orange-500 inline mr-2" />
+          <span className="text-gray-500">Загрузка товаров...</span>
+        </div>
+      )}
+    </div>
+  )
+})
+
+export default CatalogGrid

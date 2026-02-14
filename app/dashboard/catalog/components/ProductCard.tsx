@@ -1,196 +1,258 @@
-import { logger } from "@/src/shared/lib/logger"
-import React from 'react'
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { 
-  Eye, 
-  MessageCircle, 
-  ShoppingCart, 
-  Star, 
-  Package, 
-  Clock, 
-  DollarSign,
-  Building2,
-  Plus,
-  TrendingUp,
-  Award,
-  Image as ImageIcon
-} from "lucide-react"
-import { motion } from "framer-motion"
+'use client'
+
+import { memo, useState, useEffect } from 'react'
+import Image from 'next/image'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ShoppingCart, Check, ImageIcon, MapPin, Heart } from 'lucide-react'
+import type { CatalogProduct } from '@/lib/catalog/types'
+import { formatPrice, formatMinOrder, getProductImage, truncateText } from '@/lib/catalog/utils'
+
 interface ProductCardProps {
-  product: any
-  onViewDetails?: (productId: string) => void
-  onRequestPrice?: (productId: string) => void
-  onContactSupplier?: (supplierId: string) => void
+  product: CatalogProduct
+  isInCart?: boolean
+  onAddToCart?: (product: CatalogProduct) => void
+  onProductClick?: (product: CatalogProduct) => void
+  viewMode?: 'grid' | 'list'
+  isInWishlist?: boolean
+  onToggleWishlist?: (product: CatalogProduct) => void
 }
 
-// Категории товаров для отображения
-const CATEGORIES = {
-  "electronics": { name: "Электроника", icon: "💻", color: "bg-blue-50 text-blue-700 border-blue-200" },
-  "textiles": { name: "Текстиль", icon: "🧵", color: "bg-purple-50 text-purple-700 border-purple-200" },
-  "machinery": { name: "Оборудование", icon: "⚙️", color: "bg-orange-50 text-orange-700 border-orange-200" },
-  "furniture": { name: "Мебель", icon: "🪑", color: "bg-amber-50 text-amber-700 border-amber-200" },
-  "chemicals": { name: "Химия", icon: "🧪", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  "food": { name: "Продукты", icon: "🍎", color: "bg-green-50 text-green-700 border-green-200" }
-}
-
-export default function ProductCard({ 
-  product, 
-  onViewDetails, 
-  onRequestPrice, 
-  onContactSupplier 
+export const ProductCard = memo(function ProductCard({
+  product,
+  isInCart = false,
+  onAddToCart,
+  onProductClick,
+  viewMode = 'grid',
+  isInWishlist = false,
+  onToggleWishlist,
 }: ProductCardProps) {
-  const category = CATEGORIES[product.category as keyof typeof CATEGORIES] || CATEGORIES.electronics
+  const imageUrl = getProductImage(product)
+  const [imageError, setImageError] = useState(false)
 
-  return (
-    <motion.div
-      whileHover={{ y: -6 }}
-      transition={{ type: "spring", stiffness: 300, damping: 24 }}
-    >
-      <Card className="h-full hover:shadow-xl transition-all duration-300 border-gray-200 hover:border-gray-300 bg-white group overflow-hidden">
-        {/* Изображение товара */}
-        <div className="relative h-48 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-          {(product.images && product.images.length > 0) ? (
-            <img
-              src={product.images[0]}
-              alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none'
-                e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden')
-              }}
-            />
-          ) : null}
-          <div className={`flex items-center justify-center h-full fallback-icon ${(product.images && product.images.length > 0) ? 'hidden' : ''}`}>
-            <ImageIcon className="h-16 w-16 text-gray-300" />
-          </div>
-          
-          {/* Наложение с категорией */}
-          <div className="absolute top-3 left-3">
-            <Badge variant="outline" className={`${category.color} backdrop-blur-sm bg-white/90`}>
-              <span className="mr-1">{category.icon}</span>
-              {category.name}
-            </Badge>
-          </div>
-          
-          {/* Рейтинг в правом верхнем углу */}
-          {product.rating && (
-            <div className="absolute top-3 right-3">
-              <Badge variant="outline" className="bg-white/90 backdrop-blur-sm border-gray-200">
-                <Star className="h-3 w-3 text-yellow-400 fill-current mr-1" />
-                <span className="font-medium">{product.rating}</span>
-              </Badge>
-            </div>
-          )}
-        </div>
+  useEffect(() => { setImageError(false) }, [product.id])
 
-        <CardHeader className="pb-3">
-          <div className="space-y-2">
-            <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors leading-tight">
+  const effectiveImageUrl = imageError ? null : imageUrl
+
+  const handleClick = () => {
+    onProductClick?.(product)
+  }
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onAddToCart?.(product)
+  }
+
+  const handleToggleWishlist = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onToggleWishlist?.(product)
+  }
+
+  // List view
+  if (viewMode === 'list') {
+    return (
+      <Card
+        className={`cursor-pointer transition-all hover:shadow-md hover:border-orange-400 ${
+          isInCart ? 'ring-2 ring-orange-500 bg-orange-50' : ''
+        }`}
+        onClick={handleClick}
+      >
+        <CardContent className="p-3 flex gap-4">
+          <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+            {effectiveImageUrl ? (
+              <Image
+                src={effectiveImageUrl}
+                alt={product.name}
+                fill
+                className="object-cover"
+                sizes="96px"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <ImageIcon className="w-8 h-8 text-gray-400" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-sm line-clamp-1 mb-1">
               {product.name}
             </h3>
-            
-            {/* Поставщик */}
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Building2 className="h-4 w-4" />
-              <span className="line-clamp-1">{product.supplier || "Поставщик не указан"}</span>
+
+            {product.description && (
+              <p className="text-xs text-gray-500 line-clamp-1 mb-2">
+                {truncateText(product.description, 80)}
+              </p>
+            )}
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="text-xs">
+                {product.category}
+              </Badge>
+
+              {product.supplier_country && (
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {product.supplier_country}
+                </span>
+              )}
             </div>
           </div>
-        </CardHeader>
-        
-        <CardContent className="pt-0 space-y-4">
-          {/* Цена и MOQ */}
-          <div className="space-y-2">
-            {product.price && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1 text-gray-600">
-                  <DollarSign className="h-4 w-4" />
-                  <span className="text-sm">Цена</span>
-                </div>
-                <div className="font-semibold text-gray-900">
-                  {product.price}
-                </div>
-              </div>
-            )}
-            
-            {product.min_order && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1 text-gray-600">
-                  <Package className="h-4 w-4" />
-                  <span className="text-sm">MOQ</span>
-                </div>
-                <div className="text-sm text-gray-700">
-                  {product.min_order}
-                </div>
-              </div>
-            )}
-            
-            {product.orders_count && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1 text-gray-600">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm">Заказов</span>
-                </div>
-                <div className="text-sm text-gray-700">
-                  {product.orders_count}
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Описание */}
-          {product.description && (
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {product.description}
-            </p>
-          )}
-
-          {/* Действия */}
-          <div className="space-y-2 pt-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onViewDetails?.(product.id)}
-                className="h-9 text-xs"
-              >
-                <Eye className="h-3 w-3 mr-1" />
-                Подробнее
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onRequestPrice?.(product.id)}
-                className="h-9 text-xs"
-              >
-                <DollarSign className="h-3 w-3 mr-1" />
-                Цена
-              </Button>
+          <div className="flex flex-col items-end justify-between">
+            <div className="text-right">
+              <p className="font-bold text-orange-600">
+                {formatPrice(product.price, product.currency)}
+              </p>
+              {product.min_order && (
+                <p className="text-xs text-gray-500">
+                  {formatMinOrder(product.min_order)}
+                </p>
+              )}
             </div>
-            
-            <div className="grid grid-cols-2 gap-2">
+
+            <div className="flex items-center gap-1.5">
+              {onToggleWishlist && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={handleToggleWishlist}
+                >
+                  <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current text-red-500' : 'text-gray-400'}`} />
+                </Button>
+              )}
               <Button
-                variant="outline"
                 size="sm"
-                onClick={() => onContactSupplier?.(product.supplier_id)}
-                className="h-9 text-xs"
+                variant={isInCart ? 'secondary' : 'default'}
+                className={isInCart ? '' : 'bg-orange-500 hover:bg-orange-600'}
+                onClick={handleAddToCart}
               >
-                <MessageCircle className="h-3 w-3 mr-1" />
-                Связаться
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => onRequestPrice?.(product.id)}
-                className="h-9 text-xs bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                В проект
+                {isInCart ? (
+                  <>
+                    <Check className="w-4 h-4 mr-1" />
+                    В корзине
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-1" />
+                    Добавить
+                  </>
+                )}
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-    </motion.div>
+    )
+  }
+
+  // Grid view
+  return (
+    <Card
+      className={`cursor-pointer transition-all hover:shadow-lg hover:border-orange-400 hover:-translate-y-1 ${
+        isInCart ? 'ring-2 ring-orange-500 bg-orange-50' : ''
+      }`}
+      onClick={handleClick}
+    >
+      <CardContent className="p-0">
+        <div className="relative aspect-square bg-gray-100 rounded-t-lg overflow-hidden">
+          {effectiveImageUrl ? (
+            <Image
+              src={effectiveImageUrl}
+              alt={product.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ImageIcon className="w-12 h-12 text-gray-400" />
+            </div>
+          )}
+
+          {/* Left stack: In stock + Featured */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            {product.in_stock && (
+              <Badge className="bg-green-500">
+                В наличии
+              </Badge>
+            )}
+            {product.is_featured && (
+              <Badge className="bg-orange-500">
+                Топ
+              </Badge>
+            )}
+          </div>
+
+          {/* Wishlist heart */}
+          {onToggleWishlist && (
+            <button
+              onClick={handleToggleWishlist}
+              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
+            >
+              <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current text-red-500' : 'text-gray-500'}`} />
+            </button>
+          )}
+        </div>
+
+        <div className="p-3">
+          <h3 className="font-medium text-sm line-clamp-2 mb-2 h-10">
+            {product.name}
+          </h3>
+
+          <Badge variant="secondary" className="text-xs mb-2">
+            {product.category}
+          </Badge>
+
+          <div className="mb-2">
+            <p className="font-bold text-lg text-orange-600">
+              {formatPrice(product.price, product.currency)}
+            </p>
+            {product.min_order && (
+              <p className="text-xs text-gray-500">
+                {formatMinOrder(product.min_order)}
+              </p>
+            )}
+          </div>
+
+          {product.supplier_name && (
+            <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
+              <span className="truncate">{product.supplier_name}</span>
+              {product.supplier_country && (
+                <>
+                  <span>·</span>
+                  <span>{product.supplier_country}</span>
+                </>
+              )}
+            </div>
+          )}
+
+          <Button
+            size="sm"
+            variant={isInCart ? 'secondary' : 'default'}
+            className={`w-full ${isInCart ? '' : 'bg-orange-500 hover:bg-orange-600'}`}
+            onClick={handleAddToCart}
+          >
+            {isInCart ? (
+              <>
+                <Check className="w-4 h-4 mr-1" />
+                В корзине
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-4 h-4 mr-1" />
+                В проект
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
-} 
+})
+
+export default ProductCard
