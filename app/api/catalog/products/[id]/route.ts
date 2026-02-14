@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+import { logger } from '@/src/shared/lib/logger'
 
 /**
  * GET /api/catalog/products/[id]
@@ -55,7 +56,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('[API] Product detail error:', error)
+    logger.error('[API] Product detail error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -75,6 +76,11 @@ export async function PATCH(
   }
 
   try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { supplier_type, ...updateData } = await request.json()
     const tableName = supplier_type === 'verified' ? 'catalog_verified_products' : 'catalog_user_products'
 
@@ -91,7 +97,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, product: data })
   } catch (error) {
-    console.error('[API] Product update error:', error)
+    logger.error('[API] Product update error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -111,6 +117,11 @@ export async function DELETE(
   }
 
   try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { supplier_type } = await request.json()
     const tableName = supplier_type === 'verified' ? 'catalog_verified_products' : 'catalog_user_products'
 
@@ -127,7 +138,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, product: data })
   } catch (error) {
-    console.error('[API] Product delete error:', error)
+    logger.error('[API] Product delete error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

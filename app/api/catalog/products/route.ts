@@ -188,9 +188,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Create product
+// POST: Create product (requires auth)
 export async function POST(request: NextRequest) {
   try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const productData = await request.json()
 
     const requiredFields = ["name", "supplier_id"]
@@ -240,9 +245,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH: Update product
+// PATCH: Update product (requires auth)
 export async function PATCH(request: NextRequest) {
   try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { id, supplier_type, ...updateData } = await request.json()
     if (!id) {
       return NextResponse.json({ error: "Поле id обязательно" }, { status: 400 })
@@ -268,9 +278,14 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-// DELETE: Delete product
+// DELETE: Delete product (requires auth)
 export async function DELETE(request: NextRequest) {
   try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { id, supplier_type } = await request.json()
     if (!id) {
       return NextResponse.json({ error: "Поле id обязательно" }, { status: 400 })

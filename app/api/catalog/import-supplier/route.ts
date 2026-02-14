@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
+import { logger } from "@/src/shared/lib/logger";
 
 // POST: Импорт поставщика из каталога Get2B в личный список пользователя
 export async function POST(request: NextRequest) {
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (restoreError) {
-        console.error("❌ [API] Ошибка восстановления поставщика:", restoreError);
+        logger.error("[API] Ошибка восстановления поставщика:", restoreError);
         return NextResponse.json({ error: restoreError.message }, { status: 500 });
       }
 
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
         .select();
 
       if (restoreProductsError) {
-        console.warn("⚠️ [API] Ошибка восстановления товаров:", restoreProductsError);
+        logger.warn("[API] Ошибка восстановления товаров:", restoreProductsError);
       } else if (restoredProducts) {
       }
 
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error("❌ [API] Ошибка импорта поставщика:", insertError);
+      logger.error("[API] Ошибка импорта поставщика:", insertError);
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest) {
 
       
       if (productsError) {
-        console.error(`❌ [API] Ошибка поиска товаров:`, productsError);
+        logger.error("[API] Ошибка поиска товаров:", productsError);
       }
 
       if (!productsError && verifiedProducts && verifiedProducts.length > 0) {
@@ -221,7 +222,7 @@ export async function POST(request: NextRequest) {
         if (!insertProductsError && insertedProducts) {
           importedProducts = insertedProducts;
         } else {
-          console.warn("⚠️ [API] Ошибка импорта товаров:", insertProductsError);
+          logger.warn("[API] Ошибка импорта товаров:", insertProductsError);
         }
       }
     }
@@ -234,7 +235,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при импорте поставщика:", error);
+    logger.error("[API] Критическая ошибка при импорте поставщика:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -295,7 +296,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при проверке импорта:", error);
+    logger.error("[API] Критическая ошибка при проверке импорта:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 } 

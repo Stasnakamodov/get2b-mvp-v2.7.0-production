@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
+import { logger } from "@/src/shared/lib/logger";
 
 // POST: Запуск синхронизации каталога с данными из проектов
 export async function POST(request: NextRequest) {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     const { data: syncResult, error: syncError } = await supabase.rpc('sync_catalog_suppliers');
 
     if (syncError) {
-      console.error("❌ [API] Ошибка синхронизации каталога:", syncError);
+      logger.error("[API] Ошибка синхронизации каталога:", syncError);
       return NextResponse.json({ error: syncError.message }, { status: 500 });
     }
 
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при синхронизации:", error);
+    logger.error("[API] Критическая ошибка при синхронизации:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       .eq("is_active", true);
 
     if (userStatsError) {
-      console.error("❌ [API] Ошибка получения статистики пользователя:", userStatsError);
+      logger.error("[API] Ошибка получения статистики пользователя:", userStatsError);
       return NextResponse.json({ error: userStatsError.message }, { status: 500 });
     }
 
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       .eq("is_active", true);
 
     if (verifiedStatsError) {
-      console.error("❌ [API] Ошибка получения статистики аккредитованных поставщиков:", verifiedStatsError);
+      logger.error("[API] Ошибка получения статистики аккредитованных поставщиков:", verifiedStatsError);
     }
 
     const verifiedStatsData = verifiedStats ? {
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Критическая ошибка при получении статистики:", error);
+    logger.error("[API] Критическая ошибка при получении статистики:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 } 

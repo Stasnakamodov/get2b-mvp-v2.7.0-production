@@ -77,7 +77,7 @@ export function useProductCart() {
         setItems(restoredItems)
       }
     } catch (e) {
-      console.error('Failed to load cart from localStorage:', e)
+      // localStorage read failed, ignore
     }
     setIsLoaded(true)
   }, [])
@@ -88,7 +88,7 @@ export function useProductCart() {
       try {
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
       } catch (e) {
-        console.error('Failed to save cart to localStorage:', e)
+        // localStorage write failed, ignore
       }
     }
   }, [items, isLoaded])
@@ -111,7 +111,7 @@ export function useProductCart() {
     setItems(prev => {
       // Проверяем лимит
       if (prev.length >= MAX_CART_ITEMS) {
-        console.warn('Cart is full')
+        // cart limit reached
         return prev
       }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logger } from '@/src/shared/lib/logger'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,7 +23,7 @@ export async function GET(
       .eq('supplier_id', supplierId)
 
     if (productsError) {
-      console.error('❌ Ошибка получения товаров:', productsError)
+      logger.error('[API] Ошибка получения товаров:', productsError)
       return NextResponse.json(
         { error: 'Ошибка получения товаров' },
         { status: 500 }
@@ -36,7 +37,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('❌ Ошибка API:', error)
+    logger.error('[API] Ошибка API:', error)
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }

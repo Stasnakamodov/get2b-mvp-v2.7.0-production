@@ -83,10 +83,10 @@ export function useCatalogCartImport(): CatalogCartImportResult {
         }))
         setCartItems(items)
         setHasImportedFromCatalog(items.length > 0)
-        console.log(`📦 [CatalogImport] Загружено ${items.length} товаров из корзины каталога`)
+        // items loaded from catalog cart
       }
     } catch (e) {
-      console.error('[CatalogImport] Ошибка загрузки корзины:', e)
+      // localStorage read failed, ignore
     }
 
     setIsLoaded(true)

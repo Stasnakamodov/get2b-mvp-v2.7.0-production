@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import {
   Dialog,
@@ -53,6 +53,12 @@ export function ProductModal({
 }: ProductModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
+
+  // Reset state when product changes
+  useEffect(() => {
+    setCurrentImageIndex(0)
+    setQuantity(1)
+  }, [product?.id])
 
   if (!product) return null
 

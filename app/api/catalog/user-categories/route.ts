@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       .eq('user_id', userId)
 
     if (historyError) {
-      console.error('❌ Ошибка загрузки истории товаров:', historyError)
+      logger.error('[API] Ошибка загрузки истории товаров:', historyError)
       return NextResponse.json(
         { error: 'Ошибка загрузки истории товаров' },
         { status: 500 }
@@ -101,7 +101,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error) {
-    console.error('❌ Ошибка анализа категорий пользователя:', error)
+    logger.error('[API] Ошибка анализа категорий пользователя:', error)
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }

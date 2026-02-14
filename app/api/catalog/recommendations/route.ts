@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
+import { logger } from "@/src/shared/lib/logger";
 
 // GET: Получение умных рекомендаций поставщиков
 export async function GET(request: NextRequest) {
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [SMART RECOMMENDATIONS] Ошибка:', error);
+    logger.error('[API] [SMART RECOMMENDATIONS] Ошибка:', error);
     return NextResponse.json({ 
       error: 'Ошибка генерации рекомендаций'
     }, { status: 500 });

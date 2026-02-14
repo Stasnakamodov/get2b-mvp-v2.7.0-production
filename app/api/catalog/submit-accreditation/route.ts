@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabaseServiceClient";
+import { logger } from "@/src/shared/lib/logger";
 
 // POST: Подача заявки на аккредитацию поставщика (обновленная версия)
 export async function POST(request: NextRequest) {
@@ -218,8 +219,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (applicationError) {
-      console.error("❌ [API] Ошибка создания заявки:", applicationError);
-      console.error("❌ [API] Детали ошибки:", {
+      logger.error("[API] Ошибка создания заявки:", applicationError);
+      logger.error("[API] Детали ошибки:", {
         code: applicationError.code,
         message: applicationError.message,
         details: applicationError.details,
@@ -255,7 +256,7 @@ export async function POST(request: NextRequest) {
             });
 
           if (uploadError) {
-            console.error("❌ [API] Ошибка загрузки изображения:", uploadError);
+            logger.error("[API] Ошибка загрузки изображения:", uploadError);
             continue;
           }
 
@@ -271,7 +272,7 @@ export async function POST(request: NextRequest) {
           });
 
         } catch (error) {
-          console.error("❌ [API] Ошибка сохранения изображения:", error);
+          logger.error("[API] Ошибка сохранения изображения:", error);
         }
       }
 
@@ -287,7 +288,7 @@ export async function POST(request: NextRequest) {
             });
 
           if (uploadError) {
-            console.error("❌ [API] Ошибка загрузки сертификата:", uploadError);
+            logger.error("[API] Ошибка загрузки сертификата:", uploadError);
             continue;
           }
 
@@ -303,7 +304,7 @@ export async function POST(request: NextRequest) {
           });
 
         } catch (error) {
-          console.error("❌ [API] Ошибка сохранения сертификата:", error);
+          logger.error("[API] Ошибка сохранения сертификата:", error);
         }
       }
 
@@ -319,7 +320,7 @@ export async function POST(request: NextRequest) {
             });
 
           if (uploadError) {
-            console.error("❌ [API] Ошибка загрузки документа:", uploadError);
+            logger.error("[API] Ошибка загрузки документа:", uploadError);
             continue;
           }
 
@@ -335,7 +336,7 @@ export async function POST(request: NextRequest) {
           });
 
         } catch (error) {
-          console.error("❌ [API] Ошибка сохранения документа:", error);
+          logger.error("[API] Ошибка сохранения документа:", error);
         }
       }
 
@@ -380,7 +381,7 @@ export async function POST(request: NextRequest) {
         .eq('id', application.id);
 
       if (updateError) {
-        console.error("❌ [API] Ошибка обновления заявки с URL файлов:", updateError);
+        logger.error("[API] Ошибка обновления заявки с URL файлов:", updateError);
       } else {
       }
     }
@@ -435,7 +436,7 @@ export async function POST(request: NextRequest) {
         })
       });
     } catch (telegramError) {
-      console.error("⚠️ [API] Ошибка отправки Telegram уведомления:", telegramError);
+      logger.warn("[API] Ошибка отправки Telegram уведомления:", telegramError);
       // Не прерываем процесс, если Telegram недоступен
     }
 
@@ -453,7 +454,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("❌ [API] Ошибка подачи заявки на аккредитацию:", error);
+    logger.error("[API] Ошибка подачи заявки на аккредитацию:", error);
     return NextResponse.json({ 
       error: "Внутренняя ошибка сервера при подаче заявки на аккредитацию" 
     }, { status: 500 });

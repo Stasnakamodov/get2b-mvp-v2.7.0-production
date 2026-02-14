@@ -65,37 +65,22 @@ export function useCatalogData({
   setShowSupplierProfileSelector
 }: UseCatalogDataProps) {
 
-  // Получение списка шаблонов пользователя
   const getUserTemplates = (): TemplateData[] => {
-    console.log('📋 [getUserTemplates] Проверяем шаблоны:', {
-      templates: templates,
-      loading: templatesLoading,
-      error: templatesError,
-      length: templates?.length || 0
-    });
-
     if (!templates || templates.length === 0) {
-      console.log('📋 [getUserTemplates] Шаблоны пусты');
       return [];
     }
 
-    const mappedTemplates = templates.map(template => ({
+    return templates.map(template => ({
       id: template.id,
       name: template.name || 'Без названия',
       description: template.description || 'Шаблон проекта',
-      availableSteps: [1, 2], // По умолчанию шаблоны содержат шаги 1 и 2
+      availableSteps: [1, 2],
       lastUsed: template.updated_at ? new Date(template.updated_at).toLocaleDateString('ru-RU') : 'Недавно'
     }));
-
-    console.log('📋 [getUserTemplates] Преобразованные шаблоны:', mappedTemplates);
-    return mappedTemplates;
   };
 
-  // Получение данных поставщика из каталога
   const getSupplierDataFromCatalog = async (supplierId: string): Promise<SupplierData | null> => {
     try {
-      console.log('🔍 Запрос данных поставщика:', supplierId);
-
       const { data: supplier, error } = await supabase
         .from('catalog_verified_suppliers')
         .select(`
@@ -114,20 +99,11 @@ export function useCatalogData({
         .eq('is_active', true)
         .single();
 
-      if (error) {
-        console.error('❌ Ошибка получения данных поставщика:', error);
+      if (error || !supplier) {
         return null;
       }
 
-      if (!supplier) {
-        console.warn('⚠️ Поставщик не найден:', supplierId);
-        return null;
-      }
-
-      console.log('✅ Данные поставщика получены:', supplier.name);
-
-      // Преобразуем данные в нужный формат
-      const supplierData: SupplierData = {
+      return {
         id: supplier.id,
         name: supplier.name,
         company_name: supplier.company_name,
@@ -139,20 +115,13 @@ export function useCatalogData({
         p2p_cards: supplier.p2p_cards || [],
         crypto_wallets: supplier.crypto_wallets || []
       };
-
-      return supplierData;
-
-    } catch (error) {
-      console.error('💥 Критическая ошибка запроса поставщика:', error);
+    } catch {
       return null;
     }
   };
 
-  // Получение товаров поставщика из каталога
   const getSupplierProducts = async (supplierId: string): Promise<ProductForSpec[]> => {
     try {
-      console.log('🔍 Запрос товаров поставщика:', supplierId);
-
       const { data: products, error } = await supabase
         .from('catalog_verified_products')
         .select(`
@@ -171,27 +140,18 @@ export function useCatalogData({
         .order('display_order', { ascending: true })
         .order('name', { ascending: true });
 
-      if (error) {
-        console.error('❌ Ошибка получения товаров поставщика:', error);
+      if (error || !products || products.length === 0) {
         return [];
       }
 
-      if (!products || products.length === 0) {
-        console.warn('⚠️ Товары поставщика не найдены:', supplierId);
-        return [];
-      }
-
-      console.log(`✅ Получено ${products.length} товаров поставщика`);
-
-      // Преобразуем данные в формат для спецификации
-      const productsForSpec: ProductForSpec[] = products.map(product => ({
+      return products.map(product => ({
         item_name: product.name,
-        quantity: 1, // Количество по умолчанию
+        quantity: 1,
         price: Number(product.price || 0),
-        unit: 'шт', // Единица по умолчанию
+        unit: 'шт',
         total: Number(product.price || 0),
         supplier_id: supplierId,
-        supplier_name: '', // Будет заполнено из данных поставщика
+        supplier_name: '',
         notes: product.description || '',
         sku: product.sku,
         category: product.category,
@@ -199,39 +159,21 @@ export function useCatalogData({
         min_order: product.min_order,
         specifications: product.specifications
       }));
-
-      return productsForSpec;
-
-    } catch (error) {
-      console.error('💥 Критическая ошибка запроса товаров:', error);
+    } catch {
       return [];
     }
   };
 
-  // Получение данных профиля для конкретного шага
   const getProfileData = async (stepId: number): Promise<any | null> => {
-    console.log('🔍 Получаем данные профиля для шага:', stepId);
-
     if (stepId === 1) {
-      // Для шага 1 (данные компании) используем профиль клиента
-      if (clientProfilesLoading) {
-        console.log('⏳ Профили клиентов загружаются...');
-        return null;
-      }
+      if (clientProfilesLoading) return null;
+      if (!clientProfiles || clientProfiles.length === 0) return null;
 
-      if (!clientProfiles || clientProfiles.length === 0) {
-        console.log('❌ Нет профилей клиентов');
-        return null;
-      }
-
-      // Если несколько профилей и не выбран конкретный - показываем выбор
       if (clientProfiles.length > 1 && !selectedProfileId) {
-        console.log('🔍 Несколько профилей - показываем выбор');
         openModal('profileSelector');
         return null;
       }
 
-      // Определяем какой профиль использовать
       let targetProfile;
       if (selectedProfileId) {
         targetProfile = clientProfiles.find(p => p.id === selectedProfileId);
@@ -239,21 +181,9 @@ export function useCatalogData({
         targetProfile = clientProfiles.find(p => p.is_default) || clientProfiles[0];
       }
 
-      if (!targetProfile) {
-        console.log('❌ Не найден профиль клиента');
-        return null;
-      }
+      if (!targetProfile) return null;
 
-      console.log('✅ Найден профиль клиента:', targetProfile.company_name || targetProfile.name);
-      console.log('🏦 Банковские данные профиля:', {
-        bank_name: targetProfile.bank_name,
-        bank_account: targetProfile.bank_account,
-        corr_account: targetProfile.corr_account || targetProfile.bank_corr_account,
-        bik: targetProfile.bik || targetProfile.bank_bik
-      });
-
-      // ИСПРАВЛЕНО: Используем company_name в первую очередь, затем fallback на name
-      const result = {
+      return {
         name: targetProfile.company_name || targetProfile.name || '',
         legal_name: targetProfile.legal_name || '',
         inn: targetProfile.inn || '',
@@ -268,31 +198,17 @@ export function useCatalogData({
         phone: targetProfile.phone || '',
         website: targetProfile.website || ''
       };
-
-      console.log('🎯 Возвращаемые данные getProfileData (ИСПРАВЛЕНО):', result);
-      return result;
     }
 
-    // Для шагов 2, 4, 5 используем профили поставщиков
     if ([2, 4, 5].includes(stepId)) {
-      if (supplierProfilesLoading) {
-        console.log('⏳ Профили поставщиков загружаются...');
-        return null;
-      }
+      if (supplierProfilesLoading) return null;
+      if (!supplierProfiles || supplierProfiles.length === 0) return null;
 
-      if (!supplierProfiles || supplierProfiles.length === 0) {
-        console.log('❌ Нет профилей поставщиков');
-        return null;
-      }
-
-      // Если несколько профилей и не выбран конкретный - показываем выбор
       if (supplierProfiles.length > 1 && !selectedSupplierProfileId) {
-        console.log('🔍 Несколько профилей поставщиков - показываем выбор');
         setShowSupplierProfileSelector(true);
         return null;
       }
 
-      // Определяем какой профиль использовать
       let targetProfile;
       if (selectedSupplierProfileId) {
         targetProfile = supplierProfiles.find(p => p.id === selectedSupplierProfileId);
@@ -300,27 +216,18 @@ export function useCatalogData({
         targetProfile = supplierProfiles.find(p => p.is_default) || supplierProfiles[0];
       }
 
-      if (!targetProfile) {
-        console.log('❌ Не найден профиль поставщика');
-        return null;
-      }
+      if (!targetProfile) return null;
 
-      console.log('✅ Найден профиль поставщика:', targetProfile.name);
-
-      // Возвращаем данные в зависимости от шага
       if (stepId === 2) {
-        // Шаг 2: Название поставщика и валюта
         return {
           supplier: targetProfile.name,
           currency: targetProfile.transfer_currency || 'USD'
         };
       } else if (stepId === 4) {
-        // Шаг 4: Методы оплаты
         return {
           method: targetProfile.payment_methods || 'bank-transfer'
         };
       } else if (stepId === 5) {
-        // Шаг 5: Банковские реквизиты
         return {
           bankName: targetProfile.bank_name || '',
           accountNumber: targetProfile.account_number || '',
@@ -333,8 +240,6 @@ export function useCatalogData({
       }
     }
 
-    // Для остальных шагов пока возвращаем null
-    console.log('⚠️ Данные профиля для шага', stepId, 'пока не реализованы');
     return null;
   };
 

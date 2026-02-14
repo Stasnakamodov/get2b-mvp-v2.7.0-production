@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+import { logger } from '@/src/shared/lib/logger'
 
 /**
  * API для экспорта каталога
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('❌ Ошибка экспорта каталога:', error)
+    logger.error('[API] Ошибка экспорта каталога:', error)
     return NextResponse.json({
       success: false,
       error: error.message

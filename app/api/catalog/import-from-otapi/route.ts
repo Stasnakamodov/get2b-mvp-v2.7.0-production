@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log(`[API] Найдено товаров в OTAPI: ${products.length}`)
+    logger.info(`[API] Найдено товаров в OTAPI: ${products.length}`)
 
     // 3. Получаем или создаем поставщика
     let { data: supplier, error: supplierError } = await supabase
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
 
       if (insertError) {
         // Fallback: insert one-by-one, skip constraint violations
-        console.warn(`[API] Batch insert failed: ${insertError.message}. Falling back to one-by-one.`)
+        logger.warn(`[API] Batch insert failed: ${insertError.message}. Falling back to one-by-one.`)
 
         for (const row of rows) {
           const { data: single, error: singleError } = await supabase
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
     if (insertedIds.length > 0) {
       Promise.all(
         insertedIds.map(({ id, images }) => dedupService.registerImages(id, images))
-      ).catch(err => console.warn('[API] Image registry error:', err))
+      ).catch(err => logger.warn('[API] Image registry error:', err))
     }
 
     // 8. Формируем ответ с расширенной статистикой
