@@ -1,19 +1,11 @@
 'use client'
 
-import { useRef, useEffect, useCallback, memo } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useRef, useEffect, memo } from 'react'
 import { Loader2, Package } from 'lucide-react'
 import { ProductCard } from './ProductCard'
 import { ProductCardSkeleton } from './ProductCardSkeleton'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import type { CatalogProduct, CatalogViewMode } from '@/lib/catalog/types'
-import { CARD_HEIGHTS } from '@/lib/catalog/constants'
-
-const GRID_COLS_MAP: Record<number, string> = {
-  2: 'grid-cols-2',
-  3: 'grid-cols-3',
-  4: 'grid-cols-4',
-}
 
 interface CatalogGridProps {
   products: CatalogProduct[]
@@ -29,8 +21,14 @@ interface CatalogGridProps {
   onToggleWishlist?: (product: CatalogProduct) => void
 }
 
+const GRID_CLASSES: Record<string, string> = {
+  'grid-2': 'grid-cols-2',
+  'grid-3': 'grid-cols-2 md:grid-cols-3',
+  'grid-4': 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
+}
+
 /**
- * Virtualized product grid with skeleton loading and responsive columns
+ * Product grid with CSS grid layout and IntersectionObserver for infinite scroll
  */
 export const CatalogGrid = memo(function CatalogGrid({
   products,
@@ -45,59 +43,30 @@ export const CatalogGrid = memo(function CatalogGrid({
   isInWishlist,
   onToggleWishlist,
 }: CatalogGridProps) {
-  const parentRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
   const breakpoint = useBreakpoint()
 
-  const getColumns = () => {
-    if (viewMode === 'list') return 1
-    if (breakpoint === 'mobile') return 2
-    if (breakpoint === 'tablet') return 3
-    // desktop — by viewMode
-    switch (viewMode) {
-      case 'grid-4': return 4
-      case 'grid-3': return 3
-      case 'grid-2': return 2
-      default: return 4
-    }
-  }
-
-  const columns = getColumns()
-  const rowCount = Math.ceil(products.length / columns)
-
-  const getItemHeight = () => {
-    if (viewMode === 'list') return CARD_HEIGHTS['list']
-    if (breakpoint === 'mobile') return 280
-    if (breakpoint === 'tablet') return 300
-    return CARD_HEIGHTS[viewMode] || 320
-  }
-
-  const itemHeight = getItemHeight()
-
-  const virtualizer = useVirtualizer({
-    count: hasNextPage ? rowCount + 1 : rowCount,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => itemHeight,
-    overscan: 3,
-  })
-
-  const virtualItems = virtualizer.getVirtualItems()
-
+  // IntersectionObserver for infinite scroll
   useEffect(() => {
-    const lastItem = virtualItems[virtualItems.length - 1]
-    if (!lastItem) return
-    if (lastItem.index >= rowCount - 1 && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage()
-    }
-  }, [hasNextPage, fetchNextPage, isFetchingNextPage, virtualItems, rowCount])
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
 
-  const getRowProducts = useCallback((rowIndex: number): CatalogProduct[] => {
-    const start = rowIndex * columns
-    return products.slice(start, start + columns)
-  }, [products, columns])
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: '200px' }
+    )
 
-  // Skeleton loading state
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  // Skeleton loading
   if (isLoading && products.length === 0) {
-    const skeletonCount = viewMode === 'list' ? 6 : columns * 2
+    const skeletonCount = viewMode === 'list' ? 6 : 8
     return (
       <div className="flex-1 overflow-auto p-1">
         {viewMode === 'list' ? (
@@ -107,7 +76,7 @@ export const CatalogGrid = memo(function CatalogGrid({
             ))}
           </div>
         ) : (
-          <div className={`grid gap-4 ${GRID_COLS_MAP[columns] || 'grid-cols-4'}`}>
+          <div className={`grid gap-4 ${GRID_CLASSES[viewMode] || GRID_CLASSES['grid-4']}`}>
             {Array.from({ length: skeletonCount }).map((_, i) => (
               <ProductCardSkeleton key={i} viewMode="grid" />
             ))}
@@ -134,67 +103,31 @@ export const CatalogGrid = memo(function CatalogGrid({
     )
   }
 
-  const gridClass = GRID_COLS_MAP[columns] || 'grid-cols-4'
+  const gridClass = GRID_CLASSES[viewMode] || GRID_CLASSES['grid-4']
 
   return (
-    <div
-      ref={parentRef}
-      className="flex-1 overflow-auto"
-      style={{ contain: 'strict' }}
-    >
-      <div
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative',
-        }}
-      >
-        {virtualItems.map(virtualRow => {
-          const isLoaderRow = virtualRow.index >= rowCount
-          const rowProducts = isLoaderRow ? [] : getRowProducts(virtualRow.index)
-
-          return (
-            <div
-              key={virtualRow.key}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: `${virtualRow.size}px`,
-                transform: `translateY(${virtualRow.start}px)`,
-                padding: '8px',
-              }}
-            >
-              {isLoaderRow ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-6 h-6 animate-spin text-orange-500 mr-2" />
-                  <span className="text-gray-500">Загрузка...</span>
-                </div>
-              ) : (
-                <div className={`h-full ${
-                  viewMode === 'list'
-                    ? 'flex flex-col gap-3'
-                    : `grid gap-4 ${gridClass}`
-                }`}>
-                  {rowProducts.map(product => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      isInCart={isInCart(product.id)}
-                      onAddToCart={onAddToCart}
-                      onProductClick={onProductClick}
-                      viewMode={viewMode === 'list' ? 'list' : 'grid'}
-                      isInWishlist={isInWishlist?.(product.id)}
-                      onToggleWishlist={onToggleWishlist}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
+    <div className="flex-1 overflow-auto">
+      <div className={`p-1 ${
+        viewMode === 'list'
+          ? 'flex flex-col gap-3'
+          : `grid gap-4 ${gridClass}`
+      }`}>
+        {products.map(product => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            isInCart={isInCart(product.id)}
+            onAddToCart={onAddToCart}
+            onProductClick={onProductClick}
+            viewMode={viewMode === 'list' ? 'list' : 'grid'}
+            isInWishlist={isInWishlist?.(product.id)}
+            onToggleWishlist={onToggleWishlist}
+          />
+        ))}
       </div>
+
+      {/* Sentinel for infinite scroll */}
+      <div ref={sentinelRef} className="h-4" />
 
       {isFetchingNextPage && (
         <div className="p-4 text-center">
