@@ -109,11 +109,13 @@ export function CatalogSidebar({
   }
 
   return (
-    <div className="w-80 border-r bg-white dark:bg-gray-900 flex flex-col h-full">
+    <div className="w-80 border-r border-gray-100 bg-white dark:bg-gray-900 flex flex-col h-full">
       {/* Header with total count */}
-      <div className="p-4 border-b">
-        <h2 className="font-semibold text-lg flex items-center gap-2">
-          <Folder className="w-5 h-5 text-orange-500" />
+      <div className="p-5 border-b border-gray-100">
+        <h2 className="font-semibold text-lg flex items-center gap-2.5">
+          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-sm">
+            <Folder className="w-4 h-4 text-white" />
+          </span>
           Категории
         </h2>
         {totalProducts > 0 && (
@@ -159,14 +161,18 @@ export function CatalogSidebar({
                 <div key={category.id}>
                   {/* Category row */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
+                    className={`relative flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
                       isSelected
-                        ? 'bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 border border-orange-200 dark:from-orange-900/30 dark:to-amber-900/30 dark:text-orange-300 dark:border-orange-800'
+                        ? 'bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 shadow-sm shadow-orange-500/10 dark:from-orange-900/30 dark:to-amber-900/30 dark:text-orange-300'
                         : isParentOfSelected
                           ? 'bg-gray-50 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
                           : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                   >
+                    {/* Left accent stripe */}
+                    {isSelected && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b from-orange-500 to-amber-500" />
+                    )}
                     {/* Expand toggle */}
                     {hasChildren ? (
                       <button
@@ -187,7 +193,7 @@ export function CatalogSidebar({
                     )}
 
                     {/* Emoji icon */}
-                    <span className="text-lg leading-none shrink-0">
+                    <span className="text-xl leading-none shrink-0">
                       {category.icon || '📦'}
                     </span>
 
@@ -203,10 +209,10 @@ export function CatalogSidebar({
                     {dynamicCount > 0 && (
                       <Badge
                         variant="secondary"
-                        className={`text-[10px] px-1.5 py-0 h-5 font-normal ${
+                        className={`text-[10px] rounded-full px-2 py-0 h-5 font-medium ${
                           isSelected
                             ? 'bg-orange-100 text-orange-600 dark:bg-orange-800 dark:text-orange-200'
-                            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                            : 'bg-gray-50 text-gray-400 dark:bg-gray-700 dark:text-gray-400'
                         }`}
                       >
                         {formatCount(dynamicCount)}
@@ -229,7 +235,7 @@ export function CatalogSidebar({
                             }`}
                             onClick={() => handleSubcategoryClick(category.name, sub.id)}
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
                               isSubSelected ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'
                             }`} />
                             <span className="flex-1 text-left leading-snug">{sub.name}</span>

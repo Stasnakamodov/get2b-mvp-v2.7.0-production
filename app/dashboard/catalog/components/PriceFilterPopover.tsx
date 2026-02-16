@@ -48,7 +48,7 @@ export function PriceFilterPopover({ minPrice, maxPrice, onApply }: PriceFilterP
         <Button
           variant={isActive ? 'default' : 'outline'}
           size="sm"
-          className={`h-8 text-xs shrink-0 ${isActive ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
+          className={`h-9 rounded-xl text-xs shrink-0 ${isActive ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
         >
           <DollarSign className="h-3.5 w-3.5 mr-1" />
           Цена
@@ -91,7 +91,7 @@ export function PriceFilterPopover({ minPrice, maxPrice, onApply }: PriceFilterP
                   setMin(preset.min?.toString() || '')
                   setMax(preset.max?.toString() || '')
                 }}
-                className="px-2 py-0.5 text-xs rounded-full border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                className="px-2.5 py-1 text-xs rounded-full border border-gray-200 shadow-sm hover:border-orange-300 hover:bg-orange-50 transition-colors"
               >
                 {preset.label}
               </button>
@@ -104,7 +104,7 @@ export function PriceFilterPopover({ minPrice, maxPrice, onApply }: PriceFilterP
                 Сбросить
               </Button>
             )}
-            <Button size="sm" className="h-8 text-xs flex-1 bg-orange-500 hover:bg-orange-600" onClick={handleApply}>
+            <Button size="sm" className="h-8 text-xs flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600" onClick={handleApply}>
               Применить
             </Button>
           </div>

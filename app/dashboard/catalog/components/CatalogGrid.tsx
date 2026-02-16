@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, memo } from 'react'
+import { motion } from 'framer-motion'
 import { Loader2, Package } from 'lucide-react'
 import { ProductCard } from './ProductCard'
 import { ProductCardSkeleton } from './ProductCardSkeleton'
@@ -68,7 +69,7 @@ export const CatalogGrid = memo(function CatalogGrid({
   if (isLoading && products.length === 0) {
     const skeletonCount = viewMode === 'list' ? 6 : 8
     return (
-      <div className="flex-1 overflow-auto p-1">
+      <div className="flex-1 overflow-auto p-2">
         {viewMode === 'list' ? (
           <div className="flex flex-col gap-3">
             {Array.from({ length: skeletonCount }).map((_, i) => (
@@ -76,7 +77,7 @@ export const CatalogGrid = memo(function CatalogGrid({
             ))}
           </div>
         ) : (
-          <div className={`grid gap-4 ${GRID_CLASSES[viewMode] || GRID_CLASSES['grid-4']}`}>
+          <div className={`grid gap-5 ${GRID_CLASSES[viewMode] || GRID_CLASSES['grid-4']}`}>
             {Array.from({ length: skeletonCount }).map((_, i) => (
               <ProductCardSkeleton key={i} viewMode="grid" />
             ))}
@@ -107,22 +108,32 @@ export const CatalogGrid = memo(function CatalogGrid({
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className={`p-1 ${
+      <div className={`p-2 ${
         viewMode === 'list'
           ? 'flex flex-col gap-3'
-          : `grid gap-4 ${gridClass}`
+          : `grid gap-5 ${gridClass}`
       }`}>
-        {products.map(product => (
-          <ProductCard
+        {products.map((product, index) => (
+          <motion.div
             key={product.id}
-            product={product}
-            isInCart={isInCart(product.id)}
-            onAddToCart={onAddToCart}
-            onProductClick={onProductClick}
-            viewMode={viewMode === 'list' ? 'list' : 'grid'}
-            isInWishlist={isInWishlist?.(product.id)}
-            onToggleWishlist={onToggleWishlist}
-          />
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.3,
+              delay: Math.min(index * 0.03, 0.3),
+              ease: 'easeOut',
+            }}
+          >
+            <ProductCard
+              product={product}
+              isInCart={isInCart(product.id)}
+              onAddToCart={onAddToCart}
+              onProductClick={onProductClick}
+              viewMode={viewMode === 'list' ? 'list' : 'grid'}
+              isInWishlist={isInWishlist?.(product.id)}
+              onToggleWishlist={onToggleWishlist}
+            />
+          </motion.div>
         ))}
       </div>
 
@@ -130,9 +141,9 @@ export const CatalogGrid = memo(function CatalogGrid({
       <div ref={sentinelRef} className="h-4" />
 
       {isFetchingNextPage && (
-        <div className="p-4 text-center">
-          <Loader2 className="w-6 h-6 animate-spin text-orange-500 inline mr-2" />
-          <span className="text-gray-500">Загрузка товаров...</span>
+        <div className="py-6 text-center">
+          <Loader2 className="w-5 h-5 animate-spin text-orange-500 inline mr-2" />
+          <span className="text-sm text-gray-400">Загрузка товаров...</span>
         </div>
       )}
     </div>

@@ -212,21 +212,21 @@ export default function CatalogPage() {
   }, [filters.subcategory, categories])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-white via-orange-50/30 to-white">
       <div className="max-w-7xl mx-auto">
 
         {/* Content */}
         {catalogMode === 'categories' ? (
           /* ========== CATEGORIES MODE — compact header ========== */
-          <div className="h-[calc(100vh-64px)] flex flex-col">
+          <div className="min-h-[calc(100vh-64px)] flex flex-col">
             {/* Row 1: Tabs + Search + Cart */}
-            <div className="bg-white border-b px-4 py-2 flex items-center gap-3">
-              <div className="flex bg-gray-100 rounded-lg p-0.5 shrink-0">
+            <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20 px-4 py-3 flex items-center gap-3">
+              <div className="flex bg-gray-100 rounded-xl p-1 shadow-inner shrink-0">
                 <button
                   onClick={() => setCatalogMode('categories')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                     catalogMode === 'categories'
-                      ? 'bg-white text-gray-900 shadow-sm'
+                      ? 'bg-white text-gray-900 shadow-md ring-1 ring-black/5'
                       : 'text-gray-500 hover:text-gray-900'
                   }`}
                 >
@@ -235,7 +235,7 @@ export default function CatalogPage() {
                 </button>
                 <button
                   onClick={() => setCatalogMode('suppliers')}
-                  className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 transition-all flex items-center gap-1.5"
                 >
                   <Users className="w-3.5 h-3.5" />
                   Поставщики
@@ -259,7 +259,7 @@ export default function CatalogPage() {
             </div>
 
             {/* Row 2: Breadcrumbs + mobile filter + count */}
-            <div className="flex items-center gap-3 px-4 py-1.5 bg-gray-50 border-b">
+            <div className="flex items-center gap-3 px-4 py-2 bg-white/50 border-b border-gray-100">
               <button
                 className="md:hidden flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors shrink-0"
                 onClick={() => setIsSidebarOpen(true)}
@@ -327,7 +327,7 @@ export default function CatalogPage() {
               </span>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex">
               {/* Desktop sidebar */}
               <div className="hidden md:block">
                 <CatalogSidebar
@@ -354,7 +354,7 @@ export default function CatalogPage() {
                 </SheetContent>
               </Sheet>
 
-              <div className="flex-1 flex flex-col overflow-hidden p-4">
+              <div className="flex-1 flex flex-col p-5">
                 {/* Collection chips */}
                 {collections && collections.length > 0 && (
                   <div className="flex gap-2 mb-3 overflow-x-auto pb-1 shrink-0">
@@ -362,7 +362,7 @@ export default function CatalogPage() {
                       <button
                         key={collection.id}
                         onClick={() => handleCollectionClick(collection)}
-                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all whitespace-nowrap shrink-0"
+                        className="px-3 py-1.5 bg-gradient-to-r from-white to-orange-50/50 border border-gray-100 rounded-full text-xs font-medium text-gray-700 shadow-sm hover:shadow-md hover:border-orange-300 hover:text-orange-700 transition-all duration-300 whitespace-nowrap shrink-0"
                       >
                         {collection.name}
                       </button>
@@ -556,7 +556,7 @@ export default function CatalogPage() {
                   {cartItems.map(item => (
                     <div
                       key={item.product.id}
-                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100"
                     >
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm line-clamp-1">
@@ -612,7 +612,7 @@ export default function CatalogPage() {
                       Очистить
                     </Button>
                     <Button
-                      className="flex-1 bg-orange-500 hover:bg-orange-600"
+                      className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/25"
                       onClick={handleCreateProject}
                     >
                       Создать проект

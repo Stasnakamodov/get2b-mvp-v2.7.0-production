@@ -59,7 +59,7 @@ export function WishlistSheet({
                 return (
                   <div
                     key={item.product.id}
-                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    className="flex items-center gap-3 p-3.5 bg-gray-50/80 rounded-xl border border-gray-100"
                   >
                     <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                       {imageUrl ? (
@@ -87,7 +87,7 @@ export function WishlistSheet({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 text-xs shrink-0"
+                      className="h-8 text-xs shrink-0 rounded-lg border-orange-200 text-orange-600 hover:bg-orange-50"
                       onClick={() => onAddToCart(item.product)}
                     >
                       <ShoppingCart className="w-3.5 h-3.5 mr-1" />
@@ -107,7 +107,7 @@ export function WishlistSheet({
             </div>
 
             <div className="border-t pt-4">
-              <Button variant="outline" className="w-full" onClick={onClear}>
+              <Button variant="outline" className="w-full rounded-xl" onClick={onClear}>
                 <Trash2 className="w-4 h-4 mr-2" />
                 Очистить избранное
               </Button>

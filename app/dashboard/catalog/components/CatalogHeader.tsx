@@ -116,14 +116,14 @@ export function CatalogHeader({
   return (
     <>
       {/* Search */}
-      <div className="relative flex-1 min-w-0 max-w-md">
-        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+      <div className="relative flex-1 min-w-0 max-w-md group">
+        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
         <Input
           placeholder="Поиск товаров..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           onKeyDown={handleSearchKeyDown}
-          className="pl-8 pr-8 h-8 text-sm"
+          className="pl-8 pr-8 h-9 rounded-xl bg-gray-50/80 text-sm border-gray-200 focus:bg-white focus:border-orange-300 focus:ring-2 focus:ring-orange-500/20 transition-all"
         />
         {searchInput && (
           <button
@@ -139,7 +139,7 @@ export function CatalogHeader({
       <Button
         variant={filters.inStock ? 'default' : 'outline'}
         size="sm"
-        className={`h-8 text-xs shrink-0 ${filters.inStock ? 'bg-green-500 hover:bg-green-600' : ''}`}
+        className={`h-9 rounded-xl text-xs shrink-0 ${filters.inStock ? 'bg-green-500 hover:bg-green-600 shadow-sm shadow-green-500/20' : ''}`}
         onClick={() => onFiltersChange({
           ...filters,
           inStock: filters.inStock ? undefined : true
@@ -163,7 +163,7 @@ export function CatalogHeader({
           value={filters.country || '__all__'}
           onValueChange={handleCountryChange}
         >
-          <SelectTrigger className="w-[120px] h-8 text-xs">
+          <SelectTrigger className="w-[120px] h-9 rounded-xl text-xs border-gray-200">
             <Globe className="h-3 w-3 mr-1 shrink-0" />
             <SelectValue placeholder="Страна" />
           </SelectTrigger>
@@ -182,7 +182,7 @@ export function CatalogHeader({
       </div>
 
       {activeFiltersCount > 0 && (
-        <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0" onClick={handleResetFilters}>
+        <Button variant="ghost" size="sm" className="h-9 rounded-xl text-xs shrink-0" onClick={handleResetFilters}>
           <X className="h-3.5 w-3.5 mr-1" />
           Сбросить
         </Button>
@@ -195,7 +195,7 @@ export function CatalogHeader({
         value={`${sort.field}-${sort.order}`}
         onValueChange={handleSortChange}
       >
-        <SelectTrigger className="w-[140px] h-8 text-xs">
+        <SelectTrigger className="w-[140px] h-9 rounded-xl text-xs">
           <SelectValue placeholder="Сортировка" />
         </SelectTrigger>
         <SelectContent>
@@ -211,11 +211,11 @@ export function CatalogHeader({
       </Select>
 
       {/* View mode - hidden on mobile */}
-      <div className="hidden sm:flex items-center border rounded-md shrink-0">
+      <div className="hidden sm:flex items-center rounded-xl overflow-hidden border border-gray-200 shrink-0">
         <Button
           variant={viewMode === 'grid-4' ? 'default' : 'ghost'}
           size="sm"
-          className={`rounded-r-none h-8 w-8 p-0 ${viewMode === 'grid-4' ? 'bg-orange-500' : ''}`}
+          className={`rounded-none h-9 w-9 p-0 ${viewMode === 'grid-4' ? 'bg-gradient-to-r from-orange-500 to-amber-500' : ''}`}
           onClick={() => onViewModeChange('grid-4')}
         >
           <Grid3X3 className="h-3.5 w-3.5" />
@@ -223,7 +223,7 @@ export function CatalogHeader({
         <Button
           variant={viewMode === 'grid-2' ? 'default' : 'ghost'}
           size="sm"
-          className={`rounded-none border-x h-8 w-8 p-0 ${viewMode === 'grid-2' ? 'bg-orange-500' : ''}`}
+          className={`rounded-none border-x h-9 w-9 p-0 ${viewMode === 'grid-2' ? 'bg-gradient-to-r from-orange-500 to-amber-500' : ''}`}
           onClick={() => onViewModeChange('grid-2')}
         >
           <Grid2X2 className="h-3.5 w-3.5" />
@@ -231,7 +231,7 @@ export function CatalogHeader({
         <Button
           variant={viewMode === 'list' ? 'default' : 'ghost'}
           size="sm"
-          className={`rounded-l-none h-8 w-8 p-0 ${viewMode === 'list' ? 'bg-orange-500' : ''}`}
+          className={`rounded-none h-9 w-9 p-0 ${viewMode === 'list' ? 'bg-gradient-to-r from-orange-500 to-amber-500' : ''}`}
           onClick={() => onViewModeChange('list')}
         >
           <List className="h-3.5 w-3.5" />
@@ -241,7 +241,7 @@ export function CatalogHeader({
       {/* Wishlist */}
       <button
         onClick={onWishlistClick}
-        className={`relative shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+        className={`relative shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 ${
           wishlistCount > 0
             ? 'bg-red-50 text-red-600 hover:bg-red-100'
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -256,9 +256,9 @@ export function CatalogHeader({
       {/* Cart */}
       <button
         onClick={onCartClick}
-        className={`relative shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+        className={`relative shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
           cartItemsCount > 0
-            ? 'bg-orange-500 text-white hover:bg-orange-600'
+            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/30'
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         }`}
       >
