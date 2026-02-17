@@ -2,7 +2,9 @@ import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { getYandexVisionService } from "@/lib/services/YandexVisionService";
 import { getYandexGPTService } from "@/lib/services/YandexGPTService";
-import { supabase } from "@/lib/supabaseClient";
+import { getOptionalAuthUser } from "@/lib/api/getOptionalAuthUser";
+import { buildOrFilter } from "@/lib/api/escapePostgrestTerm";
+
 /**
  * POST /api/catalog/search-by-image
  * Поиск товаров по изображению с использованием:
@@ -12,6 +14,12 @@ import { supabase } from "@/lib/supabaseClient";
  */
 export async function POST(request: NextRequest) {
   try {
+    // BUG-4: Optional auth — log user if present, don't block anonymous
+    const user = await getOptionalAuthUser(request);
+    if (user) {
+      logger.info(`[IMAGE SEARCH] Authenticated user: ${user.id}`);
+    }
+
     const body = await request.json();
     const { image } = body; // Base64 encoded image
 
@@ -22,6 +30,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // BUG-2: Server-side base64 size limit (~10MB image = ~13.3M base64 chars)
+    if (image.length > 14_000_000) {
+      return NextResponse.json(
+        { error: "Изображение слишком большое. Максимум 10MB" },
+        { status: 400 }
+      );
+    }
 
     // Получаем сервис Yandex Vision
     const visionService = getYandexVisionService();
@@ -35,10 +50,15 @@ export async function POST(request: NextRequest) {
     try {
       ocrText = await visionService.recognizeTextFromBase64(image);
 
+      // BUG-6: Log OCR result instead of empty if/else
       if (ocrText && ocrText.trim()) {
+        logger.info(`[IMAGE SEARCH] OCR text found: ${ocrText.trim().slice(0, 100)}`);
       } else {
+        logger.info("[IMAGE SEARCH] No OCR text detected");
       }
     } catch (error) {
+      // BUG-6: Log OCR errors instead of swallowing
+      logger.warn("[IMAGE SEARCH] OCR failed, continuing without text:", error);
     }
 
     // Шаг 3: YandexGPT - умный анализ товара
@@ -71,7 +91,7 @@ export async function POST(request: NextRequest) {
     ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); // Убираем дубликаты
 
 
-    // Импортируем supabase для поиска товаров
+    // BUG-3: Use dynamic import only (removed duplicate top-level import)
     const { supabase } = await import("@/lib/supabaseClient");
 
     // Ищем товары, которые содержат хотя бы один из поисковых терминов
@@ -91,20 +111,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Формируем OR запрос для каждого термина (в названии или описании)
-    const searchQueries = searchTerms.map(term =>
-      `name.ilike.%${term}%,description.ilike.%${term}%`
-    ).join(',');
+    // BUG-1: Use safe buildOrFilter instead of raw string interpolation
+    const safeTerms = searchTerms.filter((t): t is string => typeof t === 'string')
+    const orFilter = buildOrFilter(safeTerms);
 
-    const { data: products, error } = await supabase
+    let query = supabase
       .from("catalog_verified_products")
       .select("*")
-      .eq("is_active", true)
-      .or(searchQueries)
-      .limit(20);
+      .eq("is_active", true);
+
+    if (orFilter) {
+      query = query.or(orFilter);
+    }
+
+    const { data: products, error } = await query.limit(20);
 
     if (error) {
-      logger.error("❌ [IMAGE SEARCH] Ошибка поиска товаров:", error);
+      logger.error("[IMAGE SEARCH] Ошибка поиска товаров:", error);
       return NextResponse.json(
         { error: "Ошибка поиска товаров" },
         { status: 500 }
@@ -126,13 +149,11 @@ export async function POST(request: NextRequest) {
       searchQuery: searchTerms.join(", ")
     });
 
-  } catch (error: any) {
-    logger.error("❌ [IMAGE SEARCH] Ошибка:", error);
+  } catch (error: unknown) {
+    // BUG-5: Don't leak error details to client
+    logger.error("[IMAGE SEARCH] Ошибка:", error);
     return NextResponse.json(
-      {
-        error: error.message || "Внутренняя ошибка сервера",
-        details: error.toString()
-      },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }

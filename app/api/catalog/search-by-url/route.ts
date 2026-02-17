@@ -6,6 +6,26 @@ import { getClaudeWebFetchService } from '@/lib/services/ClaudeWebFetchService'
 import { getPlaywrightParserService } from '@/lib/services/PlaywrightParserService'
 import { getYandexGPTService } from '@/lib/services/YandexGPTService'
 import { supabase } from '@/lib/supabaseClient'
+import { getOptionalAuthUser } from '@/lib/api/getOptionalAuthUser'
+import { buildOrFilter } from '@/lib/api/escapePostgrestTerm'
+import { isPrivateUrl } from '@/lib/api/ssrfGuard'
+
+// BUG-10: Typed interfaces instead of `any`
+interface UrlSearchMetadata {
+  title?: string
+  description?: string
+  marketplace?: string
+  imageUrl?: string
+  brand?: string
+  category?: string
+}
+
+interface UrlSearchAnalysis {
+  brand?: string
+  category?: string
+  keywords: string[]
+}
+
 /**
  * POST /api/catalog/search-by-url
  * Поиск товаров по ссылке с маркетплейса ИЛИ по HTML коду
@@ -17,9 +37,18 @@ import { supabase } from '@/lib/supabaseClient'
  *
  * Поддерживаемые маркетплейсы:
  * - Wildberries, Ozon, AliExpress, Яндекс.Маркет, СберМегаМаркет
+ *
+ * BUG-8: Requires ANTHROPIC_API_KEY env var for Claude Web Fetch mode.
+ * Without it, falls back to Playwright/UrlParser automatically.
  */
 export async function POST(request: NextRequest) {
   try {
+    // BUG-11: Optional auth — log user if present, don't block anonymous
+    const user = await getOptionalAuthUser(request)
+    if (user) {
+      logger.info(`[URL SEARCH] Authenticated user: ${user.id}`)
+    }
+
     const body = await request.json()
     const { url, html } = body
 
@@ -31,7 +60,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let metadata: any
+    let metadata: UrlSearchMetadata | undefined
 
     // Режим 1: Парсинг по URL
     if (url && !html) {
@@ -41,6 +70,14 @@ export async function POST(request: NextRequest) {
       if (!urlParser.isValidUrl(url)) {
         return NextResponse.json(
           { error: 'Некорректный URL' },
+          { status: 400 }
+        )
+      }
+
+      // BUG-7: SSRF protection — block private/internal addresses
+      if (isPrivateUrl(url)) {
+        return NextResponse.json(
+          { error: 'URL указывает на внутренний адрес' },
           { status: 400 }
         )
       }
@@ -75,11 +112,17 @@ export async function POST(request: NextRequest) {
       metadata = htmlParser.parseHtmlCode(html)
     }
 
+    if (!metadata) {
+      return NextResponse.json(
+        { error: 'Не удалось получить данные о товаре' },
+        { status: 422 }
+      )
+    }
 
     // Шаг 2: Формируем анализ (ключевые слова для поиска)
     // Если Claude уже проанализировал - используем его данные
     // Иначе используем YandexGPT или базовый анализ
-    let analysis: any
+    let analysis: UrlSearchAnalysis
 
     if (metadata.brand || metadata.category) {
       // Claude уже проанализировал товар
@@ -91,16 +134,21 @@ export async function POST(request: NextRequest) {
       analysis = {
         brand: metadata.brand,
         category: metadata.category,
-        keywords: [...titleWords, ...descWords, metadata.brand].filter(Boolean)
+        keywords: [...titleWords, ...descWords, metadata.brand].filter((v): v is string => !!v)
       }
     } else {
       // Используем YandexGPT для анализа
       const gptService = getYandexGPTService()
-      analysis = await gptService.analyzeProductFromMetadata(
-        metadata.title,
+      const gptResult = await gptService.analyzeProductFromMetadata(
+        metadata.title || '',
         metadata.description || '',
         metadata.marketplace
       )
+      analysis = {
+        brand: gptResult.brand ?? undefined,
+        category: gptResult.category ?? undefined,
+        keywords: gptResult.keywords,
+      }
     }
 
 
@@ -122,16 +170,10 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('is_active', true)
 
-    // Строим OR условие для каждого термина
-    const orConditions = searchTerms
-      .map(term => {
-        const escaped = term.replace(/[%_]/g, '\\$&') // Экранируем спецсимволы SQL
-        return `name.ilike.%${escaped}%,description.ilike.%${escaped}%`
-      })
-      .join(',')
-
-    if (orConditions) {
-      query = query.or(orConditions)
+    // BUG-9: Use safe buildOrFilter instead of partial manual escape
+    const orFilter = buildOrFilter(searchTerms)
+    if (orFilter) {
+      query = query.or(orFilter)
     }
 
     // Ограничиваем результаты
@@ -140,7 +182,7 @@ export async function POST(request: NextRequest) {
     const { data: products, error } = await query
 
     if (error) {
-      logger.error('❌ [URL SEARCH] Ошибка поиска в БД:', error)
+      logger.error('[URL SEARCH] Ошибка поиска в БД:', error)
       throw error
     }
 
@@ -165,7 +207,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('❌ [URL SEARCH] Критическая ошибка:', error)
+    logger.error('[URL SEARCH] Критическая ошибка:', error)
 
     // Определяем тип ошибки для более информативного ответа
     if (error instanceof Error) {
@@ -184,8 +226,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // BUG-5 equivalent: Don't leak error details to client
     return NextResponse.json(
-      { error: 'Произошла ошибка при поиске товара', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Произошла ошибка при поиске товара' },
       { status: 500 }
     )
   }
