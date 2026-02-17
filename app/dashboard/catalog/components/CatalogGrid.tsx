@@ -69,7 +69,7 @@ export const CatalogGrid = memo(function CatalogGrid({
   if (isLoading && products.length === 0) {
     const skeletonCount = viewMode === 'list' ? 6 : 8
     return (
-      <div className="flex-1 p-0">
+      <div className="flex-1 overflow-auto p-2">
         {viewMode === 'list' ? (
           <div className="flex flex-col gap-3">
             {Array.from({ length: skeletonCount }).map((_, i) => (
@@ -77,7 +77,7 @@ export const CatalogGrid = memo(function CatalogGrid({
             ))}
           </div>
         ) : (
-          <div className={`grid gap-4 ${GRID_CLASSES[viewMode] || GRID_CLASSES['grid-4']}`}>
+          <div className={`grid gap-5 ${GRID_CLASSES[viewMode] || GRID_CLASSES['grid-4']}`}>
             {Array.from({ length: skeletonCount }).map((_, i) => (
               <ProductCardSkeleton key={i} viewMode="grid" />
             ))}
@@ -107,11 +107,11 @@ export const CatalogGrid = memo(function CatalogGrid({
   const gridClass = GRID_CLASSES[viewMode] || GRID_CLASSES['grid-4']
 
   return (
-    <div className="flex-1">
-      <div className={`p-0 ${
+    <div className="flex-1 overflow-auto">
+      <div className={`p-2 ${
         viewMode === 'list'
           ? 'flex flex-col gap-3'
-          : `grid gap-4 ${gridClass}`
+          : `grid gap-5 ${gridClass}`
       }`}>
         {products.map((product, index) => (
           <motion.div
@@ -142,7 +142,7 @@ export const CatalogGrid = memo(function CatalogGrid({
 
       {isFetchingNextPage && (
         <div className="py-6 text-center">
-          <Loader2 className="w-5 h-5 animate-spin text-gray-400 inline mr-2" />
+          <Loader2 className="w-5 h-5 animate-spin text-orange-500 inline mr-2" />
           <span className="text-sm text-gray-400">Загрузка товаров...</span>
         </div>
       )}

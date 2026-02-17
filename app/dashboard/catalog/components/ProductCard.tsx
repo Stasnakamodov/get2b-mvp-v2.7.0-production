@@ -55,7 +55,7 @@ export const ProductCard = memo(function ProductCard({
     return (
       <Card
         className={`cursor-pointer transition-all duration-300 border-0 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] ${
-          isInCart ? 'ring-2 ring-emerald-500 bg-emerald-50/50' : ''
+          isInCart ? 'ring-2 ring-orange-500 bg-orange-50' : ''
         }`}
         onClick={handleClick}
       >
@@ -89,6 +89,10 @@ export const ProductCard = memo(function ProductCard({
             )}
 
             <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="text-xs">
+                {product.category}
+              </Badge>
+
               {product.supplier_country && (
                 <span className="text-xs text-gray-500 flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
@@ -100,7 +104,7 @@ export const ProductCard = memo(function ProductCard({
 
           <div className="flex flex-col items-end justify-between">
             <div className="text-right">
-              <p className="font-bold text-lg tracking-tight text-gray-900">
+              <p className="font-extrabold text-xl tracking-tight text-orange-600">
                 {formatPrice(product.price, product.currency)}
               </p>
               {product.min_order && (
@@ -123,7 +127,7 @@ export const ProductCard = memo(function ProductCard({
               <Button
                 size="sm"
                 variant={isInCart ? 'secondary' : 'default'}
-                className={isInCart ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-900 text-white hover:bg-gray-800'}
+                className={isInCart ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20'}
                 onClick={handleAddToCart}
               >
                 {isInCart ? (
@@ -148,23 +152,23 @@ export const ProductCard = memo(function ProductCard({
   // Grid view
   return (
     <motion.div
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -4 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
     >
       <Card
         className={`cursor-pointer transition-all duration-300 border-0 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] group ${
-          isInCart ? 'ring-2 ring-emerald-500 bg-emerald-50/50' : ''
+          isInCart ? 'ring-2 ring-orange-500 bg-orange-50' : ''
         }`}
         onClick={handleClick}
       >
         <CardContent className="p-0">
-          <div className="relative aspect-square bg-gray-50 rounded-t-xl overflow-hidden">
+          <div className="relative aspect-[4/3] bg-gray-50 rounded-t-xl overflow-hidden">
             {effectiveImageUrl ? (
               <Image
                 src={effectiveImageUrl}
                 alt={product.name}
                 fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                className="object-cover"
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                 onError={() => setImageError(true)}
               />
@@ -174,22 +178,35 @@ export const ProductCard = memo(function ProductCard({
               </div>
             )}
 
-            {/* Badge: only "В наличии" */}
-            {product.in_stock && (
-              <div className="absolute top-2 left-2">
-                <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm text-[10px]">
+            {/* Hover overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+            {/* Left stack: In stock + Featured + Variants */}
+            <div className="absolute top-2 left-2 flex flex-col gap-1">
+              {product.in_stock && (
+                <Badge className="bg-green-500/90 backdrop-blur-sm shadow-sm">
                   В наличии
                 </Badge>
-              </div>
-            )}
+              )}
+              {product.is_featured && (
+                <Badge className="bg-orange-500/90 backdrop-blur-sm shadow-sm">
+                  Топ
+                </Badge>
+              )}
+              {product.has_variants && (
+                <Badge className="bg-blue-500/90 backdrop-blur-sm shadow-sm">
+                  Варианты
+                </Badge>
+              )}
+            </div>
 
-            {/* Wishlist heart — visible on hover, always if wishlisted */}
+            {/* Wishlist heart */}
             {onToggleWishlist && (
               <motion.button
                 whileTap={{ scale: 0.85 }}
                 onClick={handleToggleWishlist}
-                className={`absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white flex items-center justify-center transition-all shadow-sm ${
-                  isInWishlist ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                className={`absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white flex items-center justify-center transition-colors shadow-sm ${
+                  isInWishlist ? 'animate-pulse' : ''
                 }`}
               >
                 <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current text-red-500' : 'text-gray-500'}`} />
@@ -202,9 +219,13 @@ export const ProductCard = memo(function ProductCard({
               {product.name}
             </h3>
 
+            <Badge variant="secondary" className="text-xs mb-2">
+              {product.category}
+            </Badge>
+
             <div className="mb-2">
               {product.has_variants && product.variants && product.variants.length > 0 ? (
-                <p className="font-bold text-lg tracking-tight text-gray-900">
+                <p className="font-extrabold text-xl tracking-tight text-orange-600">
                   {(() => {
                     const prices = product.variants
                       .map(v => v.price)
@@ -218,7 +239,7 @@ export const ProductCard = memo(function ProductCard({
                   })()}
                 </p>
               ) : (
-                <p className="font-bold text-lg tracking-tight text-gray-900">
+                <p className="font-extrabold text-xl tracking-tight text-orange-600">
                   {formatPrice(product.price, product.currency)}
                 </p>
               )}
@@ -230,7 +251,7 @@ export const ProductCard = memo(function ProductCard({
             </div>
 
             {product.supplier_name && (
-              <div className="flex items-center gap-1 text-xs text-gray-500 mb-3 border-t border-gray-100 pt-2">
+              <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
                 <span className="truncate">{product.supplier_name}</span>
                 {product.supplier_country && (
                   <>
@@ -244,17 +265,17 @@ export const ProductCard = memo(function ProductCard({
             <Button
               size="sm"
               variant={isInCart ? 'secondary' : 'default'}
-              className={`w-full text-xs ${isInCart ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
+              className={`w-full ${isInCart ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20'}`}
               onClick={handleAddToCart}
             >
               {isInCart ? (
                 <>
-                  <Check className="w-3.5 h-3.5 mr-1" />
+                  <Check className="w-4 h-4 mr-1" />
                   В корзине
                 </>
               ) : (
                 <>
-                  <ShoppingCart className="w-3.5 h-3.5 mr-1" />
+                  <ShoppingCart className="w-4 h-4 mr-1" />
                   В проект
                 </>
               )}

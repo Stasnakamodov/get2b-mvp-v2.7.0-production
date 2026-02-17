@@ -16,7 +16,6 @@ import type { Supplier, RoomType, CatalogMode } from '@/src/entities/supplier'
 import type { Product } from '@/src/entities/product'
 import { ROOM_TYPES } from '@/src/shared/config'
 import { logger } from '@/src/shared/lib'
-import { supabase } from '@/lib/supabaseClient'
 
 // Catalog components for categories mode
 import { CatalogHeader } from './components/CatalogHeader'
@@ -35,9 +34,16 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { Trash2, Minus, Plus as PlusIcon, ArrowRight, X } from 'lucide-react'
 import type { CatalogProduct, CatalogFilters, CatalogSort, CatalogViewMode, CatalogCollection } from '@/lib/catalog/types'
-import type { SearchMode } from './components/CatalogHeader'
 import { formatPrice } from '@/lib/catalog/utils'
 
 import { useMemo, useEffect } from 'react'
@@ -110,8 +116,6 @@ export default function CatalogPage() {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
-  const [searchResults, setSearchResults] = useState<CatalogProduct[] | null>(null)
-  const [searchMode, setSearchMode] = useState<SearchMode>('normal')
 
   const isMobile = useIsMobile()
   const { categories, isLoading: categoriesLoading } = useCatalogCategories()
@@ -197,31 +201,6 @@ export default function CatalogPage() {
     setFilters(newFilters)
   }, [])
 
-  const handleSearchResults = useCallback((results: CatalogProduct[], mode: SearchMode) => {
-    setSearchResults(results)
-    setSearchMode(mode)
-  }, [])
-
-  const handleClearSearchResults = useCallback(() => {
-    setSearchResults(null)
-    setSearchMode('normal')
-  }, [])
-
-  const handleSupplierInquiry = useCallback(async (query: string): Promise<boolean> => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
-    const res = await fetch('/api/catalog/submit-supplier-inquiry', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ query }),
-    })
-    return res.ok
-  }, [])
-
-  // Products to display: search results override normal catalog
-  const displayProducts = searchResults ?? products
-
   // Find selected subcategory name for breadcrumbs
   const selectedSubcategoryName = useMemo(() => {
     if (!filters.subcategory || !categories) return undefined
@@ -233,15 +212,15 @@ export default function CatalogPage() {
   }, [filters.subcategory, categories])
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-gradient-to-b from-white via-orange-50/30 to-white">
       <div className="max-w-7xl mx-auto">
 
         {/* Content */}
         {catalogMode === 'categories' ? (
           /* ========== CATEGORIES MODE — compact header ========== */
-          <div className="min-h-0 flex flex-col">
-            {/* Single header row: Tabs + Search + Filters + Cart */}
-            <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-2.5 flex items-center gap-3">
+          <div className="min-h-[calc(100vh-64px)] flex flex-col">
+            {/* Row 1: Tabs + Search + Cart */}
+            <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20 px-4 py-3 flex items-center gap-3">
               <div className="flex bg-gray-100 rounded-xl p-1 shadow-inner shrink-0">
                 <button
                   onClick={() => setCatalogMode('categories')}
@@ -263,14 +242,6 @@ export default function CatalogPage() {
                 </button>
               </div>
 
-              <button
-                className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 transition-colors shrink-0"
-                onClick={() => setIsSidebarOpen(true)}
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                Фильтры
-              </button>
-
               <CatalogHeader
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
@@ -284,9 +255,76 @@ export default function CatalogPage() {
                 wishlistCount={wishlistCount}
                 onWishlistClick={() => setIsWishlistOpen(true)}
                 countryCounts={facetData?.countries}
-                onSearchResults={handleSearchResults}
-                onSupplierInquiry={handleSupplierInquiry}
               />
+            </div>
+
+            {/* Row 2: Breadcrumbs + mobile filter + count */}
+            <div className="flex items-center gap-3 px-4 py-2 bg-white/50 border-b border-gray-100">
+              <button
+                className="md:hidden flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors shrink-0"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Фильтры
+              </button>
+
+              <Breadcrumb className="flex-1">
+                <BreadcrumbList className="text-xs">
+                  <BreadcrumbItem>
+                    {filters.category ? (
+                      <BreadcrumbLink
+                        className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium"
+                        onClick={() => handleCategorySelect(undefined)}
+                      >
+                        Каталог
+                      </BreadcrumbLink>
+                    ) : (
+                      <BreadcrumbPage className="font-medium text-gray-900">Каталог</BreadcrumbPage>
+                    )}
+                  </BreadcrumbItem>
+                  {filters.category && (
+                    <>
+                      <BreadcrumbSeparator className="text-gray-400">/</BreadcrumbSeparator>
+                      <BreadcrumbItem>
+                        {filters.subcategory ? (
+                          <BreadcrumbLink
+                            className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium"
+                            onClick={() => handleCategorySelect(filters.category)}
+                          >
+                            {filters.category}
+                          </BreadcrumbLink>
+                        ) : (
+                          <BreadcrumbPage className="font-medium text-gray-900">{filters.category}</BreadcrumbPage>
+                        )}
+                      </BreadcrumbItem>
+                    </>
+                  )}
+                  {filters.subcategory && selectedSubcategoryName && (
+                    <>
+                      <BreadcrumbSeparator className="text-gray-400">/</BreadcrumbSeparator>
+                      <BreadcrumbItem>
+                        <BreadcrumbPage className="font-medium text-gray-900">{selectedSubcategoryName}</BreadcrumbPage>
+                      </BreadcrumbItem>
+                    </>
+                  )}
+                </BreadcrumbList>
+              </Breadcrumb>
+
+              <FilterTags
+                filters={filters}
+                selectedCategoryName={filters.category}
+                selectedSubcategoryName={selectedSubcategoryName}
+                onRemoveFilter={handleRemoveFilter}
+              />
+
+              <span className="text-xs text-gray-400 shrink-0">
+                {totalCount > 0
+                  ? `${products.length.toLocaleString('ru-RU')} из ${totalCount.toLocaleString('ru-RU')} товаров`
+                  : products.length > 0
+                    ? `${products.length.toLocaleString('ru-RU')} товаров`
+                    : ''
+                }
+              </span>
             </div>
 
             <div className="flex-1 flex">
@@ -316,56 +354,15 @@ export default function CatalogPage() {
                 </SheetContent>
               </Sheet>
 
-              <div className="flex-1 flex flex-col p-4">
-                {/* Search results banner */}
-                {searchResults !== null && (
-                  <div className="flex items-center gap-3 mb-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl shrink-0">
-                    <span className="text-sm font-medium text-blue-800">
-                      {searchMode === 'image-search' ? '📷 Результаты поиска по фото' : '🔗 Результаты поиска по ссылке'}
-                      {' — '}
-                      {searchResults.length > 0
-                        ? `найдено ${searchResults.length} товаров`
-                        : 'ничего не найдено'}
-                    </span>
-                    <div className="flex-1" />
-                    <button
-                      onClick={handleClearSearchResults}
-                      className="px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
-                    >
-                      Назад к каталогу
-                    </button>
-                  </div>
-                )}
-
-                {/* Filter tags + count above grid (hide when showing search results) */}
-                {searchResults === null && (
-                  <div className="flex items-center gap-3 mb-3 shrink-0">
-                    <FilterTags
-                      filters={filters}
-                      selectedCategoryName={filters.category}
-                      selectedSubcategoryName={selectedSubcategoryName}
-                      onRemoveFilter={handleRemoveFilter}
-                    />
-                    <div className="flex-1" />
-                    <span className="text-sm text-gray-500 shrink-0">
-                      {totalCount > 0
-                        ? `${products.length.toLocaleString('ru-RU')} из ${totalCount.toLocaleString('ru-RU')} товаров`
-                        : products.length > 0
-                          ? `${products.length.toLocaleString('ru-RU')} товаров`
-                          : ''
-                      }
-                    </span>
-                  </div>
-                )}
-
-                {/* Collection chips (hide when showing search results) */}
-                {searchResults === null && collections && collections.length > 0 && (
+              <div className="flex-1 flex flex-col p-5">
+                {/* Collection chips */}
+                {collections && collections.length > 0 && (
                   <div className="flex gap-2 mb-3 overflow-x-auto pb-1 shrink-0">
                     {collections.filter(c => c.is_featured).map(collection => (
                       <button
                         key={collection.id}
                         onClick={() => handleCollectionClick(collection)}
-                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-700 shadow-sm hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 whitespace-nowrap shrink-0"
+                        className="px-3 py-1.5 bg-gradient-to-r from-white to-orange-50/50 border border-gray-100 rounded-full text-xs font-medium text-gray-700 shadow-sm hover:shadow-md hover:border-orange-300 hover:text-orange-700 transition-all duration-300 whitespace-nowrap shrink-0"
                       >
                         {collection.name}
                       </button>
@@ -374,10 +371,10 @@ export default function CatalogPage() {
                 )}
 
                 <CatalogGrid
-                  products={displayProducts}
-                  isLoading={searchResults === null && isLoading}
-                  isFetchingNextPage={searchResults === null && isFetchingNextPage}
-                  hasNextPage={searchResults === null && (hasNextPage ?? false)}
+                  products={products}
+                  isLoading={isLoading}
+                  isFetchingNextPage={isFetchingNextPage}
+                  hasNextPage={hasNextPage ?? false}
                   fetchNextPage={fetchNextPage}
                   viewMode={viewMode}
                   isInCart={isInCart}
@@ -540,7 +537,7 @@ export default function CatalogPage() {
                 <ShoppingCart className="w-5 h-5" />
                 Корзина
                 {totalItems > 0 && (
-                  <Badge className="bg-gray-900">{totalItems}</Badge>
+                  <Badge className="bg-orange-500">{totalItems}</Badge>
                 )}
               </SheetTitle>
             </SheetHeader>
@@ -565,7 +562,7 @@ export default function CatalogPage() {
                         <h4 className="font-medium text-sm line-clamp-1">
                           {item.product.name}
                         </h4>
-                        <p className="text-sm text-gray-900 font-semibold">
+                        <p className="text-sm text-orange-600 font-semibold">
                           {formatPrice(item.product.price, item.product.currency)}
                         </p>
                       </div>
@@ -605,7 +602,7 @@ export default function CatalogPage() {
                 <div className="border-t pt-4 space-y-4">
                   <div className="flex items-center justify-between text-lg">
                     <span className="font-medium">Итого:</span>
-                    <span className="font-bold text-gray-900">
+                    <span className="font-bold text-orange-600">
                       {formatPrice(totalAmount, 'RUB')}
                     </span>
                   </div>
@@ -615,7 +612,7 @@ export default function CatalogPage() {
                       Очистить
                     </Button>
                     <Button
-                      className="flex-1 bg-gray-900 hover:bg-gray-800 text-white shadow-sm"
+                      className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/25"
                       onClick={handleCreateProject}
                     >
                       Создать проект

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Folder } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { CatalogCategory, FacetCount } from '@/lib/catalog/types'
@@ -109,10 +109,13 @@ export function CatalogSidebar({
   }
 
   return (
-    <div className="w-60 border-r border-gray-100 bg-white dark:bg-gray-900 flex flex-col h-full">
+    <div className="w-80 border-r border-gray-100 bg-white dark:bg-gray-900 flex flex-col h-full">
       {/* Header with total count */}
-      <div className="p-3 border-b border-gray-100">
-        <h2 className="font-semibold text-sm flex items-center gap-2">
+      <div className="p-5 border-b border-gray-100">
+        <h2 className="font-semibold text-lg flex items-center gap-2.5">
+          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-sm">
+            <Folder className="w-4 h-4 text-white" />
+          </span>
           Категории
         </h2>
         {totalProducts > 0 && (
@@ -127,7 +130,7 @@ export function CatalogSidebar({
         <button
           className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
             !selectedCategory
-              ? 'bg-gray-900 text-white shadow-sm'
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
               : 'text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
           onClick={() => onCategorySelect(undefined, undefined)}
@@ -160,7 +163,7 @@ export function CatalogSidebar({
                   <div
                     className={`relative flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
                       isSelected
-                        ? 'bg-gray-100 text-gray-900 font-semibold dark:bg-gray-800 dark:text-gray-100'
+                        ? 'bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 shadow-sm shadow-orange-500/10 dark:from-orange-900/30 dark:to-amber-900/30 dark:text-orange-300'
                         : isParentOfSelected
                           ? 'bg-gray-50 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
                           : 'hover:bg-gray-50 dark:hover:bg-gray-800'
@@ -168,7 +171,7 @@ export function CatalogSidebar({
                   >
                     {/* Left accent stripe */}
                     {isSelected && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gray-900" />
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b from-orange-500 to-amber-500" />
                     )}
                     {/* Expand toggle */}
                     {hasChildren ? (
@@ -208,7 +211,7 @@ export function CatalogSidebar({
                         variant="secondary"
                         className={`text-[10px] rounded-full px-2 py-0 h-5 font-medium ${
                           isSelected
-                            ? 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
+                            ? 'bg-orange-100 text-orange-600 dark:bg-orange-800 dark:text-orange-200'
                             : 'bg-gray-50 text-gray-400 dark:bg-gray-700 dark:text-gray-400'
                         }`}
                       >
@@ -227,18 +230,18 @@ export function CatalogSidebar({
                             key={sub.id}
                             className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                               isSubSelected
-                                ? 'bg-gray-100 text-gray-900 font-medium dark:bg-gray-800 dark:text-gray-100'
+                                ? 'bg-orange-50 text-orange-700 font-medium dark:bg-orange-900/30 dark:text-orange-300'
                                 : 'hover:bg-gray-50 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-800 dark:text-gray-400'
                             }`}
                             onClick={() => handleSubcategoryClick(category.name, sub.id)}
                           >
                             <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
-                              isSubSelected ? 'bg-gray-900' : 'bg-gray-300 dark:bg-gray-600'
+                              isSubSelected ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'
                             }`} />
                             <span className="flex-1 text-left leading-snug">{sub.name}</span>
                             {sub.products_count > 0 && (
                               <span className={`text-[10px] ${
-                                isSubSelected ? 'text-gray-700' : 'text-gray-400'
+                                isSubSelected ? 'text-orange-500' : 'text-gray-400'
                               }`}>
                                 {sub.products_count}
                               </span>

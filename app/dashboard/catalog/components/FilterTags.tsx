@@ -43,7 +43,7 @@ export function FilterTags({ filters, selectedCategoryName, selectedSubcategoryN
         <button
           key={tag.key}
           onClick={() => onRemoveFilter(tag.key)}
-          className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 font-medium rounded-full text-xs shadow-sm hover:bg-gray-200 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-50/80 text-orange-600 font-medium rounded-full text-xs shadow-sm hover:bg-orange-100 transition-colors"
         >
           {tag.label}
           <X className="h-3 w-3" />
