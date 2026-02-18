@@ -13,6 +13,7 @@ import { logger } from '@/src/shared/lib/logger'
  * Body:
  * {
  *   query: string        - поисковый запрос
+ *   supplier_id: string  - ID существующего поставщика в catalog_verified_suppliers
  *   provider?: string    - маркетплейс (Taobao, 1688, AliExpress)
  *   category?: string    - категория для сохранения
  *   limit?: number       - количество товаров
@@ -34,12 +35,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const {
       query = 'electronics',
+      supplier_id,
       provider = 'Taobao',
       category = 'Электроника',
       limit = 20
     } = body
 
-    logger.info('[API] Импорт из OTAPI:', { query, provider, category, limit })
+    // Валидация обязательного supplier_id
+    if (!supplier_id) {
+      return NextResponse.json({
+        success: false,
+        error: 'supplier_id обязателен. Выберите поставщика для привязки импортированных товаров.'
+      }, { status: 400 })
+    }
+
+    logger.info('[API] Импорт из OTAPI:', { query, supplier_id, provider, category, limit })
 
     // Инициализируем сервис OTAPI
     const otapi = getOtapiService()
@@ -70,49 +80,21 @@ export async function POST(request: NextRequest) {
 
     logger.info(`[API] Найдено товаров в OTAPI: ${products.length}`)
 
-    // 3. Получаем или создаем поставщика
-    let { data: supplier, error: supplierError } = await supabase
+    // 3. Проверяем что поставщик существует
+    const { data: supplier, error: supplierError } = await supabase
       .from('catalog_verified_suppliers')
       .select('id, name')
-      .eq('name', `OTAPI ${provider} Import`)
+      .eq('id', supplier_id)
       .single()
 
     if (supplierError || !supplier) {
-      // Создаем нового поставщика
-      const { data: newSupplier, error: createError } = await supabase
-        .from('catalog_verified_suppliers')
-        .insert([{
-          name: `OTAPI ${provider} Import`,
-          company_name: `${provider} через OTAPI`,
-          category: category,
-          country: 'Китай',
-          city: provider === '1688' ? 'Иу' : 'Гуанчжоу',
-          description: `Автоматический импорт товаров с ${provider} через OTAPI API. Прямые поставки из Китая.`,
-          is_active: true,
-          is_verified: true,
-          moderation_status: 'approved',
-          contact_email: 'import@otapi.net',
-          min_order: 'От 1 шт.',
-          response_time: '1-2 дня',
-          public_rating: 4.5,
-          certifications: ['OTAPI Partner', 'Verified Importer'],
-          specialties: ['Оптовые поставки', 'Прямые поставки из Китая', 'Автоматический импорт']
-        }])
-        .select()
-        .single()
-
-      if (createError) {
-        throw new Error(`Ошибка создания поставщика: ${createError.message}`)
-      }
-
-      supplier = newSupplier
-      logger.info(`[API] Создан новый поставщик: ${supplier?.name || 'Unknown'}`)
+      return NextResponse.json({
+        success: false,
+        error: `Поставщик с ID "${supplier_id}" не найден в catalog_verified_suppliers.`
+      }, { status: 400 })
     }
 
-    // Проверяем что supplier существует
-    if (!supplier) {
-      throw new Error('Не удалось получить или создать поставщика')
-    }
+    logger.info(`[API] Импорт товаров для поставщика: ${supplier.name} (${supplier.id})`)
 
     // 4. Инициализируем сервисы дедупликации и обогащения
     const dedupService = getDeduplicationService()
@@ -299,8 +281,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: false,
-      error: error.message || 'Внутренняя ошибка сервера',
-      details: error.stack
+      error: error.message || 'Внутренняя ошибка сервера'
     }, { status: 500 })
   }
 }

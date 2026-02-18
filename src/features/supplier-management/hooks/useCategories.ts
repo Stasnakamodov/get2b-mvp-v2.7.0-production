@@ -10,6 +10,7 @@ import {
   type CatalogCategory,
   type CategoryTree
 } from '@/src/entities/category'
+import type { Product } from '@/src/entities/product'
 import { logger } from '@/src/shared/lib'
 import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config'
 
@@ -302,7 +303,7 @@ export const useCategoryProducts = (
   categoryId: string | number | null,
   subcategoryId?: string | number | null
 ) => {
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -316,17 +317,23 @@ export const useCategoryProducts = (
     setError(null)
 
     try {
-      // Здесь будет вызов API для загрузки товаров категории
-      // const response = await fetch(`/api/catalog/categories/${categoryId}/products`)
-      // const data = await response.json()
-      // setProducts(data.products)
+      const params = new URLSearchParams({ category: String(categoryId) })
+      if (subcategoryId) {
+        params.set('subcategory', String(subcategoryId))
+      }
 
-      logger.info('✅ Загружены товары категории')
-      setProducts([]) // Временная заглушка
+      const response = await fetch(`/api/catalog/products?${params}`)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      setProducts(data.products || [])
+      logger.info(`Загружено ${(data.products || []).length} товаров категории`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Неизвестная ошибка'
       setError(message)
-      logger.error('❌ Ошибка загрузки товаров категории:', error)
+      logger.error('Ошибка загрузки товаров категории:', error)
     } finally {
       setLoading(false)
     }

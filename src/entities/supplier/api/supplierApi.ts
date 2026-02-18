@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabaseClient'
+import { logger } from '@/src/shared/lib'
 import type { Supplier } from '../model/types'
 
 // ========================================
@@ -30,12 +31,18 @@ export const fetchUserSuppliers = async (): Promise<Supplier[]> => {
 
     const data = await response.json()
 
+    if (!response.ok) {
+      logger.error('fetchUserSuppliers HTTP error:', response.status)
+      return []
+    }
+
     if (data.suppliers) {
-      return data.suppliers
+      return data.suppliers as Supplier[]
     } else {
       return []
     }
   } catch (error) {
+    logger.error('fetchUserSuppliers error:', error)
     return []
   }
 }
@@ -49,16 +56,22 @@ export const fetchVerifiedSuppliers = async (): Promise<Supplier[]> => {
     const response = await fetch('/api/catalog/suppliers?verified=true')
     const data = await response.json()
 
+    if (!response.ok) {
+      logger.error('fetchVerifiedSuppliers HTTP error:', response.status)
+      return []
+    }
+
     if (data.suppliers) {
-      return data.suppliers.map((s: any) => ({
+      return data.suppliers.map((s: Record<string, unknown>) => ({
         ...s,
-        rating: s.public_rating ?? s.rating ?? null,
-        total_products: s.total_products ?? null,
-      }))
+        rating: (s.public_rating as number | null) ?? (s.rating as number | null) ?? null,
+        total_products: (s.total_products as number | null) ?? null,
+      })) as Supplier[]
     } else {
       return []
     }
   } catch (error) {
+    logger.error('fetchVerifiedSuppliers error:', error)
     return []
   }
 }

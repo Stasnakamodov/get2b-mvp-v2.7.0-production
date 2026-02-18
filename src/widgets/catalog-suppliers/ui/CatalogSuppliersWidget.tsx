@@ -6,12 +6,12 @@
 import React, { useState } from 'react'
 import { useManageSuppliers, SupplierList } from '@/src/features/manage-suppliers'
 import { Building, Users } from 'lucide-react'
-
-type RoomType = 'orange' | 'blue'
+import type { RoomType } from '@/src/entities/supplier'
 
 export function CatalogSuppliersWidget() {
   const [selectedRoom, setSelectedRoom] = useState<RoomType>('orange')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
 
   const {
     suppliers,
@@ -48,8 +48,7 @@ export function CatalogSuppliersWidget() {
   }, [suppliers, selectedRoom, searchQuery])
 
   const handleCreateSupplier = () => {
-    // TODO: Open create supplier modal
-    console.log('Create supplier')
+    setShowAddModal(true)
   }
 
   return (

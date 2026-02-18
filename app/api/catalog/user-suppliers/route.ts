@@ -1,12 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 
+/**
+ * Извлекает userId из токена авторизации или сессии.
+ * Возвращает userId или NextResponse с ошибкой.
+ */
+async function extractUserId(request: NextRequest): Promise<string | NextResponse> {
+  const authHeader = request.headers.get('authorization');
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return NextResponse.json({ error: "Unauthorized - недействительный токен" }, { status: 401 });
+    }
+    return user.id;
+  }
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    return NextResponse.json({ error: "Unauthorized - требуется авторизация" }, { status: 401 });
+  }
+  return user.id;
+}
+
 // OPTIONS: Поддержка CORS и предварительных запросов
 export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin') || '';
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [origin];
+  const isAllowed = allowedOrigins.includes(origin);
+
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': isAllowed ? origin : allowedOrigins[0] || '',
       'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
@@ -16,38 +43,9 @@ export async function OPTIONS(request: NextRequest) {
 // GET: Получение личных поставщиков пользователя (синяя комната)
 export async function GET(request: NextRequest) {
   try {
-
-    // Получаем токен из заголовка Authorization
-    const authHeader = request.headers.get('authorization');
-    let userId: string;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      
-      // Проверяем токен через Supabase
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
-      if (authError || !user) {
-        console.error("[SECURITY] Недействительный токен авторизации");
-        return NextResponse.json({ 
-          error: "Unauthorized - недействительный токен" 
-        }, { status: 401 });
-      }
-      
-      userId = user.id;
-    } else {
-      // Fallback: пытаемся получить пользователя из сессии
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error("[SECURITY] Пользователь не авторизован");
-        return NextResponse.json({ 
-          error: "Unauthorized - требуется авторизация" 
-        }, { status: 401 });
-      }
-      
-      userId = user.id;
-    }
+    const authResult = await extractUserId(request);
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id"); // Добавлено для получения одного поставщика
@@ -82,7 +80,7 @@ export async function GET(request: NextRequest) {
 
 
       if (supplierError) {
-        console.error("[API] Ошибка получения поставщика по ID:", supplierError);
+        // Supplier not found by ID
         return NextResponse.json({ error: "Поставщик не найден" }, { status: 404 });
       }
 
@@ -137,8 +135,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      console.error("[API] Ошибка получения личных поставщиков:", error);
-      console.error("[API] Детали ошибки:", JSON.stringify(error, null, 2));
+      // Log suppressed in production
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -149,8 +146,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("[API] Критическая ошибка:", error);
-    console.error("[API] Stack trace:", error instanceof Error ? error.stack : 'No stack trace');
+    // Critical error in GET
     return NextResponse.json({
       error: "Internal server error"
     }, { status: 500 });
@@ -160,37 +156,9 @@ export async function GET(request: NextRequest) {
 // POST: Добавление нового личного поставщика
 export async function POST(request: NextRequest) {
   try {
-    // Получаем токен из заголовка Authorization
-    const authHeader = request.headers.get('authorization');
-    let userId: string;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      
-      // Проверяем токен через Supabase
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
-      if (authError || !user) {
-        console.error("[SECURITY] Недействительный токен авторизации");
-        return NextResponse.json({ 
-          error: "Unauthorized - недействительный токен" 
-        }, { status: 401 });
-      }
-      
-      userId = user.id;
-    } else {
-      // Fallback: пытаемся получить пользователя из сессии
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error("[SECURITY] Пользователь не авторизован");
-        return NextResponse.json({ 
-          error: "Unauthorized - требуется авторизация" 
-        }, { status: 401 });
-      }
-      
-      userId = user.id;
-    }
+    const authResult = await extractUserId(request);
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const supplierData = await request.json();
 
@@ -241,14 +209,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[API] Ошибка создания личного поставщика:", error);
+      // Create supplier error
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ supplier: data });
 
   } catch (error) {
-    console.error("[API] Критическая ошибка:", error);
+    // Critical error
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -256,45 +224,16 @@ export async function POST(request: NextRequest) {
 // PATCH: Обновление личного поставщика
 export async function PATCH(request: NextRequest) {
   try {
-
-    // Получаем токен из заголовка Authorization
-    const authHeader = request.headers.get('authorization');
-    let userId: string;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      
-      // Проверяем токен через Supabase
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
-      if (authError || !user) {
-        console.error("[SECURITY] Недействительный токен авторизации");
-        return NextResponse.json({ 
-          error: "Unauthorized - недействительный токен" 
-        }, { status: 401 });
-      }
-      
-      userId = user.id;
-    } else {
-      // Fallback: пытаемся получить пользователя из сессии
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error("[SECURITY] Пользователь не авторизован");
-        return NextResponse.json({ 
-          error: "Unauthorized - требуется авторизация" 
-        }, { status: 401 });
-      }
-      
-      userId = user.id;
-    }
+    const authResult = await extractUserId(request);
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const requestBody = await request.json();
     
     const { id, ...updateData } = requestBody;
     
     if (!id) {
-      console.error("[API] Отсутствует ID в запросе");
+      // Missing ID
       return NextResponse.json({ 
         error: "Поле id обязательно для обновления" 
       }, { status: 400 });
@@ -314,7 +253,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[API] Ошибка обновления личного поставщика:", error);
+      // Update supplier error
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -327,7 +266,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ supplier: data });
 
   } catch (error) {
-    console.error("[API] Критическая ошибка:", error);
+    // Critical error
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -335,38 +274,9 @@ export async function PATCH(request: NextRequest) {
 // DELETE: Мягкое удаление личного поставщика
 export async function DELETE(request: NextRequest) {
   try {
-
-    // Получаем токен из заголовка Authorization
-    const authHeader = request.headers.get('authorization');
-    let userId: string;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      
-      // Проверяем токен через Supabase
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
-      if (authError || !user) {
-        console.error("[SECURITY] Недействительный токен авторизации");
-        return NextResponse.json({ 
-          error: "Unauthorized - недействительный токен" 
-        }, { status: 401 });
-      }
-      
-      userId = user.id;
-    } else {
-      // Fallback: пытаемся получить пользователя из сессии
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error("[SECURITY] Пользователь не авторизован");
-        return NextResponse.json({ 
-          error: "Unauthorized - требуется авторизация" 
-        }, { status: 401 });
-      }
-      
-      userId = user.id;
-    }
+    const authResult = await extractUserId(request);
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const { id } = await request.json();
     
@@ -386,14 +296,14 @@ export async function DELETE(request: NextRequest) {
       .single();
 
     if (checkError || !existingSupplier) {
-      console.error("[API] Поставщик не найден или принадлежит другому пользователю:", checkError);
+      // Supplier not found or belongs to another user
       return NextResponse.json({ 
         error: "Поставщик не найден или у вас нет прав на его удаление" 
       }, { status: 404 });
     }
 
     if (!existingSupplier.is_active) {
-      console.warn("[API] Поставщик уже удален");
+      // Supplier already deleted
       return NextResponse.json({ 
         error: "Поставщик уже был удален ранее" 
       }, { status: 409 });
@@ -412,7 +322,7 @@ export async function DELETE(request: NextRequest) {
       .select();
 
     if (productsError) {
-      console.warn("[API] Ошибка при удалении товаров:", productsError);
+      // Products deletion error (non-critical)
     } else {
     }
 
@@ -430,7 +340,7 @@ export async function DELETE(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[API] Ошибка удаления личного поставщика:", error);
+      // Delete supplier error
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -447,7 +357,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("[API] Критическая ошибка:", error);
+    // Critical error
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 } 

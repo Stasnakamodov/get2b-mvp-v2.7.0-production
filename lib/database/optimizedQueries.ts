@@ -12,12 +12,9 @@ interface UserSupplier {
   projects_count?: number;
   is_verified?: boolean;
   verification_date?: string;
-  accreditation_status?: string;
   products_count?: number;
   min_order_quantity?: number;
   min_order_amount?: number;
-  total_count?: number;
-  [key: string]: any; // Для дополнительных полей из БД
 }
 
 interface VerifiedSupplier {
@@ -32,8 +29,6 @@ interface VerifiedSupplier {
   products_count?: number;
   min_order_quantity?: number;
   min_order_amount?: number;
-  total_count?: number;
-  [key: string]: any; // Для дополнительных полей из БД
 }
 
 interface UserSuppliersParams {
@@ -83,51 +78,17 @@ function calculatePagination(total: number, page: number, limit: number) {
   };
 }
 
-function buildWhereClause(params: Record<string, any>): string {
-  const conditions: string[] = [];
-  
-  if (params.category) {
-    conditions.push(`category = '${params.category}'`);
+function getSortColumn(sort?: string): string {
+  switch (sort) {
+    case 'name': return 'company_name';
+    case 'rating': return 'rating';
+    case 'date': return 'created_at';
+    default: return 'created_at';
   }
-  
-  if (params.country) {
-    conditions.push(`country = '${params.country}'`);
-  }
-  
-  if (params.search) {
-    conditions.push(`(
-      company_name ILIKE '%${params.search}%' OR 
-      description ILIKE '%${params.search}%'
-    )`);
-  }
-  
-  if (params.featured !== undefined) {
-    conditions.push(`is_featured = ${params.featured}`);
-  }
-  
-  return conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 }
 
-function buildOrderClause(sort?: string, order?: string): string {
-  const validSorts = ['name', 'rating', 'date'];
-  const validOrders = ['asc', 'desc'];
-  
-  if (!sort || !validSorts.includes(sort)) {
-    return 'ORDER BY created_at DESC';
-  }
-  
-  const orderDirection = validOrders.includes(order || 'desc') ? order : 'desc';
-  
-  switch (sort) {
-    case 'name':
-      return `ORDER BY company_name ${orderDirection}`;
-    case 'rating':
-      return `ORDER BY rating ${orderDirection} NULLS LAST`;
-    case 'date':
-      return `ORDER BY created_at ${orderDirection}`;
-    default:
-      return 'ORDER BY created_at DESC';
-  }
+function sanitizeSearch(search: string): string {
+  return search.replace(/[%_\\'"();]/g, ' ').trim().slice(0, 100);
 }
 
 // Получение поставщиков пользователя с оптимизацией
@@ -146,7 +107,6 @@ export async function getUserSuppliersOptimized(
   } = params;
 
   try {
-    // Валидация параметров
     if (!userId) {
       throw ApiError.badRequest('userId обязателен');
     }
@@ -156,44 +116,59 @@ export async function getUserSuppliersOptimized(
     }
 
     const offset = (page - 1) * limit;
-    const whereClause = buildWhereClause({ category, country, search });
-    const orderClause = buildOrderClause(sort, order);
+    const ascending = order === 'asc';
+    const sortColumn = getSortColumn(sort);
 
-    // Оптимизированный запрос с подсчетом
-    const query = `
-      SELECT 
-        us.*,
-        COUNT(*) OVER() as total_count
-      FROM user_suppliers us
-      ${whereClause}
-      AND us.user_id = $1
-      AND us.is_active = true
-      ${orderClause}
-      LIMIT $2 OFFSET $3
-    `;
+    // Count query
+    let countQuery = supabase
+      .from('user_suppliers')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_active', true);
 
-    const { data, error } = await supabase
-      .rpc('execute_sql', {
-        query,
-        params: [userId, limit, offset]
-      });
+    if (category) countQuery = countQuery.eq('category', category);
+    if (country) countQuery = countQuery.eq('country', country);
+    if (search) {
+      const sanitized = sanitizeSearch(search);
+      if (sanitized) {
+        countQuery = countQuery.or(`company_name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`);
+      }
+    }
 
+    const { count, error: countError } = await countQuery;
+    if (countError) {
+      throw ApiError.database('Ошибка подсчёта поставщиков', { code: countError.message, userId });
+    }
+
+    const total = count || 0;
+    if (total === 0) {
+      return { data: [], pagination: calculatePagination(0, page, limit) };
+    }
+
+    // Data query
+    let dataQuery = supabase
+      .from('user_suppliers')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order(sortColumn, { ascending })
+      .range(offset, offset + limit - 1);
+
+    if (category) dataQuery = dataQuery.eq('category', category);
+    if (country) dataQuery = dataQuery.eq('country', country);
+    if (search) {
+      const sanitized = sanitizeSearch(search);
+      if (sanitized) {
+        dataQuery = dataQuery.or(`company_name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`);
+      }
+    }
+
+    const { data, error } = await dataQuery;
     if (error) {
-      throw ApiError.database('Ошибка получения поставщиков', {
-        code: error.message,
-        userId
-      });
+      throw ApiError.database('Ошибка получения поставщиков', { code: error.message, userId });
     }
 
-    if (!data || data.length === 0) {
-      return {
-        data: [],
-        pagination: calculatePagination(0, page, limit)
-      };
-    }
-
-    const total = data[0]?.total_count || 0;
-    const items = data.map((item: UserSupplier) => ({
+    const items: UserSupplier[] = (data || []).map((item) => ({
       id: item.id,
       company_name: item.company_name,
       description: item.description,
@@ -203,22 +178,16 @@ export async function getUserSuppliersOptimized(
       projects_count: item.projects_count || 0,
       is_verified: item.is_verified || false,
       verification_date: item.verification_date,
-      accreditation_status: item.accreditation_status,
       products_count: item.products_count || 0,
       min_order_quantity: item.min_order_quantity,
       min_order_amount: item.min_order_amount
     }));
 
-    return {
-      data: items,
-      pagination: calculatePagination(total, page, limit)
-    };
+    return { data: items, pagination: calculatePagination(total, page, limit) };
 
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    throw ApiError.database('Неизвестная ошибка получения поставщиков', { 
-      userId
-    });
+    throw ApiError.database('Неизвестная ошибка получения поставщиков', { userId });
   }
 }
 
@@ -243,42 +212,59 @@ export async function getVerifiedSuppliersOptimized(
     }
 
     const offset = (page - 1) * limit;
-    const whereClause = buildWhereClause({ category, country, search, featured });
-    const orderClause = buildOrderClause(sort, order);
+    const ascending = order === 'asc';
+    const sortColumn = sort === 'rating' ? 'public_rating' : getSortColumn(sort);
 
-    const query = `
-      SELECT 
-        vs.*,
-        COUNT(*) OVER() as total_count
-      FROM verified_suppliers vs
-      ${whereClause}
-      AND vs.is_active = true
-      AND vs.verification_status = 'approved'
-      ${orderClause}
-      LIMIT $1 OFFSET $2
-    `;
+    // Count query
+    let countQuery = supabase
+      .from('catalog_verified_suppliers')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
 
-    const { data, error } = await supabase
-      .rpc('execute_sql', {
-        query,
-        params: [limit, offset]
-      });
+    if (category) countQuery = countQuery.eq('category', category);
+    if (country) countQuery = countQuery.eq('country', country);
+    if (featured !== undefined) countQuery = countQuery.eq('is_featured', featured);
+    if (search) {
+      const sanitized = sanitizeSearch(search);
+      if (sanitized) {
+        countQuery = countQuery.or(`company_name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`);
+      }
+    }
 
+    const { count, error: countError } = await countQuery;
+    if (countError) {
+      throw ApiError.database('Ошибка подсчёта верифицированных поставщиков', { code: countError.message });
+    }
+
+    const total = count || 0;
+    if (total === 0) {
+      return { data: [], pagination: calculatePagination(0, page, limit) };
+    }
+
+    // Data query
+    let dataQuery = supabase
+      .from('catalog_verified_suppliers')
+      .select('*')
+      .eq('is_active', true)
+      .order(sortColumn, { ascending })
+      .range(offset, offset + limit - 1);
+
+    if (category) dataQuery = dataQuery.eq('category', category);
+    if (country) dataQuery = dataQuery.eq('country', country);
+    if (featured !== undefined) dataQuery = dataQuery.eq('is_featured', featured);
+    if (search) {
+      const sanitized = sanitizeSearch(search);
+      if (sanitized) {
+        dataQuery = dataQuery.or(`company_name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`);
+      }
+    }
+
+    const { data, error } = await dataQuery;
     if (error) {
-      throw ApiError.database('Ошибка получения верифицированных поставщиков', {
-        code: error.message
-      });
+      throw ApiError.database('Ошибка получения верифицированных поставщиков', { code: error.message });
     }
 
-    if (!data || data.length === 0) {
-      return {
-        data: [],
-        pagination: calculatePagination(0, page, limit)
-      };
-    }
-
-    const total = data[0]?.total_count || 0;
-    const items = data.map((item: VerifiedSupplier) => ({
+    const items: VerifiedSupplier[] = (data || []).map((item) => ({
       id: item.id,
       company_name: item.company_name,
       description: item.description,
@@ -292,10 +278,7 @@ export async function getVerifiedSuppliersOptimized(
       min_order_amount: item.min_order_amount
     }));
 
-    return {
-      data: items,
-      pagination: calculatePagination(total, page, limit)
-    };
+    return { data: items, pagination: calculatePagination(total, page, limit) };
 
   } catch (error) {
     if (error instanceof ApiError) throw error;
@@ -317,44 +300,50 @@ export async function searchSuppliersAutocomplete(
       limit = 10;
     }
 
-    const searchQuery = `
-      SELECT DISTINCT
-        id,
-        company_name as name,
-        category
-      FROM (
-        SELECT id, company_name, category
-        FROM user_suppliers 
-        WHERE company_name ILIKE $1 
-          AND is_active = true
-        UNION ALL
-        SELECT id, company_name, category
-        FROM verified_suppliers 
-        WHERE company_name ILIKE $1 
-          AND is_active = true
-          AND verification_status = 'approved'
-      ) combined
-      ORDER BY name
-      LIMIT $2
-    `;
+    const sanitized = sanitizeSearch(query);
+    if (!sanitized) return [];
 
-    const { data, error } = await supabase
-      .rpc('execute_sql', {
-        query: searchQuery,
-        params: [`%${query}%`, limit]
-      });
+    const searchPattern = `%${sanitized}%`;
 
-    if (error) {
-      throw ApiError.database('Ошибка поиска поставщиков', {
-        code: error.message
-      });
+    // Query both tables via Supabase Query Builder
+    const [userResult, verifiedResult] = await Promise.all([
+      supabase
+        .from('user_suppliers')
+        .select('id, company_name, category')
+        .ilike('company_name', searchPattern)
+        .eq('is_active', true)
+        .limit(limit),
+      supabase
+        .from('catalog_verified_suppliers')
+        .select('id, company_name, category')
+        .ilike('company_name', searchPattern)
+        .eq('is_active', true)
+        .limit(limit)
+    ]);
+
+    const combined = [
+      ...(userResult.data || []),
+      ...(verifiedResult.data || [])
+    ];
+
+    // Deduplicate by company_name and limit
+    const seen = new Set<string>();
+    const results: Array<{id: string, name: string, category?: string}> = [];
+
+    for (const item of combined) {
+      const key = item.company_name?.toLowerCase();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        results.push({
+          id: item.id,
+          name: item.company_name,
+          category: item.category
+        });
+      }
+      if (results.length >= limit) break;
     }
 
-    return data?.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      category: item.category
-    })) || [];
+    return results;
 
   } catch (error) {
     if (error instanceof ApiError) throw error;
@@ -370,23 +359,16 @@ export async function getSuppliersStats(userId?: string): Promise<{
   countries: Array<{country: string, count: number}>;
 }> {
   try {
-    const userFilter = userId ? `AND user_id = '${userId}'` : '';
-    
-    const statsQuery = `
-      SELECT 
-        COUNT(*) as total,
-        COUNT(*) FILTER (WHERE is_verified = true) as verified,
-        array_agg(DISTINCT category) FILTER (WHERE category IS NOT NULL) as categories,
-        array_agg(DISTINCT country) FILTER (WHERE country IS NOT NULL) as countries
-      FROM user_suppliers 
-      WHERE is_active = true ${userFilter}
-    `;
+    let query = supabase
+      .from('user_suppliers')
+      .select('category, country, is_verified', { count: 'exact' })
+      .eq('is_active', true);
 
-    const { data, error } = await supabase
-      .rpc('execute_sql', {
-        query: statsQuery,
-        params: []
-      });
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, count, error } = await query;
 
     if (error) {
       throw ApiError.database('Ошибка получения статистики', {
@@ -395,25 +377,35 @@ export async function getSuppliersStats(userId?: string): Promise<{
       });
     }
 
-    const stats = data?.[0] || {};
-    
+    const items = data || [];
+    const total = count || 0;
+    const verified = items.filter(i => i.is_verified).length;
+
+    // Aggregate categories
+    const catMap = new Map<string, number>();
+    for (const item of items) {
+      if (item.category) {
+        catMap.set(item.category, (catMap.get(item.category) || 0) + 1);
+      }
+    }
+
+    // Aggregate countries
+    const countryMap = new Map<string, number>();
+    for (const item of items) {
+      if (item.country) {
+        countryMap.set(item.country, (countryMap.get(item.country) || 0) + 1);
+      }
+    }
+
     return {
-      total: parseInt(stats.total) || 0,
-      verified: parseInt(stats.verified) || 0,
-      categories: (stats.categories || []).map((cat: string) => ({
-        category: cat,
-        count: 0 // Можно добавить подсчет отдельным запросом
-      })),
-      countries: (stats.countries || []).map((country: string) => ({
-        country: country,
-        count: 0 // Можно добавить подсчет отдельным запросом
-      }))
+      total,
+      verified,
+      categories: Array.from(catMap, ([category, cnt]) => ({ category, count: cnt })),
+      countries: Array.from(countryMap, ([country, cnt]) => ({ country, count: cnt }))
     };
 
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    throw ApiError.database('Неизвестная ошибка получения статистики', {
-      userId
-    });
+    throw ApiError.database('Неизвестная ошибка получения статистики', { userId });
   }
-} 
+}
