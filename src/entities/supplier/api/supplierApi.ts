@@ -50,7 +50,11 @@ export const fetchVerifiedSuppliers = async (): Promise<Supplier[]> => {
     const data = await response.json()
 
     if (data.suppliers) {
-      return data.suppliers
+      return data.suppliers.map((s: any) => ({
+        ...s,
+        rating: s.public_rating ?? s.rating ?? null,
+        total_products: s.total_products ?? null,
+      }))
     } else {
       return []
     }

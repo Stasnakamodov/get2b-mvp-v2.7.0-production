@@ -56,17 +56,17 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
   if (isCompact) {
     return (
       <div
-        className="h-full flex flex-col p-6 bg-white rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg"
+        className="h-full flex flex-col p-6 bg-white dark:bg-gray-900 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg dark:shadow-none dark:border dark:border-gray-800"
         onClick={handleCardClick}
       >
         <div className="flex-1 flex flex-col">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900">{supplier.name}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{supplier.name}</h3>
               {supplier.room_type === 'verified' && (
                 <div className="flex items-center gap-1.5 mt-2">
-                  <CheckCircle className="w-4 h-4 text-violet-600" />
-                  <span className="text-sm text-violet-600 font-medium">Аккредитован</span>
+                  <CheckCircle className="w-4 h-4 text-orange-600" />
+                  <span className="text-sm text-orange-600 font-medium">Аккредитован</span>
                 </div>
               )}
             </div>
@@ -78,23 +78,28 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                   className="w-14 h-14 rounded-xl object-cover shadow-sm"
                 />
               )}
-              {supplier.rating && (
-                <div className="flex items-center gap-1.5 bg-gradient-to-r from-violet-50 to-indigo-50 px-2.5 py-1 rounded-lg">
-                  <Star className="w-4 h-4 text-violet-500" fill="currentColor" />
-                  <span className="font-semibold text-gray-900">{supplier.rating.toFixed(1)}</span>
+              {supplier.rating != null && supplier.rating > 0 && (
+                <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-950 px-2.5 py-1 rounded-lg">
+                  <Star className="w-4 h-4 text-orange-500 dark:text-orange-400" fill="currentColor" />
+                  <span className="font-semibold text-gray-900 dark:text-orange-100">{supplier.rating.toFixed(1)}</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="mb-3">
-            <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg">
               {supplier.category}
             </span>
+            {supplier.total_products != null && supplier.total_products > 0 && (
+              <span className="inline-block px-3 py-1 bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 text-sm font-medium rounded-lg">
+                {supplier.total_products} товаров
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-sm text-gray-600 mt-auto">
-            <MapPin className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 mt-auto">
+            <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             <span>{supplier.country}{supplier.city ? `, ${supplier.city}` : ''}</span>
           </div>
         </div>
@@ -102,7 +107,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
         {showActions && (
           <button
             onClick={handleStartProject}
-            className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
+            className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
           >
             Начать проект
           </button>
@@ -113,15 +118,15 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
 
   return (
     <div
-      className="p-6 bg-white rounded-lg cursor-pointer transition-shadow duration-200 hover:shadow-md"
+      className="p-6 bg-white dark:bg-gray-900 rounded-lg cursor-pointer transition-shadow duration-200 hover:shadow-md dark:shadow-none dark:border dark:border-gray-800"
       onClick={handleCardClick}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">{supplier.name}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{supplier.name}</h3>
           {supplier.company_name && (
-            <p className="text-sm text-gray-500">{supplier.company_name}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{supplier.company_name}</p>
           )}
         </div>
 
@@ -136,60 +141,60 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
 
       {/* Badges - minimal */}
       <div className="flex flex-wrap gap-2 mb-3">
-        <span className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-md">
+        <span className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md">
           {supplier.category}
         </span>
 
         {supplier.room_type === 'verified' && (
-          <span className="px-2.5 py-0.5 text-xs font-medium bg-gradient-to-r from-violet-100 to-indigo-100 text-violet-700 rounded-md flex items-center gap-1">
+          <span className="px-2.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-400 rounded-md flex items-center gap-1">
             <CheckCircle className="w-3 h-3" />
             Аккредитован
           </span>
         )}
 
-        {supplier.source_type === 'echo_card' && (
-          <span className="px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-md">
-            Из проектов
+        {supplier.total_products != null && supplier.total_products > 0 && (
+          <span className="px-2.5 py-0.5 text-xs font-medium bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-400 rounded-md">
+            {supplier.total_products} товаров
           </span>
         )}
       </div>
 
       {/* Rating and stats - clean layout */}
-      {(supplier.rating || supplier.reviews || supplier.projects) && (
+      {((supplier.rating != null && supplier.rating > 0) || (supplier.reviews != null && supplier.reviews > 0) || (supplier.projects != null && supplier.projects > 0)) && (
         <div className="flex items-center gap-3 mb-3 text-sm">
-          {supplier.rating && (
+          {supplier.rating != null && supplier.rating > 0 && (
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3" fill="currentColor" />
-              <span className="font-medium text-gray-900">{supplier.rating.toFixed(1)}</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{supplier.rating.toFixed(1)}</span>
             </div>
           )}
 
-          {supplier.reviews && (
-            <span className="text-gray-500 text-xs">{supplier.reviews} отзывов</span>
+          {supplier.reviews != null && supplier.reviews > 0 && (
+            <span className="text-gray-500 dark:text-gray-400 text-xs">{supplier.reviews} отзывов</span>
           )}
 
-          {supplier.projects && (
-            <span className="text-gray-500 text-xs">{supplier.projects} проектов</span>
+          {supplier.projects != null && supplier.projects > 0 && (
+            <span className="text-gray-500 dark:text-gray-400 text-xs">{supplier.projects} проектов</span>
           )}
         </div>
       )}
 
       {/* Description */}
       {supplier.description && (
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
           {supplier.description}
         </p>
       )}
 
       {/* Location info - minimal */}
-      <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
+      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4">
         <MapPin className="w-3 h-3" />
         <span>{supplier.country}{supplier.city ? `, ${supplier.city}` : ''}</span>
       </div>
 
       {/* Contact info - only if expanded */}
       {supplier.contact_phone && (
-        <div className="text-xs text-gray-500 mb-1">
+        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
           {supplier.contact_phone}
         </div>
       )}
@@ -199,7 +204,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
         <div className="flex gap-2 pt-3">
           <button
             onClick={handleStartProject}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md"
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-medium rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md"
           >
             Начать проект
           </button>
@@ -208,14 +213,14 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
             <>
               <button
                 onClick={handleEdit}
-                className="px-3 py-2 text-gray-600 text-sm hover:bg-gray-50 rounded-lg transition-colors"
+                className="px-3 py-2 text-gray-600 dark:text-gray-400 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
                 Изменить
               </button>
 
               <button
                 onClick={handleDelete}
-                className="px-3 py-2 text-red-600 text-sm hover:bg-red-50 rounded-lg transition-colors"
+                className="px-3 py-2 text-red-600 dark:text-red-400 text-sm hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
               >
                 Удалить
               </button>

@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const featured = searchParams.get("featured");
     const search = searchParams.get("search");
-    const accreditation_status = searchParams.get("accreditation_status");
 
     // === Verified suppliers mode (replaces /api/catalog/verified-suppliers) ===
     if (verified) {
@@ -54,7 +53,7 @@ export async function GET(request: NextRequest) {
       // List verified suppliers
       let query = supabase
         .from("catalog_verified_suppliers")
-        .select("*")
+        .select("*, catalog_verified_products(count)")
         .eq("is_active", true)
         .order("is_featured", { ascending: false })
         .order("public_rating", { ascending: false })
@@ -76,7 +75,15 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      return NextResponse.json({ suppliers: data, total: data?.length || 0 });
+      const suppliers = (data || []).map((s: any) => {
+        const { catalog_verified_products, ...rest } = s;
+        return {
+          ...rest,
+          total_products: catalog_verified_products?.[0]?.count ?? 0,
+        };
+      });
+
+      return NextResponse.json({ suppliers, total: suppliers.length });
     }
 
     // === Default: generic catalog_suppliers ===
@@ -88,7 +95,6 @@ export async function GET(request: NextRequest) {
 
     if (country) query = query.eq("country", country);
     if (category) query = query.eq("category", category);
-    if (accreditation_status) query = query.eq("accreditation_status", accreditation_status);
 
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
