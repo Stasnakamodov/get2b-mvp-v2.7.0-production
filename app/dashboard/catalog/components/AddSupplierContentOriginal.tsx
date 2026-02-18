@@ -7,17 +7,15 @@ import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config';
 interface AddSupplierContentOriginalProps {
   onClose: () => void;
   onSuccess?: (supplier: any) => void;
-  echoCardData?: any;
   editingSupplier?: any;
   targetTable: 'supplier_profiles' | 'catalog_user_suppliers';
 }
 
 export function AddSupplierContentOriginal({ 
-  onClose, 
-  onSuccess, 
-  echoCardData, 
+  onClose,
+  onSuccess,
   editingSupplier,
-  targetTable 
+  targetTable
 }: AddSupplierContentOriginalProps) {
   const {
     currentStep,

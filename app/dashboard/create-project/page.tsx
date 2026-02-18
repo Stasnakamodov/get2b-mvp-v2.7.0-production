@@ -912,13 +912,10 @@ function TemplateLoader() {
 function CartLoader() {
   const searchParams = useSearchParams();
   const fromCart = searchParams?.get("from_cart");
-  const cartData = searchParams?.get("cart");
-  const cartId = searchParams?.get("cart_id"); // Новый параметр для ID корзины из БД
-  const { setSpecificationItems, setCurrentStep, setMaxStepReached, setPaymentMethod, setBankDetails, setHasCartItems, setSupplierData } = useCreateProjectContext();
+  const cartData = searchParams?.get("cart"); // Legacy: данные корзины в URL
+  const { setSpecificationItems, setCurrentStep, setMaxStepReached, setHasCartItems } = useCreateProjectContext();
   const [isCartLoading, setIsCartLoading] = useState(false);
   const [cartProcessed, setCartProcessed] = useState(false);
-  const [lastProcessedCartId, setLastProcessedCartId] = useState<string | null>(null);
-  // Используем импортированный supabase
 
   useEffect(() => {
     // Проверяем что пришли из корзины
@@ -926,86 +923,28 @@ function CartLoader() {
       return;
     }
 
-    // Если это новый cartId, сбрасываем флаг обработки
-    if (cartId && cartId !== lastProcessedCartId) {
-      setCartProcessed(false);
-      setLastProcessedCartId(cartId);
-    }
-
-    // Если корзина уже обработана для ЭТОГО cartId, не обрабатываем повторно
-    if (cartProcessed && cartId === lastProcessedCartId) {
-      return;
-    }
-
-    // Проверяем наличие данных (либо cart_id для новой версии, либо cart для старой)
-    if (!cartId && !cartData) {
+    // Если корзина уже обработана, не обрабатываем повторно
+    if (cartProcessed) {
       return;
     }
 
     async function loadCartData() {
       setIsCartLoading(true);
-      
+
       try {
-        let cartItems = [];
-        let supplierData = null;
-        let hasPaymentData = false;
-        let hasBankData = false;
+        let cartItems: any[] = [];
 
-        // Новый способ: загрузка из БД по cart_id
-        if (cartId) {
-          
-          const { data: cartFromDB, error } = await supabase
-            .from('project_carts')
-            .select('*')
-            .eq('id', cartId)
-            .single();
-          
-          if (error) {
-            logger.error("[CartLoader] Ошибка загрузки корзины из БД:", error);
-            throw error;
-          }
-          
-          if (cartFromDB) {
-            
-            // Извлекаем товары из корзины
-            cartItems = cartFromDB.cart_items?.items || [];
-            supplierData = cartFromDB.supplier_data || {};
-            
-            // 🎯 СОХРАНЯЕМ ДАННЫЕ ПОСТАВЩИКА В КОНТЕКСТ
-            setSupplierData?.(supplierData);
-            
-            // 🎯 АВТОЗАПОЛНЕНИЕ ШАГА 4: Способ оплаты
-            if (supplierData.payment_methods?.length === 1) {
-              // Если способ оплаты один - автовыбираем
-              setPaymentMethod?.(supplierData.payment_methods[0]);
-              hasPaymentData = true;
-            } else if (supplierData.payment_methods?.length > 1) {
-              // Если способов несколько - НЕ автовыбираем, пусть пользователь выбирает
-              hasPaymentData = true;
-            }
-
-            // 🎯 АВТОЗАПОЛНЕНИЕ ШАГА 5: Реквизиты поставщика
-            if (supplierData.bank_accounts?.length > 0 || supplierData.crypto_wallets?.length > 0 || supplierData.p2p_cards?.length > 0) {
-              // Устанавливаем банковские реквизиты если есть
-              if (supplierData.bank_accounts?.length > 0) {
-                setBankDetails?.(supplierData.bank_accounts[0]);
-              }
-              hasBankData = true;
-            }
-            
-            // Помечаем корзину как конвертированную
-            await supabase
-              .from('project_carts')
-              .update({ 
-                status: 'converted',
-                converted_at: new Date().toISOString()
-              })
-              .eq('id', cartId);
-          }
-        } 
-        // Старый способ: из URL параметра
-        else if (cartData) {
+        // Способ 1: из URL параметра cart (legacy)
+        if (cartData) {
           cartItems = JSON.parse(decodeURIComponent(cartData));
+        }
+        // Способ 2: из sessionStorage (основной — из каталога)
+        else if (typeof window !== 'undefined') {
+          const stored = sessionStorage.getItem('project_cart');
+          if (stored) {
+            cartItems = JSON.parse(stored);
+            sessionStorage.removeItem('project_cart');
+          }
         }
         
         
@@ -1035,25 +974,14 @@ function CartLoader() {
           // Остаемся на первом шаге, но товары уже загружены и доступ к шагу 2 открыт
           setCurrentStep(1);
 
-          // Рассчитываем максимальный доступный шаг
-          let maxStep = 2; // Шаг 2 всегда доступен если есть товары
-          if (hasPaymentData || hasBankData) {
-            maxStep = Math.max(maxStep, 4); // Открываем шаг 4 если есть способы оплаты
-          }
-          if (hasBankData) {
-            maxStep = Math.max(maxStep, 5); // Открываем шаг 5 если есть реквизиты
-          }
+          // Шаг 2 доступен если есть товары (оплата и реквизиты заполняются позже)
+          setMaxStepReached(2);
 
-          setMaxStepReached(maxStep);
-          
           // Отмечаем что корзина обработана
           setCartProcessed(true);
 
           logger.info("[CartLoader] Данные успешно загружены", {
             товары: specItems.length,
-            способыОплаты: hasPaymentData ? "✅" : "❌",
-            реквизиты: hasBankData ? "✅" : "❌",
-            максШаг: maxStep
           });
         }
       } catch (error) {
@@ -1064,7 +992,7 @@ function CartLoader() {
     }
     
     loadCartData();
-  }, [fromCart, cartData, cartId, cartProcessed, lastProcessedCartId, setSpecificationItems, setCurrentStep, setMaxStepReached, setPaymentMethod, setBankDetails, setHasCartItems]);
+  }, [fromCart, cartData, cartProcessed, setSpecificationItems, setCurrentStep, setMaxStepReached, setHasCartItems]);
 
   if (isCartLoading) {
     return (
@@ -1089,7 +1017,7 @@ function SupplierLoader() {
   const supplierName = searchParams?.get("supplierName");
   const mode = searchParams?.get("mode");
   const projectId = searchParams?.get("projectId");
-  const { setCompanyData, setProjectName, setSpecificationItems, fillFromEchoCard } = useCreateProjectContext();
+  const { setCompanyData, setProjectName, setSpecificationItems, fillSupplierData } = useCreateProjectContext();
   const [isSupplierLoading, setIsSupplierLoading] = useState(false);
 
   useEffect(() => {
@@ -1216,7 +1144,7 @@ function SupplierLoader() {
             step5: true  // Импортируем реквизиты поставщика
           };
           
-          fillFromEchoCard(supplierAsEcho as any, selectedSteps);
+          fillSupplierData(supplierAsEcho as any, selectedSteps);
           
           // Устанавливаем имя проекта как название поставщика для удобства
           setProjectName(`Проект с ${supplier.name}`);

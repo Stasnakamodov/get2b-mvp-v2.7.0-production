@@ -25,10 +25,12 @@ import { z } from "zod"
  * Returns: { success, products, nextCursor, hasMore, meta }
  */
 
-// Cursor validation
+// Cursor: encodes sort field, sort value, and tie-breaker id
 const CursorDataSchema = z.object({
   lastId: z.string().uuid(),
-  lastCreatedAt: z.string().datetime()
+  sortField: z.enum(['created_at', 'price', 'name']),
+  sortValue: z.union([z.string(), z.number(), z.null()]),
+  sortOrder: z.enum(['asc', 'desc']),
 })
 
 type CursorData = z.infer<typeof CursorDataSchema>
@@ -50,6 +52,15 @@ function encodeCursor(data: CursorData): string {
 function decodeCursor(cursor: string): CursorData | null {
   try {
     const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'))
+    // Support legacy cursors (lastCreatedAt format)
+    if (decoded.lastCreatedAt && !decoded.sortField) {
+      return {
+        lastId: decoded.lastId,
+        sortField: 'created_at',
+        sortValue: decoded.lastCreatedAt,
+        sortOrder: 'desc',
+      }
+    }
     const result = CursorDataSchema.safeParse(decoded)
     if (!result.success) return null
     return result.data
@@ -58,18 +69,37 @@ function decodeCursor(cursor: string): CursorData | null {
   }
 }
 
+/**
+ * Build keyset pagination filter for the cursor.
+ * For DESC: sortField < value OR (sortField = value AND id < lastId)
+ * For ASC:  sortField > value OR (sortField = value AND id < lastId)
+ * NULLs: products with NULL sort values are placed last (after all non-null).
+ */
+function buildCursorFilter(cursorData: CursorData): string {
+  const { lastId, sortField, sortValue, sortOrder } = cursorData
+  const op = sortOrder === 'desc' ? 'lt' : 'gt'
+
+  if (sortValue === null) {
+    // Current cursor is on a NULL value — only use id tie-breaker
+    return `and(${sortField}.is.null,id.lt.${lastId})`
+  }
+
+  // Main condition: sortField <|> value OR (sortField = value AND id < lastId)
+  return `${sortField}.${op}.${sortValue},and(${sortField}.eq.${sortValue},id.lt.${lastId})`
+}
+
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
 
   try {
     const { searchParams } = new URL(request.url)
     const cursor = searchParams.get('cursor')
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
     const supplierType = searchParams.get('supplier_type') || 'verified'
     const category = searchParams.get('category')
     const subcategory = searchParams.get('subcategory')
     const search = searchParams.get('search')
     const supplierId = searchParams.get('supplier_id')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
     const inStock = searchParams.get('in_stock')
     const minPrice = searchParams.get('min_price')
     const maxPrice = searchParams.get('max_price')
@@ -126,10 +156,7 @@ export async function GET(request: NextRequest) {
     if (cursor) {
       const cursorData = decodeCursor(cursor)
       if (cursorData) {
-        query = query.or(
-          `created_at.lt.${cursorData.lastCreatedAt},` +
-          `and(created_at.eq.${cursorData.lastCreatedAt},id.lt.${cursorData.lastId})`
-        )
+        query = query.or(buildCursorFilter(cursorData))
       }
     }
 
@@ -170,7 +197,12 @@ export async function GET(request: NextRequest) {
     let nextCursor: string | null = null
     if (hasMore && products.length > 0) {
       const last = products[products.length - 1]
-      nextCursor = encodeCursor({ lastId: last.id, lastCreatedAt: last.created_at })
+      nextCursor = encodeCursor({
+        lastId: last.id,
+        sortField,
+        sortValue: last[sortField] ?? null,
+        sortOrder,
+      })
     }
 
     const response = NextResponse.json({

@@ -25,7 +25,7 @@ export interface NotificationRecipient {
 
 export interface NotificationPayload {
   id: string
-  type: 'project_status_change' | 'payment_reminder' | 'deadline_warning' | 'accreditation_request'
+  type: 'project_status_change' | 'payment_reminder' | 'deadline_warning'
   priority: 'low' | 'medium' | 'high' | 'critical'
   title: string
   message: string

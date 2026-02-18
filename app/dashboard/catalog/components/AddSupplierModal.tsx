@@ -8,7 +8,6 @@ interface AddSupplierModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (supplier: any) => void;
-  echoCardData?: any; // Данные из эхо карточки для предзаполнения
   editingSupplier?: any; // Данные поставщика для редактирования
   targetTable?: 'supplier_profiles' | 'catalog_user_suppliers'; // 🆕 НОВЫЙ ПАРАМЕТР: куда сохранять
 }
@@ -17,7 +16,6 @@ export function AddSupplierModal({
   isOpen,
   onClose,
   onSuccess,
-  echoCardData,
   editingSupplier,
   targetTable = 'catalog_user_suppliers',
 }: AddSupplierModalProps) {
@@ -48,13 +46,6 @@ export function AddSupplierModal({
                   <h2 className="text-3xl font-light text-black tracking-wide">
                     {editingSupplier ? 'Редактирование поставщика' : 'Добавление нового поставщика'}
                   </h2>
-                  {echoCardData && (
-                    <div className="mt-2 mb-1">
-                      <span className="bg-purple-100 text-purple-800 px-3 py-1 text-xs uppercase tracking-wider font-medium border border-purple-300">
-                        🔮 Импорт из эхо карточки
-                      </span>
-                    </div>
-                  )}
                   {editingSupplier && (
                     <div className="mt-2 mb-1">
                       <span className="bg-orange-100 text-orange-800 px-3 py-1 text-xs uppercase tracking-wider font-medium border border-orange-300">
@@ -71,7 +62,7 @@ export function AddSupplierModal({
                   )}
                   <div className="w-24 h-0.5 bg-black mt-2"></div>
                   <p className="text-gray-600 mt-3 font-light">
-                    {echoCardData ? 'Дозаполните недостающую информацию о поставщике' : 'Заполните информацию о новом поставщике'}
+                    Заполните информацию о новом поставщике
                   </p>
                 </div>
               </div>
@@ -95,7 +86,6 @@ export function AddSupplierModal({
             <AddSupplierContentOriginal 
               onClose={onClose}
               onSuccess={onSuccess}
-              echoCardData={echoCardData}
               editingSupplier={editingSupplier}
               targetTable={targetTable}
             />

@@ -10,7 +10,6 @@ export { useProducts } from './hooks/useProducts'
 //  5M:A?>@B B8?>2 4;O C4>1AB20
 export type {
   Supplier,
-  EchoCard,
   SupplierFormData,
   RoomType,
   Room,

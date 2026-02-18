@@ -83,8 +83,8 @@ export interface AddSupplierContextType {
   setProducts: (products: ProductData[]) => void;
   
   // Источник данных (ручной ввод / импорт из эхо карточки)
-  sourceType: 'manual' | 'echo_card' | 'template';
-  setSourceType: (type: 'manual' | 'echo_card' | 'template') => void;
+  sourceType: 'manual' | 'template';
+  setSourceType: (type: 'manual' | 'template') => void;
   
   // ID черновика для сохранения
   draftId: string | null;
@@ -156,7 +156,7 @@ export const AddSupplierProvider = ({ children }: { children: ReactNode }) => {
   const [maxStepReached, setMaxStepReached] = useState(1);
   const [supplierData, setSupplierData] = useState<SupplierData>(defaultSupplierData);
   const [products, setProducts] = useState<ProductData[]>([]);
-  const [sourceType, setSourceType] = useState<'manual' | 'echo_card' | 'template'>('manual');
+  const [sourceType, setSourceType] = useState<'manual' | 'template'>('manual');
   const [draftId, setDraftId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 

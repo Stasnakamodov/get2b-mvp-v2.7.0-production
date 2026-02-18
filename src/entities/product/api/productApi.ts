@@ -13,44 +13,46 @@ import type { Product } from '../model/types'
 /**
  * Загрузка товаров поставщика
  */
+interface FetchResult {
+  products: Product[]
+  nextCursor: string | null
+  hasMore: boolean
+  totalCount: number
+}
+
 export const fetchSupplierProducts = async (
   supplierId: string,
-  supplierType: 'user' | 'verified' = 'user'
-): Promise<Product[]> => {
-  console.log('📦 [API] Загрузка товаров поставщика:', supplierId, supplierType)
-
+  supplierType: 'user' | 'verified' = 'user',
+  cursor?: string | null
+): Promise<FetchResult> => {
   try {
     let headers: HeadersInit = {}
 
-    // Для user поставщиков нужна авторизация
     if (supplierType === 'user') {
       const { data: { session } } = await supabase.auth.getSession()
-
       if (!session) {
-        console.error('❌ [API] Нет сессии для загрузки товаров')
-        return []
+        return { products: [], nextCursor: null, hasMore: false, totalCount: 0 }
       }
-
       headers['Authorization'] = `Bearer ${session.access_token}`
     }
 
-    const response = await fetch(
-      `/api/catalog/products?supplier_id=${supplierId}&supplier_type=${supplierType}`,
-      { headers }
-    )
+    let url = `/api/catalog/products?supplier_id=${supplierId}&supplier_type=${supplierType}&limit=50`
+    if (cursor) {
+      url += `&cursor=${encodeURIComponent(cursor)}`
+    }
 
+    const response = await fetch(url, { headers })
     const data = await response.json()
 
-    if (data.products) {
-      console.log('✅ [API] Загружено товаров:', data.products.length)
-      return data.products
-    } else {
-      console.warn('⚠️ [API] Нет товаров в ответе')
-      return []
+    return {
+      products: data.products || [],
+      nextCursor: data.nextCursor || null,
+      hasMore: data.hasMore || false,
+      totalCount: data.totalCount || 0,
     }
   } catch (error) {
     console.error('❌ [API] Ошибка загрузки товаров:', error)
-    return []
+    return { products: [], nextCursor: null, hasMore: false, totalCount: 0 }
   }
 }
 

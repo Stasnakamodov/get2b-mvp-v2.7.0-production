@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category') || null
+    const subcategory = searchParams.get('subcategory') || null
     const search = searchParams.get('search') || null
     const inStock = searchParams.get('in_stock') === 'true' ? true : null
     const minPrice = searchParams.get('min_price') ? parseFloat(searchParams.get('min_price')!) : null
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase.rpc('get_product_facets', {
       p_category: category,
+      p_subcategory: subcategory,
       p_search: search,
       p_in_stock: inStock,
       p_min_price: minPrice,

@@ -45,7 +45,7 @@ export interface Supplier {
 
   // Метаданные
   room_type?: 'verified' | 'user'
-  source_type?: 'manual' | 'api' | 'echo_card'
+  source_type?: 'manual' | 'api'
   status?: 'active' | 'pending' | 'inactive'
   created_at?: string
   updated_at?: string
@@ -117,74 +117,6 @@ export interface SupplierFormData {
 }
 
 // ========================================
-// 🎯 ТИПЫ ДЛЯ ЭХО КАРТОЧЕК
-// ========================================
-
-/**
- * Эхо карточка поставщика (из существующих проектов)
- */
-export interface EchoCard {
-  supplier_key: string
-  supplier_info: {
-    id: string
-    name: string
-    company_name: string | null
-    category: string
-    country: string
-    city: string | null
-    description?: string | null
-    contact_email?: string | null
-    contact_phone?: string | null
-    website?: string | null
-    contact_person?: string | null
-    payment_type?: string
-    payment_methods?: {
-      bank?: {
-        bank_name: string
-        account_number: string
-        swift_code?: string
-        bank_address?: string
-      }
-      card?: {
-        bank: string
-        number: string
-        holder: string
-      }
-      crypto?: {
-        network: string
-        address: string
-      }
-    }
-    min_order?: string
-    response_time?: string
-    employees?: string
-    established?: string
-  }
-  products?: string[]
-  products_detailed?: Array<{
-    name: string
-    price?: string
-    quantity?: string
-    image_url?: string
-  }>
-  project_count: number
-  total_value: number
-  last_project_date: string
-  categories: string[]
-}
-
-/**
- * Выбор шагов для импорта из эхо карточки
- */
-export interface ImportStepsSelection {
-  [supplierKey: string]: {
-    step2_products: boolean
-    step4_payment: boolean
-    step5_requisites: boolean
-  }
-}
-
-// ========================================
 // 🎯 ТИПЫ ДЛЯ API ОТВЕТОВ
 // ========================================
 
@@ -196,21 +128,6 @@ export interface SuppliersResponse {
   suppliers: Supplier[]
   total?: number
   page?: number
-  error?: string
-}
-
-/**
- * Ответ API с эхо карточками
- */
-export interface EchoCardsResponse {
-  success: boolean
-  echo_cards: EchoCard[]
-  summary?: {
-    total_cards: number
-    unique_suppliers: number
-    total_projects: number
-    total_value: number
-  }
   error?: string
 }
 

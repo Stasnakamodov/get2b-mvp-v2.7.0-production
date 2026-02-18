@@ -3,7 +3,7 @@ import { TelegramService } from './TelegramService';
 /**
  * 👨‍💼 МЕНЕДЖЕРСКИЙ БОТ SERVICE
  * Сервис для операций менеджерского бота (@Get2b_bot)
- * Функции: одобрение проектов, загрузка чеков, аккредитации
+ * Функции: одобрение проектов, загрузка чеков
  */
 
 export class ManagerBotService {
@@ -213,61 +213,6 @@ Email: ${email}
         force_reply: true,
         selective: true
       }
-    });
-  }
-
-  /**
-   * Отправляет заявку на аккредитацию поставщика
-   */
-  async sendAccreditationRequest({
-    supplierId,
-    supplierName,
-    companyName,    country,
-    category,
-    userEmail,
-    notes,
-    productsCount
-  }: {
-    supplierId: string;
-    supplierName: string;
-    companyName: string;
-    country: string;
-    category: string;
-    userEmail: string;
-    notes?: string;
-    productsCount: number;
-  }) {
-    console.log("👨‍💼 ManagerBotService: заявка на аккредитацию");
-    
-    const text = `🏪 НОВАЯ ЗАЯВКА НА АККРЕДИТАЦИЮ
-
-📋 Поставщик: ${supplierName}
-🏢 Компания: ${companyName}
-🌍 Страна: ${country}
-📦 Категория: ${category}
-👤 Заявитель: ${userEmail}
-🛍️ Товаров в заявке: ${productsCount}
-
-${notes ? `📝 Примечания: ${notes}` : ''}
-
-❗️ Требуется рассмотрение заявки на аккредитацию поставщика для добавления в публичный каталог Get2B.`;
-
-    const replyMarkup = {
-      inline_keyboard: [
-        [
-          { text: "✅ Одобрить аккредитацию", callback_data: `accredit_approve_${supplierId}` },
-          { text: "❌ Отклонить заявку", callback_data: `accredit_reject_${supplierId}` },
-        ],
-        [
-          { text: "📋 Запросить доработку", callback_data: `accredit_revision_${supplierId}` }
-        ]
-      ],
-    };
-
-    return await this.telegramService.sendMessage({
-      chat_id: this.chatId,
-      text,
-      reply_markup: replyMarkup
     });
   }
 

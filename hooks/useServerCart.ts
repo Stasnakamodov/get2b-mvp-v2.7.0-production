@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { CatalogProduct, CartItem, ProductVariant } from '@/lib/catalog/types'
 import { useCallback } from 'react'
+import { supabase } from '@/lib/supabaseClient'
 
 interface ServerCartResponse {
   cart_id: string | null
@@ -16,6 +17,16 @@ interface ServerCartResponse {
   }>
 }
 
+/** Build headers with the current user's access token */
+async function authHeaders(): Promise<HeadersInit> {
+  const { data: { session } } = await supabase.auth.getSession()
+  const headers: HeadersInit = { 'Content-Type': 'application/json' }
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`
+  }
+  return headers
+}
+
 /**
  * Hook for server-side cart operations (authenticated users only).
  * Uses React Query with optimistic updates for fast UI.
@@ -26,7 +37,8 @@ export function useServerCart(enabled = false) {
   const { data: serverCart, isLoading } = useQuery<ServerCartResponse>({
     queryKey: ['server-cart'],
     queryFn: async () => {
-      const response = await fetch('/api/catalog/cart')
+      const headers = await authHeaders()
+      const response = await fetch('/api/catalog/cart', { headers })
       if (!response.ok) throw new Error('Failed to fetch cart')
       const json = await response.json()
       return json.cart
@@ -48,12 +60,16 @@ export function useServerCart(enabled = false) {
 
   const addMutation = useMutation({
     mutationFn: async ({ product_id, quantity, variant_id }: { product_id: string; quantity: number; variant_id?: string }) => {
+      const headers = await authHeaders()
       const response = await fetch('/api/catalog/cart/items', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ product_id, quantity, variant_id }),
       })
-      if (!response.ok) throw new Error('Failed to add to cart')
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(body.error || 'Failed to add to cart')
+      }
       return response.json()
     },
     onSuccess: () => {
@@ -63,9 +79,10 @@ export function useServerCart(enabled = false) {
 
   const updateMutation = useMutation({
     mutationFn: async ({ item_id, quantity }: { item_id: string; quantity: number }) => {
+      const headers = await authHeaders()
       const response = await fetch('/api/catalog/cart/items', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ item_id, quantity }),
       })
       if (!response.ok) throw new Error('Failed to update cart item')
@@ -78,9 +95,10 @@ export function useServerCart(enabled = false) {
 
   const removeMutation = useMutation({
     mutationFn: async ({ product_id }: { product_id: string }) => {
+      const headers = await authHeaders()
       const response = await fetch('/api/catalog/cart/items', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ product_id }),
       })
       if (!response.ok) throw new Error('Failed to remove from cart')
@@ -93,7 +111,8 @@ export function useServerCart(enabled = false) {
 
   const clearMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/catalog/cart', { method: 'DELETE' })
+      const headers = await authHeaders()
+      const response = await fetch('/api/catalog/cart', { method: 'DELETE', headers })
       if (!response.ok) throw new Error('Failed to clear cart')
       return response.json()
     },
@@ -104,9 +123,10 @@ export function useServerCart(enabled = false) {
 
   const mergeMutation = useMutation({
     mutationFn: async (localItems: Array<{ product_id: string; quantity: number; variant_id?: string }>) => {
+      const headers = await authHeaders()
       const response = await fetch('/api/catalog/cart/merge', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ items: localItems }),
       })
       if (!response.ok) throw new Error('Failed to merge cart')

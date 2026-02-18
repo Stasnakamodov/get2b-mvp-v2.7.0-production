@@ -132,45 +132,6 @@ export async function sendClientConfirmationRequestToTelegram({
   }
 }
 
-export async function sendAccreditationRequestToTelegram({
-  supplierId,
-  supplierName,
-  companyName,
-  country,
-  category,
-  userEmail,
-  notes,
-  productsCount
-}: {
-  supplierId: string;
-  supplierName: string;
-  companyName: string;
-  country: string;
-  category: string;
-  userEmail: string;
-  notes?: string;
-  productsCount: number;
-}) {
-  
-  try {
-    const service = getManagerBotService();
-    const result = await service.sendAccreditationRequest({
-      supplierId,
-      supplierName,
-      companyName,
-      country,
-      category,
-      userEmail,
-      notes,
-      productsCount
-    });
-    return { success: true, result };
-  } catch (error) {
-    console.error("❌ Ошибка при отправке заявки:", error);
-    throw error;
-  }
-}
-
 /**
  * Отправляет уведомление о создании профиля клиента менеджеру
  */

@@ -15,7 +15,7 @@ function useOptionalCreateProjectContext() {
   } catch (error) {
     // Если контекст недоступен, возвращаем моки
     return {
-      fillFromEchoCard: () => {},
+      fillSupplierData: () => {},
       setCurrentStep: () => {},
       supplierData: null
     }
@@ -87,50 +87,6 @@ interface VerifiedSupplier {
   catalog_verified_products?: Product[]
 }
 
-interface EchoCard {
-  id: string
-  supplier_info: {
-    name: string
-    company_name?: string
-    logo_url?: string
-    category?: string
-    city?: string
-    country?: string
-    contact_email?: string
-    contact_phone?: string
-    website?: string
-    payment_type?: string
-    description?: string
-  }
-  products: {
-    id: string
-    item_name: string
-    item_code: string
-    quantity: string
-    price: string
-    currency: string
-    total: string
-    image_url?: string
-    category?: string
-    description?: string
-  }[]
-  statistics: {
-    total_projects: number
-    successful_projects: number
-    success_rate: number
-    total_spent: number
-    last_project_date: string
-  }
-  project_info?: {
-    title: string
-    date: string
-    status: string
-  }
-  extraction_info?: {
-    completeness_score: number
-    needs_manual_review: boolean
-  }
-}
 
 interface CatalogModalProps {
   open: boolean
@@ -373,15 +329,6 @@ const PersonalSupplierCard = ({ supplier, onAddProduct, onImport, onAddToCart }:
   )
 }
 
-const EchoCard = ({ echoCard, onImport }: any) => (
-  <div className="border rounded-lg p-4 bg-gray-50">
-    <h3 className="font-semibold">{echoCard.company_name}</h3>
-    <p className="text-sm text-gray-600">{echoCard.description}</p>
-    <div className="mt-2 flex gap-2">
-      <Button size="sm" variant="outline" onClick={onImport}>Импорт</Button>
-    </div>
-  </div>
-)
 
 // Вспомогательные функции для категорий
 const getCategoryIcon = (categoryName: string): string => {
@@ -439,7 +386,7 @@ const paymentMethods = [
 ];
 
 export default function CatalogModal({ open, onClose, onAddProducts }: CatalogModalProps) {
-  const { fillFromEchoCard, setCurrentStep, supplierData } = useOptionalCreateProjectContext()
+  const { fillSupplierData, setCurrentStep, supplierData } = useOptionalCreateProjectContext()
   
   // 🎯 Новое состояние для Category-First режима
   const [catalogMode, setCatalogMode] = useState<CatalogMode>('category-first')
@@ -451,7 +398,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   const [cart, setCart] = useState<CartItem[]>([])
   const [showCart, setShowCart] = useState(false)
   
-  const [activeMode, setActiveMode] = useState<'personal' | 'echo' | 'verified'>('personal')
+  const [activeMode, setActiveMode] = useState<'personal' | 'verified'>('personal')
   const [searchQuery, setSearchQuery] = useState('')
   
   // Состояния для фильтров и сортировки
@@ -461,11 +408,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   // Состояния для персональных поставщиков
   const [personalSuppliers, setPersonalSuppliers] = useState<Supplier[]>([])
   const [loadingPersonal, setLoadingPersonal] = useState(false)
-  
-  // Состояния для эхо карточек
-  const [echoCards, setEchoCards] = useState<EchoCard[]>([])
-  const [loadingEcho, setLoadingEcho] = useState(false)
-  
+
   // Состояния для аккредитованных поставщиков
   const [verifiedSuppliers, setVerifiedSuppliers] = useState<VerifiedSupplier[]>([])
   const [loadingVerified, setLoadingVerified] = useState(false)
@@ -558,16 +501,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       setPersonalSuppliers([])
     } finally {
       setLoadingPersonal(false)
-    }
-  }
-
-  // Загрузка эхо карточек (API /api/catalog/echo-cards-simple удалён при рефакторинге)
-  const loadEchoCards = async () => {
-    setLoadingEcho(true)
-    try {
-      setEchoCards([])
-    } finally {
-      setLoadingEcho(false)
     }
   }
 
@@ -692,12 +625,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
             loadPersonalSuppliers()
           }
           break
-        case 'echo':
-          if (echoCards.length === 0 && !loadingEcho) {
-            console.log("🔄 [CATALOG MODAL] Загружаем эхо карточки по требованию")
-            loadEchoCards()
-          }
-          break
         case 'verified':
           console.log("🔍 [CATALOG MODAL] Проверка verified:", {
             suppliersLength: verifiedSuppliers.length,
@@ -752,52 +679,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
     }
   }
 
-  // Функция сортировки для эхо карточек
-  const sortEchoCards = (cards: EchoCard[]) => {
-    const sorted = [...cards]
-
-    switch (sortBy) {
-      case 'name_asc':
-        return sorted.sort((a, b) => (a.supplier_info.name || '').localeCompare(b.supplier_info.name || ''))
-      case 'name_desc':
-        return sorted.sort((a, b) => (b.supplier_info.name || '').localeCompare(a.supplier_info.name || ''))
-      case 'spent_desc':
-        return sorted.sort((a, b) => (b.statistics.total_spent || 0) - (a.statistics.total_spent || 0))
-      case 'spent_asc':
-        return sorted.sort((a, b) => (a.statistics.total_spent || 0) - (b.statistics.total_spent || 0))
-      case 'success_desc':
-        return sorted.sort((a, b) => (b.statistics.success_rate || 0) - (a.statistics.success_rate || 0))
-      case 'success_asc':
-        return sorted.sort((a, b) => (a.statistics.success_rate || 0) - (b.statistics.success_rate || 0))
-      case 'time_desc':
-        return sorted.sort((a, b) => {
-          const dateA = a.statistics?.last_project_date ? new Date(a.statistics.last_project_date).getTime() : 0
-          const dateB = b.statistics?.last_project_date ? new Date(b.statistics.last_project_date).getTime() : 0
-          return dateB - dateA
-        })
-      case 'time_asc':
-        return sorted.sort((a, b) => {
-          const dateA = a.statistics?.last_project_date ? new Date(a.statistics.last_project_date).getTime() : 0
-          const dateB = b.statistics?.last_project_date ? new Date(b.statistics.last_project_date).getTime() : 0
-          return dateA - dateB
-        })
-      case 'first_time_desc':
-        return sorted.sort((a, b) => {
-          const dateA = a.statistics?.last_project_date ? new Date(a.statistics.last_project_date).getTime() : 0
-          const dateB = b.statistics?.last_project_date ? new Date(b.statistics.last_project_date).getTime() : 0
-          return dateB - dateA
-        })
-      case 'first_time_asc':
-        return sorted.sort((a, b) => {
-          const dateA = a.statistics?.last_project_date ? new Date(a.statistics.last_project_date).getTime() : 0
-          const dateB = b.statistics?.last_project_date ? new Date(b.statistics.last_project_date).getTime() : 0
-          return dateA - dateB
-        })
-      default:
-        return sorted
-    }
-  }
-
   // Функция сортировки для аккредитованных поставщиков
   const sortVerifiedSuppliers = (suppliers: VerifiedSupplier[]) => {
     const sorted = [...suppliers]
@@ -844,18 +725,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
     return matchesSearch && matchesCategory
   })
 
-  const filteredEchoCards = echoCards.filter(card => {
-    // Фильтр по поиску
-    const matchesSearch = card.supplier_info.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      card.supplier_info.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      card.products.some(product => product.item_name.toLowerCase().includes(searchQuery.toLowerCase()))
-    
-    // Для эхо карточек нет категорий, поэтому всегда true
-    const matchesCategory = true
-    
-    return matchesSearch && matchesCategory
-  })
-
   const filteredVerifiedSuppliers = verifiedSuppliers.filter(supplier => {
     // Фильтр по поиску
     const matchesSearch = supplier.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -872,13 +741,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   // Обработка добавления товара в проект
   const handleAddProduct = (product: Product) => {
     onAddProducts([product])
-  }
-
-  // Обработка импорта данных из эхо карточки в текущий проект
-  const handleImportFromEchoCard = (echoCard: EchoCard) => {
-    setCurrentImportData({ type: 'echo', data: echoCard })
-    setSelectedSteps({ step1: false, step2: false, step4: false, step5: false })
-    setShowStepsModal(true)
   }
 
   // Обработка импорта данных из обычного поставщика в текущий проект
@@ -901,16 +763,11 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
 
     const { type, data } = currentImportData
 
-    if (type === 'echo') {
-      const echoCard = data as EchoCard
-      
-      // Импортируем выбранные шаги из эхо карточки с type assertion
-      fillFromEchoCard(echoCard as any, selectedSteps)
-    } else if (type === 'supplier') {
+    if (type === 'supplier') {
       const supplier = data as Supplier
       
-      // Создаем объект эхо карточки для поставщика
-      const supplierAsEcho = {
+      // Создаем объект данных поставщика для импорта
+      const supplierImportData = {
         id: supplier.id,
         supplier_info: {
           name: supplier.name,
@@ -922,23 +779,23 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
           payment_type: 'bank-transfer'
         },
         products: supplier.catalog_user_products ? supplier.catalog_user_products.map((p: any) => p.name) : [],
-        statistics: { 
-          success_rate: 0, 
-          total_spent: 0, 
-          products_count: supplier.catalog_user_products ? supplier.catalog_user_products.length : 0, 
-          total_projects: 0, 
-          successful_projects: 0, 
-          last_project_date: '' 
+        statistics: {
+          success_rate: 0,
+          total_spent: 0,
+          products_count: supplier.catalog_user_products ? supplier.catalog_user_products.length : 0,
+          total_projects: 0,
+          successful_projects: 0,
+          last_project_date: ''
         },
         extraction_info: { completeness_score: 100, needs_manual_review: false }
       }
-      
-      fillFromEchoCard(supplierAsEcho, selectedSteps)
+
+      fillSupplierData(supplierImportData, selectedSteps)
     } else if (type === 'verified') {
       const supplier = data as VerifiedSupplier
       
-      // Создаем объект эхо карточки для аккредитованного поставщика
-      const verifiedAsEcho = {
+      // Создаем объект данных аккредитованного поставщика для импорта
+      const verifiedImportData = {
         id: supplier.id,
         supplier_info: {
           name: supplier.name,
@@ -950,18 +807,18 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
           payment_type: 'bank-transfer'
         },
         products: supplier.catalog_verified_products ? supplier.catalog_verified_products.map((p: any) => p.name) : [],
-        statistics: { 
-          success_rate: 0, 
-          total_spent: 0, 
-          products_count: supplier.catalog_verified_products ? supplier.catalog_verified_products.length : 0, 
-          total_projects: 0, 
-          successful_projects: 0, 
-          last_project_date: '' 
+        statistics: {
+          success_rate: 0,
+          total_spent: 0,
+          products_count: supplier.catalog_verified_products ? supplier.catalog_verified_products.length : 0,
+          total_projects: 0,
+          successful_projects: 0,
+          last_project_date: ''
         },
         extraction_info: { completeness_score: 100, needs_manual_review: false }
       }
-      
-      fillFromEchoCard(verifiedAsEcho, selectedSteps)
+
+      fillSupplierData(verifiedImportData, selectedSteps)
     }
 
     // Закрываем модальные окна
@@ -1285,21 +1142,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                           <SelectItem value="spent_asc">Меньше потрачено</SelectItem>
                         </>
                       )}
-                      {activeMode === 'echo' && (
-                        <>
-                          <SelectItem value="default">По умолчанию</SelectItem>
-                          <SelectItem value="name_asc">По названию (А-Я)</SelectItem>
-                          <SelectItem value="name_desc">По названию (Я-А)</SelectItem>
-                          <SelectItem value="spent_desc">Больше потрачено</SelectItem>
-                          <SelectItem value="spent_asc">Меньше потрачено</SelectItem>
-                          <SelectItem value="success_desc">Выше успешность</SelectItem>
-                          <SelectItem value="success_asc">Ниже успешность</SelectItem>
-                          <SelectItem value="time_desc">Новые проекты</SelectItem>
-                          <SelectItem value="time_asc">Старые проекты</SelectItem>
-                          <SelectItem value="first_time_desc">Новые поставщики</SelectItem>
-                          <SelectItem value="first_time_asc">Старые поставщики</SelectItem>
-                        </>
-                      )}
                       {activeMode === 'verified' && (
                         <>
                           <SelectItem value="default">Рекомендуемые</SelectItem>
@@ -1320,7 +1162,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
               {/* Счетчик результатов */}
               <div className="text-sm text-gray-500">
                 {activeMode === 'personal' && `Найдено: ${filteredPersonalSuppliers.length} поставщиков`}
-                {activeMode === 'echo' && `Найдено: ${filteredEchoCards.length} эхо карточек`}
                 {activeMode === 'verified' && `Найдено: ${filteredVerifiedSuppliers.length} аккредитованных`}
               </div>
             </div>
@@ -1377,17 +1218,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                           onAddProduct={handleAddProduct}
                           onImport={() => handleImportFromSupplier(supplier)}
                           onAddToCart={(product: any) => handleAddProduct(product)}
-                        />
-                      ))}
-                    </div>
-                  ) : selectedCategory.category === 'echo-cards' ? (
-                    // Показываем эхо карточки
-                    <div className="grid gap-6">
-                      {filteredEchoCards.map((echoCard) => (
-                        <EchoCard 
-                          key={echoCard.id}
-                          echoCard={echoCard}
-                          onImport={() => handleImportFromEchoCard(echoCard)}
                         />
                       ))}
                     </div>
@@ -1637,176 +1467,6 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                     ))
                   )}
                 </div>
-          ) : activeMode === 'echo' ? (
-            // Эхо карточки
-            <div className="space-y-6">
-              {loadingEcho ? (
-                <div className="text-center py-12">
-                  <div className="text-lg text-gray-600">Загрузка эхо карточек...</div>
-                </div>
-              ) : filteredEchoCards.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-lg text-gray-600">Эхо карточки не найдены</div>
-                  <div className="text-sm text-gray-500 mt-2">
-                    {searchQuery ? 'Попробуйте изменить запрос поиска' : 'У вас пока нет эхо карточек из прошлых проектов'}
-                  </div>
-                </div>
-              ) : (
-                sortEchoCards(filteredEchoCards).map((echoCard) => (
-                  <div key={echoCard.id} className="border-2 border-purple-200 p-6 bg-purple-50 hover:shadow-lg transition-all duration-300">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-6 flex-1">
-                        {/* Иконка эхо карточки */}
-                        <div className="w-24 h-24 border-2 border-purple-300 flex items-center justify-center bg-purple-100">
-                          <div className="text-center">
-                            <div className="text-2xl mb-1">🔮</div>
-                            <div className="text-xs text-purple-700 font-bold">ЭХО</div>
-                          </div>
-                        </div>
-
-                        <div className="flex-1">
-                          {/* Header */}
-                          <div className="flex items-center gap-4 mb-4">
-                            <h3 className="text-xl font-light text-black dark:text-gray-100 tracking-wide">
-                              {echoCard.supplier_info.name || echoCard.supplier_info.company_name || 'Поставщик из проектов'}
-                            </h3>
-                            <div className="w-px h-6 bg-purple-400"></div>
-                            <span className="bg-purple-600 text-white px-3 py-1 text-xs uppercase tracking-wider font-medium">
-                              ИЗ ПРОЕКТОВ
-                            </span>
-                            <span className="bg-green-100 text-green-800 px-3 py-1 text-xs border border-green-200 rounded">
-                              {echoCard.statistics.success_rate}% успешность
-                            </span>
-                          </div>
-                        
-                          {/* Местоположение */}
-                          {(echoCard.supplier_info.city || echoCard.supplier_info.country) && (
-                            <div className="flex items-center gap-3 mb-4">
-                              <MapPin className="w-4 h-4 text-purple-600" />
-                              <span className="text-sm">
-                                {echoCard.supplier_info.city || 'Город не указан'}, {echoCard.supplier_info.country || 'Страна не указана'}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Статистика проектов */}
-                          <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div className="border-l-4 border-purple-600 pl-4">
-                              <div className="text-2xl font-light text-black">{echoCard.statistics.success_rate}%</div>
-                              <div className="text-sm text-gray-600 uppercase tracking-wider">Успешность</div>
-                            </div>
-                            <div className="border-l-4 border-green-600 pl-4">
-                              <div className="text-2xl font-light text-black">${echoCard.statistics.total_spent.toLocaleString()}</div>
-                              <div className="text-sm text-gray-600 uppercase tracking-wider">Потрачено</div>
-                            </div>
-                            <div className="border-l-4 border-blue-600 pl-4">
-                              <div className="text-2xl font-light text-black">
-                                {'products_count' in echoCard.statistics ? (echoCard.statistics as any).products_count : echoCard.products?.length || 0}
-                              </div>
-                              <div className="text-sm text-gray-600 uppercase tracking-wider">Товаров</div>
-                            </div>
-                          </div>
-
-                          {/* Товары */}
-                          {echoCard.products && echoCard.products.length > 0 && (
-                            <div className="mb-4">
-                              <div className="text-sm font-medium text-gray-700 mb-2">Товары из проектов:</div>
-                              <div className="flex flex-wrap gap-2">
-                                {echoCard.products.slice(0, 5).map((product) => (
-                                  <span key={product.id} className="bg-purple-100 text-purple-800 px-2 py-1 text-xs border border-purple-200 rounded">
-                                    {product.item_name}
-                                  </span>
-                                ))}
-                                {echoCard.products.length > 5 && (
-                                  <span className="text-xs text-gray-500">
-                                    +{echoCard.products.length - 5} еще
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Контактная информация */}
-                          <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
-                            {echoCard.supplier_info.contact_email && (
-                              <div className="flex items-center gap-2">
-                                <Mail className="w-4 h-4" />
-                                <span>{echoCard.supplier_info.contact_email}</span>
-                              </div>
-                            )}
-                            {echoCard.supplier_info.contact_phone && (
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4" />
-                                <span>{echoCard.supplier_info.contact_phone}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Кнопки действий */}
-                      <div className="ml-6 flex flex-col gap-2">
-                        {/* Кнопка просмотра товаров */}
-                        <button
-                          onClick={() => {
-                            // Создаем временный объект поставщика для совместимости
-                            const tempSupplier = {
-                              id: echoCard.id,
-                              name: echoCard.supplier_info.name,
-                              company_name: echoCard.supplier_info.company_name || '',
-                              city: echoCard.supplier_info.city || '',
-                              country: echoCard.supplier_info.country || '',
-                              products: echoCard.products
-                            }
-                            setSelectedSupplier(tempSupplier as any)
-                            
-                            // Создаем товары из эхо карточки для отображения
-                            const echoProducts = echoCard.products.map((product) => ({
-                              id: `echo-${echoCard.id}-${product.id}`,
-                              name: product.item_name,
-                              description: `Товар из прошлых проектов с поставщиком ${echoCard.supplier_info.name}`,
-                              price: product.price,
-                              currency: product.currency,
-                              min_order: product.quantity || '1 шт',
-                              in_stock: true,
-                              images: product.image_url ? [product.image_url] : [],
-                              sku: product.item_code || undefined,
-                              // Дополнительные поля для совместимости с Step2
-                              item_name: product.item_name,
-                              item_code: product.item_code,
-                              supplier_name: echoCard.supplier_info.name,
-                              image_url: product.image_url
-                            }))
-                            setSupplierProducts(echoProducts)
-                          }}
-                          className="bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 transition-colors font-medium uppercase tracking-wider text-xs flex items-center gap-2"
-                        >
-                          <Package className="w-3 h-3" />
-                          ТОВАРЫ
-                        </button>
-                        
-                        {/* Кнопка импорта в текущий проект */}
-                        <button
-                          onClick={() => {
-                            handleImportFromEchoCard(echoCard)
-                          }}
-                          className="bg-purple-600 text-white px-4 py-2 hover:bg-purple-700 transition-colors font-medium uppercase tracking-wider text-xs flex items-center gap-2"
-                        >
-                          <Plus className="w-3 h-3" />
-                          ИМПОРТИРОВАТЬ
-                        </button>
-                        
-                        {echoCard.extraction_info?.needs_manual_review && (
-                          <div className="text-xs text-amber-600 mt-1 text-center">
-                            ⚠️ Требует проверки
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
           ) : (
             // Аккредитованные поставщики Get2B
             <div className="space-y-6">
@@ -2245,10 +1905,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                     </h3>
                     <div className="w-24 h-0.5 bg-black mt-2"></div>
                     <p className="text-sm text-gray-600 mt-3">
-                      {currentImportData.type === 'echo' 
-                        ? `Из эхо карточки: ${currentImportData.data.supplier_info.name}`
-                        : `От поставщика: ${currentImportData.data.name}`
-                      }
+                      От поставщика: {currentImportData.data.name}
                     </p>
                   </div>
                   <button
@@ -2291,10 +1948,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                     <div className="flex-1">
                       <div className="text-base font-medium text-black mb-1">Шаг 2: Товары</div>
                       <div className="text-sm text-gray-600">
-                        {currentImportData.type === 'echo' 
-                          ? `${currentImportData.data.products.length} товаров из проектов`
-                          : 'Товары поставщика'
-                        }
+                        Товары поставщика
                       </div>
                     </div>
                   </label>
@@ -2310,9 +1964,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                     <div className="flex-1">
                       <div className="text-base font-medium text-black mb-1">Шаг 4: Способ оплаты</div>
                       <div className="text-sm text-gray-600">
-                        {currentImportData.type === 'echo' && currentImportData.data.supplier_info.payment_type
-                          ? `${currentImportData.data.supplier_info.payment_type}`
-                          : 'Банковский перевод (по умолчанию)'
+                        {'Банковский перевод (по умолчанию)'
                         }
                       </div>
                     </div>

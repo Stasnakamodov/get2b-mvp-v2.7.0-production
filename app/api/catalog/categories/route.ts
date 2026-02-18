@@ -155,20 +155,36 @@ export async function GET(request: NextRequest) {
         products_count: countsBySubcategory[sub.id] || 0
       }));
 
-      // Also count products directly by category name (for products without subcategory_id)
+      // Count products directly by category name (single GROUP BY RPC instead of N HEAD queries)
       const countsByCategory: Record<string, number> = {};
       if (rootCategories && rootCategories.length > 0) {
-        const countPromises = rootCategories.map(async (cat) => {
-          const { count } = await supabase
-            .from("catalog_verified_products")
-            .select("*", { count: 'exact', head: true })
-            .eq('category', cat.name)
-            .eq('is_active', true);
-          return { name: cat.name, count: count || 0 };
-        });
-        const catCounts = await Promise.all(countPromises);
-        for (const { name, count } of catCounts) {
-          countsByCategory[name] = count;
+        const categoryNames = rootCategories.map(cat => cat.name);
+        const { data: catCountData, error: catRpcError } = await supabase.rpc(
+          'count_products_by_category_name',
+          { category_names: categoryNames }
+        );
+
+        if (!catRpcError && catCountData) {
+          for (const row of catCountData) {
+            if (row.category_name) {
+              countsByCategory[row.category_name] = Number(row.count);
+            }
+          }
+        } else if (catRpcError) {
+          console.warn("[API] RPC fallback: count_products_by_category_name failed:", catRpcError.message);
+          // Fallback: parallel HEAD count queries (N+1, only if RPC unavailable)
+          const countPromises = rootCategories.map(async (cat) => {
+            const { count } = await supabase
+              .from("catalog_verified_products")
+              .select("*", { count: 'exact', head: true })
+              .eq('category', cat.name)
+              .eq('is_active', true);
+            return { name: cat.name, count: count || 0 };
+          });
+          const catCounts = await Promise.all(countPromises);
+          for (const { name, count } of catCounts) {
+            countsByCategory[name] = count;
+          }
         }
       }
 

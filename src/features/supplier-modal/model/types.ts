@@ -14,6 +14,9 @@ export interface SupplierModalState {
   selectedSupplier: Supplier | null
   products: Product[]
   loading: boolean
+  loadingMore: boolean
+  hasMore: boolean
+  totalCount: number
 }
 
 /**
@@ -22,6 +25,7 @@ export interface SupplierModalState {
 export interface SupplierModalActions {
   open: (supplier: Supplier) => void
   close: () => void
+  loadMore: () => void
   onStartProject?: (supplier: Supplier) => void
 }
 

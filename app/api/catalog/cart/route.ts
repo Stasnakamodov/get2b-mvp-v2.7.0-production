@@ -1,19 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { createAuthenticatedClient } from '@/lib/supabaseServerClient'
 import { logger } from '@/src/shared/lib/logger'
-
-async function getAuthUser(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    const { data: { user }, error } = await supabase.auth.getUser(token)
-    if (error || !user) return null
-    return user
-  }
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return null
-  return user
-}
 
 /**
  * GET /api/catalog/cart
@@ -21,10 +8,11 @@ async function getAuthUser(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthUser(request)
-    if (!user) {
+    const auth = await createAuthenticatedClient(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user, supabase } = auth
 
     const { data, error } = await supabase.rpc('get_cart_with_products', {
       p_user_id: user.id,
@@ -48,10 +36,11 @@ export async function GET(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getAuthUser(request)
-    if (!user) {
+    const auth = await createAuthenticatedClient(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user, supabase } = auth
 
     // Get cart id
     const { data: cart } = await supabase

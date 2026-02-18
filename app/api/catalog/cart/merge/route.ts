@@ -1,19 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { createAuthenticatedClient } from '@/lib/supabaseServerClient'
 import { logger } from '@/src/shared/lib/logger'
-
-async function getAuthUser(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    const { data: { user }, error } = await supabase.auth.getUser(token)
-    if (error || !user) return null
-    return user
-  }
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return null
-  return user
-}
 
 /**
  * POST /api/catalog/cart/merge
@@ -22,10 +9,11 @@ async function getAuthUser(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request)
-    if (!user) {
+    const auth = await createAuthenticatedClient(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user, supabase } = auth
 
     const { items } = await request.json()
     if (!Array.isArray(items) || items.length === 0) {

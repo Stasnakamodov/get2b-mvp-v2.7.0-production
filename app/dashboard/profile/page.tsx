@@ -11,7 +11,6 @@ import {
   Trash2,
   Edit,
   X,
-  Star, // Добавляю импорт Star
   Shield,
   Eye,
 } from "lucide-react"
@@ -21,7 +20,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { AddSupplierModal } from "@/app/dashboard/catalog/components/AddSupplierModal"
-import { AccreditationModalV2 } from "@/app/dashboard/catalog/components/AccreditationModalV2"
 import KonturEniCheckModal from "@/components/KonturEniCheckModal"
 
 export default function ProfilePage() {
@@ -35,8 +33,6 @@ export default function ProfilePage() {
 
   // Состояния для модальных окон
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false)
-  const [showAccreditationModal, setShowAccreditationModal] = useState(false)
-  const [accreditingSupplier, setAccreditingSupplier] = useState<any>(null)
   const [showClientEditor, setShowClientEditor] = useState(false)
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [editingClient, setEditingClient] = useState<any>(null)
@@ -440,18 +436,6 @@ export default function ProfilePage() {
     loadProfiles()
   }
 
-  // Обработка аккредитации поставщика
-  const handleAccreditSupplier = (supplier: any) => {
-    setAccreditingSupplier(supplier)
-    setShowAccreditationModal(true)
-  };
-
-  const handleAccreditationSuccess = () => {
-    setShowAccreditationModal(false)
-    setAccreditingSupplier(null)
-    loadProfiles() // Обновляем список профилей
-  };
-
   const handleCheckClient = (client: any) => {
     setCheckingClient(client)
     setShowKonturEniCheck(true)
@@ -684,22 +668,7 @@ export default function ProfilePage() {
                         <div className="text-sm text-gray-600">
                           Тип: Поставщик<br />
                           Страна: {profile.country || '—'}<br />
-                          Категория: {profile.category || '—'}<br />
-                          {profile.accreditation_status && (
-                            <span className={`inline-block px-2 py-1 text-xs rounded mt-1 ${
-                              profile.accreditation_status === 'approved' ? 'bg-green-100 text-green-800' :
-                              profile.accreditation_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              profile.accreditation_status === 'in_review' ? 'bg-blue-100 text-blue-800' :
-                              profile.accreditation_status === 'rejected' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {profile.accreditation_status === 'approved' ? '✅ Аккредитован' :
-                               profile.accreditation_status === 'pending' ? '⏳ Заявка подана' :
-                               profile.accreditation_status === 'in_review' ? '🔍 На проверке' :
-                               profile.accreditation_status === 'rejected' ? '❌ Отклонена' :
-                               'Не аккредитован'}
-                            </span>
-                          )}
+                          Категория: {profile.category || '—'}
                         </div>
                       </div>
                     </div>
@@ -711,34 +680,6 @@ export default function ProfilePage() {
                     >
                       <Edit className="h-4 w-4" />
                     </button>
-{(() => {
-                      const status = profile.accreditation_status;
-                      const isActive = !status || status === 'none' || status === 'rejected';
-                      const isApproved = status === 'approved';
-                      const isPending = status === 'pending' || status === 'in_review';
-                      
-                      return (
-                        <button 
-                          onClick={() => isActive ? handleAccreditSupplier(profile) : null}
-                          disabled={!isActive}
-                          className={`border-2 px-4 py-2 transition-all text-sm font-medium uppercase tracking-wider ${
-                            isApproved 
-                              ? 'border-green-500 text-green-600 bg-green-50' 
-                              : isPending 
-                                ? 'border-yellow-500 text-yellow-600 bg-yellow-50 cursor-not-allowed opacity-75' 
-                                : 'border-orange-500 text-orange-600 hover:bg-orange-500 hover:text-white'
-                          }`}
-                          title={
-                            isApproved ? 'Поставщик аккредитован' :
-                            isPending ? 'Заявка на рассмотрении' :
-                            status === 'rejected' ? 'Подать заявку повторно' :
-                            'Подать заявку на аккредитацию'
-                          }
-                        >
-                          <Star className={`h-4 w-4 ${isApproved ? 'fill-current' : ''}`} />
-                        </button>
-                      );
-                    })()}
                     <button 
                       onClick={() => { 
                         setItemToDelete(profile)
@@ -1077,14 +1018,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-
-      {/* Модальное окно аккредитации */}
-      <AccreditationModalV2
-        isOpen={showAccreditationModal}
-        onClose={() => setShowAccreditationModal(false)}
-        supplier={accreditingSupplier}
-        onSuccess={handleAccreditationSuccess}
-      />
 
       {/* Модальное окно проверки Контур.Эни */}
       {showKonturEniCheck && checkingClient && (

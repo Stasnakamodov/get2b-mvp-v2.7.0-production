@@ -172,12 +172,6 @@ const documentationData: TreeNode[] = [
         href: "/dashboard/documentation/telegram-bot/setup"
       },
       {
-        id: "accreditation-management",
-        title: "Управление аккредитацией",
-        type: "page",
-        href: "/dashboard/documentation/telegram-bot/accreditation"
-      },
-      {
         id: "bot-commands",
         title: "Команды бота",
         type: "page",
@@ -410,7 +404,7 @@ export default function DocumentationPage() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Настройка и использование бота для управления аккредитацией
+                        Настройка и использование бота для управления проектами
                       </p>
                     </CardContent>
                   </Card>

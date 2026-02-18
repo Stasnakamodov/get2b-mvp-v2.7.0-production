@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Ищем в разных бакетах
-    const buckets = ['project-images', 'accreditation-certificates', 'accreditation-documents'];
+    const buckets = ['project-images'];
     const results: SearchResults = {};
 
     for (const bucketName of buckets) {

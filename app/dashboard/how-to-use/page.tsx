@@ -399,98 +399,6 @@ logger.info(\`Ожидаемая дата доставки: \${shipmentStatus.es
             </div>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">🤖 Telegram бот для аккредитации поставщиков</h2>
-            <p className="mb-4 text-gray-700 dark:text-gray-300">
-              Наш Telegram бот Get2B ChatHub Assistant теперь поддерживает управление аккредитацией поставщиков. 
-              Менеджеры могут одобрять или отклонять заявки на аккредитацию прямо из Telegram.
-            </p>
-
-            <div className="space-y-6 bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-              <h3 className="text-lg font-medium mb-4">Подключение к боту</h3>
-              
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <span className="text-green-600 dark:text-green-400 font-bold">1</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">Найдите бота</h4>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                      Найдите бота в Telegram: <code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">@get2b_chathub_bot</code>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <span className="text-green-600 dark:text-green-400 font-bold">2</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">Отправьте /start</h4>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                      Отправьте команду <code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/start</code> для начала работы с ботом
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <span className="text-green-600 dark:text-green-400 font-bold">3</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">Получите уведомления</h4>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                      При поступлении новых заявок на аккредитацию вы получите автоматические уведомления с кнопками для быстрых действий
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              <h3 className="text-lg font-medium mb-2">Команды для управления аккредитацией</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Просмотр заявок</h4>
-                  <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                    <li><code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">/accredit</code> - Общая информация</li>
-                    <li><code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">/accredit_pending</code> - Ожидающие заявки</li>
-                  </ul>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Управление заявками</h4>
-                  <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                    <li><code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">/accredit_view ID</code> - Детали заявки</li>
-                    <li><code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">/accredit_approve ID</code> - Одобрить</li>
-                    <li><code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">/accredit_reject ID причина</code> - Отклонить</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-700 dark:text-blue-300 mb-2">💡 Примеры использования</h4>
-                <div className="space-y-2 text-sm text-blue-600 dark:text-blue-400">
-                  <div><code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">/accredit_view 03e0c659-5323-4394-a8c0-22f73222f3fa</code></div>
-                  <div><code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">/accredit_approve 03e0c659-5323-4394-a8c0-22f73222f3fa</code></div>
-                  <div><code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">/accredit_reject 03e0c659-5323-4394-a8c0-22f73222f3fa Недостаточно документов</code></div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-              <h4 className="font-medium text-green-700 dark:text-green-300 mb-2">✅ Преимущества Telegram бота</h4>
-              <ul className="space-y-1 text-sm text-green-600 dark:text-green-400">
-                <li>• Мгновенные уведомления о новых заявках</li>
-                <li>• Быстрое одобрение/отклонение одним кликом</li>
-                <li>• Работа с мобильного устройства</li>
-                <li>• История всех действий</li>
-                <li>• Интеграция с веб-интерфейсом</li>
-              </ul>
-            </div>
-          </section>
 
           {/* Советы и лайфхаки для быстрого старта */}
           <section>
@@ -499,8 +407,7 @@ logger.info(\`Ожидаемая дата доставки: \${shipmentStatus.es
               <li><b>Заполните профиль полностью</b> — это ускорит верификацию и одобрение проектов.</li>
               <li><b>Используйте шаблоны</b> для повторяющихся проектов — экономьте время на вводе данных.</li>
               <li><b>Загружайте документы в PDF или JPG</b> — эти форматы обрабатываются быстрее всего.</li>
-              <li><b>Подключитесь к Telegram-боту</b> — получайте мгновенные уведомления о статусах проектов и заявках на аккредитацию.</li>
-              <li><b>Используйте команды бота</b> — быстро одобряйте/отклоняйте заявки на аккредитацию прямо из Telegram.</li>
+              <li><b>Подключитесь к Telegram-боту</b> — получайте мгновенные уведомления о статусах проектов.</li>
               <li><b>Проверяйте статус проекта</b> — если что-то зависло, обновите страницу или обратитесь в поддержку.</li>
               <li><b>Используйте поиск и фильтры</b> на вкладке "Ваши сделки" для быстрого доступа к нужным проектам.</li>
               <li><b>Редактируйте поставщиков в синей комнате</b> — используйте кнопку "✏️ Редактировать" для обновления данных и логотипов.</li>
@@ -535,14 +442,6 @@ logger.info(\`Ожидаемая дата доставки: \${shipmentStatus.es
                 <p className="text-gray-700 dark:text-gray-300">Внизу страницы есть чат поддержки, либо напишите на <a href="mailto:support@get2b.ru" className="text-blue-600 underline">support@get2b.ru</a>.</p>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">Как работает Telegram бот для аккредитации?</h4>
-                <p className="text-gray-700 dark:text-gray-300">Найдите бота @get2b_chathub_bot, отправьте /start, и вы будете получать уведомления о новых заявках на аккредитацию с возможностью быстрого одобрения/отклонения.</p>
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">Можно ли одобрять заявки на аккредитацию через Telegram?</h4>
-                <p className="text-gray-700 dark:text-gray-300">Да! Используйте команды /accredit_approve ID или кнопки в уведомлениях для быстрого одобрения заявок на аккредитацию.</p>
-              </div>
-              <div>
                 <h4 className="font-medium text-gray-900 dark:text-white">Как редактировать поставщиков в синей комнате?</h4>
                 <p className="text-gray-700 dark:text-gray-300">Найдите поставщика в разделе "Ваши поставщики", нажмите кнопку "✏️ Редактировать" и внесите необходимые изменения. Вы можете обновить данные, загрузить новый логотип и изменить любую информацию о поставщике.</p>
               </div>
@@ -566,7 +465,6 @@ logger.info(\`Ожидаемая дата доставки: \${shipmentStatus.es
               <li><b>Проект не отображается в списке:</b> Обновите страницу, проверьте фильтры и статус. Если не помогло — выйдите и войдите снова.</li>
               <li><b>Не приходят уведомления:</b> Проверьте настройки Telegram-бота и email, разрешите уведомления для приложения.</li>
               <li><b>Telegram бот не отвечает:</b> Убедитесь, что вы нашли правильного бота @get2b_chathub_bot и отправили команду /start.</li>
-              <li><b>Не получаете уведомления об аккредитации:</b> Проверьте, что webhook настроен корректно и бот активен.</li>
               <li><b>Случайно удалили проект:</b> Восстановление возможно только через поддержку — напишите нам как можно скорее.</li>
             </ul>
           </section>

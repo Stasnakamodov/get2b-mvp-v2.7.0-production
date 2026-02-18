@@ -1,21 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { createAuthenticatedClient } from '@/lib/supabaseServerClient'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { logger } from '@/src/shared/lib/logger'
 
-async function getAuthUser(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    const { data: { user }, error } = await supabase.auth.getUser(token)
-    if (error || !user) return null
-    return user
-  }
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return null
-  return user
-}
-
-async function getOrCreateCart(userId: string) {
+async function getOrCreateCart(supabase: SupabaseClient, userId: string) {
   // Try to get existing cart
   const { data: existing } = await supabase
     .from('catalog_carts')
@@ -43,17 +31,18 @@ async function getOrCreateCart(userId: string) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request)
-    if (!user) {
+    const auth = await createAuthenticatedClient(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user, supabase } = auth
 
     const { product_id, quantity = 1, variant_id = null } = await request.json()
     if (!product_id) {
       return NextResponse.json({ error: 'product_id is required' }, { status: 400 })
     }
 
-    const cartId = await getOrCreateCart(user.id)
+    const cartId = await getOrCreateCart(supabase, user.id)
 
     // Upsert: if item exists, increment quantity
     const { data: existing } = await supabase
@@ -110,10 +99,11 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await getAuthUser(request)
-    if (!user) {
+    const auth = await createAuthenticatedClient(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { supabase } = auth
 
     const { item_id, quantity } = await request.json()
     if (!item_id || quantity === undefined) {
@@ -160,10 +150,11 @@ export async function PATCH(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getAuthUser(request)
-    if (!user) {
+    const auth = await createAuthenticatedClient(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user, supabase } = auth
 
     const { item_id, product_id } = await request.json()
 

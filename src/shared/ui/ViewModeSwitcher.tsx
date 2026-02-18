@@ -25,13 +25,13 @@ export const ViewModeSwitcher: React.FC<ViewModeSwitcherProps> = ({
   className = ''
 }) => {
   return (
-    <div className={`flex items-center gap-1 border-2 border-gray-200 rounded-xl overflow-hidden p-1 bg-white shadow-sm ${className}`}>
+    <div className={`flex items-center gap-1 border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden p-1 bg-white dark:bg-gray-900 shadow-sm ${className}`}>
       <button
         onClick={() => onChange('grid')}
         className={`p-2.5 rounded-lg transition-all duration-200 ${
           mode === 'grid'
-            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105'
-            : 'bg-white text-gray-600 hover:bg-gray-100 hover:scale-105 active:scale-95'
+            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30 scale-105'
+            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:scale-105 active:scale-95'
         }`}
         title="Сетка"
       >
@@ -41,8 +41,8 @@ export const ViewModeSwitcher: React.FC<ViewModeSwitcherProps> = ({
         onClick={() => onChange('list')}
         className={`p-2.5 rounded-lg transition-all duration-200 ${
           mode === 'list'
-            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105'
-            : 'bg-white text-gray-600 hover:bg-gray-100 hover:scale-105 active:scale-95'
+            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30 scale-105'
+            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:scale-105 active:scale-95'
         }`}
         title="Список"
       >

@@ -91,7 +91,7 @@ export function PriceFilterPopover({ minPrice, maxPrice, onApply }: PriceFilterP
                   setMin(preset.min?.toString() || '')
                   setMax(preset.max?.toString() || '')
                 }}
-                className="px-2.5 py-1 text-xs rounded-full border border-gray-200 shadow-sm hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                className="px-2.5 py-1 text-xs rounded-full border border-gray-200 dark:border-gray-700 shadow-sm hover:border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors"
               >
                 {preset.label}
               </button>

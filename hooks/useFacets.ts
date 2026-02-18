@@ -14,11 +14,12 @@ interface FacetsResponse {
  */
 export function useFacets(filters: CatalogFilters, enabled = true) {
   return useQuery<FacetData>({
-    queryKey: ['facets', filters.category, filters.search, filters.inStock, filters.minPrice, filters.maxPrice, filters.country, filters.supplierId],
+    queryKey: ['facets', filters.category, filters.subcategory, filters.search, filters.inStock, filters.minPrice, filters.maxPrice, filters.country, filters.supplierId],
     queryFn: async () => {
       const params = new URLSearchParams()
 
       if (filters.category) params.set('category', filters.category)
+      if (filters.subcategory) params.set('subcategory', filters.subcategory)
       if (filters.search) params.set('search', filters.search)
       if (filters.inStock) params.set('in_stock', 'true')
       if (filters.minPrice !== undefined) params.set('min_price', String(filters.minPrice))

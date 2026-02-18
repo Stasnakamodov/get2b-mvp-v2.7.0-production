@@ -53,6 +53,12 @@ export const SupplierGrid: React.FC<SupplierGridProps> = ({
   itemsPerPage = SUPPLIERS_PER_PAGE
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode)
+
+  // Sync with external viewMode prop
+  React.useEffect(() => {
+    setViewMode(initialViewMode)
+  }, [initialViewMode])
+
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
@@ -120,30 +126,30 @@ export const SupplierGrid: React.FC<SupplierGridProps> = ({
   // Цвета для комнаты
   const roomColors = roomType === 'orange'
     ? {
-        bg: 'bg-orange-50',
-        border: 'border-orange-200',
-        text: 'text-orange-600',
-        badge: 'bg-orange-100 text-orange-700'
+        bg: 'bg-orange-50 dark:bg-orange-950/20',
+        border: 'border-orange-200 dark:border-orange-800',
+        text: 'text-orange-600 dark:text-orange-400',
+        badge: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
       }
     : roomType === 'blue'
     ? {
-        bg: 'bg-blue-50',
-        border: 'border-blue-200',
-        text: 'text-blue-600',
-        badge: 'bg-blue-100 text-blue-700'
+        bg: 'bg-blue-50 dark:bg-blue-950/20',
+        border: 'border-blue-200 dark:border-blue-800',
+        text: 'text-blue-600 dark:text-blue-400',
+        badge: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
       }
     : {
-        bg: 'bg-white',
-        border: 'border-gray-200',
-        text: 'text-gray-600',
-        badge: 'bg-gray-100 text-gray-700'
+        bg: 'bg-white dark:bg-gray-900',
+        border: 'border-gray-200 dark:border-gray-700',
+        text: 'text-gray-600 dark:text-gray-400',
+        badge: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
       }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="flex items-center gap-3 text-gray-600">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
           <span>Загрузка поставщиков...</span>
         </div>
       </div>
@@ -157,7 +163,7 @@ export const SupplierGrid: React.FC<SupplierGridProps> = ({
           <p className="text-red-600 mb-2">❌ {error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             Попробовать снова
           </button>
@@ -204,7 +210,7 @@ export const SupplierGrid: React.FC<SupplierGridProps> = ({
 
       {/* Информация о результатах */}
       {(showSearch || showFilters) && (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
           Найдено: {filteredSuppliers.length} поставщиков
           {showPagination && totalPages > 1 && (
             <span> (страница {currentPage} из {totalPages})</span>
@@ -238,7 +244,7 @@ export const SupplierGrid: React.FC<SupplierGridProps> = ({
           {showSearch && searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Очистить поиск
             </button>

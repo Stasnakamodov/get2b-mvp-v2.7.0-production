@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,6 +42,12 @@ interface ImportResult {
   message?: string
 }
 
+interface SupplierOption {
+  id: string
+  name: string
+  company_name?: string
+}
+
 /**
  * Компонент импорта товаров из OTAPI
  */
@@ -50,9 +56,37 @@ export function OtapiImport() {
   const [category, setCategory] = useState('')
   const [provider, setProvider] = useState('Taobao')
   const [limit, setLimit] = useState('20')
+  const [supplierId, setSupplierId] = useState('')
+  const [suppliers, setSuppliers] = useState<SupplierOption[]>([])
+  const [loadingSuppliers, setLoadingSuppliers] = useState(true)
   const [isImporting, setIsImporting] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
   const { toast } = useToast()
+
+  // Загружаем список верифицированных поставщиков
+  useEffect(() => {
+    async function loadSuppliers() {
+      try {
+        const res = await fetch('/api/catalog/suppliers?verified=true')
+        const data = await res.json()
+        const list = (data.suppliers || []).map((s: any) => ({
+          id: s.id,
+          name: s.name || s.company_name || 'Без названия',
+          company_name: s.company_name
+        }))
+        setSuppliers(list)
+      } catch {
+        toast({
+          title: 'Ошибка',
+          description: 'Не удалось загрузить список поставщиков',
+          variant: 'destructive'
+        })
+      } finally {
+        setLoadingSuppliers(false)
+      }
+    }
+    loadSuppliers()
+  }, [toast])
 
   const handleImport = async () => {
     if (!query.trim()) {
@@ -73,6 +107,15 @@ export function OtapiImport() {
       return
     }
 
+    if (!supplierId) {
+      toast({
+        title: 'Ошибка',
+        description: 'Выберите поставщика для привязки товаров',
+        variant: 'destructive'
+      })
+      return
+    }
+
     setIsImporting(true)
     setResult(null)
 
@@ -82,6 +125,7 @@ export function OtapiImport() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: query.trim(),
+          supplier_id: supplierId,
           category,
           provider,
           limit: parseInt(limit)
@@ -176,6 +220,26 @@ export function OtapiImport() {
           </div>
         </div>
 
+        {/* Supplier Selector */}
+        <div className="space-y-2">
+          <Label>Поставщик (обязательно)</Label>
+          <Select value={supplierId} onValueChange={setSupplierId} disabled={loadingSuppliers}>
+            <SelectTrigger>
+              <SelectValue placeholder={loadingSuppliers ? 'Загрузка...' : 'Выберите поставщика'} />
+            </SelectTrigger>
+            <SelectContent>
+              {suppliers.map(s => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}{s.company_name && s.company_name !== s.name ? ` (${s.company_name})` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-gray-500">
+            Товары будут привязаны к выбранному поставщику
+          </p>
+        </div>
+
         {/* Limit */}
         <div className="space-y-2">
           <Label>Количество товаров</Label>
@@ -195,7 +259,7 @@ export function OtapiImport() {
         {/* Import Button */}
         <Button
           onClick={handleImport}
-          disabled={isImporting}
+          disabled={isImporting || !supplierId}
           className="w-full bg-orange-500 hover:bg-orange-600"
         >
           {isImporting ? (

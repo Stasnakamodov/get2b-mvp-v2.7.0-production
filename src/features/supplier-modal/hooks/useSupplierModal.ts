@@ -1,12 +1,9 @@
 /**
  * Хук для управления модальным окном поставщика
  * FSD: features/supplier-modal/hooks
- *
- * Извлечено из app/dashboard/catalog/page.tsx
- * для упрощения главной страницы и соблюдения SRP
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Supplier } from '@/src/entities/supplier'
 import type { Product } from '@/src/entities/product'
 import { fetchSupplierProducts } from '@/src/entities/product'
@@ -18,14 +15,6 @@ interface UseSupplierModalOptions {
   selectedRoom?: 'orange' | 'blue'
 }
 
-/**
- * Хук для управления модальным окном поставщика
- *
- * Функциональность:
- * - Открытие/закрытие модалки
- * - Автоматическая загрузка товаров при открытии
- * - Управление состоянием загрузки
- */
 export const useSupplierModal = (options: UseSupplierModalOptions = {}): UseSupplierModalResult => {
   const { onStartProject, selectedRoom = 'orange' } = options
 
@@ -33,54 +22,66 @@ export const useSupplierModal = (options: UseSupplierModalOptions = {}): UseSupp
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [totalCount, setTotalCount] = useState(0)
+  const cursorRef = useRef<string | null>(null)
 
-  /**
-   * Открытие модального окна с поставщиком
-   */
   const open = useCallback((supplier: Supplier) => {
-    logger.debug('Открытие модального окна поставщика:', supplier.name)
     setSelectedSupplier(supplier)
     setIsOpen(true)
   }, [])
 
-  /**
-   * Закрытие модального окна
-   */
   const close = useCallback(() => {
-    logger.debug('Закрытие модального окна поставщика')
     setIsOpen(false)
     setSelectedSupplier(null)
     setProducts([])
+    setHasMore(false)
+    setTotalCount(0)
+    cursorRef.current = null
   }, [])
 
-  /**
-   * Загрузка товаров при открытии модалки
-   */
+  const loadMore = useCallback(async () => {
+    if (!selectedSupplier || !cursorRef.current || loadingMore) return
+
+    setLoadingMore(true)
+    try {
+      const supplierType = selectedSupplier.room_type ||
+        (selectedRoom === 'orange' ? 'verified' : 'user')
+
+      const result = await fetchSupplierProducts(selectedSupplier.id, supplierType, cursorRef.current)
+      setProducts(prev => [...prev, ...result.products])
+      cursorRef.current = result.nextCursor
+      setHasMore(result.hasMore)
+    } catch (error) {
+      logger.error('Ошибка загрузки товаров:', error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [selectedSupplier, selectedRoom, loadingMore])
+
   useEffect(() => {
     if (isOpen && selectedSupplier) {
-      const loadSupplierProducts = async () => {
+      const loadInitial = async () => {
         setLoading(true)
-
         try {
-          // Определяем тип поставщика
           const supplierType = selectedSupplier.room_type ||
             (selectedRoom === 'orange' ? 'verified' : 'user')
 
-          logger.debug(`Загрузка товаров поставщика ${selectedSupplier.id} (${supplierType})`)
-
-          const loadedProducts = await fetchSupplierProducts(selectedSupplier.id, supplierType)
-          setProducts(loadedProducts)
-
-          logger.info(`✅ Загружено ${loadedProducts.length} товаров`)
+          const result = await fetchSupplierProducts(selectedSupplier.id, supplierType)
+          setProducts(result.products)
+          cursorRef.current = result.nextCursor
+          setHasMore(result.hasMore)
+          setTotalCount(result.totalCount)
         } catch (error) {
-          logger.error('❌ Ошибка загрузки товаров:', error)
+          logger.error('Ошибка загрузки товаров:', error)
           setProducts([])
         } finally {
           setLoading(false)
         }
       }
 
-      loadSupplierProducts()
+      loadInitial()
     }
   }, [isOpen, selectedSupplier, selectedRoom])
 
@@ -89,8 +90,12 @@ export const useSupplierModal = (options: UseSupplierModalOptions = {}): UseSupp
     selectedSupplier,
     products,
     loading,
+    loadingMore,
+    hasMore,
+    totalCount,
     open,
     close,
+    loadMore,
     onStartProject
   }
 }

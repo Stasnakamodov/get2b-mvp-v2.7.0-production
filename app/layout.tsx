@@ -4,6 +4,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { CartProvider } from "@/contexts/CartContext"
 import { QueryProvider } from "@/components/providers/QueryProvider"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: "Get2B",
@@ -23,6 +24,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
             <CartProvider>
               {children}
+              <Toaster />
             </CartProvider>
           </ThemeProvider>
         </QueryProvider>

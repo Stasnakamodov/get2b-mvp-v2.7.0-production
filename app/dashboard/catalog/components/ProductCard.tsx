@@ -54,13 +54,13 @@ export const ProductCard = memo(function ProductCard({
   if (viewMode === 'list') {
     return (
       <Card
-        className={`cursor-pointer transition-all duration-300 border-0 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] ${
-          isInCart ? 'ring-2 ring-orange-500 bg-orange-50' : ''
+        className={`cursor-pointer transition-all duration-300 border-0 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-none dark:border dark:border-gray-800 dark:hover:border-gray-700 ${
+          isInCart ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950/30' : ''
         }`}
         onClick={handleClick}
       >
         <CardContent className="p-3 flex gap-4">
-          <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0">
+          <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 flex-shrink-0">
             {effectiveImageUrl ? (
               <Image
                 src={effectiveImageUrl}
@@ -78,12 +78,12 @@ export const ProductCard = memo(function ProductCard({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-[13px] text-gray-800 line-clamp-1 mb-1">
+            <h3 className="font-semibold text-[13px] text-gray-800 dark:text-gray-200 line-clamp-1 mb-1">
               {product.name}
             </h3>
 
             {product.description && (
-              <p className="text-xs text-gray-500 line-clamp-1 mb-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mb-2">
                 {truncateText(product.description, 80)}
               </p>
             )}
@@ -94,7 +94,7 @@ export const ProductCard = memo(function ProductCard({
               </Badge>
 
               {product.supplier_country && (
-                <span className="text-xs text-gray-500 flex items-center gap-1">
+                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {product.supplier_country}
                 </span>
@@ -104,11 +104,11 @@ export const ProductCard = memo(function ProductCard({
 
           <div className="flex flex-col items-end justify-between">
             <div className="text-right">
-              <p className="font-extrabold text-xl tracking-tight text-orange-600">
+              <p className="font-extrabold text-xl tracking-tight text-orange-600 dark:text-orange-400">
                 {formatPrice(product.price, product.currency)}
               </p>
               {product.min_order && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {formatMinOrder(product.min_order)}
                 </p>
               )}
@@ -118,7 +118,7 @@ export const ProductCard = memo(function ProductCard({
               {onToggleWishlist && (
                 <motion.button
                   whileTap={{ scale: 0.85 }}
-                  className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                  className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   onClick={handleToggleWishlist}
                 >
                   <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current text-red-500' : 'text-gray-400'}`} />
@@ -156,13 +156,13 @@ export const ProductCard = memo(function ProductCard({
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
     >
       <Card
-        className={`cursor-pointer transition-all duration-300 border-0 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] group ${
-          isInCart ? 'ring-2 ring-orange-500 bg-orange-50' : ''
+        className={`cursor-pointer transition-all duration-300 border-0 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-none dark:border dark:border-gray-800 dark:hover:border-gray-700 group ${
+          isInCart ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950/30' : ''
         }`}
         onClick={handleClick}
       >
         <CardContent className="p-0">
-          <div className="relative aspect-[4/3] bg-gray-50 rounded-t-xl overflow-hidden">
+          <div className="relative aspect-[4/3] bg-gray-50 dark:bg-gray-800 rounded-t-xl overflow-hidden">
             {effectiveImageUrl ? (
               <Image
                 src={effectiveImageUrl}
@@ -215,7 +215,7 @@ export const ProductCard = memo(function ProductCard({
           </div>
 
           <div className="p-3.5">
-            <h3 className="font-semibold text-[13px] text-gray-800 line-clamp-2 mb-2 h-10">
+            <h3 className="font-semibold text-[13px] text-gray-800 dark:text-gray-200 line-clamp-2 mb-2 h-10">
               {product.name}
             </h3>
 
@@ -225,7 +225,7 @@ export const ProductCard = memo(function ProductCard({
 
             <div className="mb-2">
               {product.has_variants && product.variants && product.variants.length > 0 ? (
-                <p className="font-extrabold text-xl tracking-tight text-orange-600">
+                <p className="font-extrabold text-xl tracking-tight text-orange-600 dark:text-orange-400">
                   {(() => {
                     const prices = product.variants
                       .map(v => v.price)
@@ -239,19 +239,19 @@ export const ProductCard = memo(function ProductCard({
                   })()}
                 </p>
               ) : (
-                <p className="font-extrabold text-xl tracking-tight text-orange-600">
+                <p className="font-extrabold text-xl tracking-tight text-orange-600 dark:text-orange-400">
                   {formatPrice(product.price, product.currency)}
                 </p>
               )}
               {product.min_order && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {formatMinOrder(product.min_order)}
                 </p>
               )}
             </div>
 
             {product.supplier_name && (
-              <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
+              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-3">
                 <span className="truncate">{product.supplier_name}</span>
                 {product.supplier_country && (
                   <>

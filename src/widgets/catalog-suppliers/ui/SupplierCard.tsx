@@ -56,69 +56,61 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
   if (isCompact) {
     return (
       <div
-        className="h-full flex flex-col p-6 bg-white dark:bg-gray-900 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg dark:shadow-none dark:border dark:border-gray-800"
+        className="h-full flex flex-col p-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-lg cursor-pointer transition-all duration-200"
         onClick={handleCardClick}
       >
-        <div className="flex-1 flex flex-col">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{supplier.name}</h3>
-              {supplier.room_type === 'verified' && (
-                <div className="flex items-center gap-1.5 mt-2">
-                  <CheckCircle className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm text-orange-600 font-medium">Аккредитован</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {supplier.logo_url && (
-                <img
-                  src={supplier.logo_url}
-                  alt={supplier.name}
-                  className="w-14 h-14 rounded-xl object-cover shadow-sm"
-                />
-              )}
-              {supplier.rating != null && supplier.rating > 0 && (
-                <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-950 px-2.5 py-1 rounded-lg">
-                  <Star className="w-4 h-4 text-orange-500 dark:text-orange-400" fill="currentColor" />
-                  <span className="font-semibold text-gray-900 dark:text-orange-100">{supplier.rating.toFixed(1)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 mb-3">
-            <span className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg">
-              {supplier.category}
-            </span>
-            {supplier.total_products != null && supplier.total_products > 0 && (
-              <span className="inline-block px-3 py-1 bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 text-sm font-medium rounded-lg">
-                {supplier.total_products} товаров
+        <div className="flex-1 flex flex-col items-center text-center">
+          {/* Logo centered */}
+          {supplier.logo_url ? (
+            <img
+              src={supplier.logo_url}
+              alt={supplier.name}
+              className="w-16 h-16 rounded-2xl object-cover shadow-sm mb-4"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+              <span className="text-2xl font-bold text-gray-400 dark:text-gray-500">
+                {supplier.name?.charAt(0)}
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
-          <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 mt-auto">
-            <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-            <span>{supplier.country}{supplier.city ? `, ${supplier.city}` : ''}</span>
-          </div>
+          {/* Name — larger */}
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
+            {supplier.name}
+          </h3>
+
+          {/* Subtitle: category · city · ★ rating */}
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">
+            {[
+              supplier.category,
+              supplier.city || supplier.country,
+              supplier.rating != null && supplier.rating > 0 ? `★ ${supplier.rating.toFixed(1)}` : null,
+            ].filter(Boolean).join('  ·  ')}
+          </p>
+
+          {/* Badge: N товаров */}
+          {supplier.total_products != null && supplier.total_products > 0 && (
+            <span className="inline-block mt-3 px-3 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-medium rounded-lg">
+              {supplier.total_products} товаров
+            </span>
+          )}
         </div>
 
-        {showActions && (
-          <button
-            onClick={handleStartProject}
-            className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
-          >
-            Начать проект
-          </button>
-        )}
+        {/* CTA Button — always at bottom */}
+        <button
+          onClick={handleCardClick}
+          className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
+        >
+          Посмотреть товары
+        </button>
       </div>
     )
   }
 
   return (
     <div
-      className="p-6 bg-white dark:bg-gray-900 rounded-lg cursor-pointer transition-shadow duration-200 hover:shadow-md dark:shadow-none dark:border dark:border-gray-800"
+      className="p-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md cursor-pointer transition-shadow duration-200"
       onClick={handleCardClick}
     >
       {/* Header */}
@@ -203,10 +195,10 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
       {showActions && (
         <div className="flex gap-2 pt-3">
           <button
-            onClick={handleStartProject}
+            onClick={handleCardClick}
             className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-medium rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md"
           >
-            Начать проект
+            Посмотреть товары
           </button>
 
           {supplier.room_type === 'user' && (

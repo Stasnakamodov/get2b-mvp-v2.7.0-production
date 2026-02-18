@@ -17,7 +17,7 @@ export async function GET(_request: NextRequest) {
       'project_specifications', 'specifications',
       'catalog_verified_suppliers', 'catalog_user_suppliers',
       'catalog_verified_products', 'catalog_user_products',
-      'chat_rooms', 'chat_messages', 'accreditation_applications'
+      'chat_rooms', 'chat_messages'
     ];
 
     for (const tableName of mainTables) {
@@ -170,7 +170,6 @@ export async function GET(_request: NextRequest) {
       totalSuppliers: (analysis.data.catalog_verified_suppliers || 0) + (analysis.data.catalog_user_suppliers || 0),
       totalChatRooms: analysis.data.chat_rooms || 0,
       totalChatMessages: analysis.data.chat_messages || 0,
-      totalAccreditationApplications: analysis.data.accreditation_applications || 0,
       analysisDate: new Date().toISOString()
     };
 

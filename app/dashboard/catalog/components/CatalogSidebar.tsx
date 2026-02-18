@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight, Folder } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { CatalogCategory, FacetCount } from '@/lib/catalog/types'
+import type { CatalogCategory, FacetCount, SubcategoryFacetCount } from '@/lib/catalog/types'
 import { DEFAULT_CATEGORIES } from '@/lib/catalog/constants'
 
 interface CatalogSidebarProps {
@@ -14,6 +14,7 @@ interface CatalogSidebarProps {
   onCategorySelect: (category: string | undefined, subcategory?: string) => void
   isLoading?: boolean
   facetCounts?: FacetCount[]
+  subcategoryFacetCounts?: SubcategoryFacetCount[]
 }
 
 function formatCount(n: number): string {
@@ -33,6 +34,7 @@ export function CatalogSidebar({
   onCategorySelect,
   isLoading = false,
   facetCounts,
+  subcategoryFacetCounts,
 }: CatalogSidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
@@ -65,6 +67,14 @@ export function CatalogSidebar({
   if (facetCounts) {
     for (const fc of facetCounts) {
       facetCountMap.set(fc.name, fc.count)
+    }
+  }
+
+  // Build a map of subcategory facet counts by ID
+  const subFacetCountMap = new Map<string, number>()
+  if (subcategoryFacetCounts) {
+    for (const sc of subcategoryFacetCounts) {
+      subFacetCountMap.set(sc.id, sc.count)
     }
   }
 
@@ -109,9 +119,9 @@ export function CatalogSidebar({
   }
 
   return (
-    <div className="w-80 border-r border-gray-100 bg-white dark:bg-gray-900 flex flex-col h-full">
+    <div className="w-80 border-r border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col h-full">
       {/* Header with total count */}
-      <div className="p-5 border-b border-gray-100">
+      <div className="p-5 border-b border-gray-100 dark:border-gray-800">
         <h2 className="font-semibold text-lg flex items-center gap-2.5">
           <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-sm">
             <Folder className="w-4 h-4 text-white" />
@@ -131,7 +141,7 @@ export function CatalogSidebar({
           className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
             !selectedCategory
               ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
-              : 'text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
           onClick={() => onCategorySelect(undefined, undefined)}
         >
@@ -147,7 +157,7 @@ export function CatalogSidebar({
         <div className="px-3 py-2 space-y-1">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-11 bg-gray-100 animate-pulse rounded-xl mb-1" />
+              <div key={i} className="h-11 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl mb-1" />
             ))
           ) : (
             displayCategories.map(category => {
@@ -206,13 +216,15 @@ export function CatalogSidebar({
                     </button>
 
                     {/* Count badge */}
-                    {dynamicCount > 0 && (
+                    {(
                       <Badge
                         variant="secondary"
                         className={`text-[10px] rounded-full px-2 py-0 h-5 font-medium ${
                           isSelected
                             ? 'bg-orange-100 text-orange-600 dark:bg-orange-800 dark:text-orange-200'
-                            : 'bg-gray-50 text-gray-400 dark:bg-gray-700 dark:text-gray-400'
+                            : dynamicCount === 0
+                              ? 'bg-gray-50 text-gray-300 dark:bg-gray-700 dark:text-gray-500'
+                              : 'bg-gray-50 text-gray-400 dark:bg-gray-700 dark:text-gray-400'
                         }`}
                       >
                         {formatCount(dynamicCount)}
@@ -225,6 +237,10 @@ export function CatalogSidebar({
                     <div className="ml-5 mt-1 mb-1 pl-3 border-l-2 border-gray-100 dark:border-gray-700 space-y-0.5">
                       {category.children!.map(sub => {
                         const isSubSelected = selectedSubcategory === sub.id
+                        // Use dynamic facet count when available, fall back to static count
+                        const subCount = subcategoryFacetCounts
+                          ? (subFacetCountMap.get(sub.id) ?? 0)
+                          : sub.products_count
                         return (
                           <button
                             key={sub.id}
@@ -239,11 +255,11 @@ export function CatalogSidebar({
                               isSubSelected ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'
                             }`} />
                             <span className="flex-1 text-left leading-snug">{sub.name}</span>
-                            {sub.products_count > 0 && (
+                            {subCount > 0 && (
                               <span className={`text-[10px] ${
                                 isSubSelected ? 'text-orange-500' : 'text-gray-400'
                               }`}>
-                                {sub.products_count}
+                                {subCount}
                               </span>
                             )}
                           </button>

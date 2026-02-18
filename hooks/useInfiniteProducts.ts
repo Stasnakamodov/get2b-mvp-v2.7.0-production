@@ -149,10 +149,16 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
 }
 
 /**
- * Утилита для получения плоского массива товаров из pages
+ * Утилита для получения плоского массива товаров из pages (с дедупликацией)
  */
 export function flattenProducts(data: { pages: ProductsResponse[] } | undefined): Product[] {
-  return data?.pages.flatMap(page => page.products) ?? []
+  const all = data?.pages.flatMap(page => page.products) ?? []
+  const seen = new Set<string>()
+  return all.filter(p => {
+    if (seen.has(p.id)) return false
+    seen.add(p.id)
+    return true
+  })
 }
 
 /**

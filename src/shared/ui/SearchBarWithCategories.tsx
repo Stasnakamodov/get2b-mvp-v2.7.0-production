@@ -131,7 +131,7 @@ export const SearchBarWithCategories: React.FC<SearchBarWithCategoriesProps> = (
       {/* Основная поисковая строка */}
       <div className="relative">
         <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
-          isFocused ? 'text-violet-500' : 'text-gray-400'
+          isFocused ? 'text-orange-500' : 'text-gray-400'
         }`} />
 
         <input
@@ -149,7 +149,7 @@ export const SearchBarWithCategories: React.FC<SearchBarWithCategoriesProps> = (
             transition-all duration-200
             placeholder:text-gray-400
             ${isFocused
-              ? 'border-violet-500 ring-4 ring-violet-100 shadow-lg'
+              ? 'border-orange-500 ring-4 ring-orange-100 shadow-lg'
               : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
             }`}
         />
@@ -179,10 +179,10 @@ export const SearchBarWithCategories: React.FC<SearchBarWithCategoriesProps> = (
             className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden"
           >
             {/* Заголовок */}
-            <div className="px-4 py-3 bg-gradient-to-r from-violet-50 to-purple-50 border-b border-gray-100">
+            <div className="px-4 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Grid3X3 className="w-5 h-5 text-violet-600" />
+                  <Grid3X3 className="w-5 h-5 text-orange-600" />
                   <span className="font-semibold text-gray-800">Категории товаров</span>
                 </div>
                 <span className="text-xs text-gray-500">
@@ -202,13 +202,13 @@ export const SearchBarWithCategories: React.FC<SearchBarWithCategoriesProps> = (
                         e.preventDefault()
                         handleCategoryClick('')
                       }}
-                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-violet-50 transition-colors group"
+                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-orange-50 transition-colors group"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-xl">🏪</span>
                         <span className="font-medium text-gray-900">Все товары</span>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-orange-600 transition-colors" />
                     </button>
                   )}
 
@@ -226,7 +226,7 @@ export const SearchBarWithCategories: React.FC<SearchBarWithCategoriesProps> = (
                         e.preventDefault()
                         handleCategoryClick(category)
                       }}
-                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-violet-50 transition-colors group"
+                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-orange-50 transition-colors group"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-xl">{categoryIcons[category] || <Package className="w-5 h-5 text-gray-400" />}</span>
@@ -234,7 +234,7 @@ export const SearchBarWithCategories: React.FC<SearchBarWithCategoriesProps> = (
                           {category}
                         </span>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-orange-600 transition-colors" />
                     </motion.button>
                   ))}
                 </div>

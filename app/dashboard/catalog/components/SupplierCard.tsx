@@ -34,8 +34,6 @@ interface Supplier {
   projects_count?: number
   catalog_user_products?: Product[]
   catalog_verified_products?: Product[]
-  accreditation_status?: 'none' | 'pending' | 'approved' | 'rejected'
-  accreditation_application_id?: string
   is_verified?: boolean
 }
 
@@ -44,7 +42,6 @@ interface SupplierCardProps {
   mode: 'clients' | 'catalog'
   onViewDetails: (supplier: Supplier) => void
   onStartProject: (supplier: Supplier) => void
-  onRequestAccreditation?: (supplier: Supplier) => void
   onImportToMyList?: (supplier: Supplier) => void
 }
 

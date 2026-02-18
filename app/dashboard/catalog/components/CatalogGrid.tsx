@@ -92,11 +92,11 @@ export const CatalogGrid = memo(function CatalogGrid({
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-700 mb-2">
+          <Package className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
             Товары не найдены
           </h3>
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Попробуйте изменить параметры поиска или фильтры
           </p>
         </div>

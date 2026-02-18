@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
 
     const { searchParams } = new URL(request.url);
-    const path = searchParams.get('path') || 'accreditation';
+    const path = searchParams.get('path') || 'uploads';
     const listBuckets = searchParams.get('buckets') === 'true';
 
     if (listBuckets) {

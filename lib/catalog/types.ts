@@ -132,8 +132,14 @@ export interface FacetCount {
   count: number
 }
 
+export interface SubcategoryFacetCount {
+  id: string
+  count: number
+}
+
 export interface FacetData {
   categories: FacetCount[]
+  subcategories: SubcategoryFacetCount[]
   countries: FacetCount[]
   stock: { in_stock: boolean; count: number }[]
   priceRange: { min_price: number; max_price: number }

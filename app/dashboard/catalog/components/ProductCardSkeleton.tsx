@@ -9,7 +9,7 @@ interface ProductCardSkeletonProps {
 export function ProductCardSkeleton({ viewMode = 'grid' }: ProductCardSkeletonProps) {
   if (viewMode === 'list') {
     return (
-      <div className="flex gap-4 p-3 bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+      <div className="flex gap-4 p-3 bg-white dark:bg-gray-900 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-none dark:border dark:border-gray-800">
         <Skeleton className="w-24 h-24 rounded-xl flex-shrink-0" />
         <div className="flex-1 min-w-0 space-y-2">
           <Skeleton className="h-4 w-3/4" />
@@ -25,7 +25,7 @@ export function ProductCardSkeleton({ viewMode = 'grid' }: ProductCardSkeletonPr
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-none dark:border dark:border-gray-800 overflow-hidden">
       <Skeleton className="aspect-[4/3] w-full" />
       <div className="p-3.5 space-y-2.5">
         <Skeleton className="h-4 w-3/4" />

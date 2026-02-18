@@ -2,5 +2,4 @@
 
 // Supplier API
 export * from './supplierApi'
-export * from './echoCardApi'
 export * from './recommendationApi'

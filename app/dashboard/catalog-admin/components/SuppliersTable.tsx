@@ -49,8 +49,8 @@ interface SuppliersTableProps {
   isLoading: boolean
   onEdit: (supplier: Supplier) => void
   onDelete: (supplier: Supplier) => void
-  onApprove: (supplier: Supplier) => void
-  onReject: (supplier: Supplier) => void
+  onApprove?: (supplier: Supplier) => void
+  onReject?: (supplier: Supplier) => void
   onViewProducts: (supplier: Supplier) => void
 }
 
@@ -182,7 +182,7 @@ export function SuppliersTable({
                           <Edit className="w-4 h-4 mr-2" />
                           Редактировать
                         </DropdownMenuItem>
-                        {supplier.moderation_status === 'pending' && (
+                        {supplier.moderation_status === 'pending' && onApprove && onReject && (
                           <>
                             <DropdownMenuItem
                               onClick={() => onApprove(supplier)}

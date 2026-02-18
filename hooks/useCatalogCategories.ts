@@ -17,6 +17,7 @@ interface ApiCategory {
   key: string
   name: string
   icon?: string
+  products_count?: number
   subcategories?: ApiSubcategory[]
 }
 
@@ -52,9 +53,8 @@ export function useCatalogCategories() {
           products_count: sub.products_count || 0,
         }))
 
-        const childrenTotal = children.reduce((sum, c) => sum + c.products_count, 0)
-        // Use API-provided products_count (direct category count) when children sum is 0
-        const totalProducts = childrenTotal > 0 ? childrenTotal : ((api as any).products_count || 0)
+        // Use API-provided products_count directly (already calculated as max of subcategory sum and direct count)
+        const totalProducts = api.products_count || 0
 
         return {
           id: api.id,
@@ -76,7 +76,7 @@ export function useCatalogCategories() {
       // Strip internal _order field
       return mapped.map(({ _order, ...cat }) => cat)
     },
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
   })
 

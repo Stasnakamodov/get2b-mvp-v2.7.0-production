@@ -33,8 +33,8 @@ interface ProjectContextType {
   saveTemplate: (template: any) => void
   loadTemplate: (index: number) => any
   
-  // Эхо карточки
-  fillFromEchoCard: (echoCard: any, selectedSteps: any) => void
+  // Импорт данных поставщика
+  fillSupplierData: (supplierCard: any, selectedSteps: any) => void
   
   // Флаг наличия товаров из корзины
   hasCartItems: boolean
@@ -121,30 +121,30 @@ function ProjectProvider({ children }: { children: ReactNode }) {
     return savedTemplates[index]
   }, [savedTemplates])
   
-  // Функция для заполнения из эхо карточки
-  const fillFromEchoCard = useCallback((echoCard: any, selectedSteps: any) => {
-    
-    if (selectedSteps.step1 && echoCard.supplier_info) {
+  // Функция для заполнения данных поставщика
+  const fillSupplierData = useCallback((supplierCard: any, selectedSteps: any) => {
+
+    if (selectedSteps.step1 && supplierCard.supplier_info) {
       setCompanyData({
-        name: echoCard.supplier_info.company_name || "",
-        legalName: echoCard.supplier_info.company_name || "",
-        inn: echoCard.supplier_info.inn || "",
-        kpp: echoCard.supplier_info.kpp || "",
-        ogrn: echoCard.supplier_info.ogrn || "",
-        address: echoCard.supplier_info.address || "",
-        bankName: echoCard.supplier_info.bank_name || "",
-        bankAccount: echoCard.supplier_info.bank_account || "",
-        bankCorrAccount: echoCard.supplier_info.corr_account || "",
-        bankBik: echoCard.supplier_info.bik || "",
-        email: echoCard.supplier_info.contact_email || "",
-        phone: echoCard.supplier_info.contact_phone || "",
-        website: echoCard.supplier_info.website || "",
+        name: supplierCard.supplier_info.company_name || "",
+        legalName: supplierCard.supplier_info.company_name || "",
+        inn: supplierCard.supplier_info.inn || "",
+        kpp: supplierCard.supplier_info.kpp || "",
+        ogrn: supplierCard.supplier_info.ogrn || "",
+        address: supplierCard.supplier_info.address || "",
+        bankName: supplierCard.supplier_info.bank_name || "",
+        bankAccount: supplierCard.supplier_info.bank_account || "",
+        bankCorrAccount: supplierCard.supplier_info.corr_account || "",
+        bankBik: supplierCard.supplier_info.bik || "",
+        email: supplierCard.supplier_info.contact_email || "",
+        phone: supplierCard.supplier_info.contact_phone || "",
+        website: supplierCard.supplier_info.website || "",
       })
     }
-    
-    if (selectedSteps.step2 && echoCard.products) {
-      
-      const mappedProducts = echoCard.products.map((product: any, index: number) => {
+
+    if (selectedSteps.step2 && supplierCard.products) {
+
+      const mappedProducts = supplierCard.products.map((product: any, index: number) => {
         
         const mappedProduct = {
           name: product.item_name || product.name || "",
@@ -179,7 +179,7 @@ function ProjectProvider({ children }: { children: ReactNode }) {
         .then(data => {
         })
         .catch(error => {
-          logger.error("[fillFromEchoCard] Ошибка сохранения товаров в БД:", error);
+          logger.error("[fillSupplierData] Error saving products to DB:", error);
         });
       }
     }
@@ -207,7 +207,7 @@ function ProjectProvider({ children }: { children: ReactNode }) {
     savedTemplates,
     saveTemplate,
     loadTemplate,
-    fillFromEchoCard,
+    fillSupplierData,
     hasCartItems,
     setHasCartItems,
     
@@ -227,7 +227,7 @@ function ProjectProvider({ children }: { children: ReactNode }) {
     savedTemplates,
     saveTemplate,
     loadTemplate,
-    fillFromEchoCard,
+    fillSupplierData,
     hasCartItems,
     setHasCartItems,
     supplierData,

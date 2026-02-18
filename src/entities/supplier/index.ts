@@ -9,7 +9,6 @@ export { SupplierCard } from './ui/SupplierCard/SupplierCard'
 // Реэкспорт основных типов для удобства
 export type {
   Supplier,
-  EchoCard,
   SupplierFormData,
   RoomType,
   Room,
@@ -17,7 +16,6 @@ export type {
   LoadingState,
   SmartRecommendation,
   SuppliersResponse,
-  EchoCardsResponse,
   SupplierFilters,
   CatalogFilters
 } from './model/types'
@@ -31,10 +29,6 @@ export {
   updateSupplier,
   deleteSupplier,
   supplierApi,
-
-  // Эхо карточки
-  fetchEchoCards,
-  importSupplierFromEchoCard,
 
   // Рекомендации
   fetchRecommendations

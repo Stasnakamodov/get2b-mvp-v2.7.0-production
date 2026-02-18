@@ -143,40 +143,6 @@ export default function CatalogAdminPage() {
     }
   }
 
-  const handleApprove = async (supplier: Supplier) => {
-    try {
-      const response = await fetch('/api/catalog/accredit-supplier', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: supplier.id, status: 'approved' })
-      })
-
-      if (response.ok) {
-        toast({ title: 'Одобрено', description: `Поставщик ${supplier.name} одобрен` })
-        loadData()
-      }
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось одобрить', variant: 'destructive' })
-    }
-  }
-
-  const handleReject = async (supplier: Supplier) => {
-    try {
-      const response = await fetch('/api/catalog/accredit-supplier', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: supplier.id, status: 'rejected' })
-      })
-
-      if (response.ok) {
-        toast({ title: 'Отклонено', description: `Поставщик ${supplier.name} отклонён` })
-        loadData()
-      }
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось отклонить', variant: 'destructive' })
-    }
-  }
-
   const handleViewProducts = (supplier: Supplier) => {
     window.open(`/dashboard/catalog?supplier=${supplier.id}`, '_blank')
   }
@@ -249,8 +215,7 @@ export default function CatalogAdminPage() {
               isLoading={isLoading}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              onApprove={handleApprove}
-              onReject={handleReject}
+
               onViewProducts={handleViewProducts}
             />
           </TabsContent>
@@ -272,8 +237,7 @@ export default function CatalogAdminPage() {
               isLoading={isLoading}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              onApprove={handleApprove}
-              onReject={handleReject}
+
               onViewProducts={handleViewProducts}
             />
           </TabsContent>

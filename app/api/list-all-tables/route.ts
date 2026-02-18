@@ -27,9 +27,6 @@ export async function GET(request: NextRequest) {
       // Чат
       'chat_rooms', 'chat_messages',
       
-      // Аккредитация
-      'accreditation_applications',
-      
       // Возможные старые таблицы чата
       'chats', 'messages', 'rooms',
       'chat_old', 'messages_old', 'rooms_old',
@@ -40,7 +37,7 @@ export async function GET(request: NextRequest) {
       'chat_deprecated', 'messages_deprecated', 'rooms_deprecated',
       
       // Другие возможные таблицы
-      'echo_cards', 'supplier_drafts', 'project_templates',
+      'supplier_drafts', 'project_templates',
       'project_requisites', 'user_notifications'
     ];
 

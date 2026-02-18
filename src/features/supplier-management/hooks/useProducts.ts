@@ -66,9 +66,9 @@ export const useProducts = (): UseProductsResult => {
     setCurrentSupplierType(supplierType)
 
     try {
-      const loadedProducts = await fetchSupplierProducts(supplierId, supplierType)
-      setProducts(loadedProducts)
-      logger.info(`✅ Загружено ${loadedProducts.length} товаров`)
+      const result = await fetchSupplierProducts(supplierId, supplierType)
+      setProducts(result.products)
+      logger.info(`✅ Загружено ${result.products.length} товаров`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Неизвестная ошибка'
       setError(message)

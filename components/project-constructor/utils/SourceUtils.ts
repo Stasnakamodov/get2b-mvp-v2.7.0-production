@@ -11,8 +11,6 @@ export const getSourceDisplayName = (source: string) => {
       return 'Синяя комната'
     case 'orange_room':
       return 'Оранжевая комната'
-    case 'echo_cards':
-      return 'Эхо карточки'
     case 'manual':
       return 'Ручной ввод'
     case 'upload':

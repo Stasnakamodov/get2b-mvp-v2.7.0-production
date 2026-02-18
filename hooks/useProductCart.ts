@@ -6,6 +6,7 @@ import { CART_STORAGE_KEY, MAX_CART_ITEMS } from '@/lib/catalog/constants'
 import { calculateCartTotal, calculateCartItemsCount } from '@/lib/catalog/utils'
 import { supabase } from '@/lib/supabaseClient'
 import { useServerCart } from './useServerCart'
+import { useToast } from '@/components/ui/use-toast'
 
 const ADD_TO_CART_DEBOUNCE_MS = 300
 
@@ -23,6 +24,7 @@ export function useProductCart() {
   const [userId, setUserId] = useState<string | null>(null)
   const addingProductsRef = useRef<Set<string>>(new Set())
   const hasMergedRef = useRef(false)
+  const { toast } = useToast()
 
   // Check auth state
   useEffect(() => {
@@ -124,6 +126,10 @@ export function useProductCart() {
   const addToCart = useCallback((product: CatalogProduct, quantity: number = 1, variant?: ProductVariant) => {
     if (isAuthenticated) {
       serverCart.addToCart(product, quantity, variant)
+      toast({
+        title: 'Добавлено в корзину',
+        description: product.name,
+      })
       return
     }
 
@@ -133,7 +139,10 @@ export function useProductCart() {
     setTimeout(() => { addingProductsRef.current.delete(product.id) }, ADD_TO_CART_DEBOUNCE_MS)
 
     setLocalItems(prev => {
-      if (prev.length >= MAX_CART_ITEMS) return prev
+      if (prev.length >= MAX_CART_ITEMS) {
+        toast({ title: 'Корзина полна', description: `Максимум ${MAX_CART_ITEMS} товаров`, variant: 'destructive' })
+        return prev
+      }
       const existingIndex = prev.findIndex(item => item.product.id === product.id)
       if (existingIndex >= 0) {
         const updated = [...prev]
@@ -142,7 +151,11 @@ export function useProductCart() {
       }
       return [...prev, { product, quantity, addedAt: new Date(), variant }]
     })
-  }, [isAuthenticated, serverCart])
+    toast({
+      title: 'Добавлено в корзину',
+      description: product.name,
+    })
+  }, [isAuthenticated, serverCart, toast])
 
   const removeFromCart = useCallback((productId: string) => {
     if (isAuthenticated) {
