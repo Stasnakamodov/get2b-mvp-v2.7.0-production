@@ -68,74 +68,70 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
         className="relative bg-white dark:bg-gray-900 rounded-2xl max-w-5xl w-full max-h-[95vh] flex flex-col border border-gray-200 dark:border-gray-700 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header — centered logo + name like Toyota */}
-        <div className="relative px-6 pt-6 pb-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
-          {/* Close button */}
+        {/* Header — single compact row */}
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-200 dark:border-gray-800 shrink-0">
+          {/* Logo */}
+          {supplier.logo_url ? (
+            <img src={supplier.logo_url} alt={supplier.name} className="w-9 h-9 rounded-xl object-cover shrink-0" />
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-gray-400 dark:text-gray-500">{supplier.name?.charAt(0)}</span>
+            </div>
+          )}
+
+          {/* Name + meta */}
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{supplier.name}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {[
+                supplier.category,
+                supplier.country && (supplier.city ? `${supplier.country}, ${supplier.city}` : supplier.country),
+                supplier.rating != null && supplier.rating > 0 ? `★ ${supplier.rating.toFixed(1)}` : null,
+              ].filter(Boolean).join(' · ')}
+            </p>
+          </div>
+
+          {/* Count */}
+          <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+            {products.length}{totalCount > products.length ? ` / ${totalCount}` : ''}
+          </span>
+
+          {/* View toggle */}
+          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 shrink-0">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+              aria-label="Сетка"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+              aria-label="Список"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Close */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 shrink-0"
             aria-label="Закрыть"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-
-          {/* Centered logo + name */}
-          <div className="flex flex-col items-center text-center">
-            {supplier.logo_url ? (
-              <img
-                src={supplier.logo_url}
-                alt={supplier.name}
-                className="w-16 h-16 rounded-2xl object-cover mb-3 shadow-sm"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-                <span className="text-2xl font-bold text-gray-400 dark:text-gray-500">
-                  {supplier.name?.charAt(0)}
-                </span>
-              </div>
-            )}
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{supplier.name}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {[
-                supplier.category,
-                supplier.country && (supplier.city ? `${supplier.country}, ${supplier.city}` : supplier.country),
-                supplier.rating != null && supplier.rating > 0 ? `★ ${supplier.rating.toFixed(1)}` : null,
-              ].filter(Boolean).join('  ·  ')}
-            </p>
-          </div>
-
-          {/* Toolbar: count + view toggle */}
-          <div className="flex items-center justify-between mt-4">
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {products.length}{totalCount > products.length ? ` из ${totalCount}` : ''} товаров
-            </span>
-            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-md transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-                aria-label="Сетка"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-md transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-                aria-label="Список"
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Scrollable content */}

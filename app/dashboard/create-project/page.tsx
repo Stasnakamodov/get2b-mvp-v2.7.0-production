@@ -833,6 +833,7 @@ function TemplateLoader() {
   const searchParams = useSearchParams();
   const templateId = searchParams?.get("templateId");
   const projectId = searchParams?.get("projectId");
+  const fromCart = searchParams?.get("from_cart");
   const { setProjectName, setCompanyData, setSpecificationItems } = useCreateProjectContext();
   const [isTemplateLoading, setIsTemplateLoading] = useState(false);
 
@@ -840,6 +841,11 @@ function TemplateLoader() {
     // ВАЖНО: Если есть projectId, то проект уже создан и данные загружены в ProjectIdLoader
     // TemplateLoader должен работать только при создании нового проекта БЕЗ projectId
     if (projectId) {
+      return;
+    }
+
+    // Если пришли из корзины — CartLoader сам заполнит спецификацию
+    if (fromCart === 'true') {
       return;
     }
 
@@ -895,7 +901,7 @@ function TemplateLoader() {
     }
     fetchTemplate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateId, projectId]);
+  }, [templateId, projectId, fromCart]);
 
   if (isTemplateLoading) {
     return (

@@ -200,11 +200,13 @@ export const SupplierGrid: React.FC<SupplierGridProps> = ({
             />
           )}
 
-          {/* Переключатель вида */}
-          <ViewModeSwitcher
-            mode={viewMode}
-            onChange={setViewMode}
-          />
+          {/* Переключатель вида — только если показаны поиск/фильтры (иначе дублирует внешний тулбар) */}
+          {(showSearch || showFilters) && (
+            <ViewModeSwitcher
+              mode={viewMode}
+              onChange={setViewMode}
+            />
+          )}
         </div>
       </div>
 

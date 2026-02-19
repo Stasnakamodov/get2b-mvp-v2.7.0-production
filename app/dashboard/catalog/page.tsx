@@ -124,15 +124,13 @@ export default function CatalogPage() {
     supplierModal.open(supplier)
   }
 
-  const handleStartProject = async (supplier: Supplier) => {
-    try {
-      if (supplierModal.onStartProject) {
-        await supplierModal.onStartProject(supplier)
-        router.push('/dashboard/project-constructor')
-      }
-    } catch (error) {
-      logger.error('Error creating project', error)
-    }
+  const handleStartProject = (supplier: Supplier) => {
+    const params = new URLSearchParams({
+      mode: 'catalog',
+      supplierId: supplier.id,
+      supplierName: supplier.name,
+    })
+    router.push(`/dashboard/create-project?${params.toString()}`)
   }
 
   // ========== Categories mode state ==========
@@ -484,35 +482,33 @@ export default function CatalogPage() {
         ) : (
           /* ========== SUPPLIERS MODE ========== */
           <>
-            {/* Single toolbar: tabs + room + search + filter + view + actions */}
-            <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 px-4 py-2 flex items-center gap-2 sticky top-0 z-20">
+            {/* Row 1: Tabs + Search + Cart — unified with categories style */}
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 sticky top-0 z-20 px-4 py-3 flex items-center gap-3">
               {/* Mode tabs */}
-              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 shrink-0">
+              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-inner shrink-0">
                 <button
                   onClick={() => setCatalogMode('categories')}
-                  className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all flex items-center gap-1.5"
                 >
                   <Grid3X3 className="w-3.5 h-3.5" />
                   Категории
                 </button>
                 <button
                   onClick={() => setCatalogMode('suppliers')}
-                  className="px-3 py-1.5 rounded-md text-sm font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm transition-all flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-md ring-1 ring-black/5 transition-all flex items-center gap-1.5"
                 >
                   <Users className="w-3.5 h-3.5" />
                   Поставщики
                 </button>
               </div>
 
-              <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 shrink-0" />
-
               {/* Room tabs */}
-              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 shrink-0">
+              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-inner shrink-0">
                 <button
                   onClick={() => setSelectedRoom('orange')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                     selectedRoom === 'orange'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-md ring-1 ring-black/5'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                 >
@@ -523,9 +519,9 @@ export default function CatalogPage() {
                 </button>
                 <button
                   onClick={() => setSelectedRoom('blue')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                     selectedRoom === 'blue'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-md ring-1 ring-black/5'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                 >
@@ -536,19 +532,17 @@ export default function CatalogPage() {
                 </button>
               </div>
 
-              <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 shrink-0" />
-
               {/* Search */}
-              <div className="relative flex-1 min-w-[140px] max-w-[260px]">
+              <div className="relative flex-1 min-w-[140px] max-w-[280px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder="Поиск..."
                   value={supplierSearch}
                   onChange={(e) => setSupplierSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 dark:text-gray-100 text-sm
-                    focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/30
-                    placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all"
+                  className="w-full pl-9 pr-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm
+                    border-0 focus:outline-none focus:ring-2 focus:ring-orange-400/50 dark:focus:ring-orange-500/30
+                    placeholder:text-gray-400 dark:placeholder:text-gray-500 dark:text-gray-100 transition-all"
                 />
               </div>
 
@@ -557,9 +551,9 @@ export default function CatalogPage() {
                 <select
                   value={supplierCategory}
                   onChange={(e) => setSupplierCategory(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 dark:text-gray-100 text-sm
-                    focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/30
-                    cursor-pointer transition-all shrink-0"
+                  className="px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm
+                    border-0 focus:outline-none focus:ring-2 focus:ring-orange-400/50 dark:focus:ring-orange-500/30
+                    dark:text-gray-100 cursor-pointer transition-all shrink-0"
                 >
                   <option value="all">Все категории</option>
                   {supplierCategories.map(cat => (
@@ -569,12 +563,12 @@ export default function CatalogPage() {
               )}
 
               {/* View mode */}
-              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 shrink-0">
+              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-inner shrink-0">
                 <button
                   onClick={() => setSupplierViewMode('grid')}
-                  className={`p-1.5 rounded-md transition-all ${
+                  className={`p-1.5 rounded-lg transition-all ${
                     supplierViewMode === 'grid'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-md ring-1 ring-black/5'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                   title="Сетка"
@@ -583,9 +577,9 @@ export default function CatalogPage() {
                 </button>
                 <button
                   onClick={() => setSupplierViewMode('list')}
-                  className={`p-1.5 rounded-md transition-all ${
+                  className={`p-1.5 rounded-lg transition-all ${
                     supplierViewMode === 'list'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-md ring-1 ring-black/5'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                   title="Список"
@@ -594,8 +588,8 @@ export default function CatalogPage() {
                 </button>
               </div>
 
-              {/* Count badge */}
-              <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+              {/* Count */}
+              <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
                 {filteredSuppliers.length} из {displayedSuppliers.length}
               </span>
 
@@ -604,7 +598,7 @@ export default function CatalogPage() {
               {/* Cart button */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="relative p-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
+                className="relative p-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
               >
                 <ShoppingCart className="w-4 h-4" />
                 {totalItems > 0 && (
@@ -618,7 +612,7 @@ export default function CatalogPage() {
               {selectedRoom === 'blue' && (
                 <button
                   onClick={() => { setEditingSupplier(null); setShowAddSupplierModal(true) }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Добавить
@@ -628,7 +622,7 @@ export default function CatalogPage() {
               {/* Refresh */}
               <button
                 onClick={() => refreshSuppliers()}
-                className="p-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
+                className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
