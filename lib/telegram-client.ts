@@ -124,3 +124,105 @@ export async function sendClientConfirmationRequestToTelegramClient({
   if (!response.ok) throw new Error("Failed to send client confirmation request")
   return await response.json()
 }
+
+export async function sendClientProfileNotificationClient({
+  userId,
+  userName,
+  userEmail,
+  profileId,
+  companyName,
+  legalName,
+  inn,
+  kpp,
+  ogrn,
+  address,
+  email,
+  phone,
+  bankName,
+  bankAccount,
+  corrAccount,
+  bik,
+}: {
+  userId: string
+  userName?: string
+  userEmail?: string
+  profileId: string
+  companyName: string
+  legalName: string
+  inn: string
+  kpp: string
+  ogrn: string
+  address: string
+  email: string
+  phone: string
+  bankName: string
+  bankAccount: string
+  corrAccount: string
+  bik: string
+}) {
+  try {
+    const response = await fetch("/api/telegram/send-profile-notification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "client",
+        userId, userName, userEmail, profileId, companyName, legalName, inn, kpp, ogrn, address, email, phone, bankName, bankAccount, corrAccount, bik,
+      }),
+    })
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
+    }
+    return await response.json()
+  } catch (error) {
+    console.error("❌ Ошибка отправки уведомления о профиле клиента:", error)
+    throw error
+  }
+}
+
+export async function sendSupplierProfileNotificationClient({
+  userId,
+  userName,
+  userEmail,
+  profileId,
+  companyName,
+  category,
+  country,
+  city,
+  description,
+  contactEmail,
+  contactPhone,
+  website,
+}: {
+  userId: string
+  userName?: string
+  userEmail?: string
+  profileId: string
+  companyName: string
+  category: string
+  country: string
+  city?: string
+  description?: string
+  contactEmail?: string
+  contactPhone?: string
+  website?: string
+}) {
+  try {
+    const response = await fetch("/api/telegram/send-profile-notification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "supplier",
+        userId, userName, userEmail, profileId, companyName, category, country, city, description, contactEmail, contactPhone, website,
+      }),
+    })
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
+    }
+    return await response.json()
+  } catch (error) {
+    console.error("❌ Ошибка отправки уведомления о профиле поставщика:", error)
+    throw error
+  }
+}

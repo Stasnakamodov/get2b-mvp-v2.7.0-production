@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone output — минимальный production билд для Docker/VPS
+  // Копирует только нужные файлы из node_modules в .next/standalone
+  output: 'standalone',
+
   // ОПТИМИЗАЦИЯ ДЛЯ DEV РЕЖИМА - ускоряем компиляцию
   experimental: {
     forceSwcTransforms: true,
@@ -63,10 +67,8 @@ const nextConfig = {
   },
   
   // Конфигурируем внешние изображения
-  // unoptimized: true — отключает /_next/image проксирование,
-  // картинки грузятся напрямую. Необходимо для self-hosted (PM2) без sharp.
+  // sharp установлен в Docker — оптимизация картинок работает
   images: {
-    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -129,7 +131,7 @@ const nextConfig = {
     const isDev = process.env.NODE_ENV === 'development'
     const allowedOrigins = isDev
       ? 'https://389328403a7d.ngrok-free.app, http://localhost:3000, http://localhost:3001, http://localhost:3002'
-      : 'https://yourdomain.com'
+      : 'https://get2b.pro'
 
     return [
       {

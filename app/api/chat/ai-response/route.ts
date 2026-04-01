@@ -218,7 +218,15 @@ async function generateBotHubAIResponse(
   
   try {
     // Конфигурация BotHub API
-    const BOTHUB_API_TOKEN = process.env.BOTHUB_API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVlMmQyYjY3LTY1YTUtNGE1OS1iZjEyLTc4NTA4YWU4NzEwMiIsImlzRGV2ZWxvcGVyIjp0cnVlLCJpYXQiOjE3NTMwMTg5MDcsImV4cCI6MjA2ODU5NDkwN30.vB16n8TZXJDrvSeLndWYXv-8fwVlxXKzrZrdKkj7bZg';
+    const BOTHUB_API_TOKEN = process.env.BOTHUB_API_TOKEN;
+    if (!BOTHUB_API_TOKEN) {
+      return {
+        content: 'AI-сервис не настроен. Пожалуйста, обратитесь в поддержку.',
+        confidence: 0,
+        keywords_matched: [],
+        category: 'error'
+      };
+    }
     const BOTHUB_API_URL = 'https://bothub.chat/api/v2/generate';
 
     // Формируем системный промпт с контекстом Get2B

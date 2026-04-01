@@ -3,12 +3,12 @@
 import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Clock, ArrowRight, Trash2 } from "lucide-react"
+import { Search, ArrowRight } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 import ProjectTimeline from "@/components/ui/ProjectTimeline"
 import { Building2, FileText, DollarSign, FileCheck, ArrowRightLeft, Truck, CheckCircle } from "lucide-react"
@@ -25,6 +25,9 @@ interface Project {
   name?: string
   created_at: string
   completed_at?: string
+  amount?: number
+  currency?: string
+  company_data?: { name?: string } | null
 }
 
 const steps = [
@@ -45,14 +48,31 @@ const statusGroups: Record<string, string[]> = {
   completed: ["completed"],
 };
 
+function getStatusLabel(status: string): string {
+  switch (status) {
+    case "active":
+    case "in_progress":
+      return "В работе"
+    case "waiting":
+    case "waiting_approval":
+    case "waiting_receipt":
+      return "В ожидании"
+    case "rejected":
+    case "receipt_rejected":
+      return "Отклонена"
+    case "completed":
+      return "Завершена"
+    default:
+      return "В работе"
+  }
+}
+
 export default function YourDealsPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [projects, setProjects] = useState<Project[]>([])
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortType, setSortType] = useState<string>("date_desc")
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -81,7 +101,8 @@ export default function YourDealsPage() {
   const searchedProjects = filteredProjects.filter(
     (project) =>
       ((project.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (project.company?.toLowerCase().includes(searchQuery.toLowerCase())))
+        (project.company?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (project.company_data?.name?.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
   const sortedProjects = [...searchedProjects].sort((a, b) => {
@@ -129,17 +150,52 @@ export default function YourDealsPage() {
     }
   }
 
-  const handleDeleteProject = (project: Project) => {
-    setProjectToDelete(project)
-    setDeleteDialogOpen(true)
-  }
+  const renderDealCard = (project: Project) => {
+    const step = project.currentStep || 1
+    const companyName = project.company_data?.name || project.company
+    const amountStr = project.amount
+      ? `${project.amount.toLocaleString('ru-RU')} ${project.currency || '₽'}`
+      : null
 
-  const confirmDeleteProject = () => {
-    if (projectToDelete) {
-      setProjects(projects.filter((p) => p.id !== projectToDelete.id))
-      setDeleteDialogOpen(false)
-      setProjectToDelete(null)
-    }
+    return (
+      <Card key={project.id} className="overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-4">
+            {/* Left: title + subtitle */}
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-lg font-bold text-foreground truncate">
+                {project.name || 'Без названия'}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {[companyName, amountStr].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+            {/* Right: status badge */}
+            <span className="shrink-0 inline-flex items-center rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-500 dark:bg-blue-500/20 dark:text-blue-400 whitespace-nowrap">
+              {getStatusLabel(project.status)} · Шаг {step}
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent className="pb-2">
+          <ProjectTimeline steps={steps} currentStep={step} maxStepReached={step} showStepTitles={false} />
+        </CardContent>
+        <CardFooter className="pt-2 flex justify-end gap-3">
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/dashboard/project/${project.id}`)}
+          >
+            Подробнее
+          </Button>
+          <Button
+            onClick={() => handleContinueProject(project)}
+            className="gap-2"
+          >
+            Следующий шаг
+            <ArrowRight size={16} />
+          </Button>
+        </CardFooter>
+      </Card>
+    )
   }
 
   return (
@@ -149,7 +205,7 @@ export default function YourDealsPage() {
         <div className="flex flex-col md:flex-row md:flex-wrap gap-2 md:items-center w-full md:w-auto">
           <div className="flex flex-row gap-2 items-center w-full md:w-auto">
             <Tabs defaultValue="all" value={statusFilter} onValueChange={setStatusFilter} className="w-full md:w-auto">
-              <TabsList className="bg-gray-800 dark:bg-gray-700">
+              <TabsList>
                 <TabsTrigger value="all">Все</TabsTrigger>
                 <TabsTrigger value="active">Активные</TabsTrigger>
                 <TabsTrigger value="waiting">В ожидании</TabsTrigger>
@@ -188,58 +244,19 @@ export default function YourDealsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeProjects.map((project) => {
-            const step = project.currentStep || 1;
-            return (
-              <Card key={project.id} className="overflow-hidden">
-                <CardHeader className="pb-2 relative">
-                  <div className="flex flex-col gap-1 mb-2">
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">{project.name || 'Без названия'}</span>
-                    <div className="flex items-center text-sm text-gray-500 mb-4">
-                      <Clock size={16} className="mr-2" />
-                      <span>
-                        Создан: {project.created_at ? new Date(project.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
-                      </span>
-                    </div>
-                  </div>
-                  <CardTitle>{project.title}</CardTitle>
-                  <CardDescription>{project.company}</CardDescription>
-                  <div className="absolute top-4 right-4">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-red-500"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteProject(project)
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-2">
-                  <div className="my-4">
-                    <ProjectTimeline steps={steps} currentStep={step} maxStepReached={step} showStepTitles={false} />
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-2">
-                  <Button
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
-                    onClick={() => handleContinueProject(project)}
-                  >
-                    Продолжить работу
-                    <ArrowRight size={16} />
-                  </Button>
-                </CardFooter>
-              </Card>
-            );
-          })}
+        <div className="flex flex-col gap-4">
+          {activeProjects.map(renderDealCard)}
         </div>
       )}
-      {/* Можно добавить аналогичный блок для завершённых сделок, если нужно */}
+
+      {completedProjects.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold mb-4 text-muted-foreground">Завершённые</h2>
+          <div className="flex flex-col gap-4 opacity-70">
+            {completedProjects.map(renderDealCard)}
+          </div>
+        </div>
+      )}
     </div>
   )
-} 
+}

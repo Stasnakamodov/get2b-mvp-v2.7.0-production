@@ -33,6 +33,7 @@ export async function GET() {
 
     const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
 
+    const mem = process.memoryUsage()
     const healthData: any = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -41,6 +42,11 @@ export async function GET() {
       responseTime: `${responseTime}ms`,
       environment: process.env.NODE_ENV,
       version: process.env.npm_package_version || '0.1.0',
+      memory: {
+        heapUsed: `${Math.round(mem.heapUsed / 1024 / 1024)}MB`,
+        heapTotal: `${Math.round(mem.heapTotal / 1024 / 1024)}MB`,
+        rss: `${Math.round(mem.rss / 1024 / 1024)}MB`,
+      },
       services: {
         supabase: error ? 'error' : 'connected',
         telegram: process.env.TELEGRAM_BOT_TOKEN ? 'configured' : 'missing'

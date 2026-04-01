@@ -6,6 +6,8 @@ import { CartProvider } from "@/contexts/CartContext"
 import { QueryProvider } from "@/components/providers/QueryProvider"
 import { Toaster } from "@/components/ui/toaster"
 
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
   title: "Get2B",
   description: "Международные оплаты Китайским поставщикам с Get2B",

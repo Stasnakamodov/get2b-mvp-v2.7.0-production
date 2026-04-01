@@ -451,19 +451,19 @@ function ProfileCardSelectModal({
         {error && <div className="text-red-500 text-center py-8">{error}</div>}
         {!loading && !error && (
           <div className="flex flex-col gap-4 max-h-96 overflow-y-auto">
-            {profiles.length === 0 && <div className="text-gray-500 text-center">Нет сохранённых карточек</div>}
+            {profiles.length === 0 && <div className="text-muted-foreground text-center">Нет сохранённых карточек</div>}
             {profiles.map((profile: any) => (
               <div
                 key={profile.id}
-                className={`border-2 rounded-lg p-4 cursor-pointer flex flex-col gap-1 transition-all ${selectedId === profile.id ? (role === 'client' ? 'border-blue-500 bg-blue-50' : 'border-green-500 bg-green-50') : 'border-gray-200 hover:border-blue-300'}`}
+                className={`border-2 rounded-lg p-4 cursor-pointer flex flex-col gap-1 transition-all ${selectedId === profile.id ? (role === 'client' ? 'border-blue-500 bg-blue-50' : 'border-green-500 bg-green-50') : 'border-border hover:border-blue-300'}`}
                 onClick={() => setSelectedId(profile.id)}
               >
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   {role === 'client' ? <Users className="h-5 w-5 text-blue-500" /> : <Building className="h-5 w-5 text-green-500" />}
                   {profile.name || 'Без названия'}
                 </div>
-                <div className="text-sm text-gray-500">Страна: {profile.country || '—'}</div>
-                <div className="text-xs text-gray-400">ID: {profile.id}</div>
+                <div className="text-sm text-muted-foreground">Страна: {profile.country || '—'}</div>
+                <div className="text-xs text-muted-foreground">ID: {profile.id}</div>
               </div>
             ))}
           </div>
@@ -491,7 +491,7 @@ function TemplateSelectModal({ open, onClose, onSelect }: { open: boolean, onClo
         {error && <div className="text-red-500 text-center py-8">{error}</div>}
         {!loading && !error && (
           <div className="flex flex-col gap-4 max-h-96 overflow-y-auto">
-            {templates.length === 0 && <div className="text-gray-500 text-center">Нет сохранённых шаблонов</div>}
+            {templates.length === 0 && <div className="text-muted-foreground text-center">Нет сохранённых шаблонов</div>}
             {templates.map((template: any) => (
               <div
                 key={template.id}
@@ -502,8 +502,8 @@ function TemplateSelectModal({ open, onClose, onSelect }: { open: boolean, onClo
                   <Save className="h-5 w-5 text-blue-500" />
                   {template.name || 'Без названия'}
                 </div>
-                <div className="text-sm text-gray-500">{template.description || ''}</div>
-                <div className="text-xs text-gray-400">ID: {template.id}</div>
+                <div className="text-sm text-muted-foreground">{template.description || ''}</div>
+                <div className="text-xs text-muted-foreground">ID: {template.id}</div>
               </div>
             ))}
           </div>
@@ -907,7 +907,7 @@ function TemplateLoader() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-400">Загрузка шаблона...</p>
+        <p className="text-muted-foreground">Загрузка шаблона...</p>
                                   </div>
     );
   }
@@ -1003,7 +1003,7 @@ function CartLoader() {
   if (isCartLoading) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg">
+        <div className="bg-card border border-border p-6 rounded-xl shadow-xl">
           <div className="flex items-center space-x-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
             <span>Загружаем товары из корзины...</span>
@@ -1190,7 +1190,7 @@ function SupplierLoader() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-400">Загрузка данных поставщика...</p>
+        <p className="text-muted-foreground">Загрузка данных поставщика...</p>
       </div>
     );
   }

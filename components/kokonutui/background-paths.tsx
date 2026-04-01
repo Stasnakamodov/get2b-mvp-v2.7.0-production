@@ -226,7 +226,7 @@ export default function BackgroundPaths() {
               }}
               transition={{ duration: 0.3 }}
             >
-              <span className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter">Get</span>
+              <span className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter text-white">Get</span>
             </motion.button>
             <motion.span
               className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter text-orange-500"

@@ -51,13 +51,19 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
 
-  // CSP только для development (в production нужно настроить точнее)
-  if (process.env.NODE_ENV === 'development') {
-    response.headers.set(
-      'Content-Security-Policy',
-      "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; img-src 'self' https: data: blob:;"
-    )
-  }
+  // Content Security Policy
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' https: data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co https://bothub.chat https://api.telegram.org",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ')
+  response.headers.set('Content-Security-Policy', csp)
 
   return response
 }

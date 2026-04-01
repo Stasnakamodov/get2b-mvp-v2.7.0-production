@@ -89,22 +89,22 @@ const quickFilters = [
     id: "needs_attention",
     label: "Требует внимания",
     icon: AlertTriangle,
-    color: "text-orange-600 bg-orange-50 border-orange-200",
+    color: "text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400",
     statuses: ["waiting_approval", "waiting_receipt", "receipt_rejected"]
   },
   {
     id: "overdue",
     label: "Просрочены",
     icon: AlertCircle,
-    color: "text-red-600 bg-red-50 border-red-200",
-    statuses: [] // Логика отдельная
+    color: "text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400",
+    statuses: []
   },
   {
     id: "new",
     label: "Новые",
     icon: Sparkles,
-    color: "text-blue-600 bg-blue-50 border-blue-200",
-    statuses: [] // Логика отдельная
+    color: "text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400",
+    statuses: []
   }
 ];
 
@@ -449,7 +449,7 @@ function ActiveProjectsPageContent() {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white truncate">
+              <h3 className="text-xl font-semibold text-foreground truncate">
                 {project.name || 'Без названия'}
               </h3>
               <ProjectStatusBadge status={project.status as ProjectStatus} />
@@ -506,7 +506,7 @@ function ActiveProjectsPageContent() {
           />
         </div>
         
-        <div className="text-center text-sm text-gray-600">
+        <div className="text-center text-sm text-muted-foreground">
           Этап {project.current_step}/7: {steps.find(s => s.id === project.current_step)?.title}
         </div>
       </CardContent>
@@ -515,40 +515,40 @@ function ActiveProjectsPageContent() {
 
   // Компонент таблицы проектов
   const ProjectTable = ({ projects }: { projects: Project[] }) => (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-card rounded-xl shadow-lg overflow-hidden border border-border">
       <table className="min-w-full">
-        <thead className="bg-gray-50">
+        <thead className="bg-muted">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Проект
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Компания
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Статус
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Этап
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Создан
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Действия
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-card divide-y divide-border">
           {projects.map((project) => (
-            <tr key={project.id} className="hover:bg-gray-50">
+            <tr key={project.id} className="hover:bg-muted/50">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-medium text-foreground">
                   {project.name || 'Без названия'}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{project.company}</div>
+                <div className="text-sm text-foreground">{project.company}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <ProjectStatusBadge status={project.status as ProjectStatus} />
@@ -556,7 +556,7 @@ function ActiveProjectsPageContent() {
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{project.current_step}/7</span>
-                  <div className="w-16 bg-gray-200 rounded-full h-2">
+                  <div className="w-16 bg-muted rounded-full h-2">
                     <div 
                       className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${(project.current_step / 7) * 100}%` }}
@@ -564,7 +564,7 @@ function ActiveProjectsPageContent() {
                   </div>
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                 {new Date(project.created_at).toLocaleDateString('ru-RU')}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -664,7 +664,7 @@ function ActiveProjectsPageContent() {
         </div>
         
         <Tabs defaultValue="all" value={statusFilter} onValueChange={setStatusFilter}>
-          <TabsList className="bg-gray-100 dark:bg-gray-700">
+          <TabsList>
             <TabsTrigger value="all">Все</TabsTrigger>
             <TabsTrigger value="active">Активные</TabsTrigger>
             <TabsTrigger value="waiting">В ожидании</TabsTrigger>
@@ -686,7 +686,7 @@ function ActiveProjectsPageContent() {
         </Select>
 
         {/* Переключатель режима просмотра */}
-        <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+        <div className="flex bg-zinc-100 dark:bg-white/10 rounded-lg p-1">
           <Button
             variant={viewMode === "cards" ? "default" : "ghost"}
             size="sm"
@@ -1230,11 +1230,11 @@ const ActiveProjectsPage = dynamic(() => Promise.resolve(ActiveProjectsPageConte
   loading: () => (
     <div className="container mx-auto py-4">
       <div className="animate-pulse">
-        <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
+        <div className="h-8 bg-muted rounded w-1/4 mb-6"></div>
         <div className="space-y-4">
-          <div className="h-32 bg-gray-300 rounded"></div>
-          <div className="h-32 bg-gray-300 rounded"></div>
-          <div className="h-32 bg-gray-300 rounded"></div>
+          <div className="h-32 bg-muted rounded"></div>
+          <div className="h-32 bg-muted rounded"></div>
+          <div className="h-32 bg-muted rounded"></div>
         </div>
       </div>
     </div>

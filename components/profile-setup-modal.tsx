@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
-import { sendClientProfileNotificationToManager, sendSupplierProfileNotificationToManager } from "@/lib/telegram"
+import { sendClientProfileNotificationClient, sendSupplierProfileNotificationClient } from "@/lib/telegram-client"
 
 interface ProfileSetupModalProps {
   isOpen: boolean
@@ -76,7 +76,7 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
       try {
         const { data: userData } = await supabase.auth.getUser()
         
-        await sendClientProfileNotificationToManager({
+        await sendClientProfileNotificationClient({
           userId: userId,
           userName: userData?.user?.user_metadata?.name || userData?.user?.email,
           userEmail: userData?.user?.email,
@@ -155,7 +155,7 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
       try {
         const { data: userData } = await supabase.auth.getUser()
         
-        await sendSupplierProfileNotificationToManager({
+        await sendSupplierProfileNotificationClient({
           userId: userId,
           userName: userData?.user?.user_metadata?.name || userData?.user?.email,
           userEmail: userData?.user?.email,

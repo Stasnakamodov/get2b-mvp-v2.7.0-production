@@ -43,12 +43,14 @@ function FloatingCartBadge() {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isCatalogPage = pathname?.startsWith('/dashboard/catalog') ?? false
-  const [isSidebarOpen, setIsSidebarOpen] = useState(!isCatalogPage) // Скрыт на странице каталога
+  const isDocumentationPage = pathname?.startsWith('/dashboard/documentation') ?? false
+  const shouldCollapse = isCatalogPage || isDocumentationPage
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!shouldCollapse)
 
-  // Автоматически скрываем/показываем сайдбар при переходе на/из каталога
+  // Автоматически скрываем/показываем сайдбар при переходе на/из каталога/документации
   React.useEffect(() => {
-    setIsSidebarOpen(!isCatalogPage)
-  }, [isCatalogPage])
+    setIsSidebarOpen(!shouldCollapse)
+  }, [shouldCollapse])
 
   // Navigation items в нужном порядке
   const navItems = [
@@ -135,13 +137,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-card shadow-lg z-40 transition-transform duration-300 transform ${
+        className={`fixed top-0 left-0 h-full w-64 bg-card dark:bg-zinc-900/80 dark:backdrop-blur-xl border-r border-border shadow-lg z-40 transition-transform duration-300 transform ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-b border-border">
             <Logo />
           </div>
 
@@ -158,8 +160,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <div
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                           isActive
-                            ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                            : "text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            ? "bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                            : "text-foreground hover:bg-muted"
                         }`}
                       >
                         <Icon className="h-5 w-5" />
@@ -179,15 +181,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-t border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
                   <User className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">Иван Петров</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">ООО "ТехноИмпорт"</p>
+                  <p className="text-sm font-medium text-foreground">Иван Петров</p>
+                  <p className="text-xs text-muted-foreground">ООО "ТехноИмпорт"</p>
                 </div>
               </div>
               <ThemeToggle />
@@ -198,7 +200,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <div className={`transition-all duration-300 pt-4 ${isSidebarOpen ? 'md:pl-64' : 'pl-0'}`}>
-        <main className="max-w-screen-2xl mx-auto px-4 py-2">{children}</main>
+        <main className="max-w-[1400px] mx-auto px-6 py-4">{children}</main>
       </div>
 
       {/* Floating Cart Badge */}

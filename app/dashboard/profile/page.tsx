@@ -19,6 +19,8 @@ import { motion } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { AddSupplierModal } from "@/app/dashboard/catalog/components/AddSupplierModal"
 import KonturEniCheckModal from "@/components/KonturEniCheckModal"
 
@@ -450,13 +452,19 @@ export default function ProfilePage() {
   }
 
     return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-4">
       {/* Заголовок */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ваши карточки</h1>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-between mb-8"
+      >
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Ваши карточки</h1>
         <div className="flex gap-3">
           <div className="relative">
-            <button
+            <Button
+              variant="outline"
               onClick={() => {
                 setEditingClient(null)
                 setClientForm({
@@ -477,10 +485,10 @@ export default function ProfilePage() {
                 })
                 setShowClientDropdown(!showClientDropdown)
               }}
-              className="border-2 border-border text-foreground px-6 py-2 hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-wider text-sm font-medium flex items-center gap-2"
+              className="flex items-center gap-2"
             >
               <Users className="h-4 w-4" /> Добавить клиента
-            </button>
+            </Button>
 
             {/* Dropdown меню */}
             {showClientDropdown && (
@@ -488,55 +496,49 @@ export default function ProfilePage() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 w-80 bg-card border-2 border-border shadow-lg z-50"
+                className="absolute top-full right-0 mt-2 w-80 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Вариант 1: Заполнить вручную */}
                 <button
                   onClick={() => {
                     setShowClientDropdown(false)
-                    setIsOcrData(false) // Ручной ввод - НЕ OCR
+                    setIsOcrData(false)
                     setShowClientEditor(true)
                   }}
-                  className="w-full p-4 border-b-2 border-border hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 text-left group"
+                  className="w-full p-4 border-b border-border hover:bg-accent transition-colors text-left group"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                      <Plus className="h-6 w-6 text-white" />
+                    <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                      <Plus className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <div className="font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider text-sm mb-1">
+                      <div className="font-semibold text-foreground text-sm">
                         Заполнить вручную
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Ввести все данные компании самостоятельно через форму
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Ввести данные компании через форму
                       </div>
                     </div>
                   </div>
                 </button>
 
-                {/* Вариант 2: Загрузить карточку (OCR) */}
                 <button
                   onClick={() => {
                     setShowClientDropdown(false)
                     setShowOcrUploader(true)
                   }}
-                  className="w-full p-4 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200 text-left group"
+                  className="w-full p-4 hover:bg-accent transition-colors text-left group"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                      <Eye className="h-6 w-6 text-white" />
+                    <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                      <Eye className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <div className="font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider text-sm mb-1">
+                      <div className="font-semibold text-foreground text-sm">
                         Загрузить карточку
                       </div>
-                      <div className="text-xs text-muted-foreground mb-1">
-                        Автоматически извлечь данные из карточки компании с помощью Yandex Vision OCR
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
-                        <Shield className="h-3 w-3" />
-                        <span>Powered by Yandex Vision</span>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Извлечь данные через Yandex Vision OCR
                       </div>
                     </div>
                   </div>
@@ -544,169 +546,190 @@ export default function ProfilePage() {
               </motion.div>
             )}
           </div>
-          <button 
+          <Button
+            variant="outline"
             onClick={() => {
               setEditingSupplier(null)
               setShowAddSupplierModal(true)
-            }} 
-            className="border-2 border-border text-foreground px-6 py-2 hover:bg-foreground hover:text-background transition-all duration-300 uppercase tracking-wider text-sm font-medium flex items-center gap-2"
+            }}
+            className="flex items-center gap-2"
           >
             <Building className="h-4 w-4" /> Добавить поставщика
-          </button>
+          </Button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Основные карточки в две колонки */}
-      <div className="flex flex-col md:flex-row gap-8 items-stretch min-h-[520px]">
-        {/* Левая колонка — клиенты */}
-        <div className="flex-1 flex flex-col">
-          <div className="mb-2 text-lg font-semibold text-blue-600">Клиенты</div>
-          <div className="flex flex-col gap-4 flex-1">
-            {clientProfiles.length > 0 ? (
-              clientProfiles.map((profile: any) => (
-                <motion.div 
-                  key={profile.id} 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="border-2 border-border bg-card p-8 hover:shadow-2xl transition-all duration-300 group min-h-[140px] flex flex-col justify-between"
-                >
-            <div>
-                    <div className="flex items-center gap-4 mb-2">
-                      {/* Логотип */}
-                      <div className="w-12 h-12 border-2 border-gray-300 flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
-                        {profile.logo_url ? (
-                          <img 
-                            src={profile.logo_url} 
-                            alt={profile.name || 'Логотип'} 
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <Users className="h-6 w-6 text-gray-400" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-foreground">{profile.name || 'Без названия'}</h3>
-                        <div className="text-sm text-gray-600">
-                          Тип: Клиент<br />
-                          ИНН: {profile.inn || '—'}<br />
-                          Email: {profile.email || '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-auto">
-                    <button 
-                      onClick={() => editClient(profile)}
-                      className="border-2 border-border text-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-all text-sm font-medium uppercase tracking-wider"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleCheckClient(profile)}
-                      disabled={!profile.inn || !profile.ogrn}
-                      className="border-2 border-blue-500 text-blue-600 px-4 py-2 hover:bg-blue-500 hover:text-white transition-all text-sm font-medium uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={!profile.inn || !profile.ogrn ? "Для проверки нужны ИНН и ОГРН" : "Проверить компанию через Контур.Эни"}
-                    >
-                      <Shield className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => { 
-                        setItemToDelete(profile)
-                        setDeleteType('client')
-                        setShowDeleteConfirm(true)
-                      }}
-                      className="border-2 border-border text-red-600 px-4 py-2 hover:bg-red-600 hover:text-white transition-all text-sm font-medium uppercase tracking-wider"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 min-h-[140px] flex items-center justify-center bg-gray-50">
-                Нет карточек клиентов
-              </div>
-            )}
-            
-            {/* Пустые слоты до 3 */}
-            {Array.from({ length: Math.max(0, 3 - clientProfiles.length) }).map((_, idx) => (
-              <div key={`empty-client-${idx}`} className="border-2 border-dashed border-gray-300 bg-gray-50 min-h-[140px] flex items-center justify-center text-gray-400">
-                Пустой слот
+      {/* Две колонки: Клиенты и Поставщики */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Колонка клиентов */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <Users className="h-4 w-4 text-blue-500" />
             </div>
-            ))}
+            <h2 className="text-xl font-semibold text-foreground">Клиенты</h2>
+            <span className="text-sm text-muted-foreground">({clientProfiles.length})</span>
           </div>
-        </div>
 
-        {/* Правая колонка — поставщики */}
-        <div className="flex-1 flex flex-col">
-          <div className="mb-2 text-lg font-semibold text-green-600">Поставщики</div>
-          <div className="flex flex-col gap-4 flex-1">
-            {supplierProfiles.length > 0 ? (
-              supplierProfiles.map((profile: any) => (
-                <motion.div 
-                  key={profile.id} 
+          <div className="space-y-4">
+            {clientProfiles.length > 0 ? (
+              clientProfiles.map((clientProfile, index) => (
+                <motion.div
+                  key={clientProfile.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="border-2 border-border bg-card p-8 hover:shadow-2xl transition-all duration-300 group min-h-[140px] flex flex-col justify-between"
+                  transition={{ delay: index * 0.1 }}
                 >
-                  <div>
-                    <div className="flex items-center gap-4 mb-2">
-                      {/* Логотип */}
-                      <div className="w-12 h-12 border-2 border-gray-300 flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
-                        {profile.logo_url ? (
-                          <img 
-                            src={profile.logo_url} 
-                            alt={profile.name || 'Логотип'} 
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <Building className="h-6 w-6 text-gray-400" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-foreground">{profile.name || 'Без названия'}</h3>
-                        <div className="text-sm text-gray-600">
-                          Тип: Поставщик<br />
-                          Страна: {profile.country || '—'}<br />
-                          Категория: {profile.category || '—'}
+                  <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-lg border border-border flex items-center justify-center bg-muted/30 overflow-hidden flex-shrink-0">
+                          {clientProfile.logo_url ? (
+                            <img src={clientProfile.logo_url} alt={clientProfile.name || 'Логотип'} className="w-full h-full object-contain" />
+                          ) : (
+                            <Users className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-semibold text-foreground truncate">{clientProfile.name || 'Без названия'}</h3>
+                          <div className="text-sm text-muted-foreground mt-1 space-y-0.5">
+                            <p>ИНН: {clientProfile.inn || '—'}</p>
+                            <p>Email: {clientProfile.email || '—'}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-auto">
-                    <button 
-                      onClick={() => editSupplier(profile)}
-                      className="border-2 border-border text-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-all text-sm font-medium uppercase tracking-wider"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => { 
-                        setItemToDelete(profile)
-                        setDeleteType('supplier')
-                        setShowDeleteConfirm(true)
-                      }}
-                      className="border-2 border-border text-red-600 px-4 py-2 hover:bg-red-600 hover:text-white transition-all text-sm font-medium uppercase tracking-wider"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                      <div className="flex gap-2 mt-4 pt-4 border-t border-border">
+                        <Button variant="outline" size="sm" onClick={() => editClient(clientProfile)}>
+                          <Edit className="h-3.5 w-3.5 mr-1.5" /> Редактировать
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCheckClient(clientProfile)}
+                          disabled={!clientProfile.inn || !clientProfile.ogrn}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          title={!clientProfile.inn || !clientProfile.ogrn ? "Для проверки нужны ИНН и ОГРН" : "Проверить через Контур.Эни"}
+                        >
+                          <Shield className="h-3.5 w-3.5 mr-1.5" /> Проверить
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setItemToDelete(clientProfile); setDeleteType('client'); setShowDeleteConfirm(true) }}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 ml-auto"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </motion.div>
               ))
             ) : (
-              <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 min-h-[140px] flex items-center justify-center bg-gray-50">
-                Нет карточек поставщиков
-              </div>
+              <Card className="overflow-hidden">
+                <CardContent className="p-8 text-center">
+                  <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground mb-4">Нет карточек клиентов</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingClient(null)
+                      setClientForm({ name: '', legal_name: '', inn: '', kpp: '', ogrn: '', legal_address: '', email: '', phone: '', website: '', bank_name: '', bank_account: '', corr_account: '', bik: '', logo_url: '' })
+                      setIsOcrData(false)
+                      setShowClientEditor(true)
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1.5" /> Добавить первого клиента
+                  </Button>
+                </CardContent>
+              </Card>
             )}
-            
-            {/* Пустые слоты до 3 */}
-            {Array.from({ length: Math.max(0, 3 - supplierProfiles.length) }).map((_, idx) => (
-              <div key={`empty-supplier-${idx}`} className="border-2 border-dashed border-gray-300 bg-gray-50 min-h-[140px] flex items-center justify-center text-gray-400">
-                Пустой слот
-                    </div>
-                  ))}
-                </div>
-        </div>
+          </div>
+        </motion.div>
+
+        {/* Колонка поставщиков */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <Building className="h-4 w-4 text-green-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground">Поставщики</h2>
+            <span className="text-sm text-muted-foreground">({supplierProfiles.length})</span>
+          </div>
+
+          <div className="space-y-4">
+            {supplierProfiles.length > 0 ? (
+              supplierProfiles.map((supplierProfile, index) => (
+                <motion.div
+                  key={supplierProfile.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-lg border border-border flex items-center justify-center bg-muted/30 overflow-hidden flex-shrink-0">
+                          {supplierProfile.logo_url ? (
+                            <img src={supplierProfile.logo_url} alt={supplierProfile.name || 'Логотип'} className="w-full h-full object-contain" />
+                          ) : (
+                            <Building className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-semibold text-foreground truncate">{supplierProfile.name || 'Без названия'}</h3>
+                          <div className="text-sm text-muted-foreground mt-1 space-y-0.5">
+                            <p>Страна: {supplierProfile.country || '—'}</p>
+                            <p>Категория: {supplierProfile.category || '—'}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-4 pt-4 border-t border-border">
+                        <Button variant="outline" size="sm" onClick={() => editSupplier(supplierProfile)}>
+                          <Edit className="h-3.5 w-3.5 mr-1.5" /> Редактировать
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setItemToDelete(supplierProfile); setDeleteType('supplier'); setShowDeleteConfirm(true) }}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 ml-auto"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))
+            ) : (
+              <Card className="overflow-hidden">
+                <CardContent className="p-8 text-center">
+                  <Building className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground mb-4">Нет карточек поставщиков</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingSupplier(null)
+                      setShowAddSupplierModal(true)
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1.5" /> Добавить первого поставщика
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </motion.div>
       </div>
 
       {/* Модальное окно добавления поставщика (7 шагов) */}
@@ -723,299 +746,258 @@ export default function ProfilePage() {
 
       {/* Модальное окно редактирования клиента */}
       {showClientEditor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="max-w-4xl w-full p-6 bg-card border-2 border-border max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-                              <h2 className="text-2xl font-bold text-foreground uppercase tracking-wider">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-4xl w-full bg-card border border-border rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center p-6 border-b border-border sticky top-0 bg-card rounded-t-xl z-10">
+              <h2 className="text-xl font-semibold text-foreground">
                 {editingClient ? 'Редактировать клиента' : 'Добавить клиента'}
               </h2>
-                              <button
-                  onClick={() => setShowClientEditor(false)}
-                  className="border-2 border-border text-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-all text-lg font-bold"
-                >
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowClientEditor(false)}
+              >
                 <X className="h-4 w-4" />
-              </button>
-                    </div>
-            
-            <form onSubmit={saveClient} className="space-y-4">
+              </Button>
+            </div>
+
+            <form onSubmit={saveClient} className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                    Название компании *
-                  </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Название компании *</Label>
                   <Input
                     id="name"
                     type="text"
                     value={clientForm.name}
                     onChange={(e) => setClientForm({...clientForm, name: e.target.value})}
-                    className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                     required
                   />
-                  </div>
-                
-                  <div>
-                  <Label htmlFor="legal_name" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                    Полное название
-                  </Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="legal_name">Полное название</Label>
                   <Input
                     id="legal_name"
                     type="text"
                     value={clientForm.legal_name}
                     onChange={(e) => setClientForm({...clientForm, legal_name: e.target.value})}
-                    className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                   />
-                    </div>
-                
-                <div>
-                  <Label htmlFor="inn" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                    ИНН
-                  </Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="inn">ИНН</Label>
                   <Input
                     id="inn"
                     type="text"
                     value={clientForm.inn}
                     onChange={(e) => setClientForm({...clientForm, inn: e.target.value})}
-                    className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                   />
-                  </div>
-                
-                <div>
-                  <Label htmlFor="kpp" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                    КПП
-                  </Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="kpp">КПП</Label>
                   <Input
                     id="kpp"
                     type="text"
                     value={clientForm.kpp}
                     onChange={(e) => setClientForm({...clientForm, kpp: e.target.value})}
-                    className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                
-                <div>
-                  <Label htmlFor="ogrn" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                    ОГРН
-                  </Label>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ogrn">ОГРН</Label>
                   <Input
                     id="ogrn"
                     type="text"
                     value={clientForm.ogrn}
                     onChange={(e) => setClientForm({...clientForm, ogrn: e.target.value})}
-                    className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                   />
-              </div>
+                </div>
 
-                <div>
-                  <Label htmlFor="email" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                    Email
-                  </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={clientForm.email}
                     onChange={(e) => setClientForm({...clientForm, email: e.target.value})}
-                    className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                   />
-                      </div>
-                
-                <div>
-                  <Label htmlFor="phone" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                    Телефон
-                  </Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Телефон</Label>
                   <Input
                     id="phone"
                     type="tel"
                     value={clientForm.phone}
                     onChange={(e) => setClientForm({...clientForm, phone: e.target.value})}
-                    className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                   />
-              </div>
-            </div>
-
-            {/* Блок загрузки логотипа */}
-            <div>
-              <Label className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                Логотип компании
-              </Label>
-              <div className="flex items-start gap-4">
-                {/* Превью логотипа */}
-                <div className="w-32 h-32 border-2 border-black flex items-center justify-center bg-gray-50 relative">
-                  {clientForm.logo_url ? (
-                    <img 
-                      src={clientForm.logo_url} 
-                      alt="Логотип компании" 
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="text-gray-400 text-sm text-center font-medium">
-                      LOGO
-                    </div>
-                  )}
-                  {uploadingLogo && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                      <div className="text-white text-xs">Загрузка...</div>
-                    </div>
-                  )}
                 </div>
-                
-                {/* Кнопки управления */}
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleLogoUpload(file)
-                    }}
-                    className="hidden"
-                    id="logo-upload"
-                    ref={(el) => setLogoInputRef(el)}
-                  />
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="logo-upload"
-                      className="block w-full px-4 py-2 border-2 border-black bg-white hover:bg-gray-50 text-center cursor-pointer transition-colors"
-                    >
-                      {clientForm.logo_url ? 'Изменить логотип' : 'Загрузить логотип'}
-                    </label>
-                    {clientForm.logo_url && (
-                      <button
-                        type="button"
-                        onClick={() => setClientForm({...clientForm, logo_url: ''})}
-                        className="block w-full px-4 py-2 border-2 border-red-500 text-red-500 hover:bg-red-50 text-center transition-colors"
-                      >
-                        Удалить логотип
-                      </button>
+              </div>
+
+              {/* Блок загрузки логотипа */}
+              <div className="space-y-2">
+                <Label>Логотип компании</Label>
+                <div className="flex items-start gap-4">
+                  <div className="w-24 h-24 rounded-lg border border-border flex items-center justify-center bg-muted/30 relative overflow-hidden flex-shrink-0">
+                    {clientForm.logo_url ? (
+                      <img
+                        src={clientForm.logo_url}
+                        alt="Логотип компании"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground text-xs">LOGO</span>
+                    )}
+                    {uploadingLogo && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <span className="text-white text-xs">Загрузка...</span>
+                      </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Поддерживаются: JPEG, PNG, WebP, SVG<br/>
-                    Максимальный размер: 5MB
-                  </p>
+
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleLogoUpload(file)
+                      }}
+                      className="hidden"
+                      id="logo-upload"
+                      ref={(el) => setLogoInputRef(el)}
+                    />
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" asChild>
+                        <label htmlFor="logo-upload" className="cursor-pointer">
+                          {clientForm.logo_url ? 'Изменить' : 'Загрузить'}
+                        </label>
+                      </Button>
+                      {clientForm.logo_url && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setClientForm({...clientForm, logo_url: ''})}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          Удалить
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      JPEG, PNG, WebP, SVG. Макс. 5MB
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
               {/* Банковские реквизиты */}
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 uppercase tracking-wider">🏦 Банковские реквизиты</h3>
+              <div className="border-t border-border pt-6">
+                <h3 className="text-base font-semibold text-foreground mb-4">Банковские реквизиты</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                    <Label htmlFor="bank_name" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                      Название банка
-                    </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="bank_name">Название банка</Label>
                     <Input
                       id="bank_name"
-                        type="text"
+                      type="text"
                       value={clientForm.bank_name}
                       onChange={(e) => setClientForm({...clientForm, bank_name: e.target.value})}
-                      className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                       placeholder="Сбербанк России"
                     />
-                    </div>
-                    
-                    <div>
-                    <Label htmlFor="bank_account" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                      Расчетный счет
-                    </Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bank_account">Расчетный счет</Label>
                     <Input
                       id="bank_account"
-                        type="text"
+                      type="text"
                       value={clientForm.bank_account}
                       onChange={(e) => setClientForm({...clientForm, bank_account: e.target.value})}
-                      className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                       placeholder="40702810..."
                     />
-                    </div>
-                    
-                    <div>
-                    <Label htmlFor="corr_account" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                      Корреспондентский счет
-                    </Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="corr_account">Корреспондентский счет</Label>
                     <Input
                       id="corr_account"
                       type="text"
                       value={clientForm.corr_account}
                       onChange={(e) => setClientForm({...clientForm, corr_account: e.target.value})}
-                      className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                       placeholder="30101810..."
                     />
-                    </div>
-                    
-                    <div>
-                    <Label htmlFor="bik" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                      БИК
-                    </Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bik">БИК</Label>
                     <Input
                       id="bik"
-                        type="text"
+                      type="text"
                       value={clientForm.bik}
                       onChange={(e) => setClientForm({...clientForm, bik: e.target.value})}
-                      className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                       placeholder="044525225"
                     />
                   </div>
                 </div>
               </div>
-              
-              <div>
-                <Label htmlFor="legal_address" className="text-sm font-medium text-black mb-2 uppercase tracking-wider">
-                  Юридический адрес
-                </Label>
+
+              <div className="space-y-2">
+                <Label htmlFor="legal_address">Юридический адрес</Label>
                 <Textarea
                   id="legal_address"
                   value={clientForm.legal_address}
                   onChange={(e) => setClientForm({...clientForm, legal_address: e.target.value})}
-                  className="border-2 border-black focus:ring-2 focus:ring-blue-500"
                   rows={3}
                 />
-                </div>
-              
+              </div>
 
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setShowClientEditor(false)}
-                  className="border-2 border-border text-foreground px-6 py-2 hover:bg-foreground hover:text-background transition-all text-sm font-medium uppercase tracking-wider"
                 >
                   Отмена
-                </button>
-                    <button
+                </Button>
+                <Button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 hover:bg-blue-700 transition-all text-sm font-medium uppercase tracking-wider"
-                    >
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                >
                   {editingClient ? 'Обновить' : isOcrData ? 'Создать профиль' : 'Сохранить'}
-                    </button>
+                </Button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
 
       {/* Подтверждение удаления */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="max-w-md w-full p-6 bg-card border-2 border-border">
-            <h3 className="text-lg font-bold text-foreground mb-4">Подтвердить удаление</h3>
-            <p className="text-gray-600 mb-6">
-              Вы уверены, что хотите удалить профиль "{itemToDelete?.name}"?
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-md w-full p-6 bg-card border border-border rounded-xl shadow-2xl"
+          >
+            <h3 className="text-lg font-semibold text-foreground mb-2">Подтвердить удаление</h3>
+            <p className="text-muted-foreground mb-6">
+              Вы уверены, что хотите удалить профиль &laquo;{itemToDelete?.name}&raquo;?
             </p>
             <div className="flex justify-end gap-3">
-                     <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="border-2 border-border text-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-all text-sm font-medium uppercase tracking-wider"
-              >
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
                 Отмена
-                     </button>
-                     <button
-                onClick={deleteProfile}
-                className="bg-red-600 text-white px-4 py-2 hover:bg-red-700 transition-all text-sm font-medium uppercase tracking-wider"
-                    >
+              </Button>
+              <Button variant="destructive" onClick={deleteProfile}>
                 Удалить
-                     </button>
+              </Button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 
@@ -1038,101 +1020,101 @@ export default function ProfilePage() {
 
       {/* Модальное окно OCR загрузчика */}
       {showOcrUploader && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="max-w-2xl w-full p-8 bg-card border-2 border-border"
+            className="max-w-2xl w-full bg-card border border-border rounded-xl shadow-2xl overflow-hidden"
           >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-foreground uppercase tracking-wider">
+            <div className="flex justify-between items-center p-6 border-b border-border">
+              <h2 className="text-xl font-semibold text-foreground">
                 Загрузка карточки компании
               </h2>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => {
                   setShowOcrUploader(false)
                   setOcrError(null)
                   setUploadedFile(null)
                 }}
-                className="border-2 border-border text-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-all text-lg font-bold"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
 
-            {/* Drag & Drop зона */}
-            <div
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              className="border-2 border-dashed border-orange-500 bg-orange-50 dark:bg-orange-900/10 p-12 text-center hover:bg-orange-100 dark:hover:bg-orange-900/20 transition-all duration-300 cursor-pointer"
-            >
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleOcrFileUpload(file)
-                }}
-                className="hidden"
-                id="ocr-file-input"
-              />
+            <div className="p-6">
+              {/* Drag & Drop зона */}
+              <div
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className="border-2 border-dashed border-orange-400 dark:border-orange-600 rounded-xl bg-orange-50 dark:bg-orange-900/10 p-10 text-center hover:bg-orange-100 dark:hover:bg-orange-900/20 transition-all duration-300 cursor-pointer"
+              >
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleOcrFileUpload(file)
+                  }}
+                  className="hidden"
+                  id="ocr-file-input"
+                />
 
-              {ocrAnalyzing ? (
-                <div className="space-y-4">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 mx-auto"></div>
-                  <p className="text-lg font-semibold text-orange-700 dark:text-orange-400">
-                    Анализируем документ...
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Yandex Vision обрабатывает карточку компании
-                  </p>
+                {ocrAnalyzing ? (
+                  <div className="space-y-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-orange-500 mx-auto"></div>
+                    <p className="text-base font-semibold text-orange-700 dark:text-orange-400">
+                      Анализируем документ...
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Yandex Vision обрабатывает карточку компании
+                    </p>
+                  </div>
+                ) : (
+                  <label htmlFor="ocr-file-input" className="cursor-pointer space-y-3 block">
+                    <div className="w-14 h-14 rounded-xl bg-orange-500 flex items-center justify-center mx-auto">
+                      <Eye className="h-7 w-7 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Перетащите файл сюда
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      или нажмите для выбора файла
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      PDF, JPG, PNG, XLSX, DOCX
+                    </p>
+                  </label>
+                )}
+              </div>
+
+              {/* Информация о поддерживаемых документах */}
+              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                <h4 className="font-medium text-foreground text-sm mb-2">
+                  Поддерживаемые документы:
+                </h4>
+                <div className="grid grid-cols-2 gap-1 text-sm text-muted-foreground">
+                  <span>Карточки компаний РФ</span>
+                  <span>Свидетельства о регистрации</span>
+                  <span>Договоры с реквизитами</span>
+                  <span>Банковские документы</span>
                 </div>
-              ) : (
-                <label htmlFor="ocr-file-input" className="cursor-pointer space-y-4 block">
-                  <div className="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center mx-auto">
-                    <Eye className="h-10 w-10 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-orange-700 dark:text-orange-400">
-                    Перетащите файл сюда
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    или нажмите для выбора файла
-                  </p>
-                  <div className="text-sm text-gray-500 dark:text-gray-500 space-y-1">
-                    <p>Поддерживаемые форматы:</p>
-                    <p className="font-mono">PDF, JPG, PNG, XLSX, DOCX</p>
-                  </div>
-                </label>
+              </div>
+
+              <div className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Shield className="h-3.5 w-3.5 text-orange-500" />
+                <span>Powered by Yandex Vision OCR</span>
+              </div>
+
+              {/* Ошибка */}
+              {ocrError && (
+                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                  <p className="text-red-700 dark:text-red-400 font-medium text-sm">Ошибка:</p>
+                  <p className="text-red-600 dark:text-red-500 text-sm mt-1">{ocrError}</p>
+                </div>
               )}
             </div>
-
-            {/* Информация о поддерживаемых документах */}
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded">
-              <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">
-                📄 Поддерживаемые документы:
-              </h4>
-              <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
-                <li>• Карточки компаний РФ</li>
-                <li>• Свидетельства о регистрации</li>
-                <li>• Договоры с реквизитами</li>
-                <li>• Банковские документы</li>
-              </ul>
-            </div>
-
-            {/* Упоминание Yandex Vision */}
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
-              <Shield className="h-4 w-4 text-orange-500" />
-              <span>Powered by Yandex Vision OCR</span>
-            </div>
-
-            {/* Ошибка */}
-            {ocrError && (
-              <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded">
-                <p className="text-red-700 dark:text-red-400 font-semibold">❌ Ошибка:</p>
-                <p className="text-red-600 dark:text-red-500 text-sm mt-1">{ocrError}</p>
-              </div>
-            )}
           </motion.div>
         </div>
       )}

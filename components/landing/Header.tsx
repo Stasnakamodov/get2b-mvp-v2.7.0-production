@@ -12,7 +12,9 @@ export function Header() {
   return (
     <header className="absolute top-0 left-0 right-0 z-50 bg-transparent">
       <div className="max-w-[1400px] mx-auto flex items-center justify-between px-8 md:px-16 py-6">
-        <Logo />
+        <div className="[&_span.text-gray-900]:text-white">
+          <Logo />
+        </div>
 
         <nav className="hidden md:flex items-center gap-8">
           <a

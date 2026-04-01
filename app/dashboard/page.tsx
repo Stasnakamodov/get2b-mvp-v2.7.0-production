@@ -183,29 +183,29 @@ function DashboardPageContent() {
       id: "needs_attention",
       label: "Требует внимания",
       icon: AlertTriangle,
-      color: "text-orange-600 bg-orange-50 border-orange-200",
+      color: "text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400",
       statuses: ["waiting_approval", "waiting_receipt", "receipt_rejected"],
     },
     {
       id: "overdue",
       label: "Просрочены",
       icon: AlertCircle,
-      color: "text-red-600 bg-red-50 border-red-200",
-      statuses: [], // Логика отдельная - проверка по дате
+      color: "text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400",
+      statuses: [],
     },
     {
       id: "new",
       label: "Новые",
       icon: Sparkles,
-      color: "text-blue-600 bg-blue-50 border-blue-200",
-      statuses: [], // Логика отдельная - созданные за последние 24 часа
+      color: "text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400",
+      statuses: [],
     },
     {
       id: "recent",
       label: "Последние",
       icon: History,
-      color: "text-purple-600 bg-purple-50 border-purple-200",
-      statuses: [], // Логика отдельная - последние 5 проектов
+      color: "text-purple-600 bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400",
+      statuses: [],
     }
   ];
 
@@ -531,7 +531,7 @@ function DashboardPageContent() {
       {/* Секция активных проектов */}
       <motion.div initial="hidden" animate="visible" variants={containerVariants} className="mb-12">
         <motion.div variants={itemVariants} className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-foreground whitespace-nowrap">Ваши сделки</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground whitespace-nowrap">Ваши сделки</h1>
 
           {/* Быстрые фильтры и кнопка "Все сделки" */}
           <div className="flex items-center gap-2">
@@ -782,9 +782,9 @@ function DashboardPageContent() {
         </motion.h2>
         <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <motion.div variants={itemVariants} custom={0} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-            <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card className="h-full bg-card border-border shadow-lg hover:shadow-xl transition-all duration-300">
               <CardContent className="p-6">
-                <h3 className="text-lg font-medium mb-2 text-foreground">Активные проекты</h3>
+                <h3 className="text-lg font-medium mb-2 text-foreground min-h-[3.5rem]">Активные проекты</h3>
                 <motion.p
                   className="text-3xl font-bold text-blue-500"
                   initial={{ opacity: 0, scale: 0.5 }}
@@ -801,9 +801,9 @@ function DashboardPageContent() {
             </Card>
           </motion.div>
           <motion.div variants={itemVariants} custom={1} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-            <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card className="h-full bg-card border-border shadow-lg hover:shadow-xl transition-all duration-300">
               <CardContent className="p-6">
-                <h3 className="text-lg font-medium mb-2 text-foreground">Ожидающие проекты</h3>
+                <h3 className="text-lg font-medium mb-2 text-foreground min-h-[3.5rem]">Ожидающие проекты</h3>
                 <motion.p
                   className="text-3xl font-bold text-amber-500"
                   initial={{ opacity: 0, scale: 0.5 }}
@@ -821,9 +821,9 @@ function DashboardPageContent() {
             </Card>
           </motion.div>
           <motion.div variants={itemVariants} custom={2} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-            <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card className="h-full bg-card border-border shadow-lg hover:shadow-xl transition-all duration-300">
               <CardContent className="p-6">
-                <h3 className="text-lg font-medium mb-2 text-foreground">Завершенные проекты</h3>
+                <h3 className="text-lg font-medium mb-2 text-foreground min-h-[3.5rem]">Завершенные проекты</h3>
                 <motion.p
                   className="text-3xl font-bold text-green-500"
                   initial={{ opacity: 0, scale: 0.5 }}
@@ -840,9 +840,9 @@ function DashboardPageContent() {
             </Card>
           </motion.div>
           <motion.div variants={itemVariants} custom={3} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-            <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card className="h-full bg-card border-border shadow-lg hover:shadow-xl transition-all duration-300">
               <CardContent className="p-6">
-                <h3 className="text-lg font-medium mb-2 text-foreground">Отклонённые проекты</h3>
+                <h3 className="text-lg font-medium mb-2 text-foreground min-h-[3.5rem]">Отклонённые проекты</h3>
                 <motion.p
                   className="text-3xl font-bold text-red-500"
                   initial={{ opacity: 0, scale: 0.5 }}
@@ -862,77 +862,6 @@ function DashboardPageContent() {
         </motion.div>
       </motion.div>
 
-      {/* Диагностическая панель */}
-      <motion.div 
-        initial="hidden" 
-        animate="visible" 
-        variants={containerVariants}
-        className="mt-8"
-      >
-        <Card className="bg-red-900/20 border-red-800 shadow-lg">
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold mb-4 text-red-400">🔍 Диагностика загрузки данных</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-              <div>
-                <div className="font-medium text-foreground">Пользователь:</div>
-                <div className={debugInfo.userLoaded ? 'text-green-400' : 'text-yellow-400'}>
-                  {debugInfo.userLoaded ? (debugInfo.user ? '✅ Загружен' : '❌ Не найден') : '⏳ Загрузка...'}
-                </div>
-                {debugInfo.user && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    ID: {debugInfo.user.id?.substring(0, 8)}...
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <div className="font-medium text-foreground">Проекты:</div>
-                <div className={debugInfo.projectsLoaded ? 'text-green-400' : 'text-yellow-400'}>
-                  {debugInfo.projectsLoaded ? `✅ Загружено (${projects.length})` : '⏳ Загрузка...'}
-                </div>
-                {debugInfo.projectsError && (
-                  <div className="text-xs text-red-400 mt-1">
-                    Ошибка: {debugInfo.projectsError}
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <div className="font-medium text-foreground">Шаблоны:</div>
-                <div className={!loadingTemplates ? 'text-green-400' : 'text-yellow-400'}>
-                  {!loadingTemplates ? `✅ Загружено (${templates.length})` : '⏳ Загрузка...'}
-                </div>
-                {errorTemplates && (
-                  <div className="text-xs text-red-400 mt-1">
-                    Ошибка: {errorTemplates}
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <div className="font-medium text-foreground">Supabase:</div>
-                <div className="text-green-400">✅ Подключен</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Клиент инициализирован
-                </div>
-              </div>
-            </div>
-            
-            {(debugInfo.projectsError || errorTemplates) && (
-              <div className="mt-4 p-3 bg-red-900/30 border border-red-700 rounded">
-                <div className="font-medium text-red-400 mb-2">Возможные причины проблем:</div>
-                <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>• Пользователь не авторизован или сессия истекла</li>
-                  <li>• Нет прав доступа к таблицам projects или project_templates</li>
-                  <li>• RLS политики блокируют доступ к данным</li>
-                  <li>• Проблемы с подключением к Supabase</li>
-                  <li>• TypeScript ошибки в типах данных</li>
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
 
       {/* Боковая панель корзины */}
       {isCartOpen && (
@@ -949,7 +878,7 @@ function DashboardPageContent() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-50 flex flex-col"
+            className="fixed right-0 top-0 h-full w-96 bg-card border-l border-border shadow-2xl z-50 flex flex-col"
           >
             {/* Header корзины */}
             <div className="flex items-center justify-between p-6 border-b">
@@ -960,16 +889,16 @@ function DashboardPageContent() {
               </div>
               <button
                 onClick={() => setIsCartOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-muted rounded-full transition-colors"
               >
-                <XCircle className="h-6 w-6 text-gray-500" />
+                <XCircle className="h-6 w-6 text-muted-foreground" />
               </button>
             </div>
 
             {/* Контент корзины */}
             <div className="flex-1 overflow-y-auto p-6">
               {cartItems.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-muted-foreground text-center py-8">
                   Корзина пуста
                 </p>
               ) : (
@@ -984,8 +913,8 @@ function DashboardPageContent() {
                           className="w-20 h-20 object-cover rounded"
                         />
                       ) : (
-                        <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
-                          <Package className="h-8 w-8 text-gray-400" />
+                        <div className="w-20 h-20 bg-muted rounded flex items-center justify-center">
+                          <Package className="h-8 w-8 text-muted-foreground" />
                         </div>
                       )}
 
@@ -993,12 +922,12 @@ function DashboardPageContent() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{item.name}</h3>
                         {item.supplier_name && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             Поставщик: {item.supplier_name}
                           </p>
                         )}
                         <div className="flex items-center justify-between mt-2">
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-muted-foreground">
                             Количество: {item.quantity}
                           </span>
                           {item.price && (
@@ -1019,7 +948,7 @@ function DashboardPageContent() {
                           setCartItemsCount(totalItems)
                           window.dispatchEvent(new Event('storage'))
                         }}
-                        className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </button>
@@ -1064,11 +993,11 @@ const DashboardPage = dynamic(() => Promise.resolve(DashboardPageContent), {
   loading: () => (
     <div className="container mx-auto py-4">
       <div className="animate-pulse">
-        <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
+        <div className="h-8 bg-muted rounded w-1/4 mb-6"></div>
         <div className="space-y-4">
-          <div className="h-32 bg-gray-300 rounded"></div>
-          <div className="h-32 bg-gray-300 rounded"></div>
-          <div className="h-32 bg-gray-300 rounded"></div>
+          <div className="h-32 bg-muted rounded"></div>
+          <div className="h-32 bg-muted rounded"></div>
+          <div className="h-32 bg-muted rounded"></div>
         </div>
       </div>
     </div>

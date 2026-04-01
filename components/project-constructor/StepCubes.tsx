@@ -87,7 +87,7 @@ export function StepCubes({
             >
 
               <div className={`
-                  aspect-square rounded-lg border-2 p-4 flex flex-col items-center justify-center relative group
+                  h-[140px] rounded-lg border-2 p-4 flex flex-col items-center justify-center relative group
                 ${
                   // Scenario mode highlight takes priority when active
                   scenarioMode && scenarioHighlightedSteps[step.id]

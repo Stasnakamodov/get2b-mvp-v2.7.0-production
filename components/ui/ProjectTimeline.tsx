@@ -23,12 +23,12 @@ function toRoman(num: number): string {
 
 export const ProjectTimeline: React.FC<ProjectTimelineProps> = React.memo(({ steps, currentStep, maxStepReached, onStepClick, showStepTitles = true }) => {
   return (
-    <div className="relative my-8">
+    <div className="relative my-6">
       {/* Базовая линия (фон) */}
-      <div className="absolute top-1/2 left-0 right-0 h-2 -translate-y-1/2 bg-gray-300 dark:bg-gray-700 rounded-full" />
+      <div className="absolute top-5 left-0 right-0 h-1.5 -translate-y-px bg-gray-300 dark:bg-gray-700 rounded-full" />
       {/* Линия прогресса до текущего шага */}
       <div
-        className="absolute top-1/2 left-0 h-2 -translate-y-1/2 bg-blue-500 rounded-full transition-all duration-500"
+        className="absolute top-5 left-0 h-1.5 -translate-y-px bg-blue-500 rounded-full transition-all duration-500"
         style={{
           width: steps.length === 1
             ? '100%'
@@ -38,35 +38,23 @@ export const ProjectTimeline: React.FC<ProjectTimelineProps> = React.memo(({ ste
       {/* Кружки */}
       <div className="relative flex justify-between">
         {steps.map((step, index) => {
-          const StepIcon = step.icon
           const isCompletedOrCurrent = index + 1 <= currentStep
           const isClickable = index + 1 <= maxStepReached && !!onStepClick
           return (
             <div
               key={step.id}
-              className={`flex flex-col items-center group ${isClickable ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-default'}`}
+              className={`flex flex-col items-center ${isClickable ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-default'}`}
               onClick={isClickable ? () => onStepClick && onStepClick(index + 1) : undefined}
-              style={index + 1 > currentStep ? { opacity: 0.6 } : { opacity: 1 }}
             >
-              {/* Tooltip для кликабельных шагов */}
-              {isClickable && (
-                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
-                  <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 shadow-lg whitespace-nowrap">
-                    Нажмите для возврата
-                  </div>
-                </div>
-              )}
               <div
-                className={`relative z-10 flex items-center justify-center w-14 h-14 rounded-full border-4 transition-all duration-300
-                  ${
-                    isCompletedOrCurrent
-                      ? `bg-blue-700 border-blue-700${index + 1 === currentStep ? ' ring-2 ring-blue-200 dark:ring-blue-900/40' : ''}`
-                        : "bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600"
+                className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300
+                  ${isCompletedOrCurrent
+                    ? 'bg-blue-500 border-blue-500 text-white shadow-lg'
+                    : 'bg-gray-300 border-gray-400 text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400'
                   }
-                  ${isClickable ? 'shadow-md shadow-blue-200 dark:shadow-blue-900/30' : ''}
                 `}
               >
-                <span className={`text-lg font-bold ${isCompletedOrCurrent ? "text-white" : "text-gray-400 dark:text-gray-500"}`}>{toRoman(index + 1)}</span>
+                <span className="text-sm font-bold">{toRoman(index + 1)}</span>
               </div>
               {showStepTitles && (
                 <div className="mt-2 text-center">
@@ -80,7 +68,6 @@ export const ProjectTimeline: React.FC<ProjectTimelineProps> = React.memo(({ ste
     </div>
   )
 }, (prevProps, nextProps) => {
-  // Оптимизация: перерисовываем только если изменились важные пропсы
   return (
     prevProps.currentStep === nextProps.currentStep &&
     prevProps.maxStepReached === nextProps.maxStepReached &&
@@ -89,4 +76,4 @@ export const ProjectTimeline: React.FC<ProjectTimelineProps> = React.memo(({ ste
   );
 });
 
-export default ProjectTimeline 
+export default ProjectTimeline
