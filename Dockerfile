@@ -32,10 +32,15 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Dummy env vars for build-time — API routes import modules that read env vars
-# at module scope. Real values are injected at runtime via docker-compose.
-ENV NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder
+# NEXT_PUBLIC_ vars are inlined into client JS bundle at build-time by Next.js.
+# Server-only vars use placeholders — real values come from .env at runtime.
+ARG NEXT_PUBLIC_SUPABASE_URL=https://ejkhdhexkadecpbjjmsz.supabase.co
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqa2hkaGV4a2FkZWNwYmpqbXN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMzcxNDIsImV4cCI6MjA2MjYxMzE0Mn0.DHcfdHrQmPiG4AkwDaCa9AXYB7zQPJlK7VuXt-g1uUU
+ARG NEXT_PUBLIC_BASE_URL=https://get2b.pro
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
+# Server-only placeholders for build (overridden at runtime via .env)
 ENV SUPABASE_SERVICE_ROLE_KEY=placeholder
 ENV SUPABASE_URL=https://placeholder.supabase.co
 ENV ANTHROPIC_API_KEY=placeholder
@@ -44,7 +49,6 @@ ENV TELEGRAM_CHAT_BOT_TOKEN=placeholder
 ENV TELEGRAM_CHAT_ID=placeholder
 ENV YANDEX_VISION_API_KEY=placeholder
 ENV YANDEX_FOLDER_ID=placeholder
-ENV NEXT_PUBLIC_BASE_URL=https://get2b.pro
 
 RUN npm run build
 
