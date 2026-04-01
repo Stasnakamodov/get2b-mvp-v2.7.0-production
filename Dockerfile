@@ -32,9 +32,19 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Dummy env vars for build-time (Supabase client initializes at module level)
+# Dummy env vars for build-time — API routes import modules that read env vars
+# at module scope. Real values are injected at runtime via docker-compose.
 ENV NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder
+ENV SUPABASE_SERVICE_ROLE_KEY=placeholder
+ENV SUPABASE_URL=https://placeholder.supabase.co
+ENV ANTHROPIC_API_KEY=placeholder
+ENV TELEGRAM_BOT_TOKEN=placeholder
+ENV TELEGRAM_CHAT_BOT_TOKEN=placeholder
+ENV TELEGRAM_CHAT_ID=placeholder
+ENV YANDEX_VISION_API_KEY=placeholder
+ENV YANDEX_FOLDER_ID=placeholder
+ENV NEXT_PUBLIC_BASE_URL=https://get2b.pro
 
 RUN npm run build
 
