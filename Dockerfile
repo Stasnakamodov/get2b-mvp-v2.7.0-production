@@ -32,6 +32,10 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Dummy env vars for build-time (Supabase client initializes at module level)
+ENV NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder
+
 RUN npm run build
 
 # ---- Stage 3: Production runtime ----
