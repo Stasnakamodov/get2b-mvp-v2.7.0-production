@@ -1,6 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-
-const supabase = createClientComponentClient()
+import { db } from '@/lib/db/client'
 
 interface FileUploadConfig {
   bucket: string
@@ -23,20 +21,16 @@ export const uploadFileToStorage = async (
   const cleanName = file.name.replace(/[^\w.-]+/g, '_').substring(0, 50)
   const filePath = `${folder}/${projectRequestId}/${date}_${cleanName}`
 
-
-  const { data, error } = await supabase.storage
+  const { data, error } = await db.storage
     .from(bucket)
-    .upload(filePath, file, {
-      upsert: true
-    })
+    .upload(filePath, file)
 
   if (error) {
-    console.error('❌ Ошибка загрузки файла:', error)
+    console.error('Ошибка загрузки файла:', error)
     throw new Error(error.message)
   }
 
-
-  const { data: urlData } = supabase.storage
+  const { data: urlData } = db.storage
     .from(bucket)
     .getPublicUrl(filePath)
 
