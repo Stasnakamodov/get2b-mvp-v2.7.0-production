@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { supabaseService } from "@/lib/supabaseServiceClient";
+import { db as dbAdmin } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       try {
         
         // Получаем список всех файлов в бакете
-        const { data: files, error } = await supabaseService.storage
+        const { data: files, error } = await dbAdmin.storage
           .from(bucketName)
           .list('', { limit: 1000 });
 
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
               name: file.name,
               size: file.metadata?.size,
               path: file.name,
-              public_url: supabaseService.storage.from(bucketName).getPublicUrl(file.name).data.publicUrl
+              public_url: dbAdmin.storage.from(bucketName).getPublicUrl(file.name).data.publicUrl
             }))
           };
         } else {

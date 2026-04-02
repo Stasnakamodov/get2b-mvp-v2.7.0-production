@@ -1,21 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
-
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
-}
-
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
-}
-
-// Создаем админский клиент с сервисной ролью
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-); 
+// DEPRECATED: Use @/lib/db instead
+// This file is kept for backward compatibility
+export const supabaseAdmin = null as any

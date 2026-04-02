@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { logger } from "@/src/shared/lib/logger";
 import { db } from "@/lib/db"
-import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { db as dbAdmin } from '@/lib/db'
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus"
 import { ProjectStatus } from "@/lib/types/project-status"
 

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
 import { logger } from "@/src/shared/lib/logger";
-import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { db as dbAdmin } from '@/lib/db'
 
 export async function POST() {
   try {
     
     // Выполняем SQL запрос для добавления полей
-    const { error } = await supabaseAdmin
+    const { error } = await dbAdmin
       .from("projects")
       .select("id")
       .limit(1)
@@ -16,7 +16,7 @@ export async function POST() {
     }
 
     // Пробуем выполнить ALTER TABLE через raw SQL
-    const { error: sqlError } = await supabaseAdmin.rpc('exec_sql', {
+    const { error: sqlError } = await dbAdmin.rpc('exec_sql', {
       sql: `
         ALTER TABLE projects 
         ADD COLUMN IF NOT EXISTS supplier_receipt_url TEXT,
@@ -28,7 +28,7 @@ export async function POST() {
       logger.error("SQL Error:", sqlError)
       
       // Если функция exec_sql не существует, попробуем другой способ
-      const { error: directError } = await supabaseAdmin
+      const { error: directError } = await dbAdmin
         .from("projects")
         .update({ 
           supplier_receipt_url: "test",

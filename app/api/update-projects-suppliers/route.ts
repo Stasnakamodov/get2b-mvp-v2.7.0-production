@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from "@/src/shared/lib/logger";
-import { supabaseAdmin as db } from '@/lib/supabaseAdmin';
+import { db } from '@/lib/db';
 
 export async function POST() {
   try {

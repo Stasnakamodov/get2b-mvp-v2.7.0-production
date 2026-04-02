@@ -3,7 +3,7 @@ import { logger } from "@/src/shared/lib/logger";
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { supabaseService } from "@/lib/supabaseServiceClient";
+import { db as dbAdmin } from '@/lib/db'
 import { ChatBotService } from "@/lib/telegram/ChatBotService";
 
 // Создаем единственный экземпляр сервиса чат-бота
@@ -136,7 +136,7 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
         let roomError = null;
         
         try {
-          const result = await supabaseService
+          const result = await dbAdmin
             .from('chat_rooms')
             .select('id, name, user_id')
             .eq('project_id', projectId)
@@ -185,7 +185,7 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
       
       logger.info("💾 DEBUG: Message data to save:", messageData);
       
-      const { data: newMessage, error } = await supabaseService
+      const { data: newMessage, error } = await dbAdmin
         .from('chat_messages')
         .insert(messageData)
         .select()

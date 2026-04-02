@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { db as dbAdmin } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     
     // Скачиваем файл с Supabase Storage через admin client
     console.log('⬇️ [API] Скачиваем файл с Supabase Storage...')
-    const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+    const { data: fileData, error: downloadError } = await dbAdmin.storage
       .from(bucketName)
       .download(filePath)
     
