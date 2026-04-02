@@ -106,6 +106,7 @@ ngrok.log
 ngrok_output.txt
 nextjs.log
 
-# SQL files (development only)
+# SQL files (development only, except init.sql)
 *.sql
+!sql/init.sql
 .vercel
