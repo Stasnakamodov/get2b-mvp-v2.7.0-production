@@ -1,10 +1,10 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
 
 // POST: Создать проект из данных конструктора
 export async function POST(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await db.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     // 1. Получаем данные черновика
     let draftData = null;
     if (draft_id) {
-      const { data: draft, error: draftError } = await supabase
+      const { data: draft, error: draftError } = await db
         .from('constructor_drafts')
         .select('*')
         .eq('id', draft_id)
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const requisitesData = stepData[5] || {};
 
     // 3. Создаем проект
-    const { data: project, error: projectError } = await supabase
+    const { data: project, error: projectError } = await db
       .from('projects')
       .insert([{
         user_id: user.id,
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         supplier_name: item.supplier_name || specificationData.supplier || ''
       }));
 
-      const { error: specError } = await supabase
+      const { error: specError } = await db
         .from('project_specifications')
         .insert(specificationItems);
 
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     // 5. Создаем реквизиты (если есть)
     if (requisitesData && Object.keys(requisitesData).length > 0) {
-      const { error: reqError } = await supabase
+      const { error: reqError } = await db
         .from('project_requisites')
         .insert([{
           user_id: user.id,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     // 6. Помечаем черновик как завершенный (если был)
     if (draft_id) {
-      await supabase
+      await db
         .from('constructor_drafts')
         .update({ is_complete: true })
         .eq('id', draft_id)

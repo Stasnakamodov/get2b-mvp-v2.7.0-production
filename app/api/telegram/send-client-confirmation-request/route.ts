@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sendTelegramDocument } from "@/lib/telegram"
-import { supabase } from "@/lib/supabaseClient"
+import { db } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
     // Получаем ссылку на подтверждение из Supabase
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("projects")
       .select("client_confirmation_url")
       .eq("id", projectId)

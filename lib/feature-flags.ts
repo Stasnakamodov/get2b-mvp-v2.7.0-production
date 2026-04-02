@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient'
+import { db } from "@/lib/db"
 
 /**
  * Feature Flags — управление feature-флагами платформы
@@ -6,7 +6,7 @@ import { supabase } from './supabaseClient'
 
 export async function isScenarioModeEnabled(projectId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('projects')
       .select('scenario_mode_enabled')
       .eq('id', projectId)
@@ -21,7 +21,7 @@ export async function isScenarioModeEnabled(projectId: string): Promise<boolean>
 
 export async function enableScenarioMode(projectId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
+    const { error } = await db
       .from('projects')
       .update({ scenario_mode_enabled: true })
       .eq('id', projectId)
@@ -34,7 +34,7 @@ export async function enableScenarioMode(projectId: string): Promise<boolean> {
 
 export async function disableScenarioMode(projectId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
+    const { error } = await db
       .from('projects')
       .update({ scenario_mode_enabled: false, active_scenario_id: null })
       .eq('id', projectId)

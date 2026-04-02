@@ -1,7 +1,7 @@
 'use client'
+import { db } from "@/lib/db/client"
 
 import React, { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
 
 export default function DebugSupabase() {
   const [status, setStatus] = useState<{
@@ -28,7 +28,7 @@ export default function DebugSupabase() {
         setStatus(prev => ({ ...prev, url, key }))
 
         // Проверяем подключение к Supabase
-        const { data, error } = await supabase.auth.getSession()
+        const { data, error } = await db.auth.getSession()
         
         if (error) {
           setStatus(prev => ({

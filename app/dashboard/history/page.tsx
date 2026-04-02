@@ -1,4 +1,5 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import React from "react"
 import { useState, useEffect } from "react"
@@ -28,7 +29,6 @@ import {
   Star,
   Timer
 } from "lucide-react"
-import { supabase } from "@/lib/supabaseClient"
 import { ProjectStatus, STATUS_LABELS } from "@/lib/types/project-status"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -69,11 +69,11 @@ export default function HistoryPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user } } = await db.auth.getUser()
       if (!user) return
 
       // Загружаем проекты пользователя
-      const { data: projectsData, error: projectsError } = await supabase
+      const { data: projectsData, error: projectsError } = await db
         .from("projects")
         .select("*")
         .eq("user_id", user.id)
@@ -90,7 +90,7 @@ export default function HistoryPage() {
       // Загружаем историю статусов для всех проектов пользователя
       const projectIds = projectsList.map(p => p.id)
       if (projectIds.length > 0) {
-        const { data: historyData, error: historyError } = await supabase
+        const { data: historyData, error: historyError } = await db
           .from("project_status_history")
           .select("*")
           .in("project_id", projectIds)

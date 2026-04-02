@@ -1,6 +1,6 @@
+import { db } from "@/lib/db"
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
 // 🎯 API ENDPOINT: Автозаполнение данных поставщика для Steps 2,4,5
 // GET /api/catalog/supplier-autofill/{supplierId}
 export async function GET(
@@ -25,7 +25,7 @@ export async function GET(
     if (authHeader) {
       try {
         const token = authHeader.replace('Bearer ', '')
-        const { data: { user } } = await supabase.auth.getUser(token)
+        const { data: { user } } = await db.auth.getUser(token)
         currentUserId = user?.id
       } catch (error) {
       }
@@ -37,7 +37,7 @@ export async function GET(
 
     // 1. Сначала пытаемся найти в аккредитованных поставщиках
     if (roomType === 'auto' || roomType === 'verified') {
-      const { data: verifiedSupplier, error: verifiedError } = await supabase
+      const { data: verifiedSupplier, error: verifiedError } = await db
         .from('catalog_verified_suppliers')
         .select(`
           *,
@@ -57,7 +57,7 @@ export async function GET(
 
     // 2. Если не найден в verified, ищем в пользовательских
     if (!supplierData && (roomType === 'auto' || roomType === 'user')) {
-      const { data: userSupplier, error: userError } = await supabase
+      const { data: userSupplier, error: userError } = await db
         .from('catalog_user_suppliers')
         .select(`
           *,
@@ -175,7 +175,7 @@ async function getPhantomSupplierData(supplierName: string, userId: string) {
   try {
 
     // 1. Ищем проекты с этим поставщиком в спецификациях
-    const { data: specifications, error: specsError } = await supabase
+    const { data: specifications, error: specsError } = await db
       .from('project_specifications')
       .select('project_id, supplier_name')
       .ilike('supplier_name', `%${supplierName}%`)
@@ -188,7 +188,7 @@ async function getPhantomSupplierData(supplierName: string, userId: string) {
     const projectIds = [...new Set(specifications.map(s => s.project_id))]
 
     // 2. Получаем данные проектов и их реквизиты
-    const { data: projects, error: projectsError } = await supabase
+    const { data: projects, error: projectsError } = await db
       .from('projects')
       .select(`
         id, name, status, payment_method, amount, currency, created_at,

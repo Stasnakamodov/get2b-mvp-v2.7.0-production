@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { createClient } from "@supabase/supabase-js";
+import { db } from '@/lib/db'
 import { createHmac, timingSafeEqual } from "crypto";
 
 // 🚀 GET2B WEBHOOK - Интеграция с основным сайтом
@@ -27,26 +27,7 @@ interface Get2BWebhookPayload {
   signature?: string; // для верификации
 }
 
-// Безопасная инициализация Supabase с service role key (обходит RLS)
-let supabase: any = null;
-try {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  // Пробуем сначала service role key, потом anon key
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (supabaseUrl && supabaseKey) {
-    supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
-  } else {
-    logger.warn('⚠️ Переменные Supabase не найдены, webhook работает без БД');
-  }
-} catch (error) {
-  logger.error('❌ Ошибка инициализации Supabase:', error);
-}
+// db imported from @/lib/db above
 
 export async function POST(req: NextRequest) {
   try {
@@ -99,7 +80,7 @@ export async function GET(req: NextRequest) {
       status: 'active',
       webhook_url: 'https://your-domain.com/api/get2b-webhook',
       supported_events: ['lead', 'contact', 'consultation', 'project_request'],
-      supabase_connected: !!supabase,
+      db_connected: true,
       using_service_role: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       timestamp: new Date().toISOString()
     });
@@ -115,9 +96,9 @@ async function handleLead(data: Get2BWebhookPayload['data']) {
     let leadId = null;
     
     // Пытаемся сохранить в базу данных, если Supabase доступен
-    if (supabase) {
+    if (db) {
       try {
-        const { data: lead, error: leadError } = await supabase
+        const { data: lead, error: leadError } = await db
           .from('leads')
           .insert({
             user_id: null, // пока не создаем пользователя

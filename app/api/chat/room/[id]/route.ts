@@ -1,6 +1,6 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 // GET: Получить информацию о комнате
 export async function GET(
   request: NextRequest,
@@ -18,7 +18,7 @@ export async function GET(
     }
 
     // Получаем информацию о комнате
-    const { data: room, error: roomError } = await supabase
+    const { data: room, error: roomError } = await db
       .from('chat_rooms')
       .select(`
         *,
@@ -41,7 +41,7 @@ export async function GET(
     }
 
     // Получаем участников комнаты
-    const { data: participants, error: participantsError } = await supabase
+    const { data: participants, error: participantsError } = await db
       .from('chat_participants')
       .select('*')
       .eq('room_id', roomId)
@@ -52,7 +52,7 @@ export async function GET(
     }
 
     // Получаем статистику сообщений
-    const { data: messageStats, error: statsError } = await supabase
+    const { data: messageStats, error: statsError } = await db
       .from('chat_messages')
       .select('sender_type')
       .eq('room_id', roomId);
@@ -72,7 +72,7 @@ export async function GET(
     // Получаем менеджеров проекта (если это проектная комната)
     let assignedManagers = [];
     if (room.room_type === 'project' && room.project_id) {
-      const { data: managers, error: managersError } = await supabase
+      const { data: managers, error: managersError } = await db
         .from('manager_assignments')
         .select('*')
         .eq('project_id', room.project_id)
@@ -133,7 +133,7 @@ export async function PUT(
     if (is_archived !== undefined) updateData.is_archived = is_archived;
 
     // Обновляем комнату
-    const { data: updatedRoom, error } = await supabase
+    const { data: updatedRoom, error } = await db
       .from('chat_rooms')
       .update(updateData)
       .eq('id', roomId)
@@ -180,7 +180,7 @@ export async function DELETE(
     }
 
     // Проверяем что это AI комната (проектные комнаты удалять нельзя)
-    const { data: room, error: roomError } = await supabase
+    const { data: room, error: roomError } = await db
       .from('chat_rooms')
       .select('room_type')
       .eq('id', roomId)
@@ -201,7 +201,7 @@ export async function DELETE(
     }
 
     // Помечаем комнату как архивированную вместо удаления
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from('chat_rooms')
       .update({ 
         is_archived: true, 

@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
 import { logger } from '@/src/shared/lib/logger'
 
 /**
@@ -18,7 +18,7 @@ export async function GET(
 
   try {
     // Get product
-    const { data: product, error: productError } = await supabase
+    const { data: product, error: productError } = await db
       .from('catalog_verified_products')
       .select('*')
       .eq('id', id)
@@ -31,7 +31,7 @@ export async function GET(
     // Get supplier info
     let supplier = null
     if (product.supplier_id) {
-      const { data: supplierData } = await supabase
+      const { data: supplierData } = await db
         .from('catalog_verified_suppliers')
         .select('id, name, company_name, country, city, public_rating, reviews_count, projects_count')
         .eq('id', product.supplier_id)
@@ -43,7 +43,7 @@ export async function GET(
     // Fetch variants if product has them
     let variants = null
     if (product.has_variants) {
-      const { data: variantData } = await supabase
+      const { data: variantData } = await db
         .from('catalog_product_variants')
         .select('*')
         .eq('product_id', id)
@@ -54,7 +54,7 @@ export async function GET(
     }
 
     // Get related products (same category)
-    const { data: relatedProducts } = await supabase
+    const { data: relatedProducts } = await db
       .from('catalog_verified_products')
       .select('id, name, price, currency, images, category')
       .eq('category', product.category)
@@ -89,7 +89,7 @@ export async function PATCH(
   }
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await db.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -97,7 +97,7 @@ export async function PATCH(
     const { supplier_type, ...updateData } = await request.json()
     const tableName = supplier_type === 'verified' ? 'catalog_verified_products' : 'catalog_user_products'
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from(tableName)
       .update(updateData)
       .eq('id', id)
@@ -130,7 +130,7 @@ export async function DELETE(
   }
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await db.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -138,7 +138,7 @@ export async function DELETE(
     const { supplier_type } = await request.json()
     const tableName = supplier_type === 'verified' ? 'catalog_verified_products' : 'catalog_user_products'
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from(tableName)
       .delete()
       .eq('id', id)

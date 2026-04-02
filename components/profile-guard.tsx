@@ -1,8 +1,8 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
 import { ProfileSetupModal } from './profile-setup-modal'
 
 interface ProfileGuardProps {
@@ -41,7 +41,7 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
       }, 5000)
 
       // Проверяем аутентификацию
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      const { data: { user }, error: authError } = await db.auth.getUser()
       
       if (authError || !user) {
         router.push('/login')
@@ -52,7 +52,7 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
 
       // Проверяем наличие профиля
       
-      const { data: userProfiles, error: profileError } = await supabase
+      const { data: userProfiles, error: profileError } = await db
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)

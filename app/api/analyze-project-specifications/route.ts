@@ -1,17 +1,12 @@
 import { NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { db } from '@/lib/db'
 
 export async function GET() {
   try {
 
     // 1. Пробуем получить данные напрямую
-    const { data: sampleData, error: sampleError } = await supabase
+    const { data: sampleData, error: sampleError } = await db
       .from('project_specifications')
       .select('*')
       .limit(5)
@@ -26,7 +21,7 @@ export async function GET() {
     }
 
     // 2. Получаем количество записей
-    const { count: recordCount, error: countError } = await supabase
+    const { count: recordCount, error: countError } = await db
       .from('project_specifications')
       .select('*', { count: 'exact', head: true })
 
@@ -38,7 +33,7 @@ export async function GET() {
     }
 
     // 3. Анализируем supplier_name
-    const { data: supplierAnalysis, error: supplierError } = await supabase
+    const { data: supplierAnalysis, error: supplierError } = await db
       .from('project_specifications')
       .select('supplier_name')
       .not('supplier_name', 'is', null)
@@ -47,13 +42,13 @@ export async function GET() {
     let supplierNames: string[] = []
     
     if (!supplierError && supplierAnalysis) {
-      const suppliers = supplierAnalysis.map(item => item.supplier_name).filter(Boolean)
+      const suppliers = supplierAnalysis.map((item: any) => item.supplier_name).filter(Boolean)
       uniqueSuppliers = new Set(suppliers).size
-      supplierNames = Array.from(new Set(suppliers)).slice(0, 10) // Первые 10 уникальных
+      supplierNames = Array.from(new Set(suppliers)).slice(0, 10) as string[] // Первые 10 уникальных
     }
 
     // 4. Проверяем связь с project_requisites
-    const { data: requisitesData, error: requisitesError } = await supabase
+    const { data: requisitesData, error: requisitesError } = await db
       .from('project_requisites')
       .select('project_id, type, data')
       .limit(3)

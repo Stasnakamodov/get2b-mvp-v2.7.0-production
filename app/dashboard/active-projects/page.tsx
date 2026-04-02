@@ -1,11 +1,11 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import { logger } from "@/src/shared/lib/logger"
 
 import React, { useState, useEffect, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -124,9 +124,9 @@ function ActiveProjectsPageContent() {
   useEffect(() => {
     // Загрузка проектов только текущего пользователя из Supabase
     const fetchProjects = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await db.auth.getUser();
       if (!user) return;
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("projects")
         .select("*")
         .eq("user_id", user.id)
@@ -173,12 +173,12 @@ function ActiveProjectsPageContent() {
 
   const fetchAllHistory = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await db.auth.getUser();
       if (!user) return;
 
       const projectIds = projects.map(p => p.id);
       if (projectIds.length > 0) {
-        const { data: historyData, error } = await supabase
+        const { data: historyData, error } = await db
           .from("project_status_history")
           .select("*")
           .in("project_id", projectIds)
@@ -389,10 +389,10 @@ function ActiveProjectsPageContent() {
     
     try {
       // Получаем текущего пользователя
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user } } = await db.auth.getUser()
       
       // Получаем историю статусов из базы данных
-      const { data: statusHistory, error } = await supabase
+      const { data: statusHistory, error } = await db
         .from('project_status_history')
         .select(`
           id,

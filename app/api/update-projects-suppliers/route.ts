@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { logger } from "@/src/shared/lib/logger";
-import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
+import { supabaseAdmin as db } from '@/lib/supabaseAdmin';
 
 export async function POST() {
   try {
 
     // 1. Обновляем проект "in_progress" с поставщиком
-    const { error: error1 } = await supabase
+    const { error: error1 } = await db
       .from('projects')
       .update({
         supplier_id: '53b75c1a-873f-4527-ba2d-08a45215bf05',
@@ -47,7 +47,7 @@ export async function POST() {
     }
 
     // 2. Обновляем проект "draft" с поставщиком
-    const { error: error2 } = await supabase
+    const { error: error2 } = await db
       .from('projects')
       .update({
         supplier_id: '53b75c1a-873f-4527-ba2d-08a45215bf05',
@@ -87,7 +87,7 @@ export async function POST() {
     }
 
     // 3. Обновляем проект "waiting_approval" с поставщиком
-    const { error: error3 } = await supabase
+    const { error: error3 } = await db
       .from('projects')
       .update({
         supplier_id: '53b75c1a-873f-4527-ba2d-08a45215bf05',
@@ -126,7 +126,7 @@ export async function POST() {
     }
 
     // 4. Добавляем спецификации товаров для проектов
-    const { error: specsError } = await supabase
+    const { error: specsError } = await db
       .from('project_specifications')
       .insert([
         // Спецификации для проекта 1 (bank-transfer)
@@ -206,7 +206,7 @@ export async function POST() {
     }
 
     // 5. Добавляем реквизиты поставщиков для проектов
-    const { error: reqError } = await supabase
+    const { error: reqError } = await db
       .from('project_requisites')
       .insert([
         // Реквизиты для проекта 1 (bank-transfer)

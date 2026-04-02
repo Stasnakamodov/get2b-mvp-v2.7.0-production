@@ -1,11 +1,11 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
 
 // GET: Получение профилей поставщиков пользователя
 export async function GET(request: NextRequest) {
   try {
     // Получаем текущего пользователя
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await db.auth.getUser();
     
     if (authError || !user) {
       console.error("❌ [SECURITY] Пользователь не авторизован");
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
     
     
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("supplier_profiles")
       .select("*")
       .eq("user_id", user.id)
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Получаем текущего пользователя
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await db.auth.getUser();
     
     if (authError || !user) {
       console.error("❌ [SECURITY] Пользователь не авторизован");
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверяем дубликаты
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile } = await db
       .from("supplier_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     };
 
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("supplier_profiles")
       .insert([insertData])
       .select()

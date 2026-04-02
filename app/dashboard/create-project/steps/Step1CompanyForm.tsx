@@ -1,3 +1,4 @@
+import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect, useRef } from "react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
@@ -10,7 +11,6 @@ import { useSaveTemplate, useProjectTemplates } from "../hooks/useSaveTemplate";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
-import { supabase } from "@/lib/supabaseClient";
 import { sendTelegramMessageClient, sendTelegramDocumentClient, sendTelegramProjectApprovalRequestClient } from "@/lib/telegram-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useClientProfiles } from '@/hooks/useClientProfiles';
@@ -146,7 +146,7 @@ export default function Step1CompanyForm(props: {
     if (validate()) {
       setLoadingNext(true);
       // Получаем user_id и email пользователя из Supabase
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await db.auth.getUser();
       if (userError || !userData?.user?.id) {
         setLocalError("Не удалось получить пользователя");
         setLoadingNext(false);
@@ -160,7 +160,7 @@ export default function Step1CompanyForm(props: {
       if (currentProjectId) {
         let initiatorRole = startMethod === 'template' ? 'client' : startMethod;
         if (!initiatorRole) {
-          const { data: projectData, error: projectError } = await supabase
+          const { data: projectData, error: projectError } = await db
             .from("projects")
             .select("initiator_role")
             .eq("id", currentProjectId)
@@ -168,7 +168,7 @@ export default function Step1CompanyForm(props: {
           initiatorRole = projectData?.initiator_role || 'client';
         }
         // --- UPDATE project name/company_data/role ---
-        const { error: updateError } = await supabase
+        const { error: updateError } = await db
           .from("projects")
           .update({
             name: projectName,
@@ -200,7 +200,7 @@ export default function Step1CompanyForm(props: {
           logger.info("[Step1] Товары для сохранения:", itemsToSave);
           try {
             // Получаем токен авторизации
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await db.auth.getSession();
             if (!session) {
               logger.error("[Step1] Нет активной сессии для сохранения товаров");
               return;
@@ -257,7 +257,7 @@ export default function Step1CompanyForm(props: {
         }
         // --- СМЕНА СТАТУСА НА in_progress ---
         // Получаем текущий статус
-        const { data: statusData, error: statusError } = await supabase
+        const { data: statusData, error: statusError } = await db
           .from("projects")
           .select("status")
           .eq("id", currentProjectId)
@@ -295,7 +295,7 @@ export default function Step1CompanyForm(props: {
           logger.error("[Step1] Ошибка отправки в Telegram:", err);
         }
         // --- SELECT STATUS ---
-        const { data: projectData, error: selectError } = await supabase
+        const { data: projectData, error: selectError } = await db
           .from("projects")
           .select("status")
           .eq("id", currentProjectId)
@@ -368,7 +368,7 @@ export default function Step1CompanyForm(props: {
           logger.info("[Step1] Товары для сохранения:", itemsToSave);
           try {
             // Получаем токен авторизации
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await db.auth.getSession();
             if (!session) {
               logger.error("[Step1] Нет активной сессии для сохранения товаров");
               return;
@@ -406,7 +406,7 @@ export default function Step1CompanyForm(props: {
         
       // --- СМЕНА СТАТУСА НА in_progress ---
       // Получаем текущий статус
-      const { data: statusData2, error: statusError2 } = await supabase
+      const { data: statusData2, error: statusError2 } = await db
         .from("projects")
         .select("status")
         .eq("id", newProjectId)
@@ -447,7 +447,7 @@ export default function Step1CompanyForm(props: {
           });
       }
       // --- SELECT STATUS ---
-      const { data: projectData, error: selectError } = await supabase
+      const { data: projectData, error: selectError } = await db
         .from("projects")
         .select("status")
         .eq("id", newProjectId)
@@ -481,7 +481,7 @@ export default function Step1CompanyForm(props: {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data?.user?.id || null));
+    db.auth.getUser().then(({ data }) => setUserId(data?.user?.id || null));
   }, []);
 
   const handleProfileSelect = async (profile: any) => {
@@ -508,7 +508,7 @@ export default function Step1CompanyForm(props: {
       const url = new URL(window.location.href);
       const projectId = url.searchParams.get('projectId');
         if (projectId) {
-        await supabase
+        await db
           .from('projects')
           .update({
             name: profile.name || '',
@@ -527,7 +527,7 @@ export default function Step1CompanyForm(props: {
     setUploadError(null);
     try {
       // Получаем user_id
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await db.auth.getUser();
       if (userError || !userData?.user?.id) {
         setUploadError("Не удалось получить пользователя");
         setUploading(false);
@@ -541,7 +541,7 @@ export default function Step1CompanyForm(props: {
       const filePath = `company_cards/${user_id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       
       // Загружаем файл в Supabase Storage
-      const { data, error } = await supabase.storage.from('step-a1-ready-company').upload(filePath, file);
+      const { data, error } = await db.storage.from('step-a1-ready-company').upload(filePath, file);
       if (error) {
         setUploadError(error.message);
         setUploading(false);
@@ -549,13 +549,13 @@ export default function Step1CompanyForm(props: {
       }
       
       // Получаем публичную ссылку
-      const { data: publicUrlData } = supabase.storage.from('step-a1-ready-company').getPublicUrl(filePath);
+      const { data: publicUrlData } = db.storage.from('step-a1-ready-company').getPublicUrl(filePath);
       const url = publicUrlData?.publicUrl;
       setUploadedFileUrl(url);
       
       // Сохраняем ссылку в проекте (если уже есть projectId)
       if (projectId && url) {
-        await supabase.from('projects').update({ company_card_file: url }).eq('id', projectId);
+        await db.from('projects').update({ company_card_file: url }).eq('id', projectId);
       }
 
       // 🔍 АНАЛИЗ ДОКУМЕНТА С ПОМОЩЬЮ YANDEX VISION
@@ -797,7 +797,7 @@ export default function Step1CompanyForm(props: {
   const handleDeleteFile = async () => {
     setUploadedFileUrl(null);
     if (projectId) {
-      await supabase.from('projects').update({ company_card_file: null }).eq('id', projectId);
+      await db.from('projects').update({ company_card_file: null }).eq('id', projectId);
     }
   };
 
@@ -810,7 +810,7 @@ export default function Step1CompanyForm(props: {
   useEffect(() => {
       if (!projectId) return;
     async function fetchCompanyData() {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('projects')
         .select('company_data')
         .eq('id', projectId)
@@ -834,7 +834,7 @@ export default function Step1CompanyForm(props: {
     if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
     autoSaveTimeout.current = setTimeout(async () => {
       try {
-        await supabase.from('projects').update({ company_data: companyData, name: projectName }).eq('id', projectId);
+        await db.from('projects').update({ company_data: companyData, name: projectName }).eq('id', projectId);
         lastSavedData.current = { companyData, projectName };
         setAutoSaveStatus('saved');
         setTimeout(() => setAutoSaveStatus('idle'), 1500);
@@ -1022,7 +1022,7 @@ export default function Step1CompanyForm(props: {
       const url = new URL(window.location.href);
       const projectId = url.searchParams.get('projectId');
       if (projectId) {
-        supabase
+        db
           .from('projects')
           .update({
             name: template.name || '',

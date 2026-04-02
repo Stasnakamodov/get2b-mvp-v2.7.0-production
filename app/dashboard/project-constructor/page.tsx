@@ -1,4 +1,5 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import * as React from "react"
 import type {
@@ -105,7 +106,6 @@ import {
   getConfiguredStepsSummary as getConfiguredStepsSummaryUtil,
   type StepValidationContext
 } from "@/components/project-constructor/utils/StepValidationUtils"
-import { supabase } from "@/lib/supabaseClient"
 import { useToast } from "@/components/ui/use-toast"
 import CatalogModal from "../create-project/components/CatalogModal"
 import { AutoFillNotification } from "@/components/project-constructor/notifications/AutoFillNotification"
@@ -341,7 +341,7 @@ function ProjectConstructorContent() {
       console.log('📤 Отправляем запрос менеджеру на загрузку чека')
 
       // Получаем данные проекта
-      const { data: project, error } = await supabase
+      const { data: project, error } = await db
         .from('projects')
         .select('*')
         .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
@@ -354,7 +354,7 @@ function ProjectConstructorContent() {
       // Получаем реквизиты
       let requisiteText = ''
       try {
-        const { data: requisiteData } = await supabase
+        const { data: requisiteData } = await db
           .from('project_requisites')
           .select('data')
           .eq('project_id', project.id)
@@ -395,7 +395,7 @@ function ProjectConstructorContent() {
       console.log('✅ Запрос менеджеру отправлен успешно')
 
       // Обновляем статус проекта на waiting_manager_receipt
-      await supabase
+      await db
         .from('projects')
         .update({
           status: 'waiting_manager_receipt',
@@ -549,7 +549,7 @@ function ProjectConstructorContent() {
     const checkAuthAndLoad = async () => {
       try {
         console.log('🔍 Проверка авторизации...')
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user } } = await db.auth.getUser()
       if (user) {
           console.log('✅ Пользователь авторизован:', user.email)
           setUser(user)
@@ -682,7 +682,7 @@ function ProjectConstructorContent() {
 
     try {
       // Получаем данные проекта
-      const { data: projects, error } = await supabase
+      const { data: projects, error } = await db
         .from("projects")
         .select("*")
         .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
@@ -1278,7 +1278,7 @@ function ProjectConstructorContent() {
   // Извлекаем логику загрузки файлов и OCR анализа в отдельный хук
   // Подключаем ПОСЛЕ всех функций, которые используются внутри хука
   const ocrUpload = useOcrUpload({
-    supabase,
+    db,
     setManualData,
     setStepConfigs,
     setSelectedSource,
@@ -1951,7 +1951,7 @@ function ProjectConstructorContent() {
     try {
       console.log('🔍 Поиск исторических проектов по реквизитам:', supplierRequisites)
       
-      const { data: projects, error } = await supabase
+      const { data: projects, error } = await db
         .from('projects')
         .select(`
           id,
@@ -2110,7 +2110,7 @@ function ProjectConstructorContent() {
             projectRequestId={projectRequestId}
             manualData={manualData}
             uploadSupplierReceipt={uploadSupplierReceipt}
-            supabase={supabase}
+            db={db}
             POLLING_INTERVALS={POLLING_INTERVALS}
             dealAnimationStep={dealAnimationStep}
             dealAnimationStatus={dealAnimationStatus}

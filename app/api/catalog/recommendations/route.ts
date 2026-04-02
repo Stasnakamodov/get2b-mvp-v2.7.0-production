@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 import { logger } from "@/src/shared/lib/logger";
 
 // GET: Получение умных рекомендаций поставщиков
@@ -15,20 +15,20 @@ export async function GET(request: NextRequest) {
 
 
     // Получаем статистику поставщиков
-    const { data: supplierStats, error: statsError } = await supabase
+    const { data: supplierStats, error: statsError } = await db
       .from('supplier_usage_patterns')
       .select('*')
       .order('success_rate', { ascending: false })
       .limit(limit);
 
     // Получаем популярные товары
-    const { data: popularProducts, error: productsError } = await supabase
+    const { data: popularProducts, error: productsError } = await db
       .from('project_product_history')
       .select('product_name, supplier_name, unit_price')
       .limit(limit);
 
     // Получаем аккредитованных поставщиков
-    const { data: verifiedSuppliers, error: verifiedError } = await supabase
+    const { data: verifiedSuppliers, error: verifiedError } = await db
       .from('catalog_verified_suppliers')
       .select('id, name, company_name, rating, specialization')
       .eq('is_active', true)

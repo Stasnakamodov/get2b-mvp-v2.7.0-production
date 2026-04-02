@@ -1,11 +1,10 @@
+import { db, createAuthenticatedClient } from "@/lib/db"
 import { NextRequest, NextResponse } from 'next/server'
-import { createAuthenticatedClient } from '@/lib/supabaseServerClient'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { logger } from '@/src/shared/lib/logger'
 
-async function getOrCreateCart(supabase: SupabaseClient, userId: string) {
+async function getOrCreateCart(supabase: any, userId: string) {
   // Try to get existing cart
-  const { data: existing } = await supabase
+  const { data: existing } = await db
     .from('catalog_carts')
     .select('id')
     .eq('user_id', userId)
@@ -14,7 +13,7 @@ async function getOrCreateCart(supabase: SupabaseClient, userId: string) {
   if (existing) return existing.id
 
   // Create new cart
-  const { data: created, error } = await supabase
+  const { data: created, error } = await db
     .from('catalog_carts')
     .insert({ user_id: userId })
     .select('id')
@@ -35,17 +34,17 @@ export async function POST(request: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { user, supabase } = auth
+    const { user, db } = auth
 
     const { product_id, quantity = 1, variant_id = null } = await request.json()
     if (!product_id) {
       return NextResponse.json({ error: 'product_id is required' }, { status: 400 })
     }
 
-    const cartId = await getOrCreateCart(supabase, user.id)
+    const cartId = await getOrCreateCart(db, user.id)
 
     // Upsert: if item exists, increment quantity
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from('catalog_cart_items')
       .select('id, quantity')
       .eq('cart_id', cartId)
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existing) {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('catalog_cart_items')
         .update({ quantity: existing.quantity + quantity })
         .eq('id', existing.id)
@@ -68,7 +67,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, item: data })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('catalog_cart_items')
       .insert({ cart_id: cartId, product_id, quantity, variant_id })
       .select()
@@ -80,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update cart timestamp
-    await supabase
+    await db
       .from('catalog_carts')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', cartId)
@@ -103,7 +102,7 @@ export async function PATCH(request: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { supabase } = auth
+    const { db } = auth
 
     const { item_id, quantity } = await request.json()
     if (!item_id || quantity === undefined) {
@@ -112,7 +111,7 @@ export async function PATCH(request: NextRequest) {
 
     if (quantity <= 0) {
       // Remove item if quantity is 0 or less
-      const { error } = await supabase
+      const { error } = await db
         .from('catalog_cart_items')
         .delete()
         .eq('id', item_id)
@@ -124,7 +123,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ success: true, removed: true })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('catalog_cart_items')
       .update({ quantity })
       .eq('id', item_id)
@@ -154,12 +153,12 @@ export async function DELETE(request: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { user, supabase } = auth
+    const { user, db } = auth
 
     const { item_id, product_id } = await request.json()
 
     if (item_id) {
-      const { error } = await supabase
+      const { error } = await db
         .from('catalog_cart_items')
         .delete()
         .eq('id', item_id)
@@ -170,14 +169,14 @@ export async function DELETE(request: NextRequest) {
       }
     } else if (product_id) {
       // Get user's cart
-      const { data: cart } = await supabase
+      const { data: cart } = await db
         .from('catalog_carts')
         .select('id')
         .eq('user_id', user.id)
         .single()
 
       if (cart) {
-        const { error } = await supabase
+        const { error } = await db
           .from('catalog_cart_items')
           .delete()
           .eq('cart_id', cart.id)

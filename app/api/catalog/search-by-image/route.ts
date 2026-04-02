@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
 
     // BUG-3: Use dynamic import only (removed duplicate top-level import)
-    const { supabase } = await import("@/lib/supabaseClient");
+    const { db } = await import("@/lib/db");
 
     // Ищем товары, которые содержат хотя бы один из поисковых терминов
     if (searchTerms.length === 0) {
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     const safeTerms = searchTerms.filter((t): t is string => typeof t === 'string')
     const orFilter = buildOrFilter(safeTerms);
 
-    let query = supabase
+    let query = db
       .from("catalog_verified_products")
       .select("*")
       .eq("is_active", true);

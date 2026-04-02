@@ -1,10 +1,10 @@
 'use client'
+import { db } from "@/lib/db/client"
 
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { CartItem, CatalogProduct } from '@/lib/catalog/types'
 import { CART_STORAGE_KEY } from '@/lib/catalog/constants'
-import { supabase } from '@/lib/supabaseClient'
 
 interface CatalogCartImportResult {
   cartItems: CartItem[]
@@ -52,7 +52,7 @@ export function useCatalogCartImport(): CatalogCartImportResult {
     async function loadCart() {
       // Try server cart first if authenticated
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await db.auth.getUser()
         if (user) {
           const response = await fetch('/api/catalog/cart')
           if (response.ok) {

@@ -1,7 +1,7 @@
+import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
 import React, { useEffect, useState } from "react";
 import { useAddSupplierContext } from "../context/AddSupplierContext";
-import { supabase } from "@/lib/supabaseClient";
 import { Package, Plus, X, ImageIcon, Upload, Building2, Smartphone, Bitcoin, FileText } from 'lucide-react';
 import { CATEGORY_CERTIFICATIONS } from '@/src/shared/config';
 interface AddSupplierContentOriginalProps {
@@ -99,7 +99,7 @@ export function AddSupplierContentOriginal({
       const fileName = `logo_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
 
       // Попытка загрузки в Supabase Storage
-      const { data, error } = await supabase.storage
+      const { data, error } = await db.storage
         .from('supplier-logos')
         .upload(fileName, file)
 
@@ -110,7 +110,7 @@ export function AddSupplierContentOriginal({
         setSupplierData(prev => ({ ...prev, logo_url: base64 }))
       } else {
         // Получаем публичный URL
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = db.storage
           .from('supplier-logos')
           .getPublicUrl(fileName)
         
@@ -226,7 +226,7 @@ export function AddSupplierContentOriginal({
         : dataToSave;
       
       // Получаем токен авторизации для запроса
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await db.auth.getSession();
       if (!session) {
         logger.error('❌ [DEBUG] Нет активной сессии');
         throw new Error('Нет активной сессии для сохранения поставщика');

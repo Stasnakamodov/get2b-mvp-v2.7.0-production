@@ -1,5 +1,5 @@
+import { db, createAuthenticatedClient } from "@/lib/db"
 import { NextRequest, NextResponse } from 'next/server'
-import { createAuthenticatedClient } from '@/lib/supabaseServerClient'
 import { logger } from '@/src/shared/lib/logger'
 
 /**
@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { user, supabase } = auth
+    const { user, db } = auth
 
-    const { data, error } = await supabase.rpc('get_cart_with_products', {
+    const { data, error } = await db.rpc('get_cart_with_products', {
       p_user_id: user.id,
     })
 
@@ -40,10 +40,10 @@ export async function DELETE(request: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { user, supabase } = auth
+    const { user, db } = auth
 
     // Get cart id
-    const { data: cart } = await supabase
+    const { data: cart } = await db
       .from('catalog_carts')
       .select('id')
       .eq('user_id', user.id)
@@ -51,7 +51,7 @@ export async function DELETE(request: NextRequest) {
 
     if (cart) {
       // Delete all items
-      const { error } = await supabase
+      const { error } = await db
         .from('catalog_cart_items')
         .delete()
         .eq('cart_id', cart.id)

@@ -1,10 +1,10 @@
 'use client'
+import { db } from "@/lib/db/client"
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { CatalogProduct, CartItem, CartState, ProductVariant } from '@/lib/catalog/types'
 import { CART_STORAGE_KEY, MAX_CART_ITEMS } from '@/lib/catalog/constants'
 import { calculateCartTotal, calculateCartItemsCount } from '@/lib/catalog/utils'
-import { supabase } from '@/lib/supabaseClient'
 import { useServerCart } from './useServerCart'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -28,11 +28,11 @@ export function useProductCart() {
 
   // Check auth state
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    db.auth.getUser().then(({ data: { user } }) => {
       setUserId(user?.id ?? null)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = db.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user?.id ?? null)
     })
 

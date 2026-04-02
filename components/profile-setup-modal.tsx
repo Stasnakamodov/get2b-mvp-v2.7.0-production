@@ -1,11 +1,11 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import React, { useState } from "react"
 import { motion } from "framer-motion"
 import { Building, Users, ArrowRight, CheckCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
 import { sendClientProfileNotificationClient, sendSupplierProfileNotificationClient } from "@/lib/telegram-client"
 
@@ -32,7 +32,7 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
 
     try {
       
-      const { data: clientProfile, error } = await supabase
+      const { data: clientProfile, error } = await db
         .from('client_profiles')
         .insert([{
           user_id: userId,
@@ -58,7 +58,7 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
 
 
       // Создаем запись в user_profiles для отслеживания
-      const { error: userProfileError } = await supabase
+      const { error: userProfileError } = await db
         .from('user_profiles')
         .insert([{
           user_id: userId,
@@ -74,7 +74,7 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
 
       // Отправляем уведомление менеджеру о создании профиля клиента
       try {
-        const { data: userData } = await supabase.auth.getUser()
+        const { data: userData } = await db.auth.getUser()
         
         await sendClientProfileNotificationClient({
           userId: userId,
@@ -116,7 +116,7 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
 
     try {
       
-      const { data: supplierProfile, error } = await supabase
+      const { data: supplierProfile, error } = await db
         .from('supplier_profiles')
         .insert([{
           user_id: userId,
@@ -137,7 +137,7 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
 
 
       // Создаем запись в user_profiles для отслеживания
-      const { error: userProfileError } = await supabase
+      const { error: userProfileError } = await db
         .from('user_profiles')
         .insert([{
           user_id: userId,
@@ -153,7 +153,7 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
 
       // Отправляем уведомление менеджеру о создании профиля поставщика
       try {
-        const { data: userData } = await supabase.auth.getUser()
+        const { data: userData } = await db.auth.getUser()
         
         await sendSupplierProfileNotificationClient({
           userId: userId,

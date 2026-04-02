@@ -1,9 +1,9 @@
+import { db } from "@/lib/db/client"
 /**
  * API слой для загрузки файлов и проверки подключения к Supabase
  * Извлечено из монолитного supabaseApi.ts при рефакторинге на FSD архитектуру
  */
 
-import { supabase } from '@/lib/supabaseClient'
 
 // ========================================
 // 🎯 ЗАГРУЗКА ИЗОБРАЖЕНИЙ
@@ -19,7 +19,7 @@ export const uploadImage = async (
   console.log('📤 [API] Загрузка изображения:', file.name)
 
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     if (!session) {
       throw new Error('Нет активной сессии')
     }
@@ -63,7 +63,7 @@ export const uploadImage = async (
  */
 export const checkSupabaseConnection = async (): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.auth.getSession()
+    const { data, error } = await db.auth.getSession()
 
     if (error) {
       console.error('[SUPABASE CONNECTION ERROR]', error)

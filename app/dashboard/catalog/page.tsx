@@ -1,4 +1,5 @@
 'use client'
+import { db } from "@/lib/db/client"
 
 import React, { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
@@ -16,7 +17,6 @@ import type { Supplier, RoomType, CatalogMode } from '@/src/entities/supplier'
 import type { Product } from '@/src/entities/product'
 import { ROOM_TYPES } from '@/src/shared/config'
 import { logger } from '@/src/shared/lib'
-import { supabase } from '@/lib/supabaseClient'
 
 // Catalog components for categories mode
 import { CatalogHeader } from './components/CatalogHeader'
@@ -245,7 +245,7 @@ export default function CatalogPage() {
 
   const handleSupplierInquiry = useCallback(async (query: string): Promise<boolean> => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
     const res = await fetch('/api/catalog/submit-supplier-inquiry', {
       method: 'POST',

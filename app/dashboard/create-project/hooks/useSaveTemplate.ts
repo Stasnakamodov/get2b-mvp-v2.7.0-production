@@ -1,6 +1,6 @@
+import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
 export function useSaveTemplate() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -11,14 +11,14 @@ export function useSaveTemplate() {
     setError(null);
     setSuccess(false);
     // Получаем user_id
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await db.auth.getUser();
     if (userError || !userData?.user?.id) {
       setError("Не удалось получить пользователя");
       setIsSaving(false);
       return false;
     }
     const user_id = userData.user.id;
-    const { error } = await supabase.from("templates").insert([
+    const { error } = await db.from("templates").insert([
       {
         user_id,
         name,
@@ -48,14 +48,14 @@ export function useTemplates() {
     setLoading(true);
     setError(null);
     // Получаем user_id
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await db.auth.getUser();
     if (userError || !userData?.user?.id) {
       setError("Не удалось получить пользователя");
       setLoading(false);
       return;
     }
     const user_id = userData.user.id;
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("templates")
       .select("id, name, description, data, created_at")
       .eq("user_id", user_id)
@@ -85,7 +85,7 @@ export function useProjectTemplates() {
     setError(null);
     
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await db.auth.getUser();
       if (userError || !userData?.user?.id) {
         logger.error('❌ [useProjectTemplates] Ошибка получения пользователя:', userError);
         setError("Не удалось получить пользователя");
@@ -100,7 +100,7 @@ export function useProjectTemplates() {
         setTimeout(() => reject(new Error('Таймаут запроса')), 10000); // 10 секунд
       });
       
-      const fetchPromise = supabase
+      const fetchPromise = db
         .from("project_templates")
         .select("*")
         .eq("user_id", user_id)
@@ -159,7 +159,7 @@ export function useProjectTemplates() {
     setSaving(true);
     setError(null);
     setSuccess(false);
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await db.auth.getUser();
     if (userError || !userData?.user?.id) {
       setError("Не удалось получить пользователя");
       setSaving(false);
@@ -186,7 +186,7 @@ export function useProjectTemplates() {
       specification: specification,
       role,
     };
-    const { error } = await supabase.from("project_templates").insert([insertObj]);
+    const { error } = await db.from("project_templates").insert([insertObj]);
     if (error) {
       setError(error.message);
       setSaving(false);

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db/client";
+
+const POLL_INTERVAL = 5000;
 
 export function useRealtimeProjectData(projectId: string | null) {
   const [project, setProject] = useState<any>(null);
@@ -7,34 +9,30 @@ export function useRealtimeProjectData(projectId: string | null) {
 
   useEffect(() => {
     if (!projectId) return;
-    setLoading(true);
-    // Первичная загрузка
-    supabase
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
-      .single()
-      .then(({ data }) => {
+    let isMounted = true;
+
+    async function fetchProject() {
+      const { data } = await db
+        .from('projects')
+        .select('*')
+        .eq('id', projectId!)
+        .single();
+      if (isMounted) {
         setProject(data || null);
         setLoading(false);
-      });
+      }
+    }
 
-    // Подписка на realtime
-    const channel = supabase
-      .channel('project_data')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${projectId}` },
-        (payload) => {
-          if (payload.new) setProject(payload.new);
-        }
-      )
-      .subscribe();
+    setLoading(true);
+    fetchProject();
+
+    const interval = setInterval(fetchProject, POLL_INTERVAL);
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      clearInterval(interval);
     };
   }, [projectId]);
 
   return { project, loading };
-} 
+}

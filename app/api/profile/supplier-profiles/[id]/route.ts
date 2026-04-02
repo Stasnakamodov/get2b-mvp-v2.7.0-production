@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 
 // PUT: Обновление профиля поставщика
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -23,7 +23,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Проверяем, что профиль принадлежит пользователю
-    const { data: existingProfile, error: checkError } = await supabase
+    const { data: existingProfile, error: checkError } = await db
       .from("supplier_profiles")
       .select("id, user_id")
       .eq("id", supplierId)
@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     delete updateData.created_at;
 
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("supplier_profiles")
       .update(updateData)
       .eq("id", supplierId)
@@ -80,7 +80,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     
 
     // Проверяем, что профиль принадлежит пользователю
-    const { data: existingProfile, error: checkError } = await supabase
+    const { data: existingProfile, error: checkError } = await db
       .from("supplier_profiles")
       .select("id")
       .eq("id", supplierId)
@@ -94,7 +94,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     // Мягкое удаление - помечаем как неактивный
-    const { error } = await supabase
+    const { error } = await db
       .from("supplier_profiles")
       .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq("id", supplierId)

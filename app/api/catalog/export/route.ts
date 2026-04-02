@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 import { logger } from '@/src/shared/lib/logger'
 
 /**
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const includeSuppliers = searchParams.get('suppliers') !== 'false'
 
     // 1. Загружаем категории
-    const { data: categories, error: catError } = await supabase
+    const { data: categories, error: catError } = await db
       .from('catalog_categories')
       .select('*')
       .order('name')
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     if (catError) throw new Error(`Ошибка загрузки категорий: ${catError.message}`)
 
     // 2. Загружаем подкатегории
-    const { data: subcategories, error: subError } = await supabase
+    const { data: subcategories, error: subError } = await db
       .from('catalog_subcategories')
       .select('*')
       .order('name')
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     if (subError) throw new Error(`Ошибка загрузки подкатегорий: ${subError.message}`)
 
     // 3. Загружаем товары
-    let productsQuery = supabase
+    let productsQuery = db
       .from('catalog_verified_products')
       .select('*')
       .order('name')
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     // 4. Загружаем поставщиков (опционально)
     let suppliers: any[] = []
     if (includeSuppliers) {
-      const { data, error: suppError } = await supabase
+      const { data, error: suppError } = await db
         .from('catalog_verified_suppliers')
         .select('*')
         .order('name')

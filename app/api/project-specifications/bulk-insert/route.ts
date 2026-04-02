@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7); // Убираем "Bearer "
 
     // Получаем пользователя через токен
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: userError } = await db.auth.getUser(token);
     if (userError || !user) {
       console.error('[bulk-insert] Ошибка авторизации:', userError);
       return NextResponse.json({ error: 'Ошибка авторизации' }, { status: 401 });
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     
     
     // Вставляем данные в базу
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('project_specifications')
       .insert(itemsToInsert)
       .select();

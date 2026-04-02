@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
 import type { CreateScenarioBranchRequest } from '@/types/scenario-mode.types'
 
 export async function POST(request: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Вызов SQL-функции create_scenario_branch
-    const { data, error } = await supabase.rpc('create_scenario_branch', {
+    const { data, error } = await db.rpc('create_scenario_branch', {
       p_project_id: project_id,
       p_parent_node_id: parent_node_id || null,
       p_name: name,
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Включаем scenario mode для проекта
-    await supabase
+    await db
       .from('projects')
       .update({ scenario_mode_enabled: true, active_scenario_id: data })
       .eq('id', project_id)

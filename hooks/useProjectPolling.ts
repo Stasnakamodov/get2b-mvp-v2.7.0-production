@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db/client';
 import { cleanProjectRequestId } from '@/utils/IdUtils';
 import { POLLING_INTERVALS } from '@/components/project-constructor/config/PollingConstants';
 
@@ -34,7 +34,7 @@ export function useProjectPolling({
       try {
         console.log('🔍 Проверяем чек от менеджера для projectRequestId:', projectRequestId);
 
-        const { data: project, error } = await supabase
+        const { data: project, error } = await db
           .from('projects')
           .select('status, receipts')
           .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
@@ -73,7 +73,7 @@ export function useProjectPolling({
 
           // Автоматически меняем статус если нужно
           if (project.status === 'waiting_manager_receipt') {
-            await supabase
+            await db
               .from('projects')
               .update({
                 status: 'in_work',

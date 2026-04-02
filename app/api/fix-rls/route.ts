@@ -1,18 +1,6 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { createClient } from '@supabase/supabase-js';
-
-// Используем service role key для административных операций
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
+import { db } from '@/lib/db'
 
 export async function POST() {
   try {
@@ -76,7 +64,7 @@ export async function POST() {
     
     for (const sql of steps) {
       try {
-        const { error } = await supabaseAdmin.rpc('exec_sql', { sql });
+        const { error } = await db.rpc('exec_sql', { sql });
         
         if (error) {
           logger.error("Ошибка SQL:", error.message);

@@ -1,5 +1,5 @@
 import { logger } from "@/src/shared/lib/logger"
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 import { NextResponse } from 'next/server'
 
 interface ProductHistoryItem {
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     }
 
     // Анализируем категории из истории товаров пользователя
-    const { data: productHistory, error: historyError } = await supabase
+    const { data: productHistory, error: historyError } = await db
       .from('project_product_history')
       .select('category, product_name, total_value')
       .eq('user_id', userId)

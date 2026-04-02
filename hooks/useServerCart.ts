@@ -1,9 +1,9 @@
 'use client'
+import { db } from "@/lib/db/client"
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { CatalogProduct, CartItem, ProductVariant } from '@/lib/catalog/types'
 import { useCallback } from 'react'
-import { supabase } from '@/lib/supabaseClient'
 
 interface ServerCartResponse {
   cart_id: string | null
@@ -19,7 +19,7 @@ interface ServerCartResponse {
 
 /** Build headers with the current user's access token */
 async function authHeaders(): Promise<HeadersInit> {
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session } } = await db.auth.getSession()
   const headers: HeadersInit = { 'Content-Type': 'application/json' }
   if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`

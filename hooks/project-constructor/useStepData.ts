@@ -61,8 +61,8 @@ export function useStepData(params: StepDataParams) {
     const validation = validateStepData(stepId, data)
 
     if (!validation.success) {
-      console.error(`❌ Ошибка валидации шага ${stepId}:`, validation.errors)
-      alert(`Ошибка валидации: ${validation.errors[0]}`)
+      console.error(`Ошибка валидации шага ${stepId}:`, (validation as any).errors)
+      alert(`Ошибка валидации: ${(validation as any).errors[0]}`)
       return
     }
 

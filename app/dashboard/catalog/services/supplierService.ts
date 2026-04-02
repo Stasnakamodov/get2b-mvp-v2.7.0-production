@@ -1,9 +1,9 @@
+import { db } from "@/lib/db/client"
 /**
  * Service layer для работы с поставщиками
  * Содержит бизнес-логику и комплексные операции
  */
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Supplier } from '../hooks/useSuppliers'
 import { ERROR_MESSAGES, SUCCESS_MESSAGES, VALIDATION_RULES } from '../constants/supplierConfig'
 
@@ -68,7 +68,7 @@ export interface SupplierStatistics {
 }
 
 class SupplierService {
-  private supabase = createClientComponentClient()
+  
 
   /**
    * Validate supplier form data
@@ -139,7 +139,7 @@ class SupplierService {
       }
 
       // Insert into database
-      const { data: newSupplier, error } = await this.supabase
+      const { data: newSupplier, error } = await db
         .from('suppliers')
         .insert(supplierData)
         .select()
@@ -169,7 +169,7 @@ class SupplierService {
    */
   async searchSuppliers(params: SupplierSearchParams): Promise<{ suppliers: Supplier[]; total: number }> {
     try {
-      let query = this.supabase
+      let query = db
         .from('suppliers')
         .select('*', { count: 'exact' })
 
@@ -240,7 +240,7 @@ class SupplierService {
   async getStatistics(): Promise<SupplierStatistics> {
     try {
       // Get all suppliers for statistics
-      const { data: suppliers, error } = await this.supabase
+      const { data: suppliers, error } = await db
         .from('suppliers')
         .select('*')
 
@@ -283,7 +283,7 @@ class SupplierService {
    */
   async bulkUpdateStatus(supplierIds: number[], status: 'active' | 'inactive' | 'pending'): Promise<boolean> {
     try {
-      const { error } = await this.supabase
+      const { error } = await db
         .from('suppliers')
         .update({
           status,
@@ -342,7 +342,7 @@ class SupplierService {
   async getSupplierWithProducts(id: number): Promise<{ supplier: Supplier | null; products: any[] }> {
     try {
       // Get supplier
-      const { data: supplier, error: supplierError } = await this.supabase
+      const { data: supplier, error: supplierError } = await db
         .from('suppliers')
         .select('*')
         .eq('id', id)
@@ -353,7 +353,7 @@ class SupplierService {
       }
 
       // Get supplier's products
-      const { data: products, error: productsError } = await this.supabase
+      const { data: products, error: productsError } = await db
         .from('catalog_verified_products')
         .select('*')
         .eq('supplier_id', id)
@@ -376,7 +376,7 @@ class SupplierService {
    */
   async isEmailTaken(email: string, excludeId?: number): Promise<boolean> {
     try {
-      let query = this.supabase
+      let query = db
         .from('suppliers')
         .select('id', { count: 'exact', head: true })
         .eq('email', email)
@@ -410,7 +410,7 @@ class SupplierService {
 
       const rating = Math.floor(Math.random() * 3) + 3 // 3-5 stars
 
-      const { error } = await this.supabase
+      const { error } = await db
         .from('suppliers')
         .update({
           rating,
@@ -436,7 +436,7 @@ class SupplierService {
       const cutoffDate = new Date()
       cutoffDate.setDate(cutoffDate.getDate() - daysInactive)
 
-      const { data, error } = await this.supabase
+      const { data, error } = await db
         .from('suppliers')
         .update({
           status: 'inactive',

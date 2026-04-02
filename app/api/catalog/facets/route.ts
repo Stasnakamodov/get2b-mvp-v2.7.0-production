@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
 import { logger } from '@/src/shared/lib/logger'
 
 /**
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const supplierCountry = searchParams.get('supplier_country') || null
     const supplierId = searchParams.get('supplier_id') || null
 
-    const { data, error } = await supabase.rpc('get_product_facets', {
+    const { data, error } = await db.rpc('get_product_facets', {
       p_category: category,
       p_subcategory: subcategory,
       p_search: search,

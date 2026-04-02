@@ -1,6 +1,6 @@
+import { db } from "@/lib/db/client"
 import { useState, useEffect } from 'react'
 import type { UseProjectsReturn, Project } from '@/types/landing'
-import { supabase } from '@/lib/supabaseClient'
 
 /**
  * Хук для загрузки проектов пользователя из Supabase
@@ -14,13 +14,13 @@ export function useProjects(): UseProjectsReturn {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await db.auth.getUser()
         if (!user) {
           setLoading(false)
           return
         }
 
-        const { data, error: fetchError } = await supabase
+        const { data, error: fetchError } = await db
           .from("projects")
           .select("*")
           .eq("user_id", user.id)

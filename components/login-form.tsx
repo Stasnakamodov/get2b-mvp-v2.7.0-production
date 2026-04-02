@@ -1,11 +1,11 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, User, Mail, Lock, Eye, EyeOff, Info } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PresentationViewer } from "@/components/presentation-viewer"
-import { supabase } from "@/lib/supabaseClient"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,7 +34,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       setLoading(false)
       return
     }
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await db.auth.signUp({
       email,
       password,
       options: { data: { name } }
@@ -58,7 +58,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     const form = e.target as HTMLFormElement
     const email = (form.elements.namedItem("email") as HTMLInputElement)?.value
     const password = (form.elements.namedItem("password") as HTMLInputElement)?.value
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    const { error: signInError } = await db.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (signInError) {
       setError(signInError.message)

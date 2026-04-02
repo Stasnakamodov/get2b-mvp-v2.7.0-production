@@ -1,10 +1,10 @@
+import { db } from "@/lib/db/client"
 /**
  * Hook для управления категориями и подкатегориями
  * Централизует логику работы с категориями товаров
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { ERROR_MESSAGES } from '../constants/supplierConfig'
 
 export interface Category {
@@ -60,7 +60,7 @@ interface UseCategoriesReturn {
 }
 
 export function useCategories(): UseCategoriesReturn {
-  const supabase = createClientComponentClient()
+  // using db from @/lib/db/client
 
   // State
   const [categories, setCategories] = useState<Category[]>([])
@@ -94,7 +94,7 @@ export function useCategories(): UseCategoriesReturn {
 
     try {
       // First, get categories from catalog_categories table
-      const { data: catalogCategories, error: catalogError } = await supabase
+      const { data: catalogCategories, error: catalogError } = await db
         .from('catalog_categories')
         .select('*')
         .order('name')
@@ -103,7 +103,7 @@ export function useCategories(): UseCategoriesReturn {
       }
 
       // Also get unique categories from products
-      const { data: productCategories, error: productError } = await supabase
+      const { data: productCategories, error: productError } = await db
         .from('catalog_verified_products')
         .select('category')
         .not('category', 'is', null)
@@ -135,7 +135,7 @@ export function useCategories(): UseCategoriesReturn {
 
       // Add unique product categories if not already present
       if (productCategories) {
-        const uniqueCategories = [...new Set(productCategories.map(p => p.category))]
+        const uniqueCategories = [...new Set(productCategories.map((p: any) => p.category))] as string[]
         uniqueCategories.forEach((catName, index) => {
           if (!categoryMap.has(catName)) {
             categoryMap.set(catName, {
@@ -151,7 +151,7 @@ export function useCategories(): UseCategoriesReturn {
 
       // Count products per category
       for (const [catName, category] of categoryMap.entries()) {
-        const { count, error: countError } = await supabase
+        const { count, error: countError } = await db
           .from('catalog_verified_products')
           .select('*', { count: 'exact', head: true })
           .eq('category', catName)
@@ -168,7 +168,7 @@ export function useCategories(): UseCategoriesReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [db])
 
   // Load subcategories for a specific category
   const loadSubcategories = useCallback(async (category: string) => {
@@ -177,7 +177,7 @@ export function useCategories(): UseCategoriesReturn {
 
     try {
       // Get all products in this category
-      const { data: products, error: fetchError } = await supabase
+      const { data: products, error: fetchError } = await db
         .from('catalog_verified_products')
         .select('specifications')
         .eq('category', category)
@@ -225,7 +225,7 @@ export function useCategories(): UseCategoriesReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [db])
 
   // Create a new category
   const createCategory = useCallback(async (data: Partial<Category>): Promise<Category | null> => {
@@ -236,7 +236,7 @@ export function useCategories(): UseCategoriesReturn {
         throw new Error('Category name is required')
       }
 
-      const { data: newCategory, error: createError } = await supabase
+      const { data: newCategory, error: createError } = await db
         .from('catalog_categories')
         .insert({
           name: data.name,
@@ -272,7 +272,7 @@ export function useCategories(): UseCategoriesReturn {
       setError(message)
       return null
     }
-  }, [supabase])
+  }, [db])
 
   // Update an existing category
   const updateCategory = useCallback(async (id: number, data: Partial<Category>): Promise<boolean> => {
@@ -289,7 +289,7 @@ export function useCategories(): UseCategoriesReturn {
       if (data.is_active !== undefined) updateData.is_active = data.is_active
       if (data.specifications !== undefined) updateData.specifications = data.specifications
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from('catalog_categories')
         .update(updateData)
         .eq('id', id)
@@ -309,14 +309,14 @@ export function useCategories(): UseCategoriesReturn {
       setError(message)
       return false
     }
-  }, [supabase])
+  }, [db])
 
   // Delete a category
   const deleteCategory = useCallback(async (id: number): Promise<boolean> => {
     setError(null)
 
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await db
         .from('catalog_categories')
         .delete()
         .eq('id', id)
@@ -334,7 +334,7 @@ export function useCategories(): UseCategoriesReturn {
       setError(message)
       return false
     }
-  }, [supabase])
+  }, [db])
 
   // Helper functions
   const getCategoryByName = useCallback((name: string): Category | undefined => {
@@ -401,7 +401,7 @@ export function useCategories(): UseCategoriesReturn {
 
 // Export helper hooks for specific use cases
 export function useCategoryProducts(category: string | null) {
-  const supabase = createClientComponentClient()
+  // using db from @/lib/db/client
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -416,7 +416,7 @@ export function useCategoryProducts(category: string | null) {
     setError(null)
 
     try {
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await db
         .from('catalog_verified_products')
         .select('*')
         .eq('category', category)
@@ -433,7 +433,7 @@ export function useCategoryProducts(category: string | null) {
     } finally {
       setLoading(false)
     }
-  }, [category, supabase])
+  }, [category, db])
 
   useEffect(() => {
     loadProducts()

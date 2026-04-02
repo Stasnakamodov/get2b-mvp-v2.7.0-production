@@ -1,6 +1,6 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 // POST: Генерировать AI ответ
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
 
     // Получаем контекст комнаты
-    const { data: room, error: roomError } = await supabase
+    const { data: room, error: roomError } = await db
       .from('chat_rooms')
       .select('id, room_type, ai_context, project_id')
       .eq('id', room_id)
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. СНАЧАЛА создаем пользовательское сообщение
-    const { data: userMessage, error: userMessageError } = await supabase
+    const { data: userMessage, error: userMessageError } = await db
       .from('chat_messages')
       .insert({
         room_id,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
 
     // Получаем историю сообщений для контекста (последние 10)
-    const { data: recentMessages } = await supabase
+    const { data: recentMessages } = await db
       .from('chat_messages')
       .select('content, sender_type, created_at')
       .eq('room_id', room_id)
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     );
 
     // 2. ПОТОМ создаем AI ответ
-    const { data: aiMessage, error: messageError } = await supabase
+    const { data: aiMessage, error: messageError } = await db
       .from('chat_messages')
       .insert({
         room_id,
@@ -128,7 +128,7 @@ async function getEnhancedUserContext(userId: string, projectId?: string) {
   try {
     // Получаем информацию о текущем проекте
     if (projectId) {
-      const { data: project } = await supabase
+      const { data: project } = await db
         .from('projects')
         .select(`
           id, name, status, amount, currency, 
@@ -152,7 +152,7 @@ async function getEnhancedUserContext(userId: string, projectId?: string) {
     }
 
     // Получаем последние проекты пользователя
-    const { data: recentProjects } = await supabase
+    const { data: recentProjects } = await db
       .from('projects')
       .select('id, name, status, amount, currency, created_at')
       .eq('user_id', userId)
@@ -164,7 +164,7 @@ async function getEnhancedUserContext(userId: string, projectId?: string) {
     }
 
     // Получаем количество поставщиков пользователя
-    const { count: suppliersCount } = await supabase
+    const { count: suppliersCount } = await db
       .from('catalog_user_suppliers')
       .select('id', { count: 'exact' })
       .eq('user_id', userId)
@@ -173,7 +173,7 @@ async function getEnhancedUserContext(userId: string, projectId?: string) {
     context.suppliers_count = suppliersCount || 0;
 
     // Получаем популярные категории пользователя
-    const { data: categoryData } = await supabase
+    const { data: categoryData } = await db
       .from('catalog_user_suppliers')
       .select('category')
       .eq('user_id', userId)
@@ -193,7 +193,7 @@ async function getEnhancedUserContext(userId: string, projectId?: string) {
     }
 
     // Получаем статистику взаимодействий с каталогом
-    const { count: catalogInteractions } = await supabase
+    const { count: catalogInteractions } = await db
       .from('chat_messages')
       .select('id', { count: 'exact' })
       .eq('sender_user_id', userId)

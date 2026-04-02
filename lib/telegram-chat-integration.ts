@@ -1,7 +1,7 @@
+import { db } from "@/lib/db"
 // ⚠️ ОБНОВЛЕНО: Теперь использует новый ChatBotService
 // Убраны прямые fetch запросы, используется унифицированный сервис
 
-import { supabase } from "@/lib/supabaseClient";
 import { ChatBotService } from "./telegram/ChatBotService";
 
 // Создаем единственный экземпляр сервиса чат-бота
@@ -109,7 +109,7 @@ export async function addManagerMessageToChat({
 }) {
   try {
     // Добавляем сообщение в чат
-    const { data: message, error } = await supabase
+    const { data: message, error } = await db
       .from('chat_messages')
       .insert({
         room_id: roomId,
@@ -140,7 +140,7 @@ export async function addManagerMessageToChat({
  */
 export async function getChatRoomByProjectId(projectId: string) {
   try {
-    const { data: room, error } = await supabase
+    const { data: room, error } = await db
       .from('chat_rooms')
       .select('*')
       .eq('project_id', projectId)
@@ -175,7 +175,7 @@ export async function assignManagerToProject({
 }) {
   try {
     // Проверяем, есть ли уже назначение
-    const { data: existing, error: checkError } = await supabase
+    const { data: existing, error: checkError } = await db
       .from('manager_assignments')
       .select('id')
       .eq('project_id', projectId)
@@ -188,7 +188,7 @@ export async function assignManagerToProject({
     }
 
     // Создаем новое назначение
-    const { data: assignment, error } = await supabase
+    const { data: assignment, error } = await db
       .from('manager_assignments')
       .insert({
         project_id: projectId,
@@ -250,7 +250,7 @@ export async function handleQuickReply({
  */
 export async function getProjectContextForChat(projectId: string) {
   try {
-    const { data: project, error } = await supabase
+    const { data: project, error } = await db
       .from('projects')
       .select(`
         id,
@@ -293,7 +293,7 @@ export async function sendProjectDetailsToTelegram(projectId: string, chatId?: s
 
   try {
     // 🔍 Получаем полную информацию о проекте
-    const { data: project, error } = await supabase
+    const { data: project, error } = await db
       .from('projects')
       .select(`
         id,
@@ -317,13 +317,13 @@ export async function sendProjectDetailsToTelegram(projectId: string, chatId?: s
     }
 
     // 🔍 Получаем спецификацию проекта (проверяем обе таблицы)
-    const { data: projectSpecifications } = await supabase
+    const { data: projectSpecifications } = await db
       .from('project_specifications')
       .select('*')
       .eq('project_id', projectId)
       .order('created_at', { ascending: true });
 
-    const { data: specifications } = await supabase
+    const { data: specifications } = await db
       .from('specifications')
       .select('*')
       .eq('project_id', projectId)
@@ -336,7 +336,7 @@ export async function sendProjectDetailsToTelegram(projectId: string, chatId?: s
     ];
 
     // 🔍 Получаем реквизиты проекта
-    const { data: requisites } = await supabase
+    const { data: requisites } = await db
       .from('project_requisites')
       .select('*')
       .eq('project_id', projectId)
@@ -344,7 +344,7 @@ export async function sendProjectDetailsToTelegram(projectId: string, chatId?: s
       .limit(1);
 
     // 🔍 Получаем email пользователя
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await db.auth.getUser();
     const userEmail = userData?.user?.email || 'Не указан';
 
     const service = getChatBotService();
@@ -489,7 +489,7 @@ export async function sendSystemMessageToChat({
   messageType?: 'system' | 'manager_joined' | 'status_change';
 }) {
   try {
-    const { data: systemMessage, error } = await supabase
+    const { data: systemMessage, error } = await db
       .from('chat_messages')
       .insert({
         room_id: roomId,

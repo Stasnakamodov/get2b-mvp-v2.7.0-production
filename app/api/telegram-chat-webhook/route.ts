@@ -2,7 +2,7 @@
 import { logger } from "@/src/shared/lib/logger";
 
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 import { supabaseService } from "@/lib/supabaseServiceClient";
 import { ChatBotService } from "@/lib/telegram/ChatBotService";
 
@@ -252,17 +252,17 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
 async function getChatHubStatus(): Promise<string> {
   try {
     // Получаем статистику из базы данных
-    const { data: roomsData, error: roomsError } = await supabase
+    const { data: roomsData, error: roomsError } = await db
       .from('chat_rooms')
       .select('room_type, is_active')
       .eq('is_active', true);
 
-    const { data: messagesData, error: messagesError } = await supabase
+    const { data: messagesData, error: messagesError } = await db
       .from('chat_messages')
       .select('id')
       .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
-    const { data: participantsData, error: participantsError } = await supabase
+    const { data: participantsData, error: participantsError } = await db
       .from('chat_participants')
       .select('id')
       .eq('is_active', true);
@@ -288,7 +288,7 @@ async function getChatHubStatus(): Promise<string> {
 // Получение списка активных проектных чатов
 async function getActiveProjectChats(): Promise<string> {
   try {
-    const { data: projectChats, error } = await supabase
+    const { data: projectChats, error } = await db
       .from('chat_rooms')
       .select(`
         id,

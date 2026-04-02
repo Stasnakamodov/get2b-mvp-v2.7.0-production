@@ -7,7 +7,7 @@ import { useCreateProjectContext } from "../context/CreateProjectContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { sendPaymentMethodToTelegram } from "../utils/telegram";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db/client";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 const paymentMethods = [
   {
@@ -64,7 +64,7 @@ export default function Step4PaymentMethodForm() {
       
       try {
         // 1. Получаем всех уникальных поставщиков из спецификаций проекта
-        const { data: specifications, error: specsError } = await supabase
+        const { data: specifications, error: specsError } = await db
           .from("project_specifications")
           .select("supplier_name")
           .eq("project_id", projectId)
@@ -89,7 +89,7 @@ export default function Step4PaymentMethodForm() {
           logger.info(`[Step4] 🔍 Поиск эхо данных для поставщика: "${supplierName}"`);
           
           // Находим проекты с этим поставщиком где есть payment_method (завершенные проекты)
-          const { data: echoProjects, error: echoError } = await supabase
+          const { data: echoProjects, error: echoError } = await db
             .from("project_specifications")
             .select(`
               project_id,
@@ -105,7 +105,7 @@ export default function Step4PaymentMethodForm() {
 
           // Ищем поставщика в каталоге независимо от эхо проектов
           logger.info(`[Step4] 🔍 Поиск реального поставщика ${supplierName} в каталоге...`);
-          const { data: catalogSupplier, error: catalogError } = await supabase
+          const { data: catalogSupplier, error: catalogError } = await db
             .from('catalog_verified_suppliers')
             .select('id, name, company_name, payment_methods, bank_accounts, crypto_wallets, p2p_cards')
             .ilike('name', `%${supplierName}%`)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function DELETE(request: NextRequest) {
 
 
     // Удаляем запись по ID
-    const { data: deletedData, error: deleteError } = await supabase
+    const { data: deletedData, error: deleteError } = await db
       .from('project_requisites')
       .delete()
       .eq('id', requisiteId)

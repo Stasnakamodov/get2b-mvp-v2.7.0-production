@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
-import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'
+import { supabaseAdmin as db } from '@/lib/supabaseAdmin'
 
 export async function GET() {
   try {
     
     // Проверяем существование таблицы через pg_catalog.pg_tables
-    const { data: tableExists, error: tableError } = await supabase
+    const { data: tableExists, error: tableError } = await db
       .from('pg_catalog.pg_tables')
       .select('tablename')
       .eq('tablename', 'project_templates')
@@ -31,7 +31,7 @@ export async function GET() {
     }
 
     // Проверяем количество записей
-    const { count, error: countError } = await supabase
+    const { count, error: countError } = await db
       .from('project_templates')
       .select('*', { count: 'exact', head: true })
 

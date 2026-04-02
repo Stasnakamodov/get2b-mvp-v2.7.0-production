@@ -1,5 +1,5 @@
+import { db } from "@/lib/db/client"
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabaseClient'
 
 interface UserProfile {
   id: string
@@ -67,14 +67,14 @@ export function useUserProfile() {
       setLoading(true)
       setError(null)
 
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user } } = await db.auth.getUser()
       if (!user) {
         setLoading(false)
         return
       }
 
       // Загружаем записи user_profiles
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profiles, error: profilesError } = await db
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
@@ -90,7 +90,7 @@ export function useUserProfile() {
         const supplierProfileData = profiles.find(p => p.profile_type === 'supplier')
 
         if (clientProfileData) {
-          const { data: clientData, error: clientError } = await supabase
+          const { data: clientData, error: clientError } = await db
             .from('client_profiles')
             .select('*')
             .eq('id', clientProfileData.profile_id)
@@ -101,7 +101,7 @@ export function useUserProfile() {
         }
 
         if (supplierProfileData) {
-          const { data: supplierData, error: supplierError } = await supabase
+          const { data: supplierData, error: supplierError } = await db
             .from('supplier_profiles')
             .select('*')
             .eq('id', supplierProfileData.profile_id)
@@ -139,11 +139,11 @@ export function useUserProfile() {
       setLoading(true)
       setError(null)
 
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user } } = await db.auth.getUser()
       if (!user) throw new Error('Пользователь не найден')
 
       // Создаем профиль клиента
-      const { data: clientData, error: clientError } = await supabase
+      const { data: clientData, error: clientError } = await db
         .from('client_profiles')
         .insert([{
           user_id: user.id,
@@ -167,7 +167,7 @@ export function useUserProfile() {
       if (clientError) throw clientError
 
       // Создаем запись в user_profiles
-      const { error: userProfileError } = await supabase
+      const { error: userProfileError } = await db
         .from('user_profiles')
         .insert([{
           user_id: user.id,
@@ -197,11 +197,11 @@ export function useUserProfile() {
       setLoading(true)
       setError(null)
 
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user } } = await db.auth.getUser()
       if (!user) throw new Error('Пользователь не найден')
 
       // Создаем профиль поставщика
-      const { data: supplierData, error: supplierError } = await supabase
+      const { data: supplierData, error: supplierError } = await db
         .from('supplier_profiles')
         .insert([{
           ...profileData,
@@ -214,7 +214,7 @@ export function useUserProfile() {
       if (supplierError) throw supplierError
 
       // Создаем запись в user_profiles
-      const { error: userProfileError } = await supabase
+      const { error: userProfileError } = await db
         .from('user_profiles')
         .insert([{
           user_id: user.id,

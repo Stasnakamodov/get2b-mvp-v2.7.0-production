@@ -1,4 +1,5 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
@@ -7,7 +8,7 @@ import { Upload } from "lucide-react"
 import { PaymentDetailsCard } from '@/components/project-constructor/PaymentDetailsCard'
 import { sendTelegramMessage } from '@/utils/ApiUtils'
 import { cleanProjectRequestId } from "@/utils/IdUtils"
-import type { SupabaseClient } from '@supabase/supabase-js'
+// SupabaseClient type removed - use typeof db
 
 interface PaymentFormProps {
   receiptApprovalStatus: string | null
@@ -16,7 +17,7 @@ interface PaymentFormProps {
   manualData: Record<number, any>
   setCurrentStage: (stage: number) => void
   uploadSupplierReceipt: (file: File) => Promise<string | null>
-  supabase: SupabaseClient
+  db: any
   POLLING_INTERVALS: { PROJECT_STATUS_CHECK: number }
 }
 
@@ -27,7 +28,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   manualData,
   setCurrentStage,
   uploadSupplierReceipt,
-  supabase,
+  db,
   POLLING_INTERVALS
 }) => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
@@ -54,7 +55,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
     const checkStatus = async () => {
       try {
         // Ищем проект по atomic_request_id
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from('projects')
           .select('status, atomic_moderation_status')
           .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
@@ -90,7 +91,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
     }
-  }, [receiptApprovalStatus, projectRequestId, setCurrentStage, setReceiptApprovalStatus, supabase, POLLING_INTERVALS])
+  }, [receiptApprovalStatus, projectRequestId, setCurrentStage, setReceiptApprovalStatus, db, POLLING_INTERVALS])
 
   // Загрузка чека (использует ту же логику, что и обычный стартап проектов)
   const handleReceiptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

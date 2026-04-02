@@ -1,9 +1,9 @@
+import { db } from "@/lib/db/client"
 /**
  * API слой для работы с поставщиками через Supabase и REST API
  * Извлечено из монолитного supabaseApi.ts при рефакторинге на FSD архитектуру
  */
 
-import { supabase } from '@/lib/supabaseClient'
 import { logger } from '@/src/shared/lib'
 import type { Supplier } from '../model/types'
 
@@ -18,7 +18,7 @@ export const fetchUserSuppliers = async (): Promise<Supplier[]> => {
   
   try {
     // Получаем токен авторизации
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     if (!session) {
       return []
     }
@@ -82,7 +82,7 @@ export const fetchVerifiedSuppliers = async (): Promise<Supplier[]> => {
 export const createSupplier = async (supplierData: Partial<Supplier>): Promise<Supplier | null> => {
 
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     if (!session) {
       throw new Error('Нет активной сессии')
     }
@@ -121,7 +121,7 @@ export const updateSupplier = async (
 ): Promise<Supplier | null> => {
 
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     if (!session) {
       throw new Error('Нет активной сессии')
     }
@@ -157,7 +157,7 @@ export const updateSupplier = async (
 export const deleteSupplier = async (supplierId: string): Promise<boolean> => {
 
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     if (!session) {
       throw new Error('Нет активной сессии')
     }

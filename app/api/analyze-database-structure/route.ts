@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
-import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'
+import { supabaseAdmin as db } from '@/lib/supabaseAdmin'
 
 export async function GET() {
   try {
@@ -16,7 +16,7 @@ export async function GET() {
     const results: DatabaseStructureResults = {}
     
     // 1. Все таблицы в схеме public
-    const { data: allTables, error: tablesError } = await supabase
+    const { data: allTables, error: tablesError } = await db
       .from('information_schema.tables')
       .select('table_name, table_type')
       .eq('table_schema', 'public')
@@ -67,7 +67,7 @@ export async function GET() {
     
     for (const tableName of mainTables) {
       try {
-        const { data: columns, error: columnsError } = await supabase
+        const { data: columns, error: columnsError } = await db
           .from('information_schema.columns')
           .select('column_name, data_type, is_nullable, column_default, ordinal_position')
           .eq('table_schema', 'public')
@@ -78,7 +78,7 @@ export async function GET() {
           results[`${tableName}Structure`] = columns
           
           // Также получаем количество записей
-          const { count, error: countError } = await supabase
+          const { count, error: countError } = await db
             .from(tableName)
             .select('*', { count: 'exact', head: true })
           
@@ -91,7 +91,7 @@ export async function GET() {
     }
     
     // 8. Внешние ключи
-    const { data: foreignKeys, error: fkError } = await supabase
+    const { data: foreignKeys, error: fkError } = await db
       .from('information_schema.table_constraints')
       .select(`
         table_name,

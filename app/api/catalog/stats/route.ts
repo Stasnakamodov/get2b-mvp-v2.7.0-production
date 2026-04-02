@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 
 /**
  * GET /api/catalog/stats
@@ -14,24 +14,24 @@ export async function GET() {
       categoriesResult,
       activeProductsResult,
     ] = await Promise.all([
-      supabase
+      db
         .from('catalog_verified_products')
         .select('*', { count: 'exact', head: true }),
-      supabase
+      db
         .from('catalog_verified_suppliers')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true),
-      supabase
+      db
         .from('catalog_categories')
         .select('*', { count: 'exact', head: true }),
-      supabase
+      db
         .from('catalog_verified_products')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true),
     ])
 
     // Top suppliers by product count
-    const { data: topSuppliers } = await supabase
+    const { data: topSuppliers } = await db
       .from('catalog_verified_suppliers')
       .select('id, name, company_name, category, country, projects_count, public_rating')
       .eq('is_active', true)

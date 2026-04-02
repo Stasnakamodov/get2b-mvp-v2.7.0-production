@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { db } from "@/lib/db"
 
 export async function GET() {
   try {
     // Проверяем существование полей supplier_receipt_url и supplier_receipt_uploaded_at
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("projects")
       .select("id, supplier_receipt_url, supplier_receipt_uploaded_at")
       .limit(1)

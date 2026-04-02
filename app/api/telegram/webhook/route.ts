@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { db } from '@/lib/db'
 import { ManagerBotService } from '@/lib/telegram/ManagerBotService';
 import { changeProjectStatus } from '@/lib/supabaseProjectStatus';
 import { ProjectStatus } from '@/lib/types/project-status';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,7 +51,7 @@ export async function POST(request: NextRequest) {
               const supabaseFileName = `manager-receipt-${projectId}-${Date.now()}.${fileExtension}`;
               
               
-              const { data: uploadData, error: uploadError } = await supabase.storage
+              const { data: uploadData, error: uploadError } = await db.storage
                 .from("step6-client-receipts")
                 .upload(supabaseFileName, fileBuffer, {
                   contentType: message.document?.mime_type || 'image/jpeg',
@@ -68,14 +63,14 @@ export async function POST(request: NextRequest) {
               }
               
               // Получаем публичный URL
-              const { data: urlData } = supabase.storage
+              const { data: urlData } = db.storage
                 .from("step6-client-receipts")
                 .getPublicUrl(supabaseFileName);
                 
               const supabaseFileUrl = urlData.publicUrl;
               
               // Получаем текущие данные проекта и обновляем
-              const { data: currentProject, error: fetchError } = await supabase
+              const { data: currentProject, error: fetchError } = await db
                 .from("projects")
                 .select("receipts, status")
                 .eq("id", projectId)

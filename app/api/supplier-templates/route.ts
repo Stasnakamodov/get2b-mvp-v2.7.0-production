@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { createClient } from '@supabase/supabase-js';
+import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,14 +16,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
     // Получаем шаблоны из базы данных с правилами заполнения
-    const { data: templates, error } = await supabase
+    const { data: templates, error } = await db
       .from('supplier_proforma_templates')
       .select(`
         id,

@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
 import { CATEGORY_CERTIFICATIONS } from "@/src/shared/config";
 
 const BASE_CATEGORIES = [
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     // ?stats=true — return product counts per category (replaces category-stats)
     if (statsMode) {
       const countPromises = BASE_CATEGORIES.map(async (category) => {
-        const { count, error } = await supabase
+        const { count, error } = await db
           .from('catalog_verified_products')
           .select('*', { count: 'exact', head: true })
           .eq('is_active', true)
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     // ?tree=true — return full category tree via RPC (replaces category-tree)
     if (treeMode) {
-      const { data, error } = await supabase.rpc('get_category_tree')
+      const { data, error } = await db.rpc('get_category_tree')
       if (error) {
         console.error("[API] Category tree error:", error)
         return NextResponse.json({ success: false, error: error.message }, { status: 500 })
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     // ?simple=true — return just category names
     if (simpleList) {
-      const { data: categories, error } = await supabase
+      const { data: categories, error } = await db
         .from("catalog_categories")
         .select("name")
         .order("name");
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     // catalog_subcategories - подкатегории (33 штуки)
 
     // Загружаем корневые категории
-    const { data: rootCategories, error: categoriesError } = await supabase
+    const { data: rootCategories, error: categoriesError } = await db
       .from("catalog_categories")
       .select("*")
       .order("name");
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
     // ОПТИМИЗАЦИЯ: Загружаем подкатегории ТОЛЬКО если нужно
     let subcategories = null;
     if (includeSubcategories) {
-      const { data, error: subcategoriesError } = await supabase
+      const { data, error: subcategoriesError } = await db
         .from("catalog_subcategories")
         .select("*")
         .order("name");
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
       const countsBySubcategory: Record<string, number> = {};
 
       if (subcategoryIds.length > 0) {
-        const { data: countData, error: rpcError } = await supabase.rpc(
+        const { data: countData, error: rpcError } = await db.rpc(
           'count_products_by_subcategory',
           { subcategory_ids: subcategoryIds }
         );
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
           console.warn("[API] RPC fallback: count_products_by_subcategory failed:", rpcError.message);
           // Fallback: parallel HEAD count queries
           const countPromises = subcategoryIds.map(async (id) => {
-            const { count } = await supabase
+            const { count } = await db
               .from("catalog_verified_products")
               .select("*", { count: 'exact', head: true })
               .eq('subcategory_id', id)
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
       const countsByCategory: Record<string, number> = {};
       if (rootCategories && rootCategories.length > 0) {
         const categoryNames = rootCategories.map(cat => cat.name);
-        const { data: catCountData, error: catRpcError } = await supabase.rpc(
+        const { data: catCountData, error: catRpcError } = await db.rpc(
           'count_products_by_category_name',
           { category_names: categoryNames }
         );
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
           console.warn("[API] RPC fallback: count_products_by_category_name failed:", catRpcError.message);
           // Fallback: parallel HEAD count queries (N+1, only if RPC unavailable)
           const countPromises = rootCategories.map(async (cat) => {
-            const { count } = await supabase
+            const { count } = await db
               .from("catalog_verified_products")
               .select("*", { count: 'exact', head: true })
               .eq('category', cat.name)
@@ -232,7 +232,7 @@ export async function POST() {
   try {
 
     // Получаем существующие категории
-    const { data: existingCategories, error: selectError } = await supabase
+    const { data: existingCategories, error: selectError } = await db
       .from("catalog_categories")
       .select("key, name, id");
 
@@ -263,7 +263,7 @@ export async function POST() {
     }
 
     // Вставляем новые категории
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("catalog_categories")
       .insert(categoriesToInsert)
       .select();
@@ -310,7 +310,7 @@ export async function PATCH(request: NextRequest) {
   if (!id) {
     return NextResponse.json({ error: "Поле id обязательно для обновления" }, { status: 400 });
   }
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("catalog_categories")
     .update(updateData)
     .eq("id", id)
@@ -326,7 +326,7 @@ export async function DELETE(request: NextRequest) {
   if (!id) {
     return NextResponse.json({ error: "Поле id обязательно для удаления" }, { status: 400 });
   }
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("catalog_categories")
     .delete()
     .eq("id", id)

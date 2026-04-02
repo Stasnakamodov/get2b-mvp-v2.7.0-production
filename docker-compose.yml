@@ -1,8 +1,43 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: get2b-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: get2b
+      POSTGRES_USER: get2b
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
+    ports:
+      - "127.0.0.1:5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+    command: >
+      postgres
+        -c shared_buffers=64MB
+        -c effective_cache_size=128MB
+        -c work_mem=4MB
+        -c maintenance_work_mem=32MB
+        -c max_connections=30
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U get2b"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     image: ghcr.io/stasnakamodov/get2b-mvp-v2.7.0-production:latest
     container_name: get2b-app
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "127.0.0.1:3000:3000"
     env_file:
@@ -10,10 +45,13 @@ services:
     environment:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
+      - DATABASE_URL=postgresql://get2b:${DB_PASSWORD}@postgres:5432/get2b
+    volumes:
+      - uploads:/data/uploads
     deploy:
       resources:
         limits:
-          memory: 1400M
+          memory: 1000M
           cpus: '0.9'
         reservations:
           memory: 256M
@@ -28,3 +66,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
+volumes:
+  pgdata:
+  uploads:

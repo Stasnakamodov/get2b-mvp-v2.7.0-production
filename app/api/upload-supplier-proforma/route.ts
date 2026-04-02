@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { createClient } from '@supabase/supabase-js';
+import { db } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,14 +18,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
     // Получаем поставщиков соответствующей категории
-    const { data: suppliers, error: suppliersError } = await supabase
+    const { data: suppliers, error: suppliersError } = await db
       .from('catalog_verified_suppliers')
       .select('id, name, category')
       .ilike('category', `%${supplierType === 'construction' ? 'строител' : 'электрон'}%`)
@@ -42,7 +36,7 @@ export async function POST(request: NextRequest) {
       logger.info(`✅ Найден существующий поставщик: ${suppliers[0].name} (${suppliers[0].category})`);
     } else {
       // Создаем нового поставщика
-      const { data: newSupplier, error: createError } = await supabase
+      const { data: newSupplier, error: createError } = await db
         .from('catalog_user_suppliers')
         .insert({
           name: supplierName,
@@ -72,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     // Загружаем файл в storage
     const fileBuffer = await file.arrayBuffer();
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await db.storage
       .from('supplier-proformas')
       .upload(storagePath, fileBuffer, {
         contentType: file.type,

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient'
+import { db } from "@/lib/db"
 
 /**
  * Роли пользователей в системе
@@ -33,7 +33,7 @@ export interface RoleCheckResult {
 export async function checkUserRole(allowedRoles: UserRole[]): Promise<RoleCheckResult> {
   try {
     // Получаем текущего пользователя
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await db.auth.getUser()
 
     if (authError || !user) {
       return {
@@ -44,7 +44,7 @@ export async function checkUserRole(allowedRoles: UserRole[]): Promise<RoleCheck
     }
 
     // Получаем роль пользователя из профиля
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await db
       .from('profiles')
       .select('role')
       .eq('id', user.id)

@@ -1,4 +1,5 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import React from "react"
 import dynamic from "next/dynamic"
@@ -28,7 +29,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
-import { supabase } from "@/lib/supabaseClient"
 import ProjectTimeline from "@/components/ui/ProjectTimeline"
 import { useDeleteTemplate } from "./create-project/hooks/useDeleteTemplate"
 import { useRouter } from "next/navigation"
@@ -265,7 +265,7 @@ function DashboardPageContent() {
     // Загружаем проекты из Supabase
     const fetchProjects = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await db.auth.getUser();
         setDebugInfo(prev => ({ ...prev, userLoaded: true, user }));
         
         if (userError) {
@@ -279,7 +279,7 @@ function DashboardPageContent() {
           return;
         }
         
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from("projects")
           .select("*")
           .eq("user_id", user.id)
@@ -336,14 +336,14 @@ function DashboardPageContent() {
   // Функция для удаления проекта
   const deleteProject = async (id: string) => {
     // Удаляем из Supabase
-    await supabase.from("projects").delete().eq("id", id);
+    await db.from("projects").delete().eq("id", id);
     // Обновляем локальное состояние
     setProjects((prev) => prev.filter((project) => project.id !== id));
   };
 
   // Функция для удаления шаблона из project_templates
   const handleDeleteProjectTemplate = async (id: string) => {
-    await supabase.from("project_templates").delete().eq("id", id);
+    await db.from("project_templates").delete().eq("id", id);
     await fetchTemplates();
   };
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 import { logger } from '@/src/shared/lib/logger'
 
 /**
@@ -8,7 +8,7 @@ import { logger } from '@/src/shared/lib/logger'
  */
 export async function GET(request: NextRequest) {
   try {
-    const { data: collections, error } = await supabase
+    const { data: collections, error } = await db
       .from('catalog_collections')
       .select('*')
       .eq('is_active', true)
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
           return { ...collection, preview_products: [] }
         }
 
-        let query = supabase
+        let query = db
           .from('catalog_verified_products')
           .select('id, name, price, currency, images, category')
           .eq('is_active', true)

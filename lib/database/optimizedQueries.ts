@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db';
 import { ApiError } from '@/lib/errors/ApiError';
 
 // Типы данных
@@ -120,7 +120,7 @@ export async function getUserSuppliersOptimized(
     const sortColumn = getSortColumn(sort);
 
     // Count query
-    let countQuery = supabase
+    let countQuery = db
       .from('user_suppliers')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
@@ -146,7 +146,7 @@ export async function getUserSuppliersOptimized(
     }
 
     // Data query
-    let dataQuery = supabase
+    let dataQuery = db
       .from('user_suppliers')
       .select('*')
       .eq('user_id', userId)
@@ -216,7 +216,7 @@ export async function getVerifiedSuppliersOptimized(
     const sortColumn = sort === 'rating' ? 'public_rating' : getSortColumn(sort);
 
     // Count query
-    let countQuery = supabase
+    let countQuery = db
       .from('catalog_verified_suppliers')
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true);
@@ -242,7 +242,7 @@ export async function getVerifiedSuppliersOptimized(
     }
 
     // Data query
-    let dataQuery = supabase
+    let dataQuery = db
       .from('catalog_verified_suppliers')
       .select('*')
       .eq('is_active', true)
@@ -307,13 +307,13 @@ export async function searchSuppliersAutocomplete(
 
     // Query both tables via Supabase Query Builder
     const [userResult, verifiedResult] = await Promise.all([
-      supabase
+      db
         .from('user_suppliers')
         .select('id, company_name, category')
         .ilike('company_name', searchPattern)
         .eq('is_active', true)
         .limit(limit),
-      supabase
+      db
         .from('catalog_verified_suppliers')
         .select('id, company_name, category')
         .ilike('company_name', searchPattern)
@@ -359,7 +359,7 @@ export async function getSuppliersStats(userId?: string): Promise<{
   countries: Array<{country: string, count: number}>;
 }> {
   try {
-    let query = supabase
+    let query = db
       .from('user_suppliers')
       .select('category, country, is_verified', { count: 'exact' })
       .eq('is_active', true);

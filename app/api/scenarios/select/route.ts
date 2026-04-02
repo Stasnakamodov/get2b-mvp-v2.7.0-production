@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
 import type { SelectScenarioRequest } from '@/types/scenario-mode.types'
 
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Вызов SQL-функции freeze_other_scenarios
-    const { error } = await supabase.rpc('freeze_other_scenarios', {
+    const { error } = await db.rpc('freeze_other_scenarios', {
       p_project_id: project_id,
       p_selected_node_id: scenario_id,
     })
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Обновляем active_scenario_id в проекте
-    await supabase
+    await db
       .from('projects')
       .update({ active_scenario_id: scenario_id })
       .eq('id', project_id)

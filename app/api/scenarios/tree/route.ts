@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 import type { ScenarioNode, ScenarioDelta, ScenarioTreeNode } from '@/types/scenario-mode.types'
 import type { StepNumber } from '@/types/project-constructor.types'
 
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Загружаем ноды
-    const { data: nodes, error: nodesError } = await supabase
+    const { data: nodes, error: nodesError } = await db
       .from('project_scenario_nodes')
       .select('*')
       .eq('project_id', projectId)
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
     // Загружаем все дельты для этих нод
     const nodeIds = nodes.map(n => n.id)
-    const { data: deltas, error: deltasError } = await supabase
+    const { data: deltas, error: deltasError } = await db
       .from('project_scenario_deltas')
       .select('*')
       .in('scenario_node_id', nodeIds)
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Получаем active_scenario_id из проекта
-    const { data: project } = await supabase
+    const { data: project } = await db
       .from('projects')
       .select('active_scenario_id')
       .eq('id', projectId)

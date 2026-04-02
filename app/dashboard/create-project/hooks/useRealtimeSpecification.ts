@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db/client";
+
+const POLL_INTERVAL = 5000;
 
 export function useRealtimeSpecification(projectId: string | null, role: 'client' | 'supplier') {
   const [items, setItems] = useState<any[]>([]);
@@ -8,49 +10,30 @@ export function useRealtimeSpecification(projectId: string | null, role: 'client
   useEffect(() => {
     if (!projectId) return;
     let isMounted = true;
-    setLoading(true);
-    // Первичная загрузка
-    (async () => {
-      const { data } = await supabase
+
+    async function fetchItems() {
+      const { data } = await db
         .from('project_specifications')
         .select('*')
-        .eq('project_id', projectId)
+        .eq('project_id', projectId!)
         .eq('role', role)
         .order('created_at', { ascending: true });
       if (isMounted) {
         setItems(data || []);
         setLoading(false);
       }
-    })();
+    }
 
-    // Подписка на realtime (фильтрация по project_id и role)
-    const channel = supabase
-      .channel('specifications')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'project_specifications', filter: `project_id=eq.${projectId},role=eq.${role}` },
-        (payload) => {
-          // Только если событие по нужной роли
-          const newRow = payload.new as any;
-          const oldRow = payload.old as any;
-          if ((newRow && newRow.role === role) || (oldRow && oldRow.role === role)) {
-            supabase
-              .from('project_specifications')
-              .select('*')
-              .eq('project_id', projectId)
-              .eq('role', role)
-              .order('created_at', { ascending: true })
-              .then(({ data }) => setItems(data || []));
-          }
-        }
-      )
-      .subscribe();
+    setLoading(true);
+    fetchItems();
+
+    const interval = setInterval(fetchItems, POLL_INTERVAL);
 
     return () => {
       isMounted = false;
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [projectId, role]);
 
   return { items, loading };
-} 
+}

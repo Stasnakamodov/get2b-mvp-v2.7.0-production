@@ -88,12 +88,7 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/**',
-      },
+      // Supabase storage removed — using local storage now
       {
         protocol: 'https',
         hostname: 'picsum.photos',

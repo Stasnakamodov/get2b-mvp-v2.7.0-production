@@ -1,8 +1,8 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +25,7 @@ export function LoginFormSimple({ className, ...props }: React.ComponentPropsWit
     const email = (form.elements.namedItem("email") as HTMLInputElement)?.value
     const password = (form.elements.namedItem("password") as HTMLInputElement)?.value
     
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error: signInError } = await db.auth.signInWithPassword({ email, password })
     
     setLoading(false)
     if (signInError) {
@@ -37,7 +37,7 @@ export function LoginFormSimple({ className, ...props }: React.ComponentPropsWit
       if (data.user) {
         setCurrentUserId(data.user.id)
         
-        const { data: userProfiles, error: profileError } = await supabase
+        const { data: userProfiles, error: profileError } = await db
           .from('user_profiles')
           .select('*')
           .eq('user_id', data.user.id)

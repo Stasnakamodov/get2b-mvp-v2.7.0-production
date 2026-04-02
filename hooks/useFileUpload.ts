@@ -1,5 +1,5 @@
+import { db } from "@/lib/db/client"
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
 import { cleanProjectRequestId } from '@/utils/IdUtils';
 import { generateFileDate } from '@/utils/DateUtils';
 import { cleanFileName } from '@/utils/FileUtils';
@@ -30,7 +30,7 @@ export function useFileUpload({ projectRequestId, onSuccess, onError }: UseFileU
 
     try {
       // Получаем ID пользователя для организации файлов
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       const userId = userData?.user?.id || 'unknown';
 
       // Генерируем уникальное имя файла
@@ -46,7 +46,7 @@ export function useFileUpload({ projectRequestId, onSuccess, onError }: UseFileU
       });
 
       // Загружаем файл в Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await db.storage
         .from("step7-client-confirmations")
         .upload(filePath, file, {
           contentType: file.type,
@@ -59,7 +59,7 @@ export function useFileUpload({ projectRequestId, onSuccess, onError }: UseFileU
       }
 
       // Получаем публичный URL файла
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = db.storage
         .from("step7-client-confirmations")
         .getPublicUrl(filePath);
 
@@ -67,7 +67,7 @@ export function useFileUpload({ projectRequestId, onSuccess, onError }: UseFileU
       console.log("✅ Файл загружен:", fileUrl);
 
       // Сохраняем URL в проект
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from("projects")
         .update({
           client_confirmation_url: fileUrl,
@@ -107,7 +107,7 @@ export function useFileUpload({ projectRequestId, onSuccess, onError }: UseFileU
       const cleanName = cleanFileName(file.name);
       const filePath = `step3-supplier-receipts/${projectRequestId}/${date}_${cleanName}`;
 
-      const { data, error } = await supabase.storage
+      const { data, error } = await db.storage
         .from("step3-supplier-receipts")
         .upload(filePath, file);
 
@@ -115,7 +115,7 @@ export function useFileUpload({ projectRequestId, onSuccess, onError }: UseFileU
         throw new Error(error.message);
       }
 
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = db.storage
         .from("step3-supplier-receipts")
         .getPublicUrl(filePath);
 
@@ -124,7 +124,7 @@ export function useFileUpload({ projectRequestId, onSuccess, onError }: UseFileU
       // Обновляем статус проекта на waiting_receipt
       if (projectRequestId) {
         try {
-          const { error: updateError } = await supabase
+          const { error: updateError } = await db
             .from('projects')
             .update({
               status: 'waiting_receipt',

@@ -1,13 +1,13 @@
+import { db } from "@/lib/db"
 import { NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from '@/lib/supabaseClient'
 
 export async function GET() {
   try {
     const startTime = Date.now()
 
     // Проверяем подключение к Supabase
-    const { data, error } = await supabase.from('projects').select('count').limit(1)
+    const { data, error } = await db.from('projects').select('count').limit(1)
 
     if (error) {
       logger.error('Health check - Database error:', error)

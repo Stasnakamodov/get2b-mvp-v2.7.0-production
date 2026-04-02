@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
 import ExcelJS from 'exceljs';
-import { createClient } from '@supabase/supabase-js';
+import { db } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
 
     const body = await request.json();
     const { projectId, supplierId, supplierData, specificationItems, templatePath } = body;
-
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
 
     if (!projectId || !supplierId || !supplierData) {
       return NextResponse.json(
@@ -29,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (templatePath) {
 
       // Загружаем шаблон из Storage
-      const { data: templateData, error: templateError } = await supabase.storage
+      const { data: templateData, error: templateError } = await db.storage
         .from('supplier-proformas')
         .download(templatePath);
 
@@ -54,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (templatePath && workbook.worksheets.length > 0) {
 
       // Получаем правила заполнения из БД
-      const { data: templateRecord, error: templateError } = await supabase
+      const { data: templateRecord, error: templateError } = await db
         .from('supplier_proforma_templates')
         .select('id, filling_rules, template_name, usage_count')
         .eq('file_path', templatePath)
@@ -202,7 +196,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Увеличиваем счетчик использования шаблона
-        await supabase.rpc('increment_template_usage', { p_template_id: templateRecord.id });
+        await db.rpc('increment_template_usage', { p_template_id: templateRecord.id });
       }
       }
 
@@ -357,7 +351,7 @@ export async function POST(request: NextRequest) {
     const storagePath = `${supplierId}/${projectId}/${fileName}`;
 
     // Сохраняем в Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await db.storage
       .from('supplier-proformas')
       .upload(storagePath, excelBuffer, {
         contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

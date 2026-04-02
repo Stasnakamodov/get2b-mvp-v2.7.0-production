@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 
 export async function POST() {
   try {
@@ -10,7 +10,7 @@ export async function POST() {
     const results = [];
 
     // Проверяем доступ к таблицам
-    const { data: roomsTest, error: roomsError } = await supabase
+    const { data: roomsTest, error: roomsError } = await db
       .from('chat_rooms')
       .select('id')
       .limit(1);
@@ -21,7 +21,7 @@ export async function POST() {
       results.push({ table: "chat_rooms", accessible: true });
     }
 
-    const { data: messagesTest, error: messagesError } = await supabase
+    const { data: messagesTest, error: messagesError } = await db
       .from('chat_messages')
       .select('id')
       .limit(1);
@@ -32,7 +32,7 @@ export async function POST() {
       results.push({ table: "chat_messages", accessible: true });
     }
 
-    const { data: participantsTest, error: participantsError } = await supabase
+    const { data: participantsTest, error: participantsError } = await db
       .from('chat_participants')
       .select('id')
       .limit(1);

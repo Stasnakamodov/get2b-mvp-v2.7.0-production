@@ -2,7 +2,7 @@ import { logger } from "@/src/shared/lib/logger"
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db/client";
 import { Download, CheckCircle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { sendSupplierReceiptRequestToManagerClient } from "@/lib/telegram-client";
@@ -28,7 +28,7 @@ export default function Step6ReceiptForClient() {
       logger.info("🔍 [STEP6] Загружаем реквизиты для проекта:", projectId);
       
       // Берём последний реквизит для этого проекта
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("project_requisites")
         .select("data")
         .eq("project_id", projectId)
@@ -61,7 +61,7 @@ export default function Step6ReceiptForClient() {
         setIsLoading(true);
       }
       
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("projects")
         .select("email, company_data, payment_method, amount, currency, status, receipts, updated_at")
         .eq("id", projectId)
@@ -106,7 +106,7 @@ export default function Step6ReceiptForClient() {
             // АВТОМАТИЧЕСКОЕ ИЗМЕНЕНИЕ СТАТУСА: если есть чек, но статус еще waiting_manager_receipt
             if (data.status === "waiting_manager_receipt") {
               logger.info("🔄 [STEP6] Обнаружен чек от менеджера, меняем статус на in_work");
-              await supabase
+              await db
                 .from("projects")
                 .update({ 
                   status: "in_work",
@@ -195,7 +195,7 @@ export default function Step6ReceiptForClient() {
       sessionStorage.setItem(sessionKey, JSON.stringify({ timestamp, sent: true }));
       
       try {
-        const { data: fetchedProjectData, error } = await supabase
+        const { data: fetchedProjectData, error } = await db
           .from("projects")
           .select("email, company_data, amount, currency, payment_method, receipts, status, specification_id")
           .eq("id", projectId)
@@ -243,7 +243,7 @@ export default function Step6ReceiptForClient() {
         // Получаем актуальную спецификацию из базы данных
         let totalAmount = 0;
         if (fetchedProjectData.specification_id) {
-          const { data: specData } = await supabase
+          const { data: specData } = await db
             .from('project_specifications')
             .select('*')
             .eq('id', fetchedProjectData.specification_id)
@@ -269,7 +269,7 @@ export default function Step6ReceiptForClient() {
         try {
           logger.info("🔍 [TELEGRAM] Получаем реквизиты для проекта:", projectId);
           
-          const { data: requisiteData } = await supabase
+          const { data: requisiteData } = await db
             .from("project_requisites")
             .select("data")
             .eq("project_id", projectId)
@@ -308,7 +308,7 @@ export default function Step6ReceiptForClient() {
         // Обновляем сумму в базе данных, если она отличается
         if (totalAmount !== fetchedProjectData.amount && totalAmount > 0) {
           logger.info(`💰 Обновляем сумму в БД: ${fetchedProjectData.amount} → ${totalAmount}`);
-          await supabase
+          await db
             .from("projects")
             .update({ amount: totalAmount })
             .eq("id", projectId);
@@ -466,7 +466,7 @@ export default function Step6ReceiptForClient() {
                 logger.info("🔄 [STEP6] Переходим на Step7, обновляем статус на waiting_client_confirmation");
                 setCurrentStep(7);
                 if (projectId) {
-                  await supabase
+                  await db
                     .from("projects")
                     .update({ 
                       current_step: 7,

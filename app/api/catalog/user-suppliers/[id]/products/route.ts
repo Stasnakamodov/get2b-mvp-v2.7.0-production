@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { db } from '@/lib/db'
 import { logger } from '@/src/shared/lib/logger'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +12,7 @@ export async function GET(
 
 
     // Получаем товары поставщика
-    const { data: products, error: productsError } = await supabase
+    const { data: products, error: productsError } = await db
       .from('catalog_user_products')
       .select('*')
       .eq('supplier_id', supplierId)

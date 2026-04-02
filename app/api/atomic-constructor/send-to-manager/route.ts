@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 import { ManagerBotService } from '@/lib/telegram/ManagerBotService'
 
 export async function POST(request: NextRequest) {
@@ -209,7 +209,7 @@ async function saveAtomicConstructorRequest({
     step5: manualData[5]
   }
 
-  const { error } = await supabase
+  const { error } = await db
     .from('projects')
     .insert({
       user_id: userId,

@@ -1,6 +1,6 @@
 import { logger } from '@/src/shared/lib/logger'
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 import { z } from 'zod'
 import { getOptionalAuthUser } from '@/lib/api/getOptionalAuthUser'
 
@@ -18,7 +18,7 @@ const InquirySchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    // BUG-12: Use Bearer token auth instead of supabase.auth.getSession()
+    // BUG-12: Use Bearer token auth instead of db.auth.getSession()
     const user = await getOptionalAuthUser(request)
 
     const body = await request.json()
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from('supplier_inquiries')
       .insert({
         query: parsed.data.query,

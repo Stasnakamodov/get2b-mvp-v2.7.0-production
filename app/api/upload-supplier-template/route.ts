@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { createClient } from '@supabase/supabase-js';
+import { db } from '@/lib/db'
 import * as XLSX from 'xlsx';
 
 export async function POST(request: NextRequest) {
@@ -70,11 +70,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
 
     // Generate file path in storage
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -107,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upload file to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await db.storage
       .from('supplier-proformas')
       .upload(storagePath, fileBuffer, {
         contentType: file.type,
@@ -126,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     // If setting as default, first unset other defaults for this supplier
     if (isDefault) {
-      const { error: unsetError } = await supabase
+      const { error: unsetError } = await db
         .from('supplier_proforma_templates')
         .update({ is_default: false })
         .eq('supplier_id', supplierId)
@@ -139,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save template metadata to database
-    const { data: templateData, error: dbError } = await supabase
+    const { data: templateData, error: dbError } = await db
       .from('supplier_proforma_templates')
       .insert({
         supplier_id: supplierId,
@@ -160,7 +155,7 @@ export async function POST(request: NextRequest) {
       logger.error("❌ Ошибка сохранения в БД:", dbError);
 
       // Try to cleanup uploaded file
-      await supabase.storage
+      await db.storage
         .from('supplier-proformas')
         .remove([storagePath]);
 
@@ -214,13 +209,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
     // Get templates for supplier
-    const { data: templates, error } = await supabase
+    const { data: templates, error } = await db
       .from('supplier_proforma_templates')
       .select('*')
       .eq('supplier_id', supplierId)
@@ -273,13 +263,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
     // Get template info first
-    const { data: template, error: getError } = await supabase
+    const { data: template, error: getError } = await db
       .from('supplier_proforma_templates')
       .select('file_path, template_name')
       .eq('id', templateId)
@@ -293,7 +278,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete from database
-    const { error: dbError } = await supabase
+    const { error: dbError } = await db
       .from('supplier_proforma_templates')
       .delete()
       .eq('id', templateId);
@@ -307,7 +292,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete file from storage
-    const { error: storageError } = await supabase.storage
+    const { error: storageError } = await db.storage
       .from('supplier-proformas')
       .remove([template.file_path]);
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db/client'
 
 export interface Category {
   id: string
@@ -29,7 +29,7 @@ export function useCategories() {
   const query = useQuery<Category[]>({
     queryKey: ['catalog-categories'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('catalog_categories')
         .select('*')
         .eq('is_active', true)

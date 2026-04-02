@@ -1,4 +1,5 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import { logger } from "@/src/shared/lib/logger"
 
@@ -14,7 +15,6 @@ import {
   Shield,
   Eye,
 } from "lucide-react"
-import { supabase } from '@/lib/supabaseClient'
 import { motion } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -79,7 +79,7 @@ export default function ProfilePage() {
   // Получение пользователя
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser()
+      const { data: { user }, error } = await db.auth.getUser()
       if (error) {
         logger.error('Ошибка получения пользователя:', error)
         return
@@ -118,7 +118,7 @@ export default function ProfilePage() {
     
     try {
       // Загружаем профили клиентов
-      const { data: clients, error: clientsError } = await supabase
+      const { data: clients, error: clientsError } = await db
         .from('client_profiles')
         .select('*')
         .eq('user_id', userId)
@@ -127,7 +127,7 @@ export default function ProfilePage() {
       if (clientsError) throw clientsError
       
       // Загружаем профили поставщиков
-      const { data: suppliers, error: suppliersError } = await supabase
+      const { data: suppliers, error: suppliersError } = await db
         .from('supplier_profiles')
         .select('*')
         .eq('user_id', userId)
@@ -157,7 +157,7 @@ export default function ProfilePage() {
       
       if (editingClient) {
         // Обновление
-        const { error } = await supabase
+        const { error } = await db
           .from('client_profiles')
           .update(clientData)
           .eq('id', editingClient.id)
@@ -165,7 +165,7 @@ export default function ProfilePage() {
         if (error) throw error
       } else {
         // Создание
-        const { error } = await supabase
+        const { error } = await db
           .from('client_profiles')
           .insert([clientData])
 
@@ -263,7 +263,7 @@ export default function ProfilePage() {
       const fileName = `logo_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
 
       // Попытка загрузки в Supabase Storage
-      const { data, error } = await supabase.storage
+      const { data, error } = await db.storage
         .from('company-logos')
         .upload(fileName, file)
 
@@ -274,7 +274,7 @@ export default function ProfilePage() {
         setClientForm(prev => ({ ...prev, logo_url: base64 }))
       } else {
         // Получаем публичный URL
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = db.storage
           .from('company-logos')
           .getPublicUrl(fileName)
         
@@ -315,7 +315,7 @@ export default function ProfilePage() {
       const fileExt = file.name.split('.').pop()
       const fileName = `ocr_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await db.storage
         .from('project-files')
         .upload(fileName, file)
 
@@ -324,7 +324,7 @@ export default function ProfilePage() {
       }
 
       // 2. Получаем публичную ссылку
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = db.storage
         .from('project-files')
         .getPublicUrl(fileName)
 
@@ -415,7 +415,7 @@ export default function ProfilePage() {
     try {
       const table = deleteType === 'client' ? 'client_profiles' : 'supplier_profiles'
       
-      const { error } = await supabase
+      const { error } = await db
         .from(table)
         .delete()
         .eq('id', itemToDelete.id)

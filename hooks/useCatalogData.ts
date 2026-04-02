@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db/client';
 
 interface SupplierData {
   id: string;
@@ -81,7 +81,7 @@ export function useCatalogData({
 
   const getSupplierDataFromCatalog = async (supplierId: string): Promise<SupplierData | null> => {
     try {
-      const { data: supplier, error } = await supabase
+      const { data: supplier, error } = await db
         .from('catalog_verified_suppliers')
         .select(`
           id,
@@ -122,7 +122,7 @@ export function useCatalogData({
 
   const getSupplierProducts = async (supplierId: string): Promise<ProductForSpec[]> => {
     try {
-      const { data: products, error } = await supabase
+      const { data: products, error } = await db
         .from('catalog_verified_products')
         .select(`
           id,

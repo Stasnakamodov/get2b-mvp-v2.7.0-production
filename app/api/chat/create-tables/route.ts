@@ -1,6 +1,6 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 export async function POST(request: NextRequest) {
   try {
 
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       is_archived: false
     };
 
-    const { data: roomResult, error: roomError } = await supabase
+    const { data: roomResult, error: roomError } = await db
       .from('chat_rooms_temp')
       .upsert(testRoomData)
       .select();
@@ -33,21 +33,21 @@ export async function POST(request: NextRequest) {
       is_read: false
     };
 
-    const { data: messageResult, error: messageError } = await supabase
+    const { data: messageResult, error: messageError } = await db
       .from('chat_messages_temp')
       .upsert(testMessageData)
       .select();
 
     // Удаляем тестовые данные
     if (!roomError) {
-      await supabase
+      await db
         .from('chat_rooms_temp')
         .delete()
         .eq('id', '00000000-0000-0000-0000-000000000000');
     }
 
     if (!messageError) {
-      await supabase
+      await db
         .from('chat_messages_temp')
         .delete()
         .eq('id', '00000000-0000-0000-0000-000000000001');

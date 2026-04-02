@@ -58,7 +58,7 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' https: data: blob:",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co https://bothub.chat https://api.telegram.org",
+    "connect-src 'self' https://bothub.chat https://api.telegram.org",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     for (const tableName of knownTables) {
       try {
-        const { count, error } = await supabase
+        const { count, error } = await db
           .from(tableName)
           .select('*', { count: 'exact', head: true });
 

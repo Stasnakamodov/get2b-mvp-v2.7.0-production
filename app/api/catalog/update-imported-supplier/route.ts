@@ -1,10 +1,10 @@
+import { db } from "@/lib/db"
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
 // POST: Обновление импортированного поставщика из оригинала
 export async function POST(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await db.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверяем, что поставщик существует и принадлежит пользователю
-    const { data: userSupplier, error: fetchError } = await supabase
+    const { data: userSupplier, error: fetchError } = await db
       .from("catalog_user_suppliers")
       .select("*")
       .eq("id", user_supplier_id)
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Получаем данные оригинального поставщика
-    const { data: verifiedSupplier, error: verifiedError } = await supabase
+    const { data: verifiedSupplier, error: verifiedError } = await db
       .from("catalog_verified_suppliers")
       .select("*")
       .eq("id", userSupplier.source_supplier_id)
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Обновляем данные поставщика
-    const { data: updatedSupplier, error: updateError } = await supabase
+    const { data: updatedSupplier, error: updateError } = await db
       .from("catalog_user_suppliers")
       .update({
         // Основная информация
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 // GET: Проверка возможности обновления
 export async function GET(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await db.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Проверяем, что поставщик существует и может быть обновлен
-    const { data: userSupplier, error: fetchError } = await supabase
+    const { data: userSupplier, error: fetchError } = await db
       .from("catalog_user_suppliers")
       .select("id, name, source_type, source_supplier_id, import_date")
       .eq("id", user_supplier_id)
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Проверяем, существует ли оригинальный поставщик
-    const { data: verifiedSupplier, error: verifiedError } = await supabase
+    const { data: verifiedSupplier, error: verifiedError } = await db
       .from("catalog_verified_suppliers")
       .select("id, name, company_name, is_active, updated_at")
       .eq("id", userSupplier.source_supplier_id)

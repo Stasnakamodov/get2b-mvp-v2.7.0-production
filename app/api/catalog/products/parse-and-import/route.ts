@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
 import { getUrlParserService } from '@/lib/services/UrlParserService'
 import { logger } from '@/src/shared/lib/logger'
 
@@ -63,7 +63,7 @@ async function downloadAndUploadImage(imageUrl: string, productName: string): Pr
     const fileName = `imported/${timestamp}_${sanitizedName}.${extension}`
 
     // Загружаем в Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await db.storage
       .from('product-images')
       .upload(fileName, blob, {
         contentType: contentType,
@@ -77,7 +77,7 @@ async function downloadAndUploadImage(imageUrl: string, productName: string): Pr
     }
 
     // Получаем публичный URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = db.storage
       .from('product-images')
       .getPublicUrl(fileName)
 
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     let finalSupplierId = supplier_id
 
     if (!finalSupplierId) {
-      const { data: defaultSupplier } = await supabase
+      const { data: defaultSupplier } = await db
         .from('catalog_verified_suppliers')
         .select('id')
         .eq('name', 'Импортированные товары')
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       if (defaultSupplier) {
         finalSupplierId = defaultSupplier.id
       } else {
-        const { data: newSupplier, error: createError } = await supabase
+        const { data: newSupplier, error: createError } = await db
           .from('catalog_verified_suppliers')
           .insert({
             name: 'Импортированные товары',
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
     const finalCategory = category || metadata.category || 'Разное'
 
     // ШАГ 6: Сохраняем в БД
-    const { data: product, error: insertError } = await supabase
+    const { data: product, error: insertError } = await db
       .from('catalog_verified_products')
       .insert({
         supplier_id: finalSupplierId,

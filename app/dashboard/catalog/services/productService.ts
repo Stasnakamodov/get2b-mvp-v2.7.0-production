@@ -1,9 +1,9 @@
+import { db } from "@/lib/db/client"
 /**
  * Service layer для работы с товарами
  * Содержит бизнес-логику и комплексные операции с продуктами
  */
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants/supplierConfig'
 
 export interface Product {
@@ -86,7 +86,7 @@ export interface CartItem {
 }
 
 class ProductService {
-  private supabase = createClientComponentClient()
+  
 
   /**
    * Validate product data
@@ -174,7 +174,7 @@ class ProductService {
       }
 
       // Insert
-      const { data: newProduct, error } = await this.supabase
+      const { data: newProduct, error } = await db
         .from('catalog_verified_products')
         .insert(productData)
         .select()
@@ -209,7 +209,7 @@ class ProductService {
    */
   async searchProducts(params: ProductSearchParams): Promise<{ products: Product[]; total: number }> {
     try {
-      let query = this.supabase
+      let query = db
         .from('catalog_verified_products')
         .select('*', { count: 'exact' })
 
@@ -300,7 +300,7 @@ class ProductService {
    */
   async getStatistics(): Promise<ProductStatistics> {
     try {
-      const { data: products, error } = await this.supabase
+      const { data: products, error } = await db
         .from('catalog_verified_products')
         .select('*')
 
@@ -414,7 +414,7 @@ class ProductService {
   async updateStock(productId: number, quantity: number, operation: 'set' | 'add' | 'subtract'): Promise<boolean> {
     try {
       // Get current stock
-      const { data: product, error: fetchError } = await this.supabase
+      const { data: product, error: fetchError } = await db
         .from('catalog_verified_products')
         .select('stock_quantity')
         .eq('id', productId)
@@ -434,7 +434,7 @@ class ProductService {
       }
 
       // Update stock
-      const { error: updateError } = await this.supabase
+      const { error: updateError } = await db
         .from('catalog_verified_products')
         .update({
           stock_quantity: newQuantity,
@@ -458,7 +458,7 @@ class ProductService {
    */
   async verifyProduct(productId: number): Promise<boolean> {
     try {
-      const { error } = await this.supabase
+      const { error } = await db
         .from('catalog_verified_products')
         .update({
           is_verified: true,
@@ -498,7 +498,7 @@ class ProductService {
    */
   async checkAvailability(productId: number, quantity: number): Promise<{ available: boolean; message?: string }> {
     try {
-      const { data: product, error } = await this.supabase
+      const { data: product, error } = await db
         .from('catalog_verified_products')
         .select('in_stock, stock_quantity, min_order_quantity')
         .eq('id', productId)
@@ -549,7 +549,7 @@ class ProductService {
   async getRelatedProducts(productId: number, limit: number = 5): Promise<Product[]> {
     try {
       // Get the product to find related ones
-      const { data: product, error: productError } = await this.supabase
+      const { data: product, error: productError } = await db
         .from('catalog_verified_products')
         .select('category, specifications')
         .eq('id', productId)
@@ -560,7 +560,7 @@ class ProductService {
       }
 
       // Find products in the same category
-      const { data: related, error: relatedError } = await this.supabase
+      const { data: related, error: relatedError } = await db
         .from('catalog_verified_products')
         .select('*')
         .eq('category', product.category)
@@ -682,13 +682,13 @@ class ProductService {
 
   private async updateSupplierProductCount(supplierId: number): Promise<void> {
     try {
-      const { count, error } = await this.supabase
+      const { count, error } = await db
         .from('catalog_verified_products')
         .select('*', { count: 'exact', head: true })
         .eq('supplier_id', supplierId)
 
       if (!error && count !== null) {
-        await this.supabase
+        await db
           .from('suppliers')
           .update({
             total_products: count,

@@ -1,10 +1,10 @@
+import { db } from "@/lib/db/client"
 import React, { useState, useRef, useEffect } from "react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UploadCloud } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { useToast } from "@/components/ui/use-toast";
 import { sendTelegramProjectApprovalRequestClient } from '@/lib/telegram-client';
@@ -63,7 +63,7 @@ export default function Step3PaymentForm() {
   useEffect(() => {
     if (!isWaitingApproval || !projectId) return;
     const checkStatus = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('projects')
         .select('status')
         .eq('id', projectId)
@@ -99,7 +99,7 @@ export default function Step3PaymentForm() {
   useEffect(() => {
     async function fetchCompanyData() {
       if (!projectId) return;
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('projects')
         .select('company_data')
         .eq('id', projectId)
@@ -130,20 +130,20 @@ export default function Step3PaymentForm() {
     const date = new Date().toISOString().slice(0,10).replace(/-/g, '');
     const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
     const filePath = `step3-supplier-receipts/${projectId}/${date}_${cleanName}`;
-    const { data, error } = await supabase.storage.from("step3-supplier-receipts").upload(filePath, file);
+    const { data, error } = await db.storage.from("step3-supplier-receipts").upload(filePath, file);
     if (error) {
       toast({ title: "Ошибка загрузки чека", description: error.message, variant: "destructive" });
       setError("Ошибка загрузки чека: " + error.message);
       setIsUploading(false);
       return;
     }
-    const { data: urlData } = supabase.storage.from("step3-supplier-receipts").getPublicUrl(filePath);
+    const { data: urlData } = db.storage.from("step3-supplier-receipts").getPublicUrl(filePath);
     setReceiptUrl(urlData?.publicUrl || "");
     setIsUploading(false);
     // Получаем текущий статус проекта
     let currentStatus = null;
     try {
-      const { data: project, error: fetchError } = await supabase
+      const { data: project, error: fetchError } = await db
         .from("projects")
         .select("status")
         .eq("id", projectId)

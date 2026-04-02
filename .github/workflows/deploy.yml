@@ -104,10 +104,26 @@ jobs:
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-            # Update compose file and nginx config from repo
+            # Update compose file, sql, and configs from repo
             git pull origin main
 
-            # Restart with new image
+            # Ensure PostgreSQL is running and healthy
+            docker compose up -d postgres
+            echo "Waiting for PostgreSQL..."
+            for i in $(seq 1 15); do
+              if docker compose exec -T postgres pg_isready -U get2b 2>/dev/null; then
+                echo "PostgreSQL is ready!"
+                break
+              fi
+              if [ $i -eq 15 ]; then
+                echo "PostgreSQL failed to start!"
+                docker compose logs postgres --tail=20
+                exit 1
+              fi
+              sleep 2
+            done
+
+            # Start application (depends on postgres)
             docker compose up -d
 
             # Wait for health check

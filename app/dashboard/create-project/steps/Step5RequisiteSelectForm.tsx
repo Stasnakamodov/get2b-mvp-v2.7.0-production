@@ -1,3 +1,4 @@
+import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
 import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2 } from "lucide-react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
-import { supabase } from "@/lib/supabaseClient";
 import { sendTelegramMessageClient } from '@/lib/telegram-client';
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { useProjectSpecification } from '../hooks/useProjectSpecification';
@@ -130,14 +130,14 @@ export default function Step5RequisiteSelectForm() {
     if (!requisiteMeta || !projectId) return;
     setLoading(true);
     async function fetchRequisites() {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       const userId = userData?.user?.id;
       if (!userId) {
         setRequisites([]);
         setLoading(false);
         return;
       }
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from(requisiteMeta.table)
         .select("*")
         .eq("user_id", userId);
@@ -152,7 +152,7 @@ export default function Step5RequisiteSelectForm() {
     if (!projectId) return;
     async function fetchSpecById() {
       // Получаем specification_id из проекта
-      const { data: projectData, error: projectError } = await supabase
+      const { data: projectData, error: projectError } = await db
         .from('projects')
         .select('specification_id')
         .eq('id', projectId)
@@ -160,7 +160,7 @@ export default function Step5RequisiteSelectForm() {
       const specId = projectData?.specification_id;
       if (specId) {
         // Грузим спецификацию по id
-        const { data: specData, error: specError } = await supabase
+        const { data: specData, error: specError } = await db
           .from('project_specifications')
           .select('*')
           .eq('id', specId)
@@ -208,7 +208,7 @@ export default function Step5RequisiteSelectForm() {
     setIsLoading(true);
     try {
       // Получаем текущего пользователя
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       if (!userData?.user) {
         toast({
           title: "Ошибка",
@@ -285,7 +285,7 @@ export default function Step5RequisiteSelectForm() {
       logger.info("✅ [STEP5] Очищенные данные для сохранения:", cleanRequisiteData);
       
       // Сохраняем очищенные данные реквизита в project_requisites
-      const { error: requisiteError } = await supabase
+      const { error: requisiteError } = await db
         .from("project_requisites")
         .insert({
           user_id: userData.user.id,
@@ -317,14 +317,14 @@ export default function Step5RequisiteSelectForm() {
       // Обновляем сумму в базе данных
       if (totalAmount > 0) {
         logger.info(`💰 Обновляем сумму в БД: ${totalAmount}`);
-        await supabase
+        await db
           .from("projects")
           .update({ amount: totalAmount })
           .eq("id", projectId);
       }
 
       // Получаем текущий статус проекта для правильного перехода
-      const { data: currentProject, error: fetchError } = await supabase
+      const { data: currentProject, error: fetchError } = await db
         .from("projects")
         .select("status")
         .eq("id", projectId)
@@ -415,7 +415,7 @@ export default function Step5RequisiteSelectForm() {
 
     try {
       // Получаем текущего пользователя
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       if (!userData?.user) {
         toast({
           title: "Ошибка",
@@ -453,7 +453,7 @@ export default function Step5RequisiteSelectForm() {
       });
 
       // Сохраняем реквизит в project_requisites
-      const { error: requisiteError } = await supabase
+      const { error: requisiteError } = await db
         .from("project_requisites")
         .insert({
           user_id: userData.user.id,
@@ -477,7 +477,7 @@ export default function Step5RequisiteSelectForm() {
 
       // Сохраняем в шаблоны, если выбрано
       if (saveAsTemplate) {
-        await supabase
+        await db
           .from("bank_accounts")
           .insert({
             user_id: userData.user.id,
@@ -497,14 +497,14 @@ export default function Step5RequisiteSelectForm() {
       // Обновляем сумму в базе данных
       if (totalAmount > 0) {
         logger.info(`💰 Обновляем сумму в БД: ${totalAmount}`);
-        await supabase
+        await db
           .from("projects")
           .update({ amount: totalAmount })
           .eq("id", projectId);
       }
 
       // Получаем текущий статус проекта для правильного перехода
-      const { data: currentProject, error: fetchError } = await supabase
+      const { data: currentProject, error: fetchError } = await db
         .from("projects")
         .select("status")
         .eq("id", projectId)
@@ -575,7 +575,7 @@ export default function Step5RequisiteSelectForm() {
 
   // --- Удаление шаблона ---
   const handleDelete = async (id: string) => {
-    await supabase.from("bank_accounts").delete().eq("id", id);
+    await db.from("bank_accounts").delete().eq("id", id);
     setRequisites(requisites.filter((r) => r.id !== id));
     if (selectedId === id) setSelectedId(null);
   };
@@ -678,7 +678,7 @@ export default function Step5RequisiteSelectForm() {
 
     try {
       // Получаем текущего пользователя
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       if (!userData?.user) {
         toast({
           title: "Ошибка",
@@ -717,7 +717,7 @@ export default function Step5RequisiteSelectForm() {
       });
 
       // Сохраняем реквизит в project_requisites
-      const { error: requisiteError } = await supabase
+      const { error: requisiteError } = await db
         .from("project_requisites")
         .insert({
           user_id: userData.user.id,
@@ -741,7 +741,7 @@ export default function Step5RequisiteSelectForm() {
 
       // Сохраняем в шаблоны, если выбрано
       if (saveToBook) {
-        await supabase
+        await db
           .from("supplier_cards")
           .insert({
             user_id: userData.user.id,
@@ -762,14 +762,14 @@ export default function Step5RequisiteSelectForm() {
       // Обновляем сумму в базе данных
       if (totalAmount > 0) {
         logger.info(`💰 Обновляем сумму в БД: ${totalAmount}`);
-        await supabase
+        await db
           .from("projects")
           .update({ amount: totalAmount })
           .eq("id", projectId);
       }
 
       // Получаем текущий статус проекта для правильного перехода
-      const { data: currentProject, error: fetchError } = await supabase
+      const { data: currentProject, error: fetchError } = await db
         .from("projects")
         .select("status")
         .eq("id", projectId)
@@ -888,7 +888,7 @@ export default function Step5RequisiteSelectForm() {
 
     try {
       // Получаем текущего пользователя
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       if (!userData?.user) {
         toast({
           title: "Ошибка",
@@ -926,7 +926,7 @@ export default function Step5RequisiteSelectForm() {
       });
 
       // Сохраняем реквизит в project_requisites
-      const { error: requisiteError } = await supabase
+      const { error: requisiteError } = await db
         .from("project_requisites")
         .insert({
           user_id: userData.user.id,
@@ -950,7 +950,7 @@ export default function Step5RequisiteSelectForm() {
 
       // Сохраняем в шаблоны, если выбрано
       if (saveToBook) {
-        await supabase
+        await db
           .from("crypto_wallets")
           .insert({
             user_id: userData.user.id,
@@ -970,14 +970,14 @@ export default function Step5RequisiteSelectForm() {
       // Обновляем сумму в базе данных
       if (totalAmount > 0) {
         logger.info(`💰 Обновляем сумму в БД: ${totalAmount}`);
-        await supabase
+        await db
           .from("projects")
           .update({ amount: totalAmount })
           .eq("id", projectId);
       }
 
       // Получаем текущий статус проекта для правильного перехода
-      const { data: currentProject, error: fetchError } = await supabase
+      const { data: currentProject, error: fetchError } = await db
         .from("projects")
         .select("status")
         .eq("id", projectId)

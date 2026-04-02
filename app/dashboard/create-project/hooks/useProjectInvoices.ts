@@ -1,5 +1,5 @@
+import { db } from "@/lib/db/client"
 import { useState, useCallback } from "react";
-import { supabase } from "@/lib/supabaseClient";
 
 export interface ProjectInvoice {
   id: string;
@@ -18,7 +18,7 @@ export function useProjectInvoices(projectId: string, role?: string) {
   const fetchInvoices = useCallback(async () => {
     if (!projectId) return;
     setLoading(true);
-    let query = supabase.from("project_invoices").select("*").eq("project_id", projectId);
+    let query = db.from("project_invoices").select("*").eq("project_id", projectId);
     if (role) query = query.eq("role", role);
     const { data, error } = await query.order("uploaded_at", { ascending: false });
     if (error) setError(error.message);
@@ -30,7 +30,7 @@ export function useProjectInvoices(projectId: string, role?: string) {
   const addInvoice = useCallback(async (fileUrl: string, roleValue?: string) => {
     if (!projectId) return;
     setLoading(true);
-    const { error } = await supabase.from("project_invoices").insert([
+    const { error } = await db.from("project_invoices").insert([
       { project_id: projectId, role: roleValue || role, file_url: fileUrl }
     ]);
     if (error) setError(error.message);
@@ -41,7 +41,7 @@ export function useProjectInvoices(projectId: string, role?: string) {
   // Удалить инвойс
   const deleteInvoice = useCallback(async (invoiceId: string) => {
     setLoading(true);
-    const { error } = await supabase.from("project_invoices").delete().eq("id", invoiceId);
+    const { error } = await db.from("project_invoices").delete().eq("id", invoiceId);
     if (error) setError(error.message);
     await fetchInvoices();
     setLoading(false);

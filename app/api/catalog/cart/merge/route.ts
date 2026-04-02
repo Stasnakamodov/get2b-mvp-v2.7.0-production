@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAuthenticatedClient } from '@/lib/supabaseServerClient'
+import { createAuthenticatedClient } from '@/lib/db'
 import { logger } from '@/src/shared/lib/logger'
 
 /**
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { user, supabase } = auth
+    const { user, db } = auth
 
     const { items } = await request.json()
     if (!Array.isArray(items) || items.length === 0) {
@@ -21,14 +21,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create cart
-    let { data: cart } = await supabase
+    let { data: cart } = await db
       .from('catalog_carts')
       .select('id')
       .eq('user_id', user.id)
       .single()
 
     if (!cart) {
-      const { data: created, error } = await supabase
+      const { data: created, error } = await db
         .from('catalog_carts')
         .insert({ user_id: user.id })
         .select('id')
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       if (!item.product_id || !item.quantity) continue
 
       // Check if item exists in server cart
-      const { data: existing } = await supabase
+      const { data: existing } = await db
         .from('catalog_cart_items')
         .select('id, quantity')
         .eq('cart_id', cart.id)
@@ -57,13 +57,13 @@ export async function POST(request: NextRequest) {
         // Take the larger quantity (don't lose local edits)
         const newQty = Math.max(existing.quantity, item.quantity)
         if (newQty !== existing.quantity) {
-          await supabase
+          await db
             .from('catalog_cart_items')
             .update({ quantity: newQty })
             .eq('id', existing.id)
         }
       } else {
-        await supabase
+        await db
           .from('catalog_cart_items')
           .insert({
             cart_id: cart.id,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update cart timestamp
-    await supabase
+    await db
       .from('catalog_carts')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', cart.id)

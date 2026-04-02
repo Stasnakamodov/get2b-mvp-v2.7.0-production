@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
 import { logger } from "@/src/shared/lib/logger";
 
 // POST: Импорт поставщика из каталога Get2B в личный список пользователя
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.replace('Bearer ', '')
     
     // Устанавливаем сессию в Supabase клиенте
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await db.auth.getUser(token)
     
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Получаем данные аккредитованного поставщика
-    const { data: verifiedSupplier, error: fetchError } = await supabase
+    const { data: verifiedSupplier, error: fetchError } = await db
       .from("catalog_verified_suppliers")
       .select("*")
       .eq("id", verified_supplier_id)
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверяем, не импортирован ли уже этот поставщик (только активные)
-    const { data: existingSupplier } = await supabase
+    const { data: existingSupplier } = await db
       .from("catalog_user_suppliers")
       .select("id")
       .eq("user_id", user.id)
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     // Проверяем, есть ли удаленный поставщик с таким же source_supplier_id
-    const { data: deletedSupplier } = await supabase
+    const { data: deletedSupplier } = await db
       .from("catalog_user_suppliers")
       .select("id")
       .eq("user_id", user.id)
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     // Если есть удаленный поставщик, восстанавливаем его
     if (deletedSupplier) {
       
-      const { data: restoredSupplier, error: restoreError } = await supabase
+      const { data: restoredSupplier, error: restoreError } = await db
         .from("catalog_user_suppliers")
         .update({ 
           is_active: true,
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Восстанавливаем также товары поставщика
-      const { data: restoredProducts, error: restoreProductsError } = await supabase
+      const { data: restoredProducts, error: restoreProductsError } = await db
         .from("catalog_user_products")
         .update({ is_active: true })
         .eq("supplier_id", restoredSupplier.id)
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       let insertedProducts = [];
       if (!restoredProducts || restoredProducts.length === 0) {
         
-        const { data: verifiedProducts } = await supabase
+        const { data: verifiedProducts } = await db
           .from("catalog_verified_products")
           .select("*")
           .eq("supplier_id", verified_supplier_id);
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
             specifications: product.specifications
           }));
 
-          const { data: newInsertedProducts } = await supabase
+          const { data: newInsertedProducts } = await db
             .from("catalog_user_products")
             .insert(userProducts)
             .select();
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Импортируем поставщика с ВСЕМИ полями
-    const { data: newSupplier, error: insertError } = await supabase
+    const { data: newSupplier, error: insertError } = await db
       .from("catalog_user_suppliers")
       .insert([{
         user_id: user.id,
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
     let importedProducts = [];
     if (newSupplier) {
       // Получаем ВСЕ товары поставщика (убираем фильтр in_stock для корректного импорта)
-      const { data: verifiedProducts, error: productsError } = await supabase
+      const { data: verifiedProducts, error: productsError } = await db
         .from("catalog_verified_products")
         .select("*")
         .eq("supplier_id", verified_supplier_id);
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
           specifications: product.specifications
         }));
 
-        const { data: insertedProducts, error: insertProductsError } = await supabase
+        const { data: insertedProducts, error: insertProductsError } = await db
           .from("catalog_user_products")
           .insert(userProducts)
           .select();
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
 // GET: Проверка возможности импорта поставщика
 export async function GET(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await db.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -259,7 +259,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Проверяем, существует ли аккредитованный поставщик
-    const { data: verifiedSupplier, error: verifiedError } = await supabase
+    const { data: verifiedSupplier, error: verifiedError } = await db
       .from("catalog_verified_suppliers")
       .select("id, name, company_name, is_active")
       .eq("id", verified_supplier_id)
@@ -274,7 +274,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Проверяем, не импортирован ли уже этот поставщик
-    const { data: existingImport } = await supabase
+    const { data: existingImport } = await db
       .from("catalog_user_suppliers")
       .select("id, name, import_date")
       .eq("user_id", user.id)

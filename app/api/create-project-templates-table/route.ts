@@ -1,6 +1,6 @@
+import { db } from "@/lib/db"
 import { NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
-import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'
 
 export async function POST() {
   try {
@@ -20,7 +20,7 @@ export async function POST() {
     `
     
     // Создаем таблицу
-    const { error: createError } = await supabase.rpc('exec_sql', { sql: createTableSQL })
+    const { error: createError } = await db.rpc('exec_sql', { sql: createTableSQL })
     
     if (createError) {
       logger.error('❌ Ошибка создания таблицы:', createError)
@@ -36,7 +36,7 @@ export async function POST() {
       CREATE INDEX IF NOT EXISTS idx_project_templates_created_at ON public.project_templates(created_at DESC);
     `
     
-    const { error: indexError } = await supabase.rpc('exec_sql', { sql: createIndexesSQL })
+    const { error: indexError } = await db.rpc('exec_sql', { sql: createIndexesSQL })
     
     if (indexError) {
       logger.error('❌ Ошибка создания индексов:', indexError)
@@ -49,7 +49,7 @@ export async function POST() {
     // Включаем RLS
     const enableRLSSQL = `ALTER TABLE public.project_templates ENABLE ROW LEVEL SECURITY;`
     
-    const { error: rlsError } = await supabase.rpc('exec_sql', { sql: enableRLSSQL })
+    const { error: rlsError } = await db.rpc('exec_sql', { sql: enableRLSSQL })
     
     if (rlsError) {
       logger.error('❌ Ошибка включения RLS:', rlsError)
@@ -79,7 +79,7 @@ export async function POST() {
         FOR DELETE USING (auth.uid() = user_id);
     `
     
-    const { error: policyError } = await supabase.rpc('exec_sql', { sql: createPoliciesSQL })
+    const { error: policyError } = await db.rpc('exec_sql', { sql: createPoliciesSQL })
     
     if (policyError) {
       logger.error('❌ Ошибка создания политик:', policyError)

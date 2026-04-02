@@ -1,5 +1,5 @@
+import { db } from "@/lib/db/client"
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 
 export function useDeleteTemplate() {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -10,7 +10,7 @@ export function useDeleteTemplate() {
     setIsDeleting(true);
     setError(null);
     setSuccess(false);
-    const { error } = await supabase.from("templates").delete().eq("id", id);
+    const { error } = await db.from("templates").delete().eq("id", id);
     if (error) {
       setError(error.message);
       setIsDeleting(false);

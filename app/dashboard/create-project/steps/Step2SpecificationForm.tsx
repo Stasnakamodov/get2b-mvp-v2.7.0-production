@@ -1,3 +1,4 @@
+import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useRef, useEffect } from "react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
@@ -5,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, UploadCloud, FileText, Save, Package, Eye } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { useSaveTemplate, useProjectTemplates } from "../hooks/useSaveTemplate";
 import { useToast } from "@/components/ui/use-toast";
@@ -228,7 +228,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
   const updateProjectAmountAndCurrency = async () => {
     if (!projectId) return;
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from("projects")
         .update({
           amount: total,
@@ -251,7 +251,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     if (!isWaitingApproval || !projectId) return;
     // Функция для проверки статуса
     const checkStatus = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('projects')
         .select('status')
         .eq('id', projectId)
@@ -289,7 +289,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
   async function ensureSpecificationId() {
     if (!projectId) return;
     // Получаем текущий проект
-    const { data: projectData, error: projectError } = await supabase
+    const { data: projectData, error: projectError } = await db
       .from('projects')
       .select('specification_id')
       .eq('id', projectId)
@@ -297,7 +297,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     if (projectError) return;
     if (!projectData?.specification_id) {
       // Получаем первую позицию спецификации
-      const { data: specData } = await supabase
+      const { data: specData } = await db
         .from('project_specifications')
         .select('id')
         .eq('project_id', projectId)
@@ -306,7 +306,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         .limit(1)
         .single();
       if (specData?.id) {
-        await supabase.from('projects').update({ specification_id: specData.id }).eq('id', projectId);
+        await db.from('projects').update({ specification_id: specData.id }).eq('id', projectId);
         logger.info('[ensureSpecificationId] specification_id автозаполнен:', specData.id);
       }
     }
@@ -318,7 +318,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     setIsLoading(true);
     try {
       // Получаем текущий статус проекта
-      const { data: project, error: fetchError } = await supabase
+      const { data: project, error: fetchError } = await db
         .from("projects")
         .select("status")
         .eq("id", projectId)
@@ -379,7 +379,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
   // --- Получение актуальных данных компании из Supabase ---
   async function getActualCompanyData() {
     if (projectId) {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('projects')
         .select('company_data')
         .eq('id', projectId)
@@ -436,7 +436,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       logger.info("📄 Файл:", file.name, "Размер:", file.size, "Тип:", file.type);
       
       // Проверяем, существует ли файл
-      const { data: existingFile } = await supabase.storage
+      const { data: existingFile } = await db.storage
         .from("step2-ready-invoices")
         .list(`invoices/${projectId}`, {
           search: cleanName
@@ -446,7 +446,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         logger.info("⚠️ Файл с похожим именем уже существует, используем уникальный путь");
       }
       
-      const { data, error } = await supabase.storage.from("step2-ready-invoices").upload(filePath, file, {
+      const { data, error } = await db.storage.from("step2-ready-invoices").upload(filePath, file, {
         upsert: true // Перезаписываем файл, если он уже существует
       });
       if (error) {
@@ -458,7 +458,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       
       logger.info("✅ Файл успешно загружен в Storage:", data);
       
-      const { data: urlData } = supabase.storage.from("step2-ready-invoices").getPublicUrl(filePath);
+      const { data: urlData } = db.storage.from("step2-ready-invoices").getPublicUrl(filePath);
       const fileUrl = (urlData?.publicUrl as string) || "";
       
       logger.info("🔗 Публичный URL:", fileUrl);
@@ -560,7 +560,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
 
       // Отправляем расширенное сообщение в Telegram
       try {
-        const { data: userData } = await supabase.auth.getUser();
+        const { data: userData } = await db.auth.getUser();
         const user_email = userData?.user?.email || "(email не найден)";
         
         let tgText = `📄 Загружен инвойс для проекта ${projectId}\n\nКомпания: ${companyData?.name || '—'}\nEmail: ${user_email}\nФайл: ${fileUrl}`;
@@ -813,7 +813,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     if (!projectId) return;
     const specId = await addItems(items);
     if (specId) {
-      await supabase.from('projects').update({ specification_id: specId }).eq('id', projectId);
+      await db.from('projects').update({ specification_id: specId }).eq('id', projectId);
       logger.info('[bulkInsertSpecification] specification_id сохранён в проект:', specId);
     }
   }
@@ -889,7 +889,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         let fullSupplierData = null;
         
         // Сначала пытаемся найти в verified поставщиках
-        const { data: verifiedSupplier, error: verifiedError } = await supabase
+        const { data: verifiedSupplier, error: verifiedError } = await db
           .from('catalog_verified_suppliers')
           .select('id, name, company_name, category, country, city, payment_methods, bank_accounts, crypto_wallets, p2p_cards')
           .eq('id', supplierId)
@@ -900,7 +900,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           logger.info('✅ [Step2] Поставщик найден в verified:', fullSupplierData);
         } else {
           // Если не найден в verified, ищем в user поставщиках
-          const { data: userSupplier, error: userError } = await supabase
+          const { data: userSupplier, error: userError } = await db
             .from('catalog_user_suppliers')
             .select('id, name, company_name, category, country, city, payment_methods, bank_accounts, crypto_wallets, p2p_cards')
             .eq('id', supplierId)
@@ -1001,7 +1001,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         projectId: projectId
       });
       
-      const { data, error } = await supabase.storage
+      const { data, error } = await db.storage
         .from('project-images')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -1023,7 +1023,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       logger.info(`[DEBUG] Файл загружен успешно:`, data);
       
       // Получаем публичную ссылку на файл
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = db.storage
         .from('project-images')
         .getPublicUrl(filePath);
       

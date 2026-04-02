@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 
 export async function DELETE(
   request: NextRequest,
@@ -16,7 +16,7 @@ export async function DELETE(
     }
 
     // Дельты удаляются каскадно через ON DELETE CASCADE
-    const { error } = await supabase
+    const { error } = await db
       .from('project_scenario_nodes')
       .delete()
       .eq('id', id)

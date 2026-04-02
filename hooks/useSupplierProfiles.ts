@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db/client';
 
 export function useSupplierProfiles(userId: string | null) {
   const [profiles, setProfiles] = useState<any[]>([]);
@@ -10,7 +10,7 @@ export function useSupplierProfiles(userId: string | null) {
   const fetchProfiles = async () => {
     if (!userId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('supplier_profiles')
       .select('*')
       .eq('user_id', userId)
@@ -29,7 +29,7 @@ export function useSupplierProfiles(userId: string | null) {
   const addProfile = async (profile: any) => {
     if (!userId) return false;
     setLoading(true);
-    const { error } = await supabase
+    const { error } = await db
       .from('supplier_profiles')
       .insert([{ ...profile, user_id: userId }]);
     setLoading(false);
@@ -44,7 +44,7 @@ export function useSupplierProfiles(userId: string | null) {
   // Редактировать профиль
   const updateProfile = async (id: string, profile: any) => {
     setLoading(true);
-    const { error } = await supabase
+    const { error } = await db
       .from('supplier_profiles')
       .update(profile)
       .eq('id', id);
@@ -60,7 +60,7 @@ export function useSupplierProfiles(userId: string | null) {
   // Удалить профиль
   const deleteProfile = async (id: string) => {
     setLoading(true);
-    const { error } = await supabase
+    const { error } = await db
       .from('supplier_profiles')
       .delete()
       .eq('id', id);
@@ -78,12 +78,12 @@ export function useSupplierProfiles(userId: string | null) {
     if (!userId) return false;
     setLoading(true);
     // Сначала сбросить все is_default
-    await supabase
+    await db
       .from('supplier_profiles')
       .update({ is_default: false })
       .eq('user_id', userId);
     // Затем установить выбранный
-    const { error } = await supabase
+    const { error } = await db
       .from('supplier_profiles')
       .update({ is_default: true })
       .eq('id', id);

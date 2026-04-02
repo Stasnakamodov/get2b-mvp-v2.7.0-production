@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from "@/lib/supabaseClient"
-import { createClient } from "@supabase/supabase-js"
+import { db } from "@/lib/db"
 import { supabaseAdmin } from "@/lib/supabaseAdmin"
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus"
 import { ProjectStatus } from "@/lib/types/project-status"
@@ -110,7 +109,7 @@ export async function POST(req: NextRequest) {
               });
               
               // Загружаем файл в Supabase Storage
-              const { data: uploadData, error: uploadError } = await supabase.storage
+              const { data: uploadData, error: uploadError } = await db.storage
                 .from("step6-client-receipts")
                 .upload(supabaseFileName, fileBuffer, {
                   contentType: message.document?.mime_type || 'image/jpeg',
@@ -123,7 +122,7 @@ export async function POST(req: NextRequest) {
               }
               
               // Получаем публичный URL файла из Supabase Storage
-              const { data: urlData } = supabase.storage
+              const { data: urlData } = db.storage
                 .from("step6-client-receipts")
                 .getPublicUrl(supabaseFileName);
                 
@@ -131,7 +130,7 @@ export async function POST(req: NextRequest) {
               logger.info("✅ Файл загружен в Supabase Storage:", supabaseFileUrl);
               
               // Получаем текущие данные проекта
-              const { data: currentProject, error: fetchError } = await supabase
+              const { data: currentProject, error: fetchError } = await db
                 .from("projects")
                 .select("receipts, status")
                 .eq("id", projectId)
@@ -158,7 +157,7 @@ export async function POST(req: NextRequest) {
               logger.info("💾 Сохраняем данные в БД:", receiptsData);
 
               // Сохраняем URL файла в проект
-              const { error: updateError } = await supabase
+              const { error: updateError } = await db
                 .from("projects")
                 .update({ 
                   receipts: JSON.stringify(receiptsData), // Сохраняем как JSON
@@ -280,7 +279,7 @@ export async function POST(req: NextRequest) {
       logger.info("🔍 [DEBUG] Validation - projectId:", { length: projectId.length, formatValid: /^[a-f0-9-]{36}$/.test(projectId) });
 
       // Получаем текущий статус проекта
-      const { data: project, error: fetchError } = await supabase
+      const { data: project, error: fetchError } = await db
         .from("projects")
         .select("status")
         .eq("id", projectId)
@@ -558,7 +557,7 @@ export async function POST(req: NextRequest) {
       try {
         // Ищем запись по очищенному requestId (используем более точный поиск)
         logger.info("🔍 Ищем проект с atomic_request_id содержащим:", cleanRequestId)
-        const { data: projects, error: searchError } = await supabase
+        const { data: projects, error: searchError } = await db
           .from("projects")
           .select("id, atomic_request_id")
           .ilike("atomic_request_id", `%${cleanRequestId}%`)
@@ -581,7 +580,7 @@ export async function POST(req: NextRequest) {
         })
 
         // Обновляем статус на одобрено
-        const { error: approveError } = await supabase
+        const { error: approveError } = await db
           .from("projects")
           .update({
             atomic_moderation_status: "approved",
@@ -628,7 +627,7 @@ export async function POST(req: NextRequest) {
       
       try {
         // Ищем запись по очищенному requestId
-        const { data: projects, error: searchError } = await supabase
+        const { data: projects, error: searchError } = await db
           .from("projects")
           .select("id, atomic_request_id")
           .ilike("atomic_request_id", `%${cleanRequestId}%`)
@@ -649,7 +648,7 @@ export async function POST(req: NextRequest) {
         })
 
         // Обновляем статус на отклонено
-        const { error: rejectError } = await supabase
+        const { error: rejectError } = await db
           .from("projects")
           .update({
             atomic_moderation_status: "rejected",
@@ -692,7 +691,7 @@ export async function POST(req: NextRequest) {
       
       try {
         // Ищем запись по очищенному requestId
-        const { data: projects, error: searchError } = await supabase
+        const { data: projects, error: searchError } = await db
           .from("projects")
           .select("id, atomic_request_id")
           .ilike("atomic_request_id", `%${cleanRequestId}%`)
@@ -713,7 +712,7 @@ export async function POST(req: NextRequest) {
         })
 
         // Обновляем статус на доработка
-        const { error: revisionError } = await supabase
+        const { error: revisionError } = await db
           .from("projects")
           .update({
             atomic_moderation_status: "revision",
@@ -758,7 +757,7 @@ export async function POST(req: NextRequest) {
         logger.info("✅ Обрабатываем одобрение чека:", cleanRequestId)
         
         // Ищем запись по очищенному requestId
-        const { data: projects, error: searchError } = await supabase
+        const { data: projects, error: searchError } = await db
           .from("projects")
           .select("id, atomic_request_id, status")
           .ilike("atomic_request_id", `%${cleanRequestId}%`)
@@ -781,7 +780,7 @@ export async function POST(req: NextRequest) {
         })
 
         // Обновляем статус проекта
-        const { error: approveError } = await supabase
+        const { error: approveError } = await db
           .from("projects")
           .update({
             status: "receipt_approved",
@@ -825,7 +824,7 @@ export async function POST(req: NextRequest) {
         logger.info("✅ Обрабатываем одобрение чека клиента:", cleanRequestId)
         
         // Ищем запись по очищенному requestId
-        const { data: projects, error: searchError } = await supabase
+        const { data: projects, error: searchError } = await db
           .from("projects")
           .select("id, atomic_request_id, status, client_confirmation_url")
           .ilike("atomic_request_id", `%${cleanRequestId}%`)
@@ -853,7 +852,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Обновляем статус проекта на completed
-        const { error: approveError } = await supabase
+        const { error: approveError } = await db
           .from("projects")
           .update({
             status: "completed",
@@ -898,7 +897,7 @@ export async function POST(req: NextRequest) {
         logger.info("❌ Обрабатываем отклонение чека клиента:", cleanRequestId)
         
         // Ищем запись по очищенному requestId
-        const { data: projects, error: searchError } = await supabase
+        const { data: projects, error: searchError } = await db
           .from("projects")
           .select("id, atomic_request_id, status, client_confirmation_url")
           .ilike("atomic_request_id", `%${cleanRequestId}%`)
@@ -922,7 +921,7 @@ export async function POST(req: NextRequest) {
         })
 
         // Обновляем статус проекта
-        const { error: rejectError } = await supabase
+        const { error: rejectError } = await db
           .from("projects")
           .update({
             client_confirmation_status: "rejected",
@@ -966,7 +965,7 @@ export async function POST(req: NextRequest) {
         logger.info("❌ Обрабатываем отклонение чека:", cleanRequestId)
         
         // Ищем запись по очищенному requestId
-        const { data: projects, error: searchError } = await supabase
+        const { data: projects, error: searchError } = await db
           .from("projects")
           .select("id, atomic_request_id, status")
           .ilike("atomic_request_id", `%${cleanRequestId}%`)
@@ -989,7 +988,7 @@ export async function POST(req: NextRequest) {
         })
 
         // Обновляем статус проекта
-        const { error: rejectError } = await supabase
+        const { error: rejectError } = await db
           .from("projects")
           .update({
             status: "receipt_rejected",
@@ -1033,7 +1032,7 @@ export async function POST(req: NextRequest) {
         logger.info("📋 Обрабатываем запрос нового чека:", cleanRequestId)
         
         // Ищем запись по очищенному requestId
-        const { data: projects, error: searchError } = await supabase
+        const { data: projects, error: searchError } = await db
           .from("projects")
           .select("id, atomic_request_id, status")
           .ilike("atomic_request_id", `%${cleanRequestId}%`)
@@ -1056,7 +1055,7 @@ export async function POST(req: NextRequest) {
         })
 
         // Обновляем статус проекта
-        const { error: requestError } = await supabase
+        const { error: requestError } = await db
           .from("projects")
           .update({
             status: "waiting_receipt",

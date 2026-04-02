@@ -1,6 +1,6 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 // GET: Получить комнаты пользователя - УЛЬТРА-БЕЗОПАСНАЯ ВЕРСИЯ
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // ПРОСТОЙ ЗАПРОС БЕЗ RLS ПРОВЕРОК
     // Direct query to chat_rooms
     
-    let query = supabase
+    let query = db
       .from('chat_rooms')
       .select(`
         id,
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     // 🛡️ ДОПОЛНИТЕЛЬНАЯ проверка на дублирование для проектных комнат
     if (room_type === 'project' && project_id) {
-      const { data: existingRoom } = await supabase
+      const { data: existingRoom } = await db
         .from('chat_rooms')
         .select('id, name')
         .eq('user_id', user_id)
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     }
 
 
-    const { data: newRoom, error } = await supabase
+    const { data: newRoom, error } = await db
       .from('chat_rooms')
       .insert(roomData)
       .select()
@@ -193,7 +193,7 @@ export async function DELETE(request: NextRequest) {
 
 
     // ШАГ 1: Проверяем что комната существует и принадлежит пользователю
-    const { data: existingRoom, error: checkError } = await supabase
+    const { data: existingRoom, error: checkError } = await db
       .from('chat_rooms')
       .select('id, name, room_type')
       .eq('id', roomId)
@@ -210,7 +210,7 @@ export async function DELETE(request: NextRequest) {
 
     // ШАГ 2: Безопасно удаляем сообщения (игнорируем ошибки)
     try {
-      const { error: messagesError } = await supabase
+      const { error: messagesError } = await db
         .from('chat_messages')
         .delete()
         .eq('room_id', roomId);
@@ -224,7 +224,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // ШАГ 3: Удаляем комнату 
-    const { error: roomError } = await supabase
+    const { error: roomError } = await db
       .from('chat_rooms')
       .delete()
       .eq('id', roomId)

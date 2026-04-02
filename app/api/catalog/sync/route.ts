@@ -1,11 +1,11 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
 import { logger } from "@/src/shared/lib/logger";
 
 // POST: Запуск синхронизации каталога с данными из проектов
 export async function POST(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await db.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
 
     // Запускаем синхронизацию поставщиков
-    const { data: syncResult, error: syncError } = await supabase.rpc('sync_catalog_suppliers');
+    const { data: syncResult, error: syncError } = await db.rpc('sync_catalog_suppliers');
 
     if (syncError) {
       logger.error("[API] Ошибка синхронизации каталога:", syncError);
@@ -36,14 +36,14 @@ export async function POST(request: NextRequest) {
 // GET: Получение статуса синхронизации и статистики
 export async function GET(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await db.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Получаем статистику личных поставщиков пользователя
-    const { data: userStats, error: userStatsError } = await supabase
+    const { data: userStats, error: userStatsError } = await db
       .from("catalog_user_suppliers")
       .select("source_type, total_projects, total_spent, last_project_date")
       .eq("user_id", user.id)
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Получаем общую статистику аккредитованных поставщиков
-    const { data: verifiedStats, error: verifiedStatsError } = await supabase
+    const { data: verifiedStats, error: verifiedStatsError } = await db
       .from("catalog_verified_suppliers")
       .select("category, country, is_featured")
       .eq("is_active", true);

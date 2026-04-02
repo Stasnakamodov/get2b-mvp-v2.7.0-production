@@ -11,7 +11,7 @@
  * 5. Price + name similarity — ±10 RUB + 0.5 Jaccard (O(n) linear scan)
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { db } from '@/lib/db'
 import { createHash } from 'crypto'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export class ImportDeduplicationService {
-  private supabase: SupabaseClient
+  private db: any
   private initialized = false
 
   // In-memory caches
@@ -136,8 +136,8 @@ export class ImportDeduplicationService {
   private imageHashMap = new Map<string, string>()    // url_hash -> product_id
   private products: CachedProduct[] = []              // for fuzzy scans
 
-  constructor(supabaseClient: SupabaseClient) {
-    this.supabase = supabaseClient
+  constructor(supabaseClient: any) {
+    this.db = supabaseClient
   }
 
   /**
@@ -151,7 +151,7 @@ export class ImportDeduplicationService {
     this.products = []
 
     // Load products
-    let query = this.supabase
+    let query = this.db
       .from('catalog_verified_products')
       .select('id, name, name_normalized, sku, price, images')
       .eq('is_active', true)
@@ -198,7 +198,7 @@ export class ImportDeduplicationService {
     }
 
     // Also load from image registry (in case some images aren't in product.images array)
-    const { data: registryImages } = await this.supabase
+    const { data: registryImages } = await this.db
       .from('catalog_image_registry')
       .select('url_hash, product_id')
       .limit(20000)
@@ -326,7 +326,7 @@ export class ImportDeduplicationService {
     if (rows.length === 0) return
 
     // Use upsert to skip conflicts on url_hash
-    const { error } = await this.supabase
+    const { error } = await this.db
       .from('catalog_image_registry')
       .upsert(rows, { onConflict: 'url_hash', ignoreDuplicates: true })
 
@@ -351,13 +351,7 @@ let _instance: ImportDeduplicationService | null = null
 
 export function getDeduplicationService(): ImportDeduplicationService {
   if (!_instance) {
-    // Use admin client (service role) for server-side access
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-    _instance = new ImportDeduplicationService(supabaseAdmin)
+    _instance = new ImportDeduplicationService(db)
   }
   return _instance
 }

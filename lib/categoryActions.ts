@@ -1,11 +1,11 @@
 "use server";
 
-import { createClient } from "@supabase/supabase-js";
+import { db } from '@/lib/db'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// using db from lib/db;
 
 /**
  * Получить все категории напрямую из БД (обход PostgREST cache)
@@ -28,7 +28,7 @@ export async function getAllCategoriesServer(options?: {
     `;
 
     // Используем MCP для прямого SQL
-    const { data, error } = await supabase.rpc('exec_raw_sql', {
+    const { data, error } = await db.rpc('exec_raw_sql', {
       sql: query,
       params: [options?.includeInactive || false, options?.level || null]
     });

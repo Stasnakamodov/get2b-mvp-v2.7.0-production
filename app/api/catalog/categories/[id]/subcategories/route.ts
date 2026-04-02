@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 /**
  * GET /api/catalog/categories/[id]/subcategories
@@ -20,7 +15,7 @@ export async function GET(
     const categoryId = id
 
     // Загружаем подкатегории для конкретной категории
-    const { data: subcategories, error: subcategoriesError } = await supabase
+    const { data: subcategories, error: subcategoriesError } = await db
       .from('catalog_subcategories')
       .select('*')
       .eq('category_id', categoryId)
@@ -37,7 +32,7 @@ export async function GET(
     // Для каждой подкатегории считаем количество товаров
     const subcategoriesWithCounts = await Promise.all(
       (subcategories || []).map(async (sub) => {
-        const { count } = await supabase
+        const { count } = await db
           .from('catalog_verified_products')
           .select('*', { count: 'exact', head: true })
           .eq('subcategory_id', sub.id)

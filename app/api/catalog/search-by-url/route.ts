@@ -5,7 +5,7 @@ import { getHtmlParserService } from '@/lib/services/HtmlParserService'
 import { getClaudeWebFetchService } from '@/lib/services/ClaudeWebFetchService'
 import { getPlaywrightParserService } from '@/lib/services/PlaywrightParserService'
 import { getYandexGPTService } from '@/lib/services/YandexGPTService'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 import { getOptionalAuthUser } from '@/lib/api/getOptionalAuthUser'
 import { buildOrFilter } from '@/lib/api/escapePostgrestTerm'
 import { isPrivateUrl } from '@/lib/api/ssrfGuard'
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
 
 
     // Шаг 4: Ищем в базе данных
-    let query = supabase
+    let query = db
       .from('catalog_verified_products')
       .select('*')
       .eq('is_active', true)

@@ -1,5 +1,6 @@
 "use client"
 
+import { db } from "@/lib/db/client"
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { logger } from "@/src/shared/lib/logger"
 import {
@@ -42,7 +43,6 @@ import { useProjectTemplates } from "./hooks/useSaveTemplate"
 import { useClientProfiles } from "@/hooks/useClientProfiles"
 import { useSupplierProfiles } from "@/hooks/useSupplierProfiles"
 import { getStepByStatus } from "@/lib/types/project-status"
-import { supabase } from "@/lib/supabaseClient"
 import ProjectTimeline from "@/components/ui/ProjectTimeline"
 import Step1CompanyForm from "./steps/Step1CompanyForm"
 import Step2SpecificationForm from "./steps/Step2SpecificationForm"
@@ -530,7 +530,7 @@ function ProjectStartFlow() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data?.user?.id || null));
+    db.auth.getUser().then(({ data }) => setUserId(data?.user?.id || null));
   }, []);
 
   // После выбора способа старта
@@ -544,7 +544,7 @@ function ProjectStartFlow() {
     setProjectInsertError(null);
     try {
       // Создаём проект в Supabase
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await db.auth.getUser();
       if (!userData?.user) {
         alert('Ошибка: пользователь не найден. Пожалуйста, войдите в систему заново.');
         if (typeof window !== 'undefined') {
@@ -558,7 +558,7 @@ function ProjectStartFlow() {
       if (method === 'template' && templateData) {
         alert('Попытка создать проект из шаблона!');
         // Создаём проект с автозаполнением из нормализованных полей шаблона
-        const { data: project, error: projectError } = await supabase
+        const { data: project, error: projectError } = await db
           .from('projects')
         .insert([
           {
@@ -595,7 +595,7 @@ function ProjectStartFlow() {
         const projectId: string = project.id;
         
         // Добавляем запись в историю статусов для создания проекта
-        await supabase
+        await db
           .from("project_status_history")
           .insert([
             {
@@ -611,8 +611,8 @@ function ProjectStartFlow() {
         setProjectId(projectId);
         setCurrentStep(1);
         // --- Диагностика авторизации перед bulk insert ---
-        const { data: user, error: userError } = await supabase.auth.getUser();
-        const session = await supabase.auth.getSession();
+        const { data: user, error: userError } = await db.auth.getUser();
+        const session = await db.auth.getSession();
         // --- Копируем спецификацию из шаблона в project_specifications ---
         if (Array.isArray(templateData.specification) && templateData.specification.length > 0) {
           // --- ЛОГИРОВАНИЕ bulk insert спецификации ---
@@ -628,7 +628,7 @@ function ProjectStartFlow() {
             role: 'client',
             user_id,
           }));
-          const { data: insertData, error: specError } = await supabase
+          const { data: insertData, error: specError } = await db
             .from('project_specifications')
             .insert(specRows);
           if (specError) {
@@ -638,7 +638,7 @@ function ProjectStartFlow() {
           // --- Polling: ждём, пока все позиции появятся в Supabase ---
           const waitForSpec = async () => {
             for (let i = 0; i < 10; i++) { // максимум 10 попыток (5 секунд)
-              const { data: specData } = await supabase
+              const { data: specData } = await db
                 .from('project_specifications')
                 .select('id')
                 .eq('project_id', projectId)
@@ -650,7 +650,7 @@ function ProjectStartFlow() {
           };
           await waitForSpec();
           // Переводим проект на шаг 2
-          await supabase.from('projects').update({ current_step: 2 }).eq('id', projectId);
+          await db.from('projects').update({ current_step: 2 }).eq('id', projectId);
           setCurrentStep(2);
           // Перенаправляем сразу на шаг 2
           router.replace(`?projectId=${projectId}&step=2`);
@@ -658,7 +658,7 @@ function ProjectStartFlow() {
           return;
         }
       } else {
-      const { data, error } = await supabase
+      const { data, error } = await db
           .from('projects')
         .insert([
           {
@@ -675,7 +675,7 @@ function ProjectStartFlow() {
         const projectId: string = data.id;
         
         // Добавляем запись в историю статусов для создания проекта
-        await supabase
+        await db
           .from("project_status_history")
           .insert([
             {
@@ -726,7 +726,7 @@ function ProjectStartFlow() {
       const url = new URL(window.location.href);
       const projectId = url.searchParams?.get('projectId');
       if (projectId) {
-        await supabase
+        await db
           .from('projects')
           .update({
             name: profile.name || '',
@@ -873,7 +873,7 @@ function TemplateLoader() {
     async function fetchTemplate() {
       setIsTemplateLoading(true);
       // Ищем шаблон в project_templates
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("project_templates")
         .select("*")
         .eq("id", templateId)
@@ -1038,7 +1038,7 @@ function SupplierLoader() {
       try {
         // Получаем данные поставщика из каталога
         // Получаем токен авторизации
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await db.auth.getSession();
         if (!session) {
           logger.error("[SupplierLoader] Нет активной сессии для загрузки поставщика");
           return;

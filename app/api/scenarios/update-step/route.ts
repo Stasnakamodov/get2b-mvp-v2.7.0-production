@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 import type { UpdateScenarioStepRequest } from '@/types/scenario-mode.types'
 
 export async function POST(request: NextRequest) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert дельты шага
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('project_scenario_deltas')
       .upsert(
         {

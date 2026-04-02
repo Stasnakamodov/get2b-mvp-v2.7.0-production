@@ -1,7 +1,8 @@
 'use client'
+import { db } from "@/lib/db/client"
 
 import { useState } from 'react'
-import { SupabaseClient } from '@supabase/supabase-js'
+// SupabaseClient type removed
 
 /**
  * 🔍 useOcrUpload Hook
@@ -23,7 +24,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
  */
 
 interface OcrUploadParams {
-  supabase: SupabaseClient
+  db: any
   setManualData: (data: any) => void
   setStepConfigs: (data: any) => void
   setSelectedSource: (source: string | null) => void
@@ -45,7 +46,7 @@ interface BankRequisites {
 }
 
 export function useOcrUpload({
-  supabase,
+  db,
   setManualData,
   setStepConfigs,
   setSelectedSource,
@@ -77,7 +78,7 @@ export function useOcrUpload({
     try {
 
       // Получаем токен авторизации
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await db.auth.getSession()
       if (!session) {
         throw new Error('Необходима авторизация для загрузки файлов')
       }

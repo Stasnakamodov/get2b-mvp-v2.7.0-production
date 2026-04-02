@@ -1,6 +1,6 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 // GET: Получить сообщения в комнате - УЛЬТРА-БЕЗОПАСНАЯ ВЕРСИЯ
 export async function GET(request: NextRequest) {
   try {
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     // САМЫЙ ПРОСТОЙ ЗАПРОС БЕЗ ВСЯКИХ ПРОВЕРОК (ИСПРАВЛЕН для менеджеров)
     // Direct query to chat_messages
     
-    const { data: messages, error } = await supabase
+    const { data: messages, error } = await db
       .from('chat_messages')
       .select(`
         id,
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     if (sender_type === 'user' && sender_user_id && isValidUUID(sender_user_id)) {
       try {
         // Проверяем что пользователь существует в базе
-        const { data: userExists } = await supabase
+        const { data: userExists } = await db
           .from('users')
           .select('id')
           .eq('id', sender_user_id)
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     }
 
 
-    const { data: newMessage, error } = await supabase
+    const { data: newMessage, error } = await db
       .from('chat_messages')
       .insert(messageData)
       .select()
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
       
       try {
         // Получаем информацию о комнате
-        const { data: room, error: roomError } = await supabase
+        const { data: room, error: roomError } = await db
           .from('chat_rooms')
           .select('room_type, project_id, name')
           .eq('id', room_id)
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
         if (room && room.room_type === 'project' && room.project_id) {
           
           // Получаем информацию о проекте
-          const { data: project, error: projectError } = await supabase
+          const { data: project, error: projectError } = await db
             .from('projects')
             .select('name, company_data')
             .eq('id', room.project_id)

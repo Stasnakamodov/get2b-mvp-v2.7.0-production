@@ -152,7 +152,7 @@ export const useStepValidation = ({
     } else if (validationResult.success) {
       status = 'complete'
     } else if (isFilled && !validationResult.success) {
-      status = validationResult.errors.length > 2 ? 'error' : 'partial'
+      status = ((validationResult as any).errors?.length ?? 0) > 2 ? 'error' : 'partial'
     }
 
     // Формируем warnings для автозаполненных данных
@@ -167,7 +167,7 @@ export const useStepValidation = ({
     return {
       isValid: validationResult.success,
       isFilled,
-      errors: validationResult.success ? [] : validationResult.errors,
+      errors: validationResult.success ? [] : (validationResult as any).errors || [],
       warnings,
       data: validationResult.success ? validationResult.data : data,
       status,
@@ -203,7 +203,7 @@ export const useProjectValidation = (stepsData: Record<number, any>) => {
 
       if (!result.success) {
         allValid = false
-        newErrors[step] = result.errors
+        newErrors[step] = (result as any).errors
       }
 
       if (stepsData[step]) {

@@ -4,7 +4,7 @@ import { logger } from "@/src/shared/lib/logger"
 
 import React, { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"
+import { db } from "@/lib/db/client"
 import { fetchProjectStatusHistory } from "@/lib/supabaseProjectStatus"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -59,7 +59,7 @@ export default function ProjectDetailPage() {
 
       try {
         // Загружаем данные проекта
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from("projects")
           .select("*")
           .eq("id", projectId)

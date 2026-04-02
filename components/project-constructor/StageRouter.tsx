@@ -1,4 +1,5 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import React from 'react'
 import { WaitingApprovalLoader, RejectionMessage } from '@/components/project-constructor/status/StatusLoaders'
@@ -6,7 +7,7 @@ import { PaymentForm } from '@/components/project-constructor/PaymentForm'
 import { DealAnimation } from '@/components/project-constructor/DealAnimation'
 import { ManagerReceiptSection } from '@/components/project-constructor/ManagerReceiptSection'
 import { ClientReceiptUploadSection } from '@/components/project-constructor/ClientReceiptUploadSection'
-import type { SupabaseClient } from '@supabase/supabase-js'
+// SupabaseClient type removed - use typeof db
 
 interface StageRouterProps {
   // Stage control
@@ -22,7 +23,7 @@ interface StageRouterProps {
   projectRequestId: string
   manualData: Record<number, any>
   uploadSupplierReceipt: (file: File) => Promise<string | null>
-  supabase: SupabaseClient
+  db: any
   POLLING_INTERVALS: { PROJECT_STATUS_CHECK: number }
 
   // Stage 3 - Deal animation & Manager receipt
@@ -59,7 +60,7 @@ export const StageRouter: React.FC<StageRouterProps> = ({
   projectRequestId,
   manualData,
   uploadSupplierReceipt,
-  supabase,
+  db,
   POLLING_INTERVALS,
   dealAnimationStep,
   dealAnimationStatus,
@@ -100,7 +101,7 @@ export const StageRouter: React.FC<StageRouterProps> = ({
               manualData={manualData}
               setCurrentStage={setCurrentStage}
               uploadSupplierReceipt={uploadSupplierReceipt}
-              supabase={supabase}
+              db={db}
               POLLING_INTERVALS={POLLING_INTERVALS}
             />
           )}

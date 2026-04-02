@@ -1,6 +1,6 @@
+import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
 import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabaseClient';
 export function useProjectSpecification(projectId: string | null, role: 'client' | 'supplier') {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -10,7 +10,7 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
   const fetchSpecification = useCallback(async () => {
     if (!projectId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('project_specifications')
       .select('*')
       .eq('project_id', projectId)
@@ -27,7 +27,7 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
       logger.error('[addItem] Нет projectId!');
       return;
     }
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await db.auth.getUser();
     const user_id = userData?.user?.id;
     if (!user_id) {
       setError("Ошибка авторизации: попробуйте войти заново");
@@ -35,7 +35,7 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
       return;
     }
     setLoading(true);
-    const { error, data } = await supabase
+    const { error, data } = await db
       .from('project_specifications')
       .insert([{ ...item, project_id: projectId, role, user_id }]);
     setLoading(false);
@@ -52,7 +52,7 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
       logger.error('[addItems] Нет projectId!');
       return null;
     }
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await db.auth.getUser();
     const user_id = userData?.user?.id;
     if (!user_id) {
       setError("Ошибка авторизации: попробуйте войти заново");
@@ -63,7 +63,7 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
     const bulk = itemsToAdd.map(item => ({ ...item, project_id: projectId, role, user_id }));
     
     setLoading(true);
-    const { error, data } = await supabase
+    const { error, data } = await db
       .from('project_specifications')
       .insert(bulk)
       .select(); // Получаем id созданных строк
@@ -92,7 +92,7 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
   // Обновить позицию
   const updateItem = async (id: string, item: any) => {
     setLoading(true);
-    const { error } = await supabase
+    const { error } = await db
       .from('project_specifications')
       .update(item)
       .eq('id', id);
@@ -103,7 +103,7 @@ export function useProjectSpecification(projectId: string | null, role: 'client'
   // Удалить позицию
   const deleteItem = async (id: string) => {
     setLoading(true);
-    const { error } = await supabase
+    const { error } = await db
       .from('project_specifications')
       .delete()
       .eq('id', id);

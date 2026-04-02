@@ -1,6 +1,6 @@
+import { db } from "@/lib/db"
 // Используем библиотеку xlsx для работы с Excel файлами
 import * as XLSX from 'xlsx';
-import { supabase } from '@/lib/supabaseClient';
 
 export class YandexVisionService {
   private apiKey: string;
@@ -303,7 +303,7 @@ export class YandexVisionService {
               const bucketName = 'step2-ready-invoices'; // Используем тот же bucket
               
               
-              const { data, error } = await supabase.storage
+              const { data, error } = await db.storage
                 .from(bucketName)
                 .download(fileName);
               

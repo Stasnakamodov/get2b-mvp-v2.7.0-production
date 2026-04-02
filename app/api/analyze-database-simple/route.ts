@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 
 export async function GET(_request: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest) {
 
     for (const tableName of mainTables) {
       try {
-        const { count, error } = await supabase
+        const { count, error } = await db
           .from(tableName)
           .select('*', { count: 'exact', head: true });
 
@@ -38,7 +38,7 @@ export async function GET(_request: NextRequest) {
 
     // 2. Анализ проектов - статусы
     try {
-      const { data: projectStatuses, error } = await supabase
+      const { data: projectStatuses, error } = await db
         .from('projects')
         .select('status');
 
@@ -55,7 +55,7 @@ export async function GET(_request: NextRequest) {
 
     // 3. Анализ проектов - шаги
     try {
-      const { data: projectSteps, error } = await supabase
+      const { data: projectSteps, error } = await db
         .from('projects')
         .select('current_step, max_step_reached');
 
@@ -73,7 +73,7 @@ export async function GET(_request: NextRequest) {
 
     // 4. Анализ каталога - категории
     try {
-      const { data: catalogCategories, error } = await supabase
+      const { data: catalogCategories, error } = await db
         .from('catalog_verified_suppliers')
         .select('category');
 
@@ -90,7 +90,7 @@ export async function GET(_request: NextRequest) {
 
     // 5. Анализ каталога - страны
     try {
-      const { data: catalogCountries, error } = await supabase
+      const { data: catalogCountries, error } = await db
         .from('catalog_verified_suppliers')
         .select('country');
 
@@ -107,7 +107,7 @@ export async function GET(_request: NextRequest) {
 
     // 6. Анализ каталога - статус модерации
     try {
-      const { data: moderationStatuses, error } = await supabase
+      const { data: moderationStatuses, error } = await db
         .from('catalog_verified_suppliers')
         .select('moderation_status');
 
@@ -124,7 +124,7 @@ export async function GET(_request: NextRequest) {
 
     // 7. Структура таблицы projects
     try {
-      const { data: projectSample, error } = await supabase
+      const { data: projectSample, error } = await db
         .from('projects')
         .select('*')
         .limit(1);
@@ -138,7 +138,7 @@ export async function GET(_request: NextRequest) {
 
     // 8. Структура таблицы catalog_verified_suppliers
     try {
-      const { data: supplierSample, error } = await supabase
+      const { data: supplierSample, error } = await db
         .from('catalog_verified_suppliers')
         .select('*')
         .limit(1);
@@ -152,7 +152,7 @@ export async function GET(_request: NextRequest) {
 
     // 9. Структура таблицы specifications
     try {
-      const { data: specSample, error } = await supabase
+      const { data: specSample, error } = await db
         .from('specifications')
         .select('*')
         .limit(1);

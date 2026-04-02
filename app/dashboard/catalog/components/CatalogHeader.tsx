@@ -1,4 +1,5 @@
 'use client'
+import { db } from "@/lib/db/client"
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
@@ -31,7 +32,6 @@ import {
   ChevronRight,
   SlidersHorizontal,
 } from 'lucide-react'
-import { supabase } from '@/lib/supabaseClient'
 import { SORT_OPTIONS, SEARCH_DEBOUNCE_MS, SUPPLIER_COUNTRIES } from '@/lib/catalog/constants'
 import { PriceFilterPopover } from './PriceFilterPopover'
 import type { CatalogProduct, CatalogCategory, CatalogFilters, CatalogSort, CatalogViewMode, FacetCount } from '@/lib/catalog/types'
@@ -203,7 +203,7 @@ export function CatalogHeader({
     try {
       const base64 = await fileToBase64(selectedImage)
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await db.auth.getSession()
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
       const res = await fetch('/api/catalog/search-by-image', {
         method: 'POST',
@@ -227,7 +227,7 @@ export function CatalogHeader({
     setIsLoading(true)
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await db.auth.getSession()
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
       const res = await fetch('/api/catalog/search-by-url', {
         method: 'POST',

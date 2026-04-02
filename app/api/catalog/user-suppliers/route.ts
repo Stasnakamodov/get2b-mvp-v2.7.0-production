@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
 
 /**
  * Извлекает userId из токена авторизации или сессии.
@@ -10,14 +10,14 @@ async function extractUserId(request: NextRequest): Promise<string | NextRespons
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data: { user }, error } = await db.auth.getUser(token);
     if (error || !user) {
       return NextResponse.json({ error: "Unauthorized - недействительный токен" }, { status: 401 });
     }
     return user.id;
   }
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const { data: { user }, error } = await db.auth.getUser();
   if (error || !user) {
     return NextResponse.json({ error: "Unauthorized - требуется авторизация" }, { status: 401 });
   }
@@ -59,13 +59,13 @@ export async function GET(request: NextRequest) {
     if (id) {
       
       // Сначала проверим, существует ли поставщик вообще
-      const { data: allSuppliers, error: allError } = await supabase
+      const { data: allSuppliers, error: allError } = await db
         .from("catalog_user_suppliers")
         .select("id, name, user_id, is_active")
         .eq("id", id);
       
       
-      const { data: supplier, error: supplierError } = await supabase
+      const { data: supplier, error: supplierError } = await db
         .from("catalog_user_suppliers")
         .select(`
           *,
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ОСНОВНОЙ ЗАПРОС - показываем только поставщиков текущего пользователя
-    let query = supabase
+    let query = db
       .from("catalog_user_suppliers")
       .select(`
         *,
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверяем дубликаты ТОЛЬКО среди АКТИВНЫХ поставщиков
-    const { data: existingSupplier } = await supabase
+    const { data: existingSupplier } = await db
       .from("catalog_user_suppliers")
       .select("id")
       .eq("user_id", userId)
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
     };
 
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("catalog_user_suppliers")
       .insert([insertData])
       .select()
@@ -240,7 +240,7 @@ export async function PATCH(request: NextRequest) {
     }
 
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("catalog_user_suppliers")
       .update({
         ...updateData,
@@ -288,7 +288,7 @@ export async function DELETE(request: NextRequest) {
 
     // Сначала проверяем, существует ли поставщик и принадлежит ли он пользователю
     
-    const { data: existingSupplier, error: checkError } = await supabase
+    const { data: existingSupplier, error: checkError } = await db
       .from("catalog_user_suppliers")
       .select("id, name, is_active")
       .eq("id", id)
@@ -311,7 +311,7 @@ export async function DELETE(request: NextRequest) {
 
 
     // Мягкое удаление товаров поставщика
-    const { data: deletedProducts, error: productsError } = await supabase
+    const { data: deletedProducts, error: productsError } = await db
       .from("catalog_user_products")
       .update({ 
         is_active: false,
@@ -327,7 +327,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Мягкое удаление поставщика
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("catalog_user_suppliers")
       .update({ 
         is_active: false,

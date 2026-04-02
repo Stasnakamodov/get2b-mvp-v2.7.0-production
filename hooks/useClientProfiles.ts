@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db/client';
 
 // Отдельная функция для создания профиля клиента
 export async function createClientProfile(supabase: any, userId: string, profile: any) {
   if (!userId) return { ok: false, error: 'Нет userId' };
-  const { error } = await supabase
+  const { error } = await db
     .from('client_profiles')
     .insert([{ ...profile, user_id: userId }]);
   if (error) {
@@ -22,7 +22,7 @@ export function useClientProfiles(userId: string | null) {
   const fetchProfiles = async () => {
     if (!userId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('client_profiles')
       .select('*')
       .eq('user_id', userId)
@@ -41,7 +41,7 @@ export function useClientProfiles(userId: string | null) {
   const addProfile = async (profile: any) => {
     if (!userId) return false;
     setLoading(true);
-    const { error } = await supabase
+    const { error } = await db
       .from('client_profiles')
       .insert([{ ...profile, user_id: userId }]);
     setLoading(false);
@@ -56,7 +56,7 @@ export function useClientProfiles(userId: string | null) {
   // Редактировать профиль
   const updateProfile = async (id: string, profile: any) => {
     setLoading(true);
-    const { error } = await supabase
+    const { error } = await db
       .from('client_profiles')
       .update(profile)
       .eq('id', id);
@@ -72,7 +72,7 @@ export function useClientProfiles(userId: string | null) {
   // Удалить профиль
   const deleteProfile = async (id: string) => {
     setLoading(true);
-    const { error } = await supabase
+    const { error } = await db
       .from('client_profiles')
       .delete()
       .eq('id', id);
@@ -90,12 +90,12 @@ export function useClientProfiles(userId: string | null) {
     if (!userId) return false;
     setLoading(true);
     // Сначала сбросить все is_default
-    await supabase
+    await db
       .from('client_profiles')
       .update({ is_default: false })
       .eq('user_id', userId);
     // Затем установить выбранный
-    const { error } = await supabase
+    const { error } = await db
       .from('client_profiles')
       .update({ is_default: true })
       .eq('id', id);

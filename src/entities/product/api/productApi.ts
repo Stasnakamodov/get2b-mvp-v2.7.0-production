@@ -1,9 +1,9 @@
+import { db } from "@/lib/db/client"
 /**
  * API слой для работы с товарами через Supabase и REST API
  * Извлечено из монолитного supabaseApi.ts при рефакторинге на FSD архитектуру
  */
 
-import { supabase } from '@/lib/supabaseClient'
 import type { Product } from '../model/types'
 
 // ========================================
@@ -29,7 +29,7 @@ export const fetchSupplierProducts = async (
     let headers: HeadersInit = {}
 
     if (supplierType === 'user') {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await db.auth.getSession()
       if (!session) {
         return { products: [], nextCursor: null, hasMore: false, totalCount: 0 }
       }
@@ -66,7 +66,7 @@ export const createProduct = async (
   console.log('📝 [API] Создание товара для поставщика:', supplierId)
 
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     if (!session) {
       throw new Error('Нет активной сессии')
     }
@@ -108,7 +108,7 @@ export const updateProduct = async (
   console.log('✏️ [API] Обновление товара:', productId)
 
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     if (!session) {
       throw new Error('Нет активной сессии')
     }
@@ -147,7 +147,7 @@ export const deleteProduct = async (productId: string): Promise<boolean> => {
   console.log('🗑️ [API] Удаление товара:', productId)
 
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     if (!session) {
       throw new Error('Нет активной сессии')
     }

@@ -21,7 +21,7 @@ import {
   Check
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db/client";
 import { useToast } from "@/components/ui/use-toast";
 interface Supplier {
   id: string;
@@ -139,13 +139,13 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
     setIsLoading(true);
     try {
       // Load verified suppliers
-      const { data: verifiedSuppliers, error: verifiedError } = await supabase
+      const { data: verifiedSuppliers, error: verifiedError } = await db
         .from('catalog_verified_suppliers')
         .select('id, name, company_name, country, city, category, logo_url, bank_accounts, crypto_wallets, p2p_cards')
         .eq('is_active', true);
 
       // Load user suppliers
-      const { data: userSuppliers, error: userError } = await supabase
+      const { data: userSuppliers, error: userError } = await db
         .from('catalog_user_suppliers')
         .select('id, name, company_name, country, city, category, logo_url, bank_accounts, crypto_wallets, p2p_cards')
         .eq('is_active', true);

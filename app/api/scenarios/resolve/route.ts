@@ -1,5 +1,5 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
 import type { ResolvedScenario, ResolvedStep } from '@/types/scenario-mode.types'
 import type { ManualData, PartialStepConfigs, StepNumber } from '@/types/project-constructor.types'
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Вызов SQL-функции get_scenario_resolved_steps
-    const { data, error } = await supabase.rpc('get_scenario_resolved_steps', {
+    const { data, error } = await db.rpc('get_scenario_resolved_steps', {
       p_scenario_node_id: scenarioId,
     })
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 
 export async function GET(_request: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
 
     // 1. Получение всех таблиц
     try {
-      const { data: allTables, error } = await supabase
+      const { data: allTables, error } = await db
         .from('information_schema.tables')
         .select('table_name, table_type')
         .eq('table_schema', 'public')
@@ -63,7 +63,7 @@ export async function GET(_request: NextRequest) {
     
     for (const tableName of knownChatTables) {
       try {
-        const { count, error } = await supabase
+        const { count, error } = await db
           .from(tableName)
           .select('*', { count: 'exact', head: true });
 
@@ -79,7 +79,7 @@ export async function GET(_request: NextRequest) {
 
     // 7. Проверка структуры chat_rooms
     try {
-      const { data: roomSample, error } = await supabase
+      const { data: roomSample, error } = await db
         .from('chat_rooms')
         .select('*')
         .limit(1);
@@ -95,7 +95,7 @@ export async function GET(_request: NextRequest) {
 
     // 8. Проверка структуры chat_messages
     try {
-      const { data: messageSample, error } = await supabase
+      const { data: messageSample, error } = await db
         .from('chat_messages')
         .select('*')
         .limit(1);

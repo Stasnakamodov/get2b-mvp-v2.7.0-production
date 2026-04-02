@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 
 // GET: Получение методов оплаты
 export async function GET(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const supplier_id = searchParams.get("supplier_id");
     
     // Получаем уникальные методы оплаты от аккредитованных поставщиков
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("catalog_verified_suppliers")
       .select("payment_methods, crypto_wallets, bank_accounts, p2p_cards")
       .not("payment_methods", "is", null);

@@ -1,6 +1,6 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from "@/lib/supabaseClient";
 
 // GET: Проверка файлов в Supabase Storage
 export async function GET(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     if (listBuckets) {
       // Получаем список всех buckets
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      const { data: buckets, error: bucketsError } = await db.storage.listBuckets();
       
       if (bucketsError) {
         logger.error("❌ [STORAGE] Ошибка получения buckets:", bucketsError);
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Получаем список файлов в указанной папке
-    const { data: files, error } = await supabase.storage
+    const { data: files, error } = await db.storage
       .from('project-images')
       .list(path, {
         limit: 100,
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     // Получаем публичные URL для первых нескольких файлов
     const filesWithUrls = files?.slice(0, 5).map(file => {
       const filePath = `${path}/${file.name}`;
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = db.storage
         .from('project-images')
         .getPublicUrl(filePath);
 

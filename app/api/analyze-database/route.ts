@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     };
 
     // 1. Список всех таблиц
-    const { data: tables, error: tablesError } = await supabase
+    const { data: tables, error: tablesError } = await db
       .rpc('exec_sql', {
         sql_query: `
           SELECT 
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     for (const tableName of mainTables) {
       try {
-        const { count, error } = await supabase
+        const { count, error } = await db
           .from(tableName)
           .select('*', { count: 'exact', head: true });
 
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     
     for (const tableName of structureTables) {
       try {
-        const { data: structure, error } = await supabase
+        const { data: structure, error } = await db
           .rpc('exec_sql', {
             sql_query: `
               SELECT 
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
 
     // 4. Анализ данных проектов
     try {
-      const { data: projectStatuses, error: statusError } = await supabase
+      const { data: projectStatuses, error: statusError } = await db
         .rpc('exec_sql', {
           sql_query: `
             SELECT 
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
 
     // 5. Анализ шагов проектов
     try {
-      const { data: projectSteps, error: stepsError } = await supabase
+      const { data: projectSteps, error: stepsError } = await db
         .rpc('exec_sql', {
           sql_query: `
             SELECT 
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
 
     // 6. Анализ каталога
     try {
-      const { data: catalogAnalysis, error: catalogError } = await supabase
+      const { data: catalogAnalysis, error: catalogError } = await db
         .rpc('exec_sql', {
           sql_query: `
             SELECT 
@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
 
     // 7. Индексы
     try {
-      const { data: indexes, error: indexesError } = await supabase
+      const { data: indexes, error: indexesError } = await db
         .rpc('exec_sql', {
           sql_query: `
             SELECT 
@@ -203,7 +203,7 @@ export async function GET(request: NextRequest) {
 
     // 8. RLS политики
     try {
-      const { data: policies, error: policiesError } = await supabase
+      const { data: policies, error: policiesError } = await db
         .rpc('exec_sql', {
           sql_query: `
             SELECT 
@@ -229,7 +229,7 @@ export async function GET(request: NextRequest) {
 
     // 9. Внешние ключи
     try {
-      const { data: foreignKeys, error: fkError } = await supabase
+      const { data: foreignKeys, error: fkError } = await db
         .rpc('exec_sql', {
           sql_query: `
             SELECT 

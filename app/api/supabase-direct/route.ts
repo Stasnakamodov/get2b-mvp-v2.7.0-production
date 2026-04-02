@@ -1,6 +1,6 @@
+import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from "@/lib/supabaseClient";
 
 // GET: Прямой запрос к Supabase для диагностики
 export async function GET(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
     
     
-    let query = supabase.from(table).select("*");
+    let query = db.from(table).select("*");
     
     if (supplierId) {
       query = query.eq("supplier_id", supplierId);

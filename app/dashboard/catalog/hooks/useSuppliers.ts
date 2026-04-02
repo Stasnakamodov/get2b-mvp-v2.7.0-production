@@ -1,10 +1,10 @@
+import { db } from "@/lib/db/client"
 /**
  * Hook для управления поставщиками
  * Централизует всю логику работы с поставщиками
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { ROOM_TYPES, ERROR_MESSAGES, SUCCESS_MESSAGES, PAGINATION_CONFIG } from '../constants/supplierConfig'
 
 export interface Supplier {
@@ -68,7 +68,7 @@ interface UseSuppliersReturn {
 }
 
 export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppliersReturn {
-  const supabase = createClientComponentClient()
+  // using db from @/lib/db/client
 
   // State
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -125,7 +125,7 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
     setError(null)
 
     try {
-      const { data, error: fetchError, count } = await supabase
+      const { data, error: fetchError, count } = await db
         .from('suppliers')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
@@ -142,7 +142,7 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [db])
 
   // Create supplier
   const createSupplier = useCallback(async (data: Partial<Supplier>): Promise<Supplier | null> => {
@@ -154,7 +154,7 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
         throw new Error(ERROR_MESSAGES.VALIDATION_ERROR)
       }
 
-      const { data: newSupplier, error: createError } = await supabase
+      const { data: newSupplier, error: createError } = await db
         .from('suppliers')
         .insert({
           ...data,
@@ -180,14 +180,14 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
       setError(message)
       return null
     }
-  }, [supabase])
+  }, [db])
 
   // Update supplier
   const updateSupplier = useCallback(async (id: number, data: Partial<Supplier>): Promise<boolean> => {
     setError(null)
 
     try {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from('suppliers')
         .update({
           ...data,
@@ -210,14 +210,14 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
       setError(message)
       return false
     }
-  }, [supabase])
+  }, [db])
 
   // Delete supplier
   const deleteSupplier = useCallback(async (id: number): Promise<boolean> => {
     setError(null)
 
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await db
         .from('suppliers')
         .delete()
         .eq('id', id)
@@ -235,7 +235,7 @@ export function useSuppliers(initialRoom: string = ROOM_TYPES.ORANGE): UseSuppli
       setError(message)
       return false
     }
-  }, [supabase])
+  }, [db])
 
   // Load suppliers on mount
   useEffect(() => {

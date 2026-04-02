@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db";
 import { checkUserRole } from "@/lib/auth/checkRole";
 
 /**
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     if (verified) {
       // Single verified supplier by ID with products
       if (id) {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from("catalog_verified_suppliers")
           .select(`
             *,
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       }
 
       // List verified suppliers
-      let query = supabase
+      let query = db
         .from("catalog_verified_suppliers")
         .select("*, catalog_verified_products(count)")
         .eq("is_active", true)
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     }
 
     // === Default: generic catalog_suppliers ===
-    let query = supabase
+    let query = db
       .from("catalog_suppliers")
       .select("*")
       .eq("is_active", true)
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       }
 
       const { verified: _, ...cleanData } = supplierData;
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("catalog_verified_suppliers")
         .insert([{
           ...cleanData,
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("catalog_suppliers")
       .insert([supplierData])
       .select()
@@ -179,7 +179,7 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: roleCheck.error }, { status: roleCheck.user ? 403 : 401 });
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("catalog_verified_suppliers")
         .update({ ...updateData, updated_at: new Date().toISOString() })
         .eq("id", id)
@@ -189,7 +189,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ supplier: data });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("catalog_suppliers")
       .update(updateData)
       .eq("id", id)
@@ -212,7 +212,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const tableName = verified ? "catalog_verified_suppliers" : "catalog_suppliers";
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from(tableName)
       .update({ is_active: false })
       .eq("id", id)

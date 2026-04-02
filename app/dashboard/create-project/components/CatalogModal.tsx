@@ -1,8 +1,8 @@
 'use client'
+import { db } from "@/lib/db/client"
 
 import React, { useState, useEffect } from 'react'
 import { X, Search, Package, Building, MapPin, Star, Plus, Users, Clock, Zap, Phone, Mail, Globe, ChevronLeft, Grid3X3, List, ShoppingCart, Minus, Landmark, CreditCard, Wallet, CheckCircle } from 'lucide-react'
-import { supabase } from '@/lib/supabaseClient'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -434,7 +434,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
 
   // Функция получения токена авторизации
   const getAuthToken = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await db.auth.getSession()
     setAuthToken(session?.access_token || null)
   }
 
@@ -475,7 +475,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
     setLoadingPersonal(true)
     try {
       // Получаем токен авторизации
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await db.auth.getSession();
       if (!session) {
         console.error('❌ [CATALOG MODAL] Нет активной сессии для загрузки персональных поставщиков');
         setPersonalSuppliers([]);
@@ -571,7 +571,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       } else {
         // Для обычных поставщиков
         // Получаем токен авторизации
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await db.auth.getSession();
         if (!session) {
           console.error('❌ [CATALOG MODAL] Нет активной сессии для загрузки товаров');
           setSupplierProducts([]);

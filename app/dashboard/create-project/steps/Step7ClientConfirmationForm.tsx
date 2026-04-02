@@ -1,3 +1,4 @@
+import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect, useRef } from "react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
@@ -5,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, FileCheck, Banknote, ArrowLeft, Upload, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabaseClient";
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import { sendTelegramMessageClient, sendTelegramDocumentClient } from "@/lib/telegram-client";
 export default function Step7ClientConfirmationForm() {
@@ -34,7 +34,7 @@ export default function Step7ClientConfirmationForm() {
     async function loadProjectData() {
       if (!projectId) return;
       
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("projects")
         .select("*")
         .eq("id", projectId)
@@ -86,7 +86,7 @@ export default function Step7ClientConfirmationForm() {
 
     try {
       // Получаем ID пользователя для организации файлов
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       const userId = userData?.user?.id || 'unknown';
 
       // Генерируем уникальное имя файла
@@ -101,7 +101,7 @@ export default function Step7ClientConfirmationForm() {
       });
 
       // Загружаем файл в Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await db.storage
         .from("step7-client-confirmations")
         .upload(filePath, file, {
           contentType: file.type,
@@ -114,7 +114,7 @@ export default function Step7ClientConfirmationForm() {
       }
 
       // Получаем публичный URL файла
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = db.storage
         .from("step7-client-confirmations")
         .getPublicUrl(filePath);
 
@@ -122,7 +122,7 @@ export default function Step7ClientConfirmationForm() {
       logger.info("✅ Файл загружен:", fileUrl);
 
       // Сохраняем URL в проект
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from("projects")
         .update({ 
           client_confirmation_url: fileUrl,
@@ -182,7 +182,7 @@ export default function Step7ClientConfirmationForm() {
 
     try {
       // Удаляем URL из базы данных
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from("projects")
         .update({ 
           client_confirmation_url: null,
@@ -222,7 +222,7 @@ export default function Step7ClientConfirmationForm() {
     
     try {
       // Получаем ID пользователя
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       const userId = userData?.user?.id;
       
       // Меняем статус на completed

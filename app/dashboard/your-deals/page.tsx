@@ -1,4 +1,5 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import React from "react"
 import { useState, useEffect } from "react"
@@ -9,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, ArrowRight } from "lucide-react"
-import { supabase } from "@/lib/supabaseClient"
 import ProjectTimeline from "@/components/ui/ProjectTimeline"
 import { Building2, FileText, DollarSign, FileCheck, ArrowRightLeft, Truck, CheckCircle } from "lucide-react"
 
@@ -76,9 +76,9 @@ export default function YourDealsPage() {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await db.auth.getUser();
       if (!user) return;
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("projects")
         .select("*")
         .eq("user_id", user.id)

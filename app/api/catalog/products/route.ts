@@ -1,6 +1,6 @@
+import { db } from "@/lib/db"
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
 import { z } from "zod"
 
 /**
@@ -119,13 +119,13 @@ export async function GET(request: NextRequest) {
       const authHeader = request.headers.get('authorization')
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7)
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        const { data: { user }, error: authError } = await db.auth.getUser(token)
         if (authError || !user) {
           return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
         userId = user.id
       } else {
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        const { data: { user }, error: authError } = await db.auth.getUser()
         if (authError || !user) {
           return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
       : 'catalog_user_products'
 
     // Build data query
-    let query = supabase
+    let query = db
       .from(tableName)
       .select('*')
       .eq('is_active', true)
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
       .limit(limit + 1) // +1 to detect hasMore
 
     // Build parallel count query (same filters, head-only)
-    let countQuery = supabase
+    let countQuery = db
       .from(tableName)
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true)
@@ -235,7 +235,7 @@ export async function GET(request: NextRequest) {
 // POST: Create product (requires auth)
 export async function POST(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await db.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
     const { supplier_type: _, ...cleanProductData } = productData
 
     if (supplier_type === "user" && !cleanProductData.user_id) {
-      const { data: supplier } = await supabase
+      const { data: supplier } = await db
         .from("catalog_user_suppliers")
         .select("user_id")
         .eq("id", cleanProductData.supplier_id)
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!cleanProductData.category) {
-      const { data: supplier } = await supabase
+      const { data: supplier } = await db
         .from(supplier_type === "verified" ? "catalog_verified_suppliers" : "catalog_user_suppliers")
         .select("category")
         .eq("id", cleanProductData.supplier_id)
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
       cleanProductData.category = supplier?.category || "Без категории"
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from(tableName)
       .insert([cleanProductData])
       .select()
@@ -292,7 +292,7 @@ export async function POST(request: NextRequest) {
 // PATCH: Update product (requires auth)
 export async function PATCH(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await db.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -303,7 +303,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const tableName = supplier_type === "verified" ? "catalog_verified_products" : "catalog_user_products"
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from(tableName)
       .update(updateData)
       .eq("id", id)
@@ -325,7 +325,7 @@ export async function PATCH(request: NextRequest) {
 // DELETE: Delete product (requires auth)
 export async function DELETE(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await db.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -336,7 +336,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const tableName = supplier_type === "verified" ? "catalog_verified_products" : "catalog_user_products"
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from(tableName)
       .delete()
       .eq("id", id)

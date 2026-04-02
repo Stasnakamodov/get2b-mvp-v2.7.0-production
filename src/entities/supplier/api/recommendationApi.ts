@@ -1,9 +1,9 @@
+import { db } from "@/lib/db/client"
 /**
  * API слой для работы с умными рекомендациями через Supabase и REST API
  * Извлечено из монолитного supabaseApi.ts при рефакторинге на FSD архитектуру
  */
 
-import { supabase } from '@/lib/supabaseClient'
 import type { SmartRecommendation } from '../model/types'
 
 // ========================================
@@ -24,7 +24,7 @@ export const fetchRecommendations = async (
 
     // Если userId не передан, получаем текущего пользователя
     if (!currentUserId) {
-      const { data: userData, error: userError } = await supabase.auth.getUser()
+      const { data: userData, error: userError } = await db.auth.getUser()
       if (userError || !userData?.user?.id) {
         throw new Error('Не удалось получить ID пользователя')
       }

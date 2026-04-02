@@ -1,4 +1,5 @@
 "use client"
+import { db } from "@/lib/db/client"
 
 import { logger } from "@/src/shared/lib/logger"
 
@@ -26,7 +27,6 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { supabase } from "@/lib/supabaseClient"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -538,7 +538,7 @@ export default function ChatHubPage() {
     const fetchUserAndProjects = async () => {
       try {
         logger.info("🔍 Получение пользователя...");
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        const { data: { user }, error: userError } = await db.auth.getUser()
         
         if (userError) {
           logger.error("❌ Ошибка получения пользователя:", userError);
@@ -551,7 +551,7 @@ export default function ChatHubPage() {
           
           // Упрощенная загрузка проектов без inner join
           try {
-            const { data: projectsData, error: projectsError } = await supabase
+            const { data: projectsData, error: projectsError } = await db
               .from('projects')
               .select('id, name, status, amount, currency, created_at')
               .eq('user_id', user.id)

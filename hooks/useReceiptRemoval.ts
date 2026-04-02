@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db/client';
 import { cleanProjectRequestId } from '@/utils/IdUtils';
 
 interface UseReceiptRemovalProps {
@@ -26,7 +26,7 @@ export function useReceiptRemoval({
 
     try {
       // Удаляем URL из базы данных
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from("projects")
         .update({
           client_confirmation_url: null,

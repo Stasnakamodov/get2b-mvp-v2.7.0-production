@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 import { getOtapiService } from '@/lib/services/OtapiService'
 import { getDeduplicationService, normalizeImageUrl } from '@/lib/services/ImportDeduplicationService'
 import { getProductQualityEnricher } from '@/lib/services/ProductQualityEnricher'
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     logger.info(`[API] Найдено товаров в OTAPI: ${products.length}`)
 
     // 3. Проверяем что поставщик существует
-    const { data: supplier, error: supplierError } = await supabase
+    const { data: supplier, error: supplierError } = await db
       .from('catalog_verified_suppliers')
       .select('id, name')
       .eq('id', supplier_id)
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
       const rows = productsToImport.map(p => p.formatted)
 
       // Try batch insert first
-      const { data: insertedProducts, error: insertError } = await supabase
+      const { data: insertedProducts, error: insertError } = await db
         .from('catalog_verified_products')
         .insert(rows)
         .select('id, name, images')
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
         logger.warn(`[API] Batch insert failed: ${insertError.message}. Falling back to one-by-one.`)
 
         for (const row of rows) {
-          const { data: single, error: singleError } = await supabase
+          const { data: single, error: singleError } = await db
             .from('catalog_verified_products')
             .insert([row])
             .select('id, name, images')

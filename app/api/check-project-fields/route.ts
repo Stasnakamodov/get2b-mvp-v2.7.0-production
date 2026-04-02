@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { db } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId') || '91f29faa-be11-4348-a804-69293a84d4d5'
     
     // Получаем проект и все его поля
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("projects")
       .select("*")
       .eq("id", projectId)

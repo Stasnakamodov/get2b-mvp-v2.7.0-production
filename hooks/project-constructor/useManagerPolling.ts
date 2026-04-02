@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db/client'
 import { cleanProjectRequestId } from '@/utils/IdUtils'
 import { POLLING_INTERVALS } from '@/components/project-constructor/config/PollingConstants'
 
@@ -24,7 +24,7 @@ export const useManagerPolling = (
       try {
         const cleanRequestId = cleanProjectRequestId(projectRequestId)
 
-        const { data: projects, error } = await supabase
+        const { data: projects, error } = await db
           .from('projects')
           .select('atomic_moderation_status')
           .ilike('atomic_request_id', `%${cleanRequestId}%`)

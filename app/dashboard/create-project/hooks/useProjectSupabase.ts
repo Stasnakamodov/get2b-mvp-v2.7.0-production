@@ -1,6 +1,6 @@
 import { logger } from "@/src/shared/lib/logger"
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { db } from "@/lib/db/client";
 export function useProjectSupabase() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +18,7 @@ export function useProjectSupabase() {
     setError(null);
     
     // Создаем проект
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("projects")
       .insert([
         {
@@ -51,7 +51,7 @@ export function useProjectSupabase() {
     }
     
     // Добавляем запись в историю статусов для создания проекта
-    const { error: historyError } = await supabase
+    const { error: historyError } = await db
       .from("project_status_history")
       .insert([
         {
@@ -115,7 +115,7 @@ export function useProjectSupabase() {
     
     logger.info("[useProjectSupabase] Обновляем проект с объектом:", updateObj);
     
-    const { error } = await supabase
+    const { error } = await db
       .from("projects")
       .update(updateObj)
       .eq("id", projectId);
@@ -135,7 +135,7 @@ export function useProjectSupabase() {
   async function loadSpecification(projectId: string) {
     setIsLoading(true);
     setError(null);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("projects")
       .select("current_step, max_step_reached, receipts, payment_method, name, company_data, status, amount, currency, email, supplier_data, supplier_id, supplier_type")
       .eq("id", projectId)
@@ -175,7 +175,7 @@ export function useProjectSupabase() {
       updateObj.supplier_type = supplierType;
     }
     
-    const { error } = await supabase
+    const { error } = await db
       .from("projects")
       .update(updateObj)
       .eq("id", projectId);
@@ -207,7 +207,7 @@ export function useProjectSupabase() {
     
     logger.info("[useProjectSupabase] updateStep обновляет объект:", updateObj);
     
-    const { error } = await supabase
+    const { error } = await db
       .from("projects")
       .update(updateObj)
       .eq("id", projectId);
@@ -233,7 +233,7 @@ export async function createProjectWithSupabase(supabase: any, { name, companyDa
   initiator_role: 'client' | 'supplier';
   start_method: 'manual' | 'template' | 'profile' | 'upload';
 }) {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("projects")
     .insert([
       {
@@ -259,7 +259,7 @@ export async function createProjectWithSupabase(supabase: any, { name, companyDa
   }
   
   // Добавляем запись в историю статусов для создания проекта
-  await supabase
+  await db
     .from("project_status_history")
     .insert([
       {
@@ -283,5 +283,5 @@ export async function createProject(params: {
   initiator_role: 'client' | 'supplier';
   start_method: 'manual' | 'template' | 'profile' | 'upload';
 }) {
-  return createProjectWithSupabase(supabase, params);
+  return createProjectWithSupabase(db, params);
 } 

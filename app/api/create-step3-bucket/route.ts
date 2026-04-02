@@ -1,17 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { db } from '@/lib/db'
 import { logger } from "@/src/shared/lib/logger";
 import { NextResponse } from 'next/server'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function POST() {
   try {
     
     // Проверяем существует ли bucket
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets()
+    const { data: buckets, error: listError } = await db.storage.listBuckets()
     
     if (listError) {
       logger.error('❌ Ошибка получения списка buckets:', listError)
@@ -31,7 +26,7 @@ export async function POST() {
     }
     
     // Создаем bucket
-    const { data, error } = await supabase.storage.createBucket('step3-supplier-receipts', {
+    const { data, error } = await db.storage.createBucket('step3-supplier-receipts', {
       public: true,
       allowedMimeTypes: ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'],
       fileSizeLimit: 10485760 // 10MB

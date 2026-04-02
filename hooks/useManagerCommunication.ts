@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { sendTelegramMessage } from '@/utils/ApiUtils';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db/client';
 import { cleanProjectRequestId } from '@/utils/IdUtils';
 import { POLLING_INTERVALS } from '@/components/project-constructor/config/PollingConstants';
 
@@ -49,7 +49,7 @@ export function useManagerCommunication({
     const checkStatus = async () => {
       try {
         // Ищем проект по atomic_request_id
-        const { data, error: queryError } = await supabase
+        const { data, error: queryError } = await db
           .from('projects')
           .select('status, atomic_moderation_status')
           .ilike('atomic_request_id', `%${cleanProjectRequestId(projectRequestId)}%`)
@@ -149,7 +149,7 @@ export function useManagerCommunication({
 
 
       // Обновляем статус проекта на waiting_manager_receipt
-      await supabase
+      await db
         .from('projects')
         .update({
           status: 'waiting_manager_receipt',

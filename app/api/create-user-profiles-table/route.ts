@@ -1,6 +1,6 @@
+import { db } from "@/lib/db"
 import { NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
-import { supabase } from '@/lib/supabaseClient'
 
 export async function POST() {
   try {
@@ -65,7 +65,7 @@ export async function POST() {
     `
 
     // Выполняем SQL через rpc
-    const { data, error } = await supabase.rpc('exec_sql', { sql: createTableSQL })
+    const { data, error } = await db.rpc('exec_sql', { sql: createTableSQL })
 
     if (error) {
       logger.error('[API] Error creating table:', error)
@@ -76,7 +76,7 @@ export async function POST() {
     }
 
     // Проверяем, что таблица создана
-    const { data: checkData, error: checkError } = await supabase
+    const { data: checkData, error: checkError } = await db
       .from('user_profiles')
       .select('*')
       .limit(1)
