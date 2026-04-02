@@ -7,7 +7,7 @@ export async function GET() {
     const startTime = Date.now()
 
     // Проверяем подключение к Supabase
-    const { data, error } = await db.from('projects').select('count').limit(1)
+    const { data, error } = await db.from('projects').select('id').limit(1)
 
     if (error) {
       logger.error('Health check - Database error:', error)
@@ -26,8 +26,8 @@ export async function GET() {
 
     // Проверяем переменные окружения
     const requiredEnvVars = [
-      'NEXT_PUBLIC_SUPABASE_URL',
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      'DATABASE_URL',
+      'JWT_SECRET',
       'TELEGRAM_BOT_TOKEN'
     ]
 
