@@ -1,4 +1,5 @@
-import { db } from "@/lib/db"
+import { type NextRequest } from 'next/server'
+import { verifyToken } from '@/lib/auth'
 
 /**
  * Роли пользователей в системе
@@ -19,74 +20,80 @@ export interface RoleCheckResult {
 }
 
 /**
- * Проверяет, авторизован ли пользователь и имеет ли он нужную роль
+ * Проверяет, авторизован ли пользователь и имеет ли он нужную роль.
+ * Извлекает JWT из Authorization header или cookie auth-token.
  *
+ * @param request - NextRequest из API route
  * @param allowedRoles - массив разрешённых ролей
- * @returns результат проверки с данными пользователя
  *
  * @example
- * const check = await checkUserRole(['admin', 'manager'])
- * if (!check.success) {
- *   return NextResponse.json({ error: check.error }, { status: 403 })
+ * export async function POST(request: NextRequest) {
+ *   const check = await checkUserRole(request, ['admin', 'manager'])
+ *   if (!check.success) {
+ *     return NextResponse.json({ error: check.error }, { status: 403 })
+ *   }
  * }
  */
-export async function checkUserRole(allowedRoles: UserRole[]): Promise<RoleCheckResult> {
+export async function checkUserRole(
+  request: NextRequest,
+  allowedRoles: UserRole[]
+): Promise<RoleCheckResult> {
   try {
-    // Получаем текущего пользователя
-    const { data: { user }, error: authError } = await db.auth.getUser()
+    // Извлекаем токен из Authorization header или cookie
+    const authHeader = request.headers.get('authorization')
+    let token: string | null = null
 
-    if (authError || !user) {
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7)
+    } else {
+      token = request.cookies.get('auth-token')?.value || null
+    }
+
+    if (!token) {
       return {
         success: false,
         user: null,
-        error: 'Unauthorized: User not authenticated'
+        error: 'Unauthorized: No token provided',
       }
     }
 
-    // Получаем роль пользователя из профиля
-    const { data: profile, error: profileError } = await db
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile) {
+    const payload = await verifyToken(token)
+    if (!payload) {
       return {
         success: false,
         user: null,
-        error: 'User profile not found'
+        error: 'Unauthorized: Invalid token',
       }
     }
 
-    const userRole = (profile.role as UserRole) || 'user'
+    const userRole = (payload.role as UserRole) || 'user'
 
-    // Проверяем, входит ли роль пользователя в список разрешённых
     if (!allowedRoles.includes(userRole)) {
       return {
         success: false,
         user: {
-          id: user.id,
-          email: user.email || '',
-          role: userRole
+          id: payload.sub as string,
+          email: payload.email as string,
+          role: userRole,
         },
-        error: `Forbidden: Role '${userRole}' is not allowed. Required: ${allowedRoles.join(', ')}`
+        error: `Forbidden: Role '${userRole}' is not allowed. Required: ${allowedRoles.join(', ')}`,
       }
     }
 
     return {
       success: true,
       user: {
-        id: user.id,
-        email: user.email || '',
-        role: userRole
-      }
+        id: payload.sub as string,
+        email: payload.email as string,
+        role: userRole,
+      },
     }
   } catch (error) {
     console.error('[checkUserRole] Error:', error)
     return {
       success: false,
       user: null,
-      error: 'Internal error during role verification'
+      error: 'Internal error during role verification',
     }
   }
 }
@@ -94,15 +101,15 @@ export async function checkUserRole(allowedRoles: UserRole[]): Promise<RoleCheck
 /**
  * Проверяет, является ли пользователь администратором
  */
-export async function isAdmin(): Promise<boolean> {
-  const result = await checkUserRole(['admin'])
+export async function isAdmin(request: NextRequest): Promise<boolean> {
+  const result = await checkUserRole(request, ['admin'])
   return result.success
 }
 
 /**
  * Проверяет, является ли пользователь менеджером или администратором
  */
-export async function isManagerOrAdmin(): Promise<boolean> {
-  const result = await checkUserRole(['admin', 'manager'])
+export async function isManagerOrAdmin(request: NextRequest): Promise<boolean> {
+  const result = await checkUserRole(request, ['admin', 'manager'])
   return result.success
 }

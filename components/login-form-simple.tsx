@@ -1,5 +1,4 @@
 "use client"
-import { db } from "@/lib/db/client"
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/simple-label"
 import { ProfileSetupModal } from "@/components/profile-setup-modal"
+import { db } from "@/lib/db/client"
 
 export function LoginFormSimple({ className, ...props }: React.ComponentPropsWithoutRef<"form">) {
   const router = useRouter()
@@ -25,36 +25,49 @@ export function LoginFormSimple({ className, ...props }: React.ComponentPropsWit
     const email = (form.elements.namedItem("email") as HTMLInputElement)?.value
     const password = (form.elements.namedItem("password") as HTMLInputElement)?.value
     
-    const { data, error: signInError } = await db.auth.signInWithPassword({ email, password })
-    
-    setLoading(false)
-    if (signInError) {
-      console.error('[DEBUG] Login error:', signInError)
-      setError(signInError.message)
-    } else {
-      
-      // Проверяем наличие профиля у пользователя
-      if (data.user) {
-        setCurrentUserId(data.user.id)
-        
-        const { data: userProfiles, error: profileError } = await db
-          .from('user_profiles')
-          .select('*')
-          .eq('user_id', data.user.id)
-          .eq('is_primary', true)
-        
-        if (profileError) {
-          console.error('[DEBUG] Profile check error:', profileError)
-        }
-        
-        // Если у пользователя нет профилей, показываем модальное окно
-        if (!userProfiles || userProfiles.length === 0) {
-          setShowProfileSetup(true)
-        } else {
-          // Если профиль есть, переходим в дашборд
-      router.push("/dashboard")
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const json = await res.json()
+
+      setLoading(false)
+      if (!res.ok || json.error) {
+        console.error('[DEBUG] Login error:', json.error)
+        setError(json.error || 'Ошибка входа')
+      } else {
+        const token = json.data.session.access_token
+        localStorage.setItem('auth-token', token)
+        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+          detail: { event: 'SIGNED_IN', session: { access_token: token, user: json.data.user } }
+        }))
+
+        const user = json.data.user
+        if (user) {
+          setCurrentUserId(user.id)
+
+          const { data: userProfiles, error: profileError } = await db
+            .from('user_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_primary', true)
+
+          if (profileError) {
+            console.error('[DEBUG] Profile check error:', profileError)
+          }
+
+          if (!userProfiles || userProfiles.length === 0) {
+            setShowProfileSetup(true)
+          } else {
+            router.push("/dashboard")
+          }
         }
       }
+    } catch (err: any) {
+      setLoading(false)
+      setError(err.message || 'Ошибка сети')
     }
   }
 

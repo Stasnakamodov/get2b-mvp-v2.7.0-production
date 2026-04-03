@@ -1,9 +1,9 @@
 "use client"
-import { db } from "@/lib/db/client"
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ProfileSetupModal } from './profile-setup-modal'
+import { db } from "@/lib/db/client"
 
 interface ProfileGuardProps {
   children: React.ReactNode
@@ -41,12 +41,24 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
       }, 5000)
 
       // Проверяем аутентификацию
-      const { data: { user }, error: authError } = await db.auth.getUser()
-      
-      if (authError || !user) {
+      const token = localStorage.getItem('auth-token')
+      if (!token) {
         router.push('/login')
         return
       }
+
+      const authRes = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const authJson = await authRes.json()
+
+      if (!authRes.ok || !authJson.data?.user) {
+        localStorage.removeItem('auth-token')
+        router.push('/login')
+        return
+      }
+
+      const user = authJson.data.user
 
       setCurrentUserId(user.id)
 

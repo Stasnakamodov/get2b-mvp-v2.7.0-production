@@ -1,5 +1,4 @@
 "use client"
-import { db } from "@/lib/db/client"
 
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -34,20 +33,28 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       setLoading(false)
       return
     }
-    const { data, error: signUpError } = await db.auth.signUp({
-      email,
-      password,
-      options: { data: { name } }
-    })
-    setLoading(false)
-    if (signUpError) {
-      setError(signUpError.message)
-    } else {
-      setShowRegister(false)
-      alert("Проверьте почту для подтверждения регистрации!")
-      
-      // После регистрации пользователь должен будет создать профиль при первом входе
-      // Здесь можно добавить логику для автоматического создания профиля, если нужно
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      })
+      const json = await res.json()
+      setLoading(false)
+
+      if (!res.ok || json.error) {
+        setError(json.error || 'Ошибка регистрации')
+      } else {
+        const token = json.data.session.access_token
+        localStorage.setItem('auth-token', token)
+        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+          detail: { event: 'SIGNED_IN', session: { access_token: token, user: json.data.user } }
+        }))
+        router.push("/dashboard")
+      }
+    } catch (err: any) {
+      setLoading(false)
+      setError(err.message || 'Ошибка сети')
     }
   }
 
@@ -58,12 +65,28 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     const form = e.target as HTMLFormElement
     const email = (form.elements.namedItem("email") as HTMLInputElement)?.value
     const password = (form.elements.namedItem("password") as HTMLInputElement)?.value
-    const { error: signInError } = await db.auth.signInWithPassword({ email, password })
-    setLoading(false)
-    if (signInError) {
-      setError(signInError.message)
-    } else {
-      router.push("/dashboard")
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const json = await res.json()
+      setLoading(false)
+
+      if (!res.ok || json.error) {
+        setError(json.error || 'Ошибка входа')
+      } else {
+        const token = json.data.session.access_token
+        localStorage.setItem('auth-token', token)
+        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+          detail: { event: 'SIGNED_IN', session: { access_token: token, user: json.data.user } }
+        }))
+        router.push("/dashboard")
+      }
+    } catch (err: any) {
+      setLoading(false)
+      setError(err.message || 'Ошибка сети')
     }
   }
 

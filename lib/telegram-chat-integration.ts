@@ -343,9 +343,16 @@ export async function sendProjectDetailsToTelegram(projectId: string, chatId?: s
       .order('created_at', { ascending: false })
       .limit(1);
 
-    // 🔍 Получаем email пользователя
-    const { data: userData } = await db.auth.getUser();
-    const userEmail = userData?.user?.email || 'Не указан';
+    // 🔍 Получаем email пользователя из БД по user_id проекта
+    let userEmail = 'Не указан';
+    if (project.user_id) {
+      const { data: userRow } = await db
+        .from('users')
+        .select('email')
+        .eq('id', project.user_id)
+        .single();
+      if (userRow?.email) userEmail = userRow.email;
+    }
 
     const service = getChatBotService();
 

@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     if (isVerified) {
       // Verified supplier creation requires admin/manager role
-      const roleCheck = await checkUserRole(['admin', 'manager'])
+      const roleCheck = await checkUserRole(request, ['admin', 'manager'])
       if (!roleCheck.success) {
         return NextResponse.json({ error: roleCheck.error }, { status: roleCheck.user ? 403 : 401 });
       }
@@ -174,7 +174,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (verified) {
-      const roleCheck = await checkUserRole(['admin', 'manager'])
+      const roleCheck = await checkUserRole(request, ['admin', 'manager'])
       if (!roleCheck.success) {
         return NextResponse.json({ error: roleCheck.error }, { status: roleCheck.user ? 403 : 401 });
       }
