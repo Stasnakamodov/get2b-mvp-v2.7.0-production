@@ -71,6 +71,3 @@ export const db = {
     },
   },
 }
-
-/** @deprecated Use db from '@/lib/db/client' */
-export const supabase = db

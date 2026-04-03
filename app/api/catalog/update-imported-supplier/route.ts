@@ -1,12 +1,13 @@
 import { db } from "@/lib/db"
+import { getUserFromRequest } from "@/lib/auth"
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 // POST: Обновление импортированного поставщика из оригинала
 export async function POST(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await db.auth.getUser();
-    
-    if (authError || !user) {
+    const user = await getUserFromRequest(request);
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -105,9 +106,9 @@ export async function POST(request: NextRequest) {
 // GET: Проверка возможности обновления
 export async function GET(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await db.auth.getUser();
-    
-    if (authError || !user) {
+    const user = await getUserFromRequest(request);
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

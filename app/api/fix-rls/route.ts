@@ -1,9 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { db } from '@/lib/db'
+import { pool } from '@/lib/db/pool'
+import { getUserFromRequest } from '@/lib/auth'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const user = await getUserFromRequest(request)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     // Отключаем RLS и удаляем проблемные политики
     const steps = [
@@ -25,56 +30,35 @@ export async function POST() {
       "ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;",
       "ALTER TABLE chat_participants ENABLE ROW LEVEL SECURITY;",
       
-      // Создаем простые политики БЕЗ рекурсии
-      `CREATE POLICY "chat_rooms_select" ON chat_rooms 
-       FOR SELECT USING (
-         id IN (
-           SELECT room_id FROM chat_participants 
-           WHERE user_id = auth.uid()
-         )
-       );`,
-       
-      `CREATE POLICY "chat_rooms_insert" ON chat_rooms 
+      // Создаем простые политики (auth handled at application layer)
+      `CREATE POLICY "chat_rooms_select" ON chat_rooms
+       FOR SELECT USING (true);`,
+
+      `CREATE POLICY "chat_rooms_insert" ON chat_rooms
        FOR INSERT WITH CHECK (true);`,
-       
-      `CREATE POLICY "chat_participants_select" ON chat_participants 
-       FOR SELECT USING (user_id = auth.uid());`,
-       
-      `CREATE POLICY "chat_participants_insert" ON chat_participants 
+
+      `CREATE POLICY "chat_participants_select" ON chat_participants
+       FOR SELECT USING (true);`,
+
+      `CREATE POLICY "chat_participants_insert" ON chat_participants
        FOR INSERT WITH CHECK (true);`,
-       
-      `CREATE POLICY "chat_messages_select" ON chat_messages 
-       FOR SELECT USING (
-         room_id IN (
-           SELECT room_id FROM chat_participants 
-           WHERE user_id = auth.uid()
-         )
-       );`,
-       
-      `CREATE POLICY "chat_messages_insert" ON chat_messages 
-       FOR INSERT WITH CHECK (
-         room_id IN (
-           SELECT room_id FROM chat_participants 
-           WHERE user_id = auth.uid()
-         )
-       );`
+
+      `CREATE POLICY "chat_messages_select" ON chat_messages
+       FOR SELECT USING (true);`,
+
+      `CREATE POLICY "chat_messages_insert" ON chat_messages
+       FOR INSERT WITH CHECK (true);`
     ];
 
     const results = [];
     
     for (const sql of steps) {
       try {
-        const { error } = await db.rpc('exec_sql', { sql });
-        
-        if (error) {
-          logger.error("Ошибка SQL:", error.message);
-          results.push({ sql: sql.slice(0, 50), error: error.message });
-        } else {
-          results.push({ sql: sql.slice(0, 50), success: true });
-        }
-      } catch (e) {
-        logger.error("Исключение:", e);
-        results.push({ sql: sql.slice(0, 50), exception: String(e) });
+        await pool.query(sql);
+        results.push({ sql: sql.slice(0, 50), success: true });
+      } catch (e: any) {
+        logger.error("Ошибка SQL:", e.message);
+        results.push({ sql: sql.slice(0, 50), error: e.message });
       }
     }
 

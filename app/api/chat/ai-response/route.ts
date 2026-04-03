@@ -1,11 +1,21 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getUserFromRequest } from "@/lib/auth";
+
 // POST: Генерировать AI ответ
 export async function POST(request: NextRequest) {
   try {
+    const user = await getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json();
     const { room_id, user_message, ai_context = 'general', user_id } = body;
+
+    // Используем ID авторизованного пользователя
+    const authenticatedUserId = user.id
 
     if (!room_id || !user_message) {
       return NextResponse.json(
@@ -36,7 +46,7 @@ export async function POST(request: NextRequest) {
         room_id,
         content: user_message,
         sender_type: 'user',
-        sender_user_id: user_id,
+        sender_user_id: authenticatedUserId,
         sender_name: 'Вы',
         message_type: 'text'
       })
@@ -62,9 +72,7 @@ export async function POST(request: NextRequest) {
 
     // Получаем расширенный контекст пользователя
     let userContext = {};
-    if (user_id) {
-      userContext = await getEnhancedUserContext(user_id, room.project_id);
-    }
+    userContext = await getEnhancedUserContext(authenticatedUserId, room.project_id);
 
     // Генерируем AI ответ на основе расширенного контекста
     const aiResponse = await generateBotHubAIResponse(

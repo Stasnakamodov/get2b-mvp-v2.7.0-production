@@ -288,7 +288,7 @@ Email: ${email}
       inline_keyboard: [
         [
           { text: "👤 Просмотреть профиль", callback_data: `view_client_profile_${profileId}` },
-          { text: "📋 Веб-интерфейс", url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://140545935474.ngrok-free.app'}/dashboard/profile` }
+          { text: "📋 Веб-интерфейс", url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://get2b.pro'}/dashboard/profile` }
         ],
         [
           { text: "✅ Профиль корректный", callback_data: `approve_client_profile_${profileId}` },
@@ -365,7 +365,7 @@ ${description || 'Не указано'}
       inline_keyboard: [
         [
           { text: "🏭 Просмотреть профиль", callback_data: `view_supplier_profile_${profileId}` },
-          { text: "📋 Веб-интерфейс", url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://140545935474.ngrok-free.app'}/dashboard/profile` }
+          { text: "📋 Веб-интерфейс", url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://get2b.pro'}/dashboard/profile` }
         ],
         [
           { text: "✅ Профиль корректный", callback_data: `approve_supplier_profile_${profileId}` },
@@ -438,7 +438,7 @@ ${description || 'Не указано'}
         ],
         [
           { text: "📋 Запросить изменения", callback_data: `request_changes_atomic_${cleanRequestId}` },
-          { text: "🔗 Открыть в системе", url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://140545935474.ngrok-free.app'}/dashboard/project-constructor` }
+          { text: "🔗 Открыть в системе", url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://get2b.pro'}/dashboard/project-constructor` }
         ]
       ]
     };
@@ -496,7 +496,7 @@ ${description || 'Не указано'}
         ],
         [
           { text: "📋 Запросить новый чек", callback_data: `request_new_receipt_${cleanRequestId}` },
-          { text: "🔗 Открыть в системе", url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://140545935474.ngrok-free.app'}/dashboard/project-constructor` }
+          { text: "🔗 Открыть в системе", url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://get2b.pro'}/dashboard/project-constructor` }
         ]
       ]
     };

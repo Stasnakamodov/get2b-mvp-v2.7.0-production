@@ -1,6 +1,8 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getUserFromRequest } from "@/lib/auth";
+
 // GET: Получить информацию о комнате
 export async function GET(
   request: NextRequest,
@@ -8,6 +10,11 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
+    const user = await getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const roomId = id;
 
     if (!roomId) {
@@ -17,7 +24,7 @@ export async function GET(
       );
     }
 
-    // Получаем информацию о комнате
+    // Получаем информацию о комнате (только если принадлежит пользователю)
     const { data: room, error: roomError } = await db
       .from('chat_rooms')
       .select(`
@@ -31,6 +38,7 @@ export async function GET(
         )
       `)
       .eq('id', roomId)
+      .eq('user_id', user.id)
       .single();
 
     if (roomError || !room) {
@@ -110,6 +118,11 @@ export async function PUT(
 ) {
   const { id } = await params;
   try {
+    const user = await getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const roomId = id;
     const body = await request.json();
     const { name, description, ai_context, is_active, is_archived } = body;
@@ -132,11 +145,12 @@ export async function PUT(
     if (is_active !== undefined) updateData.is_active = is_active;
     if (is_archived !== undefined) updateData.is_archived = is_archived;
 
-    // Обновляем комнату
+    // Обновляем комнату (только если принадлежит пользователю)
     const { data: updatedRoom, error } = await db
       .from('chat_rooms')
       .update(updateData)
       .eq('id', roomId)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -170,6 +184,11 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
+    const user = await getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const roomId = id;
 
     if (!roomId) {
@@ -179,11 +198,12 @@ export async function DELETE(
       );
     }
 
-    // Проверяем что это AI комната (проектные комнаты удалять нельзя)
+    // Проверяем что это AI комната и принадлежит пользователю
     const { data: room, error: roomError } = await db
       .from('chat_rooms')
       .select('room_type')
       .eq('id', roomId)
+      .eq('user_id', user.id)
       .single();
 
     if (roomError || !room) {
@@ -203,12 +223,13 @@ export async function DELETE(
     // Помечаем комнату как архивированную вместо удаления
     const { error: updateError } = await db
       .from('chat_rooms')
-      .update({ 
-        is_archived: true, 
+      .update({
+        is_archived: true,
         is_active: false,
         updated_at: new Date().toISOString()
       })
-      .eq('id', roomId);
+      .eq('id', roomId)
+      .eq('user_id', user.id);
 
     if (updateError) {
       logger.error('Error archiving room:', updateError);

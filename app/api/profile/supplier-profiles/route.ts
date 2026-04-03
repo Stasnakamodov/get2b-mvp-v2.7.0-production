@@ -1,16 +1,17 @@
 import { db } from "@/lib/db"
+import { getUserFromRequest } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server";
 
 // GET: Получение профилей поставщиков пользователя
 export async function GET(request: NextRequest) {
   try {
     // Получаем текущего пользователя
-    const { data: { user }, error: authError } = await db.auth.getUser();
-    
-    if (authError || !user) {
+    const user = await getUserFromRequest(request);
+
+    if (!user) {
       console.error("❌ [SECURITY] Пользователь не авторизован");
-      return NextResponse.json({ 
-        error: "Unauthorized - требуется авторизация" 
+      return NextResponse.json({
+        error: "Unauthorized - требуется авторизация"
       }, { status: 401 });
     }
     
@@ -38,16 +39,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Получаем текущего пользователя
-    const { data: { user }, error: authError } = await db.auth.getUser();
-    
-    if (authError || !user) {
+    const user = await getUserFromRequest(request);
+
+    if (!user) {
       console.error("❌ [SECURITY] Пользователь не авторизован");
-      return NextResponse.json({ 
-        error: "Unauthorized - требуется авторизация" 
+      return NextResponse.json({
+        error: "Unauthorized - требуется авторизация"
       }, { status: 401 });
     }
-    
-    
+
+
     const supplierData = await request.json();
 
     // Валидация обязательных полей

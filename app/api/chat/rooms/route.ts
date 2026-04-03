@@ -1,27 +1,18 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-// GET: Получить комнаты пользователя - УЛЬТРА-БЕЗОПАСНАЯ ВЕРСИЯ
+import { getUserFromRequest } from "@/lib/auth";
+
+// GET: Получить комнаты пользователя
 export async function GET(request: NextRequest) {
   try {
-    // DEBUG: Chat rooms GET called (logging disabled for performance)
-    
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('user_id');
-
-    // ПРОВЕРЯЕМ UUID ФОРМАТ
-    if (userId && !isValidUUID(userId)) {
-      // Invalid UUID format error
-      return NextResponse.json(
-        { error: "Invalid user_id format - must be valid UUID" },
-        { status: 400 }
-      );
+    const user = await getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // ПРОСТОЙ ЗАПРОС БЕЗ RLS ПРОВЕРОК
-    // Direct query to chat_rooms
-    
-    let query = db
+    // Возвращаем только комнаты авторизованного пользователя
+    const { data: rooms, error } = await db
       .from('chat_rooms')
       .select(`
         id,
@@ -34,14 +25,8 @@ export async function GET(request: NextRequest) {
         updated_at
       `)
       .eq('is_active', true)
+      .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
-
-    // Фильтруем по пользователю только если передан ВАЛИДНЫЙ UUID
-    if (userId && isValidUUID(userId)) {
-      query = query.eq('user_id', userId);
-    }
-
-    const { data: rooms, error } = await query;
 
     if (error) {
       logger.error('❌ DEBUG: Database error:', error);
@@ -69,30 +54,29 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Создать новую комнату - УЛЬТРА-БЕЗОПАСНАЯ ВЕРСИЯ
+// POST: Создать новую комнату
 export async function POST(request: NextRequest) {
   try {
-    
-    const body = await request.json();
-    
-    const { 
-      name, 
-      room_type = 'ai',
-      user_id,
-      project_id 
-    } = body;
-
-    if (!name || !user_id) {
-      return NextResponse.json(
-        { error: "name and user_id are required" },
-        { status: 400 }
-      );
+    const user = await getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // ПРОВЕРЯЕМ UUID ФОРМАТЫ
-    if (!isValidUUID(user_id)) {
+    const body = await request.json();
+
+    const {
+      name,
+      room_type = 'ai',
+      user_id,
+      project_id
+    } = body;
+
+    // Используем ID авторизованного пользователя
+    const ownerId = user.id
+
+    if (!name) {
       return NextResponse.json(
-        { error: "Invalid user_id format - must be valid UUID" },
+        { error: "name is required" },
         { status: 400 }
       );
     }
@@ -104,12 +88,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 🛡️ ДОПОЛНИТЕЛЬНАЯ проверка на дублирование для проектных комнат
+    // Проверка на дублирование для проектных комнат
     if (room_type === 'project' && project_id) {
       const { data: existingRoom } = await db
         .from('chat_rooms')
         .select('id, name')
-        .eq('user_id', user_id)
+        .eq('user_id', ownerId)
         .eq('project_id', project_id)
         .eq('room_type', 'project')
         .eq('is_active', true)
@@ -124,11 +108,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Создаем комнату с оптимальными параметрами
+    // Создаем комнату
     const roomData: any = {
       name,
       room_type,
-      user_id,
+      user_id: ownerId,
       is_active: true
     };
 
@@ -167,37 +151,37 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE: Удалить комнату чата - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// DELETE: Удалить комнату чата
 export async function DELETE(request: NextRequest) {
   try {
-    
+    const user = await getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url);
     const roomId = searchParams.get('room_id');
-    const userId = searchParams.get('user_id');
 
-
-    if (!roomId || !userId) {
+    if (!roomId) {
       return NextResponse.json(
-        { error: "room_id and user_id are required" },
+        { error: "room_id is required" },
         { status: 400 }
       );
     }
 
-    // ПРОВЕРЯЕМ UUID ФОРМАТЫ
-    if (!isValidUUID(roomId) || !isValidUUID(userId)) {
+    if (!isValidUUID(roomId)) {
       return NextResponse.json(
         { error: "Invalid UUID format" },
         { status: 400 }
       );
     }
 
-
-    // ШАГ 1: Проверяем что комната существует и принадлежит пользователю
+    // Проверяем что комната существует и принадлежит авторизованному пользователю
     const { data: existingRoom, error: checkError } = await db
       .from('chat_rooms')
       .select('id, name, room_type')
       .eq('id', roomId)
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single();
 
     if (checkError || !existingRoom) {
@@ -228,7 +212,7 @@ export async function DELETE(request: NextRequest) {
       .from('chat_rooms')
       .delete()
       .eq('id', roomId)
-      .eq('user_id', userId);
+      .eq('user_id', user.id);
 
     if (roomError) {
       logger.error('❌ DEBUG: Failed to delete room:', roomError);

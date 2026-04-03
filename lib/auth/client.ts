@@ -61,6 +61,15 @@ export const authClient = {
       const token = json.data.session.access_token
       setStoredToken(token)
 
+      const session = { access_token: token, user: json.data.user }
+
+      // Notify listeners about sign in
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+          detail: { event: 'SIGNED_IN', session }
+        }))
+      }
+
       return {
         data: {
           user: json.data.user,
@@ -103,6 +112,15 @@ export const authClient = {
 
       const token = json.data.session.access_token
       setStoredToken(token)
+
+      const session = { access_token: token, user: json.data.user }
+
+      // Notify listeners about sign up
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+          detail: { event: 'SIGNED_IN', session }
+        }))
+      }
 
       return {
         data: {
@@ -175,6 +193,14 @@ export const authClient = {
   async signOut() {
     clearStoredToken()
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+
+    // Notify listeners about sign out
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth-state-changed', {
+        detail: { event: 'SIGNED_OUT', session: null }
+      }))
+    }
+
     return { error: null }
   },
 
@@ -186,14 +212,30 @@ export const authClient = {
   },
 
   /**
-   * Stub — no-op for compatibility with db.auth.onAuthStateChange
+   * Listen for auth state changes (sign in, sign out).
+   * Uses CustomEvent dispatched by signInWithPassword, signUp, and signOut.
    */
   onAuthStateChange(callback: (event: string, session: any) => void) {
-    // No-op, return unsubscribe function
+    if (typeof window === 'undefined') {
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {},
+          },
+        },
+      }
+    }
+
+    const handler = (e: Event) => {
+      const { event, session } = (e as CustomEvent).detail
+      callback(event, session)
+    }
+    window.addEventListener('auth-state-changed', handler)
+
     return {
       data: {
         subscription: {
-          unsubscribe: () => {},
+          unsubscribe: () => window.removeEventListener('auth-state-changed', handler),
         },
       },
     }

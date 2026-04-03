@@ -36,22 +36,51 @@ const PUBLIC_READ_TABLES = new Set([
   'catalog_collections',
 ])
 
+// Whitelist of RPC functions callable through this proxy
+const ALLOWED_RPC = new Set([
+  'get_category_tree',
+  'auto_categorize_product',
+  'get_products_by_category',
+  'get_product_facets',
+  'get_cart_with_products',
+  'get_supplier_template',
+  'increment_template_usage',
+  'create_scenario_branch',
+  'get_scenario_resolved_steps',
+  'freeze_other_scenarios',
+  'count_products_by_category_name',
+  'count_products_by_subcategory',
+  'sync_catalog_suppliers',
+])
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
+    // Extract auth (optional — needed for protected tables and mutations)
+    let userId: string | null = null
+    const token = request.headers.get('authorization')?.substring(7)
+    if (token) {
+      const payload = await verifyToken(token)
+      if (payload) userId = payload.sub
+    }
+
     // Handle RPC calls
     if (body.rpc) {
-      const token = request.headers.get('authorization')?.substring(7)
-      if (token) {
-        const payload = await verifyToken(token)
-        if (!payload) {
-          return NextResponse.json(
-            { data: null, error: { message: 'Unauthorized' }, count: null, status: 401, statusText: 'Unauthorized' },
-            { status: 401 }
-          )
-        }
+      if (!userId) {
+        return NextResponse.json(
+          { data: null, error: { message: 'Authentication required for RPC calls' }, count: null, status: 401, statusText: 'Unauthorized' },
+          { status: 401 }
+        )
       }
+
+      if (!ALLOWED_RPC.has(body.rpc)) {
+        return NextResponse.json(
+          { data: null, error: { message: `RPC function '${body.rpc}' is not allowed` }, count: null, status: 403, statusText: 'Forbidden' },
+          { status: 403 }
+        )
+      }
+
       const result = await db.rpc(body.rpc, body.args)
       return NextResponse.json(result)
     }
@@ -65,14 +94,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Auth check
-    let userId: string | null = null
-    const token = request.headers.get('authorization')?.substring(7)
-    if (token) {
-      const payload = await verifyToken(token)
-      if (payload) userId = payload.sub
-    }
-
     // Check table access
     if (AUTH_REQUIRED_TABLES.has(table) && !userId) {
       return NextResponse.json(
@@ -81,9 +102,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // For tables not in PUBLIC_READ or AUTH_REQUIRED: require auth for non-select
     if (operation !== 'select' && !userId) {
       return NextResponse.json(
         { data: null, error: { message: 'Authentication required for mutations' }, count: null, status: 401, statusText: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // For unknown tables not in public list: require auth for any operation
+    if (!PUBLIC_READ_TABLES.has(table) && !AUTH_REQUIRED_TABLES.has(table) && !userId) {
+      return NextResponse.json(
+        { data: null, error: { message: 'Authentication required' }, count: null, status: 401, statusText: 'Unauthorized' },
         { status: 401 }
       )
     }

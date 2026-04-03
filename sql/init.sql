@@ -1667,16 +1667,6 @@ INSERT INTO catalog_collections (slug, name, description, rules, sort_field, sor
   ('in-stock', 'В наличии', 'Товары готовые к отгрузке', '{"in_stock": true}', 'created_at', 'desc', 50, true, true, 3)
 ON CONFLICT (slug) DO NOTHING;
 
--- =========================
--- 10. HELPER: exec_sql RPC (used by legacy API routes)
--- =========================
-CREATE OR REPLACE FUNCTION exec_sql(sql text)
-RETURNS void AS $$
-BEGIN
-  EXECUTE sql;
-END;
-$$ LANGUAGE plpgsql;
-
 -- =====================================================
 -- DONE. All tables, indexes, triggers, functions, seeds.
 -- =====================================================

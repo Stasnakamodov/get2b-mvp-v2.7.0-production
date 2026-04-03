@@ -1,12 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  ChatRoom, 
+import {
+  ChatRoom,
   ChatRoomWithStats,
   CreateRoomRequest,
   UpdateRoomRequest,
   ChatFilters,
   ChatRoomType
 } from '@/lib/types/chat';
+
+function getAuthHeaders(): Record<string, string> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
 
 // Хук для работы с комнатами чата (БЕЗОПАСНАЯ ВЕРСИЯ)
 export function useChatRooms(userId?: string) {
@@ -40,7 +47,8 @@ export function useChatRooms(userId?: string) {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд
 
       const response = await fetch(`/api/chat/rooms?${params}`, {
-        signal: controller.signal
+        signal: controller.signal,
+        headers: getAuthHeaders()
       });
       
       clearTimeout(timeoutId);
@@ -112,9 +120,7 @@ export function useChatRooms(userId?: string) {
 
       const response = await fetch('/api/chat/rooms', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(roomData)
       });
 
@@ -177,9 +183,7 @@ export function useChatRooms(userId?: string) {
 
       const response = await fetch(`/api/chat/room/${roomId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(updates)
       });
 
@@ -223,7 +227,9 @@ export function useChatRooms(userId?: string) {
     if (!roomId) return null;
 
     try {
-      const response = await fetch(`/api/chat/room/${roomId}`);
+      const response = await fetch(`/api/chat/room/${roomId}`, {
+        headers: getAuthHeaders()
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -320,9 +326,7 @@ export function useChatRooms(userId?: string) {
 
       const response = await fetch(`/api/chat/rooms?${params}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) {

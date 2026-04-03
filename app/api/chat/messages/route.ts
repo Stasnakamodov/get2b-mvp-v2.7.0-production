@@ -1,11 +1,16 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-// GET: Получить сообщения в комнате - УЛЬТРА-БЕЗОПАСНАЯ ВЕРСИЯ
+import { getUserFromRequest } from "@/lib/auth";
+
+// GET: Получить сообщения в комнате
 export async function GET(request: NextRequest) {
   try {
-    // DEBUG: Chat messages GET called (logging disabled for performance)
-    
+    const user = await getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url);
     const roomId = searchParams.get('room_id');
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -75,15 +80,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Отправить сообщение в комнату - ИСПРАВЛЕНО для менеджеров
+// POST: Отправить сообщение в комнату
 export async function POST(request: NextRequest) {
   try {
-    
+    const user = await getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json();
-    
-    const { 
-      room_id, 
-      content, 
+
+    const {
+      room_id,
+      content,
       sender_type = 'user',
       sender_user_id,
       sender_manager_id,
@@ -95,6 +104,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "room_id and content are required" },
         { status: 400 }
+      );
+    }
+
+    // Проверяем что sender_user_id совпадает с авторизованным пользователем
+    if (sender_type === 'user' && sender_user_id && sender_user_id !== user.id) {
+      return NextResponse.json(
+        { error: "sender_user_id does not match authenticated user" },
+        { status: 403 }
       );
     }
 
@@ -124,22 +141,9 @@ export async function POST(request: NextRequest) {
       message_type
     };
 
-    // Добавляем sender_user_id только если он есть, валидный UUID И существует в базе
-    if (sender_type === 'user' && sender_user_id && isValidUUID(sender_user_id)) {
-      try {
-        // Проверяем что пользователь существует в базе
-        const { data: userExists } = await db
-          .from('users')
-          .select('id')
-          .eq('id', sender_user_id)
-          .single();
-        
-        if (userExists) {
-          messageData.sender_user_id = sender_user_id;
-        } else {
-        }
-      } catch (error) {
-      }
+    // Добавляем sender_user_id из авторизованного пользователя
+    if (sender_type === 'user') {
+      messageData.sender_user_id = sender_user_id || user.id;
     }
 
     // 🔧 НОВОЕ: Добавляем поддержку sender_manager_id для менеджеров

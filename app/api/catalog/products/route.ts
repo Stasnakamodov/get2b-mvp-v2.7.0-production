@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { getUserFromRequest } from "@/lib/auth"
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
@@ -116,21 +117,11 @@ export async function GET(request: NextRequest) {
     // Auth for user products
     let userId: string | null = null
     if (supplierType === 'user') {
-      const authHeader = request.headers.get('authorization')
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7)
-        const { data: { user }, error: authError } = await db.auth.getUser(token)
-        if (authError || !user) {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-        }
-        userId = user.id
-      } else {
-        const { data: { user }, error: authError } = await db.auth.getUser()
-        if (authError || !user) {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-        }
-        userId = user.id
+      const user = await getUserFromRequest(request)
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
+      userId = user.id
     }
 
     const tableName = supplierType === 'verified'
@@ -235,8 +226,8 @@ export async function GET(request: NextRequest) {
 // POST: Create product (requires auth)
 export async function POST(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await db.auth.getUser()
-    if (authError || !user) {
+    const user = await getUserFromRequest(request)
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -292,8 +283,8 @@ export async function POST(request: NextRequest) {
 // PATCH: Update product (requires auth)
 export async function PATCH(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await db.auth.getUser()
-    if (authError || !user) {
+    const user = await getUserFromRequest(request)
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -325,8 +316,8 @@ export async function PATCH(request: NextRequest) {
 // DELETE: Delete product (requires auth)
 export async function DELETE(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await db.auth.getUser()
-    if (authError || !user) {
+    const user = await getUserFromRequest(request)
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

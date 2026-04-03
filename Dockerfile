@@ -100,6 +100,7 @@ COPY --from=builder /app/public ./public
 RUN mkdir -p .next && chown nextjs:nodejs .next
 RUN mkdir -p /tmp/puppeteer && chown nextjs:nodejs /tmp/puppeteer
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer
+RUN mkdir -p /data/uploads && chown nextjs:nodejs /data/uploads
 
 USER nextjs
 

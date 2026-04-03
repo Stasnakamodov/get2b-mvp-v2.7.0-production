@@ -1,9 +1,14 @@
-import { db } from "@/lib/db"
-import { NextResponse } from 'next/server'
+import { pool } from "@/lib/db/pool"
+import { NextRequest, NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
+import { getUserFromRequest } from '@/lib/auth'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const user = await getUserFromRequest(request)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     // SQL для создания таблицы user_profiles
     const createTableSQL = `
@@ -15,16 +20,16 @@ export async function POST() {
         is_primary BOOLEAN DEFAULT false,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        
+
         -- Уникальный индекс для одного основного профиля каждого типа на пользователя
         UNIQUE(user_id, profile_type, is_primary) WHERE is_primary = true
       );
-      
+
       -- Индексы для быстрого поиска
       CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
       CREATE INDEX IF NOT EXISTS idx_user_profiles_profile_type ON user_profiles(profile_type);
       CREATE INDEX IF NOT EXISTS idx_user_profiles_is_primary ON user_profiles(is_primary);
-      
+
       -- Функция для автоматического обновления updated_at
       CREATE OR REPLACE FUNCTION update_user_profiles_updated_at()
       RETURNS TRIGGER AS $$
@@ -33,41 +38,37 @@ export async function POST() {
         RETURN NEW;
       END;
       $$ LANGUAGE plpgsql;
-      
+
       -- Триггер для автоматического обновления updated_at
       CREATE TRIGGER trigger_update_user_profiles_updated_at
         BEFORE UPDATE ON user_profiles
         FOR EACH ROW
         EXECUTE FUNCTION update_user_profiles_updated_at();
-      
-      -- RLS политики
+
+      -- RLS политики (auth handled at application layer)
       ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-      
-      -- Пользователи могут видеть только свои профили
+
       DROP POLICY IF EXISTS "Users can view own profiles" ON user_profiles;
       CREATE POLICY "Users can view own profiles" ON user_profiles
-        FOR SELECT USING (auth.uid() = user_id);
-      
-      -- Пользователи могут создавать свои профили
+        FOR SELECT USING (true);
+
       DROP POLICY IF EXISTS "Users can create own profiles" ON user_profiles;
       CREATE POLICY "Users can create own profiles" ON user_profiles
-        FOR INSERT WITH CHECK (auth.uid() = user_id);
-      
-      -- Пользователи могут обновлять свои профили
+        FOR INSERT WITH CHECK (true);
+
       DROP POLICY IF EXISTS "Users can update own profiles" ON user_profiles;
       CREATE POLICY "Users can update own profiles" ON user_profiles
-        FOR UPDATE USING (auth.uid() = user_id);
-      
-      -- Пользователи могут удалять свои профили
+        FOR UPDATE USING (true);
+
       DROP POLICY IF EXISTS "Users can delete own profiles" ON user_profiles;
       CREATE POLICY "Users can delete own profiles" ON user_profiles
-        FOR DELETE USING (auth.uid() = user_id);
+        FOR DELETE USING (true);
     `
 
-    // Выполняем SQL через rpc
-    const { data, error } = await db.rpc('exec_sql', { sql: createTableSQL })
-
-    if (error) {
+    // Выполняем SQL
+    try {
+      await pool.query(createTableSQL)
+    } catch (error: any) {
       logger.error('[API] Error creating table:', error)
       return NextResponse.json({
         success: false,
@@ -76,12 +77,9 @@ export async function POST() {
     }
 
     // Проверяем, что таблица создана
-    const { data: checkData, error: checkError } = await db
-      .from('user_profiles')
-      .select('*')
-      .limit(1)
-
-    if (checkError) {
+    try {
+      await pool.query('SELECT * FROM user_profiles LIMIT 1')
+    } catch (checkError: any) {
       return NextResponse.json({
         success: false,
         error: `Table created but still not accessible: ${checkError.message}`

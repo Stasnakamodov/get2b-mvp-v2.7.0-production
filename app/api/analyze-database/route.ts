@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/shared/lib/logger";
-import { db } from "@/lib/db";
+import { pool } from "@/lib/db/pool";
+import { getUserFromRequest } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getUserFromRequest(request)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     interface DatabaseAnalysis {
       tables: Record<string, any>;
@@ -27,24 +32,20 @@ export async function GET(request: NextRequest) {
     };
 
     // 1. Список всех таблиц
-    const { data: tables, error: tablesError } = await db
-      .rpc('exec_sql', {
-        sql_query: `
-          SELECT 
-            table_name,
-            table_type,
-            'EXISTS' as status
-          FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-            AND table_type = 'BASE TABLE'
-          ORDER BY table_name;
-        `
-      });
-
-    if (tablesError) {
+    try {
+      const tablesResult = await pool.query(`
+        SELECT
+          table_name,
+          table_type,
+          'EXISTS' as status
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_type = 'BASE TABLE'
+        ORDER BY table_name;
+      `);
+      analysis.tables = tablesResult.rows;
+    } catch (tablesError) {
       logger.error("❌ [API] Ошибка получения списка таблиц:", tablesError);
-    } else {
-      analysis.tables = tables;
     }
 
     // 2. Количество записей в основных таблицах
@@ -58,13 +59,8 @@ export async function GET(request: NextRequest) {
 
     for (const tableName of mainTables) {
       try {
-        const { count, error } = await db
-          .from(tableName)
-          .select('*', { count: 'exact', head: true });
-
-        if (!error) {
-          analysis.data[tableName] = count;
-        }
+        const countResult = await pool.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+        analysis.data[tableName] = parseInt(countResult.rows[0].count, 10);
       } catch (err) {
         analysis.data[tableName] = 'TABLE_NOT_EXISTS';
       }
@@ -75,24 +71,18 @@ export async function GET(request: NextRequest) {
     
     for (const tableName of structureTables) {
       try {
-        const { data: structure, error } = await db
-          .rpc('exec_sql', {
-            sql_query: `
-              SELECT 
-                column_name,
-                data_type,
-                is_nullable,
-                column_default
-              FROM information_schema.columns 
-              WHERE table_name = '${tableName}' 
-                AND table_schema = 'public'
-              ORDER BY ordinal_position;
-            `
-          });
-
-        if (!error) {
-          analysis.structures[tableName] = structure;
-        }
+        const structureResult = await pool.query(`
+          SELECT
+            column_name,
+            data_type,
+            is_nullable,
+            column_default
+          FROM information_schema.columns
+          WHERE table_name = $1
+            AND table_schema = 'public'
+          ORDER BY ordinal_position;
+        `, [tableName]);
+        analysis.structures[tableName] = structureResult.rows;
       } catch (err) {
         analysis.structures[tableName] = 'TABLE_NOT_EXISTS';
       }
@@ -100,159 +90,123 @@ export async function GET(request: NextRequest) {
 
     // 4. Анализ данных проектов
     try {
-      const { data: projectStatuses, error: statusError } = await db
-        .rpc('exec_sql', {
-          sql_query: `
-            SELECT 
-              status,
-              COUNT(*) as count
-            FROM projects 
-            GROUP BY status
-            ORDER BY count DESC;
-          `
-        });
-
-      if (!statusError) {
-        analysis.data.projectStatuses = projectStatuses;
-      }
+      const statusResult = await pool.query(`
+        SELECT
+          status,
+          COUNT(*) as count
+        FROM projects
+        GROUP BY status
+        ORDER BY count DESC;
+      `);
+      analysis.data.projectStatuses = statusResult.rows;
     } catch (err) {
       analysis.data.projectStatuses = { error: 'ERROR' };
     }
 
     // 5. Анализ шагов проектов
     try {
-      const { data: projectSteps, error: stepsError } = await db
-        .rpc('exec_sql', {
-          sql_query: `
-            SELECT 
-              current_step,
-              max_step_reached,
-              COUNT(*) as count
-            FROM projects 
-            GROUP BY current_step, max_step_reached
-            ORDER BY current_step, max_step_reached;
-          `
-        });
-
-      if (!stepsError) {
-        analysis.data.projectSteps = projectSteps;
-      }
+      const stepsResult = await pool.query(`
+        SELECT
+          current_step,
+          max_step_reached,
+          COUNT(*) as count
+        FROM projects
+        GROUP BY current_step, max_step_reached
+        ORDER BY current_step, max_step_reached;
+      `);
+      analysis.data.projectSteps = stepsResult.rows;
     } catch (err) {
       analysis.data.projectSteps = { error: 'ERROR' };
     }
 
     // 6. Анализ каталога
     try {
-      const { data: catalogAnalysis, error: catalogError } = await db
-        .rpc('exec_sql', {
-          sql_query: `
-            SELECT 
-              'categories' as type,
-              category as value,
-              COUNT(*) as count
-            FROM catalog_verified_suppliers 
-            GROUP BY category
-            UNION ALL
-            SELECT 
-              'countries' as type,
-              country as value,
-              COUNT(*) as count
-            FROM catalog_verified_suppliers 
-            GROUP BY country
-            UNION ALL
-            SELECT 
-              'moderation_status' as type,
-              moderation_status as value,
-              COUNT(*) as count
-            FROM catalog_verified_suppliers 
-            GROUP BY moderation_status
-            ORDER BY type, count DESC;
-          `
-        });
-
-      if (!catalogError) {
-        analysis.data.catalogAnalysis = catalogAnalysis;
-      }
+      const catalogResult = await pool.query(`
+        SELECT
+          'categories' as type,
+          category as value,
+          COUNT(*) as count
+        FROM catalog_verified_suppliers
+        GROUP BY category
+        UNION ALL
+        SELECT
+          'countries' as type,
+          country as value,
+          COUNT(*) as count
+        FROM catalog_verified_suppliers
+        GROUP BY country
+        UNION ALL
+        SELECT
+          'moderation_status' as type,
+          moderation_status as value,
+          COUNT(*) as count
+        FROM catalog_verified_suppliers
+        GROUP BY moderation_status
+        ORDER BY type, count DESC;
+      `);
+      analysis.data.catalogAnalysis = catalogResult.rows;
     } catch (err) {
       analysis.data.catalogAnalysis = { error: 'ERROR' };
     }
 
     // 7. Индексы
     try {
-      const { data: indexes, error: indexesError } = await db
-        .rpc('exec_sql', {
-          sql_query: `
-            SELECT 
-              schemaname,
-              tablename,
-              indexname,
-              indexdef
-            FROM pg_indexes 
-            WHERE schemaname = 'public' 
-              AND tablename IN ('projects', 'specifications', 'catalog_verified_suppliers', 'catalog_user_suppliers')
-            ORDER BY tablename, indexname;
-          `
-        });
-
-      if (!indexesError) {
-        analysis.indexes = indexes;
-      }
+      const indexesResult = await pool.query(`
+        SELECT
+          schemaname,
+          tablename,
+          indexname,
+          indexdef
+        FROM pg_indexes
+        WHERE schemaname = 'public'
+          AND tablename IN ('projects', 'specifications', 'catalog_verified_suppliers', 'catalog_user_suppliers')
+        ORDER BY tablename, indexname;
+      `);
+      analysis.indexes = indexesResult.rows;
     } catch (err) {
       analysis.indexes = { error: 'ERROR' };
     }
 
     // 8. RLS политики
     try {
-      const { data: policies, error: policiesError } = await db
-        .rpc('exec_sql', {
-          sql_query: `
-            SELECT 
-              schemaname,
-              tablename,
-              policyname,
-              permissive,
-              roles,
-              cmd
-            FROM pg_policies 
-            WHERE schemaname = 'public' 
-              AND tablename IN ('projects', 'specifications', 'catalog_verified_suppliers', 'catalog_user_suppliers')
-            ORDER BY tablename, policyname;
-          `
-        });
-
-      if (!policiesError) {
-        analysis.policies = policies;
-      }
+      const policiesResult = await pool.query(`
+        SELECT
+          schemaname,
+          tablename,
+          policyname,
+          permissive,
+          roles,
+          cmd
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename IN ('projects', 'specifications', 'catalog_verified_suppliers', 'catalog_user_suppliers')
+        ORDER BY tablename, policyname;
+      `);
+      analysis.policies = policiesResult.rows;
     } catch (err) {
       analysis.policies = { error: 'ERROR' };
     }
 
     // 9. Внешние ключи
     try {
-      const { data: foreignKeys, error: fkError } = await db
-        .rpc('exec_sql', {
-          sql_query: `
-            SELECT 
-              tc.table_name, 
-              kcu.column_name, 
-              ccu.table_name AS foreign_table_name,
-              ccu.column_name AS foreign_column_name 
-            FROM information_schema.table_constraints AS tc 
-            JOIN information_schema.key_column_usage AS kcu
-              ON tc.constraint_name = kcu.constraint_name
-              AND tc.table_schema = kcu.table_schema
-            JOIN information_schema.constraint_column_usage AS ccu
-              ON ccu.constraint_name = tc.constraint_name
-              AND ccu.table_schema = tc.table_schema
-            WHERE tc.constraint_type = 'FOREIGN KEY' 
-              AND tc.table_schema = 'public'
-            ORDER BY tc.table_name, kcu.column_name;
-          `
-        });
-
-      if (!fkError) {
-        analysis.foreignKeys = foreignKeys;
-      }
+      const fkResult = await pool.query(`
+        SELECT
+          tc.table_name,
+          kcu.column_name,
+          ccu.table_name AS foreign_table_name,
+          ccu.column_name AS foreign_column_name
+        FROM information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+          ON tc.constraint_name = kcu.constraint_name
+          AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.constraint_column_usage AS ccu
+          ON ccu.constraint_name = tc.constraint_name
+          AND ccu.table_schema = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND tc.table_schema = 'public'
+        ORDER BY tc.table_name, kcu.column_name;
+      `);
+      analysis.foreignKeys = fkResult.rows;
     } catch (err) {
       analysis.foreignKeys = { error: 'ERROR' };
     }

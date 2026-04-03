@@ -1,55 +1,20 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { logger } from "@/src/shared/lib/logger";
-import { db as dbAdmin } from '@/lib/db'
+import { getUserFromRequest } from '@/lib/auth'
+import { pool } from '@/lib/db/pool'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    
-    // Выполняем SQL запрос для добавления полей
-    const { error } = await dbAdmin
-      .from("projects")
-      .select("id")
-      .limit(1)
-
-    if (error) {
-      return NextResponse.json({ error: "Cannot access projects: " + error.message }, { status: 500 })
+    const user = await getUserFromRequest(request)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Пробуем выполнить ALTER TABLE через raw SQL
-    const { error: sqlError } = await dbAdmin.rpc('exec_sql', {
-      sql: `
-        ALTER TABLE projects 
-        ADD COLUMN IF NOT EXISTS supplier_receipt_url TEXT,
-        ADD COLUMN IF NOT EXISTS supplier_receipt_uploaded_at TIMESTAMPTZ;
-      `
-    })
-
-    if (sqlError) {
-      logger.error("SQL Error:", sqlError)
-      
-      // Если функция exec_sql не существует, попробуем другой способ
-      const { error: directError } = await dbAdmin
-        .from("projects")
-        .update({ 
-          supplier_receipt_url: "test",
-          supplier_receipt_uploaded_at: new Date().toISOString()
-        })
-        .eq("id", "00000000-0000-0000-0000-000000000000")
-
-      if (directError && directError.message.includes("column") && directError.message.includes("does not exist")) {
-        return NextResponse.json({
-          success: false,
-          error: "Cannot add fields through API. Please add manually:",
-          sql: `ALTER TABLE projects ADD COLUMN supplier_receipt_url TEXT, ADD COLUMN supplier_receipt_uploaded_at TIMESTAMPTZ;`,
-          instructions: [
-            "1. Go to Supabase Dashboard",
-            "2. Open SQL Editor", 
-            "3. Run the SQL command above",
-            "4. Try uploading the file again"
-          ]
-        })
-      }
-    }
+    await pool.query(`
+      ALTER TABLE projects
+      ADD COLUMN IF NOT EXISTS supplier_receipt_url TEXT,
+      ADD COLUMN IF NOT EXISTS supplier_receipt_uploaded_at TIMESTAMPTZ;
+    `)
 
     return NextResponse.json({
       success: true,

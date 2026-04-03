@@ -1,10 +1,15 @@
-import { db } from "@/lib/db"
-import { NextResponse } from 'next/server'
+import { pool } from "@/lib/db/pool"
+import { NextRequest, NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
+import { getUserFromRequest } from '@/lib/auth'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    
+    const user = await getUserFromRequest(request)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     // SQL для создания таблицы
     const createTableSQL = `
       CREATE TABLE IF NOT EXISTS public.project_templates (
@@ -20,8 +25,8 @@ export async function POST() {
     `
     
     // Создаем таблицу
-    const { error: createError } = await db.rpc('exec_sql', { sql: createTableSQL })
-    
+    const { error: createError } = await pool.query(createTableSQL).then(() => ({ error: null }), (e: any) => ({ error: e }))
+
     if (createError) {
       logger.error('❌ Ошибка создания таблицы:', createError)
       return NextResponse.json({
@@ -36,8 +41,8 @@ export async function POST() {
       CREATE INDEX IF NOT EXISTS idx_project_templates_created_at ON public.project_templates(created_at DESC);
     `
     
-    const { error: indexError } = await db.rpc('exec_sql', { sql: createIndexesSQL })
-    
+    const { error: indexError } = await pool.query(createIndexesSQL).then(() => ({ error: null }), (e: any) => ({ error: e }))
+
     if (indexError) {
       logger.error('❌ Ошибка создания индексов:', indexError)
       return NextResponse.json({
@@ -49,8 +54,8 @@ export async function POST() {
     // Включаем RLS
     const enableRLSSQL = `ALTER TABLE public.project_templates ENABLE ROW LEVEL SECURITY;`
     
-    const { error: rlsError } = await db.rpc('exec_sql', { sql: enableRLSSQL })
-    
+    const { error: rlsError } = await pool.query(enableRLSSQL).then(() => ({ error: null }), (e: any) => ({ error: e }))
+
     if (rlsError) {
       logger.error('❌ Ошибка включения RLS:', rlsError)
       return NextResponse.json({
@@ -67,20 +72,20 @@ export async function POST() {
       DROP POLICY IF EXISTS "Users can delete their own templates" ON public.project_templates;
       
       CREATE POLICY "Users can view their own templates" ON public.project_templates
-        FOR SELECT USING (auth.uid() = user_id);
-      
+        FOR SELECT USING (true);
+
       CREATE POLICY "Users can insert their own templates" ON public.project_templates
-        FOR INSERT WITH CHECK (auth.uid() = user_id);
-      
+        FOR INSERT WITH CHECK (true);
+
       CREATE POLICY "Users can update their own templates" ON public.project_templates
-        FOR UPDATE USING (auth.uid() = user_id);
-      
+        FOR UPDATE USING (true);
+
       CREATE POLICY "Users can delete their own templates" ON public.project_templates
-        FOR DELETE USING (auth.uid() = user_id);
+        FOR DELETE USING (true);
     `
     
-    const { error: policyError } = await db.rpc('exec_sql', { sql: createPoliciesSQL })
-    
+    const { error: policyError } = await pool.query(createPoliciesSQL).then(() => ({ error: null }), (e: any) => ({ error: e }))
+
     if (policyError) {
       logger.error('❌ Ошибка создания политик:', policyError)
       return NextResponse.json({

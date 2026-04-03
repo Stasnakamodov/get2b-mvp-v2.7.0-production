@@ -13,8 +13,13 @@ import { pool } from '../db/pool'
 
 // ── Config ───────────────────────────────────────────────────────
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || 'dev-secret-change-me'
-const secret = new TextEncoder().encode(JWT_SECRET)
+function getJwtSecret(): Uint8Array {
+  const key = process.env.JWT_SECRET
+  if (!key && process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL: JWT_SECRET environment variable is not set. Application cannot start securely.')
+  }
+  return new TextEncoder().encode(key || 'dev-secret-change-me')
+}
 const JWT_ISSUER = 'get2b'
 const JWT_EXPIRY = '7d'
 const BCRYPT_ROUNDS = 10
@@ -48,12 +53,12 @@ export async function signToken(user: AuthUser): Promise<string> {
     .setIssuer(JWT_ISSUER)
     .setSubject(user.id)
     .setExpirationTime(JWT_EXPIRY)
-    .sign(secret)
+    .sign(getJwtSecret())
 }
 
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secret, {
+    const { payload } = await jwtVerify(token, getJwtSecret(), {
       issuer: JWT_ISSUER,
     })
     return payload as TokenPayload

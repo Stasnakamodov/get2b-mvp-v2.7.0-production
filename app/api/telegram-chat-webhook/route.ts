@@ -21,32 +21,24 @@ function getChatBotService(): ChatBotService {
   return chatBotService;
 }
 
-// POST: Webhook для чат-бота Get2B ChatHub Assistant (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+// POST: Webhook для чат-бота Get2B ChatHub Assistant
 export async function POST(request: NextRequest) {
-  // Принудительно выводим в консоль что webhook получен
-  logger.error('🚨 WEBHOOK CALL DETECTED! Time:', new Date().toISOString());
-  
   try {
     const body = await request.json();
-    
-    logger.error('🤖 WEBHOOK RECEIVED - FULL PAYLOAD:');
-    logger.error('====================================');
-    logger.error(JSON.stringify(body, null, 2));
-    logger.error('====================================');
 
     // Обрабатываем callback queries (нажатия кнопок)
     if (body.callback_query) {
-      logger.info('📞 CALLBACK QUERY detected - handling...');
+      logger.debug('Callback query detected - handling');
       return await handleCallbackQuery(body.callback_query);
     }
 
     // Проверяем что это сообщение
     if (!body.message) {
-      logger.info('❌ NO MESSAGE in payload - exiting');
+      logger.debug('No message in payload - skipping');
       return NextResponse.json({ success: true, message: "No message to process" });
     }
 
-    logger.info('✅ MESSAGE found in payload - processing...');
+    logger.debug('Message found in payload - processing');
 
     const message = body.message;
     const chatId = message.chat.id;
@@ -54,21 +46,19 @@ export async function POST(request: NextRequest) {
     const userId = message.from.id;
     const userName = message.from.first_name || 'Пользователь';
 
-    logger.info('📩 Processing chat bot message:', {
+    logger.debug('📩 Processing chat bot message:', {
       chatId,
       userId,
-      userName,
-      text,
       textLength: text.length,
       isCommand: text.startsWith('/')
     });
 
     // Обрабатываем команды
     if (text.startsWith('/')) {
-      logger.info('🔧 COMMAND detected - handling command:', text);
+      logger.debug('🔧 Command detected:', text);
       await handleChatBotCommand(chatId, text, userId, userName);
     } else {
-      logger.info('💬 REGULAR MESSAGE detected - handling as manager reply:', text);
+      logger.debug('💬 Regular message detected - handling as manager reply');
       // Обычное сообщение - возможно ответ менеджера клиенту
       await handleManagerReply(message, chatId, text, userId, userName);
     }
@@ -86,55 +76,39 @@ export async function POST(request: NextRequest) {
 
 // Обработка команд чат-бота
 async function handleChatBotCommand(chatId: number, command: string, userId: number, userName: string) {
-  logger.info("🔄 ОБНОВЛЕНО: handleChatBotCommand - использует новый ChatBotService");
-
   try {
     const service = getChatBotService();
     const responseText = service.getCommandResponse(command, userName);
-    
+
     await service.sendMessage(chatId, responseText);
-    logger.info("✅ Команда обработана через ChatBotService");
+    logger.debug("✅ Команда обработана:", command);
   } catch (error) {
     logger.error('❌ Ошибка обработки команды:', error);
   }
 }
 
-// Обработка ответов менеджеров клиентам (ULTRA DEBUG VERSION)
+// Обработка ответов менеджеров клиентам
 async function handleManagerReply(message: any, chatId: number, text: string, userId: number, userName: string) {
-  logger.info("💬 ULTRA DEBUG: handleManagerReply started");
-  logger.info("📝 ULTRA DEBUG: Message text:", text);
-  logger.info("👤 ULTRA DEBUG: User:", { userId, userName, chatId });
-  logger.info("🔍 ULTRA DEBUG: Full message object:", JSON.stringify(message, null, 2));
-  
   let webChatMessageSaved = false;
-  
+
   try {
-    // Проверяем, есть ли реплай на сообщение о новом чате
     const replyToMessage = message.reply_to_message;
-    logger.info("🔍 DEBUG: Reply to message exists:", !!replyToMessage);
-    
-    if (replyToMessage?.text) {
-      logger.info("📄 DEBUG: Reply text:", replyToMessage.text);
-    }
-    
+
     let roomId = null;
     let projectId = null;
 
     if (replyToMessage?.text) {
       // Ищем ID проекта в тексте реплая
       const projectMatch = replyToMessage.text.match(/🆔 Проект: ([a-f0-9-]+)/);
-      logger.info("🎯 DEBUG: Project regex match:", projectMatch);
-      
+
       if (projectMatch) {
         projectId = projectMatch[1];
-        logger.info("✅ ULTRA DEBUG: Found project ID:", projectId);
+        logger.debug("Found project ID from reply:", projectId);
 
         // Ищем комнату чата по проекту
-        logger.info("🔍 ULTRA DEBUG: Searching for room with project_id:", projectId);
-        
         let room = null;
         let roomError = null;
-        
+
         try {
           const result = await dbAdmin
             .from('chat_rooms')
@@ -146,34 +120,25 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
 
           room = result.data;
           roomError = result.error;
-
-          logger.info("📦 ULTRA DEBUG: Room query result:", { room, error: roomError });
-          logger.info("🌐 ULTRA DEBUG: Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
         } catch (dbError) {
-          logger.error("💥 ULTRA DEBUG: Database connection error:", dbError);
+          logger.error("Database connection error looking up chat room:", dbError);
           roomError = dbError;
         }
 
         if (room) {
           roomId = room.id;
-          logger.info("✅ DEBUG: Found chat room:", { roomId, roomName: room.name, userId: room.user_id });
+          logger.debug("Found chat room:", { roomId, roomName: room.name });
         } else {
-          logger.info("❌ DEBUG: No room found for project:", projectId);
+          logger.info("No room found for project:", projectId);
           if (roomError) {
-            logger.info("🚨 DEBUG: Room query error:", roomError);
+            logger.warn("Room query error:", roomError);
           }
         }
-      } else {
-        logger.info("❌ DEBUG: No project ID found in reply text");
       }
-    } else {
-      logger.info("❌ DEBUG: No reply_to_message.text");
     }
 
     if (roomId) {
-      logger.info("💾 DEBUG: Attempting to save message to web chat...");
-      
-      // 🚀 ОТПРАВЛЯЕМ СООБЩЕНИЕ В ВЕБ-ЧАТ (с улучшенной обработкой ошибок)
+      // Отправляем сообщение в веб-чат
       const messageData = {
         room_id: roomId,
         content: text,
@@ -182,69 +147,56 @@ async function handleManagerReply(message: any, chatId: number, text: string, us
         sender_name: userName || 'Менеджер Get2B',
         message_type: 'text' as const
       };
-      
-      logger.info("💾 DEBUG: Message data to save:", messageData);
-      
+
       const { data: newMessage, error } = await dbAdmin
         .from('chat_messages')
         .insert(messageData)
         .select()
         .single();
 
-      logger.info("📊 DEBUG: Database insert result:", { newMessage, error });
-
       if (error) {
-        logger.error('❌ DEBUG: Database save error:', error);
+        logger.error('Database save error for manager reply:', error);
         throw new Error(`Ошибка сохранения: ${error.message}`);
       } else {
         webChatMessageSaved = true;
-        logger.info('✅ DEBUG: Message saved successfully:', {
+        logger.info('Manager reply saved to web chat:', {
           messageId: newMessage.id,
           roomId: newMessage.room_id,
-          content: newMessage.content,
-          senderType: newMessage.sender_type
         });
       }
 
-      // 🔧 БЕЗОПАСНАЯ отправка ответа в Telegram (не прерываем при ошибке)
+      // Безопасная отправка подтверждения в Telegram (не прерываем при ошибке)
       try {
         const service = getChatBotService();
         await service.sendMessage(chatId, `✅ Ваш ответ отправлен клиенту в веб-чат:\n\n"${text}"`);
-        logger.info("✅ DEBUG: Confirmation sent to Telegram");
       } catch (telegramError) {
-        logger.warn("⚠️ DEBUG: Failed to send Telegram confirmation (non-critical):", telegramError);
-        // НЕ ПРЕРЫВАЕМ выполнение - главное что сообщение сохранено в веб-чат!
+        logger.warn("Failed to send Telegram confirmation (non-critical):", telegramError);
       }
-      
+
     } else {
-      logger.info("❌ DEBUG: No room found - cannot save message");
-      
-      // Безопасная отправка уведомления об ошибке
+      logger.info("No room found for manager reply - cannot save message");
+
       try {
         const service = getChatBotService();
         await service.sendMessage(chatId, `❌ Не удалось найти комнату чата для отправки ответа.\n\nОтвечайте только на уведомления о новых сообщениях в чатах проектов.`);
       } catch (telegramError) {
-        logger.warn("⚠️ DEBUG: Failed to send error to Telegram:", telegramError);
+        logger.warn("Failed to send error notification to Telegram:", telegramError);
       }
     }
-    
+
   } catch (error) {
-    logger.error('❌ DEBUG: handleManagerReply error:', error);
-    
-    // Безопасная отправка уведомления об ошибке
+    logger.error('handleManagerReply error:', error);
+
     try {
       const service = getChatBotService();
       await service.sendMessage(chatId, `❌ Ошибка отправки ответа: ${error instanceof Error ? error.message : String(error)}`);
     } catch (telegramError) {
-      logger.warn("⚠️ DEBUG: Failed to send error to Telegram:", telegramError);
+      logger.warn("Failed to send error to Telegram:", telegramError);
     }
   }
 
-  // 🎯 ГЛАВНОЕ: Возвращаем успех если сообщение сохранено в веб-чат
   if (webChatMessageSaved) {
-    logger.info("🎉 DEBUG: SUCCESS - Message saved to web chat!");
-  } else {
-    logger.info("💥 DEBUG: FAILED - Message NOT saved to web chat");
+    logger.info("Manager reply successfully saved to web chat");
   }
 }
 
@@ -327,7 +279,7 @@ async function handleCallbackQuery(callbackQuery: any) {
     const data = callbackQuery.data;
     const service = getChatBotService();
     
-    logger.info("💬 Обработка callback query чат-бота:", data);
+    logger.debug("Обработка callback query чат-бота:", data);
 
     // Быстрые ответы в чате
     if (data.startsWith("quick_reply_")) {
@@ -349,7 +301,7 @@ async function handleCallbackQuery(callbackQuery: any) {
             
         await service.answerCallbackQuery(callbackQuery.id, responseText);
 
-        logger.info("💬 Быстрый ответ отправлен в чат:", { roomId, replyType });
+        logger.info("Быстрый ответ отправлен в чат:", { roomId, replyType });
         return NextResponse.json({ 
           ok: true, 
           message: `Quick reply sent to chat ${roomId}` 
@@ -386,7 +338,7 @@ async function handleCallbackQuery(callbackQuery: any) {
 
         await service.answerCallbackQuery(callbackQuery.id, "📋 Детали проекта отправлены");
 
-        logger.info("📋 Детали проекта отправлены:", projectId);
+        logger.info("Детали проекта отправлены:", projectId);
         return NextResponse.json({ 
           ok: true, 
           message: `Project details sent for ${projectId}` 

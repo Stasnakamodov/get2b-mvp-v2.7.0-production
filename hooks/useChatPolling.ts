@@ -1,6 +1,13 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { ChatMessage } from '@/lib/types/chat';
 
+function getAuthHeaders(): Record<string, string> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
+
 // 🔧 УЛУЧШЕННАЯ функция дедуплицирования сообщений
 function deduplicateMessages(messages: ChatMessage[]): ChatMessage[] {
   const seen = new Set<string>();
@@ -81,7 +88,9 @@ export function useChatPolling({
         offset: '0'
       });
 
-      const response = await fetch(`/api/chat/messages?${params}`);
+      const response = await fetch(`/api/chat/messages?${params}`, {
+        headers: getAuthHeaders()
+      });
       
       // 🛡️ ПРОВЕРКА ОТВЕТА СЕРВЕРА
       if (!response.ok) {

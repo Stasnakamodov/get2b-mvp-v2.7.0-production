@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { getUserFromRequest } from "@/lib/auth"
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/src/shared/lib/logger'
 
@@ -89,8 +90,8 @@ export async function PATCH(
   }
 
   try {
-    const { data: { user }, error: authError } = await db.auth.getUser()
-    if (authError || !user) {
+    const user = await getUserFromRequest(request)
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -130,8 +131,8 @@ export async function DELETE(
   }
 
   try {
-    const { data: { user }, error: authError } = await db.auth.getUser()
-    if (authError || !user) {
+    const user = await getUserFromRequest(request)
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

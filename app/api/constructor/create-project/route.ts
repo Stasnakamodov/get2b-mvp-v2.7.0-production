@@ -1,12 +1,13 @@
 import { db } from "@/lib/db"
+import { getUserFromRequest } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server";
 
 // POST: Создать проект из данных конструктора
 export async function POST(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await db.auth.getUser();
-    
-    if (authError || !user) {
+    const user = await getUserFromRequest(request);
+
+    if (!user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
 

@@ -2,11 +2,6 @@
 
 import { db } from '@/lib/db'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-// using db from lib/db;
-
 /**
  * Получить все категории напрямую из БД (обход PostgREST cache)
  */
@@ -27,11 +22,19 @@ export async function getAllCategoriesServer(options?: {
       ORDER BY sort_order
     `;
 
-    // Используем MCP для прямого SQL
-    const { data, error } = await db.rpc('exec_raw_sql', {
-      sql: query,
-      params: [options?.includeInactive || false, options?.level || null]
-    });
+    // Используем query builder напрямую
+    let qb = db.from('catalog_categories')
+      .select('id, key, name, icon, description, parent_id, level, slug, full_path, sort_order, is_active, is_popular, has_subcategories, products_count, suppliers_count, metadata, created_at, updated_at')
+      .order('sort_order');
+
+    if (!options?.includeInactive) {
+      qb = qb.eq('is_active', true);
+    }
+    if (options?.level !== undefined && options?.level !== null) {
+      qb = qb.eq('level', options.level);
+    }
+
+    const { data, error } = await qb;
 
     if (error) {
       console.error("❌ [Server Action] Ошибка SQL:", error);

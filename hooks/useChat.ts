@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  ChatMessage, 
+import {
+  ChatMessage,
   ChatRoom,
   SendMessageRequest,
   AIResponseRequest,
@@ -8,6 +8,13 @@ import {
   PaginationOptions
 } from '@/lib/types/chat';
 import { useChatPolling } from './useChatPolling';
+
+function getAuthHeaders(): Record<string, string> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
 
 // Основной хук для работы с чатом
 export function useChat(roomId?: string, userId?: string) {
@@ -54,7 +61,9 @@ export function useChat(roomId?: string, userId?: string) {
       });
 
       console.log('📡 useChat: Fetching messages from:', `/api/chat/messages?${params}`);
-      const response = await fetch(`/api/chat/messages?${params}`);
+      const response = await fetch(`/api/chat/messages?${params}`, {
+        headers: getAuthHeaders()
+      });
       
       // 🛡️ ПРОВЕРКА ОТВЕТА СЕРВЕРА
       if (!response.ok) {
@@ -153,9 +162,7 @@ export function useChat(roomId?: string, userId?: string) {
 
       const response = await fetch('/api/chat/messages', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(messageData)
       });
 
@@ -229,9 +236,7 @@ export function useChat(roomId?: string, userId?: string) {
 
       const response = await fetch('/api/chat/ai-response', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(requestData)
       });
 

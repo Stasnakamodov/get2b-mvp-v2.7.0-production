@@ -17,6 +17,10 @@
 import { pool } from './pool'
 import { QueryBuilder, rpc as rpcFn, DbResponse } from './queryBuilder'
 import { verifyToken } from '../auth'
+import { writeFile, mkdir, unlink, readdir, stat } from 'fs/promises'
+import nodePath from 'path'
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || '/data/uploads'
 
 // ── Auth stub (server-side) ──────────────────────────────────────
 
@@ -81,10 +85,11 @@ const authMethods = {
   },
 }
 
-// ── Storage stub (server-side) ───────────────────────────────────
+// ── Storage (server-side, filesystem) ────────────────────────────
 
 function storageFrom(bucket: string) {
   const baseUrl = process.env.STORAGE_URL || '/api/storage'
+  const safeBucket = bucket.replace(/[^a-zA-Z0-9_-]/g, '')
 
   return {
     async upload(
@@ -92,37 +97,88 @@ function storageFrom(bucket: string) {
       file: any,
       options?: any
     ): Promise<{ data: { path: string } | null; error: any }> {
-      // Server-side upload — write to filesystem directly
-      // This will be implemented in Phase 3
-      return { data: { path: `${bucket}/${path}` }, error: null }
+      try {
+        const safePath = path.replace(/\.\./g, '').replace(/^\//, '')
+        const fullDir = nodePath.join(UPLOAD_DIR, safeBucket, nodePath.dirname(safePath))
+        await mkdir(fullDir, { recursive: true })
+
+        const fullPath = nodePath.join(UPLOAD_DIR, safeBucket, safePath)
+        let buffer: Buffer
+        if (Buffer.isBuffer(file)) {
+          buffer = file
+        } else if (file instanceof Uint8Array) {
+          buffer = Buffer.from(file)
+        } else if (file && typeof file.arrayBuffer === 'function') {
+          buffer = Buffer.from(await file.arrayBuffer())
+        } else if (typeof file === 'string') {
+          buffer = Buffer.from(file)
+        } else {
+          return { data: null, error: { message: 'Unsupported file type' } }
+        }
+
+        await writeFile(fullPath, buffer)
+        return { data: { path: `${safeBucket}/${safePath}` }, error: null }
+      } catch (e: any) {
+        return { data: null, error: { message: e.message } }
+      }
     },
 
     getPublicUrl(path: string): { data: { publicUrl: string } } {
       return {
-        data: { publicUrl: `${baseUrl}/${bucket}/${path}` },
+        data: { publicUrl: `${baseUrl}/${safeBucket}/${path}` },
       }
     },
 
     async download(path: string): Promise<{ data: Blob | null; error: any }> {
       try {
-        const res = await fetch(`${baseUrl}/${bucket}/${path}`)
-        if (!res.ok) return { data: null, error: { message: 'Download failed' } }
-        const blob = await res.blob()
-        return { data: blob, error: null }
+        const safePath = path.replace(/\.\./g, '').replace(/^\//, '')
+        const fullPath = nodePath.join(UPLOAD_DIR, safeBucket, safePath)
+        const { readFile } = await import('fs/promises')
+        const buffer = await readFile(fullPath)
+        return { data: new Blob([new Uint8Array(buffer)]), error: null }
       } catch (e: any) {
         return { data: null, error: { message: e.message } }
       }
     },
 
     async remove(paths: string[]): Promise<{ data: any; error: any }> {
-      return { data: null, error: null }
+      try {
+        for (const p of paths) {
+          const safePath = p.replace(/\.\./g, '').replace(/^\//, '')
+          const fullPath = nodePath.join(UPLOAD_DIR, safeBucket, safePath)
+          await unlink(fullPath).catch(() => {})
+        }
+        return { data: null, error: null }
+      } catch (e: any) {
+        return { data: null, error: { message: e.message } }
+      }
     },
 
     async list(
       path?: string,
       options?: any
     ): Promise<{ data: any[]; error: any }> {
-      return { data: [], error: null }
+      try {
+        const dirPath = nodePath.join(UPLOAD_DIR, safeBucket, path || '')
+        const entries = await readdir(dirPath, { withFileTypes: true })
+        const items = await Promise.all(
+          entries.map(async (entry) => {
+            const fullPath = nodePath.join(dirPath, entry.name)
+            const info = await stat(fullPath).catch(() => null)
+            return {
+              name: entry.name,
+              id: entry.name,
+              metadata: info ? { size: info.size, lastModified: info.mtime.toISOString() } : {},
+            }
+          })
+        )
+        return { data: items, error: null }
+      } catch (e: any) {
+        if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
+          return { data: [], error: null }
+        }
+        return { data: [], error: { message: e.message } }
+      }
     },
   }
 }
@@ -154,17 +210,6 @@ export const db = {
 // ── Admin DB (same pool, no RLS distinction needed with plain PG) ──
 
 export const dbAdmin = db
-
-// ── Backward compat aliases ──────────────────────────────────────
-
-/** @deprecated Use `db` instead */
-export const supabase = db
-
-/** @deprecated Use `dbAdmin` instead */
-export const supabaseAdmin = db
-
-/** @deprecated Use `dbAdmin` instead */
-export const supabaseService = db
 
 // ── Authenticated client replacement ─────────────────────────────
 

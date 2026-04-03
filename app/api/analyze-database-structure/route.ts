@@ -1,10 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
 import { db } from '@/lib/db'
+import { getUserFromRequest } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    
+    const user = await getUserFromRequest(request)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     interface DatabaseStructureResults {
       tables?: Array<{ table_name: string; table_type: string }>;
       columns?: Record<string, Array<{ column_name: string; data_type: string; is_nullable: string }>>;

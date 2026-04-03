@@ -20,7 +20,7 @@ jest.mock('next/navigation', () => ({
   },
 }))
 
-// Mock Supabase
+// Mock DB client (legacy alias @/lib/supabaseClient → @/lib/db/client)
 jest.mock('@/lib/supabaseClient', () => ({
   supabase: {
     auth: {

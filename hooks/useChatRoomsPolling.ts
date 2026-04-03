@@ -1,6 +1,10 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { ChatRoomWithStats } from '@/lib/types/chat';
 
+function getAuthToken(): string | null {
+  return typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
+}
+
 // Хук для real-time обновлений списка комнат с улучшенным error handling
 export function useChatRoomsPolling({
   userId,
@@ -42,11 +46,13 @@ export function useChatRoomsPolling({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // Увеличил до 30 секунд
         
+        const token = getAuthToken()
         const response = await fetch(url, {
           signal: controller.signal,
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
+            'Cache-Control': 'no-cache',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           }
         });
         

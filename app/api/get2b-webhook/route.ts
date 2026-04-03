@@ -4,7 +4,6 @@ import { db } from '@/lib/db'
 import { createHmac, timingSafeEqual } from "crypto";
 
 // 🚀 GET2B WEBHOOK - Интеграция с основным сайтом
-// URL: https://945bbafbb0fd.ngrok-free.app
 
 interface Get2BWebhookPayload {
   type: 'lead' | 'contact' | 'consultation' | 'project_request';
@@ -78,10 +77,9 @@ export async function GET(req: NextRequest) {
     // Тестовый режим
     return NextResponse.json({
       status: 'active',
-      webhook_url: 'https://your-domain.com/api/get2b-webhook',
+      webhook_url: process.env.NEXT_PUBLIC_BASE_URL + '/api/get2b-webhook',
       supported_events: ['lead', 'contact', 'consultation', 'project_request'],
       db_connected: true,
-      using_service_role: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       timestamp: new Date().toISOString()
     });
   }

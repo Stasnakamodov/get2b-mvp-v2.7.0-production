@@ -1,24 +1,14 @@
 import { db } from "@/lib/db"
+import { getUserFromRequest } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Извлекает userId из токена авторизации или сессии.
+ * Извлекает userId из токена авторизации.
  * Возвращает userId или NextResponse с ошибкой.
  */
 async function extractUserId(request: NextRequest): Promise<string | NextResponse> {
-  const authHeader = request.headers.get('authorization');
-
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    const { data: { user }, error } = await db.auth.getUser(token);
-    if (error || !user) {
-      return NextResponse.json({ error: "Unauthorized - недействительный токен" }, { status: 401 });
-    }
-    return user.id;
-  }
-
-  const { data: { user }, error } = await db.auth.getUser();
-  if (error || !user) {
+  const user = await getUserFromRequest(request);
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized - требуется авторизация" }, { status: 401 });
   }
   return user.id;
