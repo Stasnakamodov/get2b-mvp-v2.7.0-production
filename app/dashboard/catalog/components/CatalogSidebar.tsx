@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronRight, Folder } from 'lucide-react'
+import { ChevronDown, ChevronRight, Folder, EyeOff, Eye } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { CatalogCategory, FacetCount, SubcategoryFacetCount } from '@/lib/catalog/types'
@@ -37,6 +37,7 @@ export function CatalogSidebar({
   subcategoryFacetCounts,
 }: CatalogSidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  const [hideEmpty, setHideEmpty] = useState(true)
 
   const displayCategories = categories || DEFAULT_CATEGORIES.map(cat => ({
     id: cat.key,
@@ -122,12 +123,25 @@ export function CatalogSidebar({
     <div className="w-80 border-r border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col h-full">
       {/* Header with total count */}
       <div className="p-5 border-b border-gray-100 dark:border-gray-800">
-        <h2 className="font-semibold text-lg flex items-center gap-2.5">
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-sm">
-            <Folder className="w-4 h-4 text-white" />
-          </span>
-          Категории
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-lg flex items-center gap-2.5">
+            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-sm">
+              <Folder className="w-4 h-4 text-white" />
+            </span>
+            Категории
+          </h2>
+          <button
+            onClick={() => setHideEmpty(prev => !prev)}
+            className={`p-1.5 rounded-lg transition-colors ${
+              hideEmpty
+                ? 'bg-orange-50 text-orange-500 dark:bg-orange-900/30 dark:text-orange-400'
+                : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+            title={hideEmpty ? 'Показать пустые подкатегории' : 'Скрыть пустые подкатегории'}
+          >
+            {hideEmpty ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
         {totalProducts > 0 && (
           <p className="text-xs text-gray-400 mt-1">
             {totalProducts.toLocaleString('ru-RU')} товаров
@@ -233,40 +247,48 @@ export function CatalogSidebar({
                   </div>
 
                   {/* Subcategories */}
-                  {isExpanded && hasChildren && (
-                    <div className="ml-5 mt-1 mb-1 pl-3 border-l-2 border-gray-100 dark:border-gray-700 space-y-0.5">
-                      {category.children!.map(sub => {
-                        const isSubSelected = selectedSubcategory === sub.id
-                        // Use dynamic facet count when available, fall back to static count
-                        const subCount = subcategoryFacetCounts
-                          ? (subFacetCountMap.get(sub.id) ?? 0)
-                          : sub.products_count
-                        return (
-                          <button
-                            key={sub.id}
-                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                              isSubSelected
-                                ? 'bg-orange-50 text-orange-700 font-medium dark:bg-orange-900/30 dark:text-orange-300'
-                                : 'hover:bg-gray-50 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-800 dark:text-gray-400'
-                            }`}
-                            onClick={() => handleSubcategoryClick(category.name, sub.id)}
-                          >
-                            <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
-                              isSubSelected ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'
-                            }`} />
-                            <span className="flex-1 text-left leading-snug">{sub.name}</span>
-                            {subCount > 0 && (
-                              <span className={`text-[10px] ${
-                                isSubSelected ? 'text-orange-500' : 'text-gray-400'
-                              }`}>
-                                {subCount}
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
+                  {isExpanded && hasChildren && (() => {
+                    const filteredChildren = hideEmpty
+                      ? category.children!.filter(sub => {
+                          const c = subcategoryFacetCounts ? (subFacetCountMap.get(sub.id) ?? 0) : sub.products_count
+                          return c > 0
+                        })
+                      : category.children!
+                    if (filteredChildren.length === 0) return null
+                    return (
+                      <div className="ml-5 mt-1 mb-1 pl-3 border-l-2 border-gray-100 dark:border-gray-700 space-y-0.5">
+                        {filteredChildren.map(sub => {
+                          const isSubSelected = selectedSubcategory === sub.id
+                          const subCount = subcategoryFacetCounts
+                            ? (subFacetCountMap.get(sub.id) ?? 0)
+                            : sub.products_count
+                          return (
+                            <button
+                              key={sub.id}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isSubSelected
+                                  ? 'bg-orange-50 text-orange-700 font-medium dark:bg-orange-900/30 dark:text-orange-300'
+                                  : 'hover:bg-gray-50 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-800 dark:text-gray-400'
+                              }`}
+                              onClick={() => handleSubcategoryClick(category.name, sub.id)}
+                            >
+                              <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
+                                isSubSelected ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'
+                              }`} />
+                              <span className="flex-1 text-left leading-snug">{sub.name}</span>
+                              {subCount > 0 && (
+                                <span className={`text-[10px] ${
+                                  isSubSelected ? 'text-orange-500' : 'text-gray-400'
+                                }`}>
+                                  {subCount}
+                                </span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })
