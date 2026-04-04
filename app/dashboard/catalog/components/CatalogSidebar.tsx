@@ -181,6 +181,8 @@ export function CatalogSidebar({
               const hasChildren = category.children && category.children.length > 0
               const dynamicCount = getCategoryCount(category)
 
+              if (hideEmpty && dynamicCount === 0 && !isSelected && !isParentOfSelected) return null
+
               return (
                 <div key={category.id}>
                   {/* Category row */}
