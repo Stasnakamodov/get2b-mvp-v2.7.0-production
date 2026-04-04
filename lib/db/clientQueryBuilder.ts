@@ -22,6 +22,8 @@ interface SerializedQuery {
   headOnly?: boolean
   data?: any
   selectAfterMutation?: boolean
+  onConflict?: string
+  ignoreDuplicates?: boolean
 }
 
 const TOKEN_KEY = 'auth-token'
@@ -112,9 +114,11 @@ export class ClientQueryBuilder {
     return this
   }
 
-  upsert(data: any): ClientQueryBuilder {
+  upsert(data: any, options?: { onConflict?: string; ignoreDuplicates?: boolean }): ClientQueryBuilder {
     this.query.operation = 'upsert'
     this.query.data = Array.isArray(data) ? data : [data]
+    if (options?.onConflict) this.query.onConflict = options.onConflict
+    if (options?.ignoreDuplicates) this.query.ignoreDuplicates = options.ignoreDuplicates
     return this
   }
 

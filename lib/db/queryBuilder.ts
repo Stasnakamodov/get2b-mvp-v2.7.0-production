@@ -177,6 +177,8 @@ export class QueryBuilder {
   private headOnly = false
   private selectAfterMutation = false
   private selectColumns = '*'
+  private upsertConflictColumns = 'id'
+  private upsertIgnoreDuplicates = false
 
   constructor(pool: Pool) {
     this.pool = pool
@@ -229,9 +231,11 @@ export class QueryBuilder {
     return this
   }
 
-  upsert(data: any | any[], options?: { onConflict?: string }): QueryBuilder {
+  upsert(data: any | any[], options?: { onConflict?: string; ignoreDuplicates?: boolean }): QueryBuilder {
     this.operation = 'upsert'
     this.insertData = Array.isArray(data) ? data : [data]
+    this.upsertConflictColumns = options?.onConflict || 'id'
+    this.upsertIgnoreDuplicates = options?.ignoreDuplicates || false
     return this
   }
 
@@ -573,9 +577,18 @@ export class QueryBuilder {
     }
 
     const cols = keys.map((k) => `"${k}"`).join(', ')
-    const updates = keys.map((k) => `"${k}" = EXCLUDED."${k}"`).join(', ')
+    const conflictCols = this.upsertConflictColumns
+      .split(',')
+      .map((c) => `"${c.trim()}"`)
+      .join(', ')
 
-    let sql = `INSERT INTO "${this.tableName}" (${cols}) VALUES ${valueSets.join(', ')} ON CONFLICT (id) DO UPDATE SET ${updates}`
+    let sql: string
+    if (this.upsertIgnoreDuplicates) {
+      sql = `INSERT INTO "${this.tableName}" (${cols}) VALUES ${valueSets.join(', ')} ON CONFLICT (${conflictCols}) DO NOTHING`
+    } else {
+      const updates = keys.map((k) => `"${k}" = EXCLUDED."${k}"`).join(', ')
+      sql = `INSERT INTO "${this.tableName}" (${cols}) VALUES ${valueSets.join(', ')} ON CONFLICT (${conflictCols}) DO UPDATE SET ${updates}`
+    }
 
     if (this.selectAfterMutation) {
       sql += ' RETURNING *'

@@ -40,6 +40,22 @@ const PUBLIC_READ_TABLES = new Set([
   'catalog_collections',
 ])
 
+// Tables with user_id column — auto-scope to current user (except admin/manager)
+const USER_SCOPED_TABLES = new Set([
+  'projects',
+  'project_templates',
+  'user_profiles',
+  'client_profiles',
+  'supplier_profiles',
+  'catalog_user_suppliers',
+  'catalog_user_products',
+  'catalog_carts',
+  'constructor_drafts',
+  'bank_accounts',
+  'supplier_cards',
+  'crypto_wallets',
+])
+
 // Whitelist of RPC functions callable through this proxy
 const ALLOWED_RPC = new Set([
   'get_category_tree',
@@ -62,10 +78,14 @@ export async function POST(request: NextRequest) {
 
     // Extract auth (optional — needed for protected tables and mutations)
     let userId: string | null = null
+    let userRole: string = 'user'
     const token = request.headers.get('authorization')?.substring(7)
     if (token) {
       const payload = await verifyToken(token)
-      if (payload) userId = payload.sub
+      if (payload) {
+        userId = payload.sub
+        userRole = (payload as any).role || 'user'
+      }
     }
 
     // Handle RPC calls
@@ -88,7 +108,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result)
     }
 
-    const { table, operation, columns, filters, orders, limitValue, rangeFrom, rangeTo, single, maybeSingle, countMode, headOnly, data, selectAfterMutation } = body
+    const { table, operation, columns, filters, orders, limitValue, rangeFrom, rangeTo, single, maybeSingle, countMode, headOnly, data, selectAfterMutation, onConflict, ignoreDuplicates } = body
 
     if (!table) {
       return NextResponse.json(
@@ -139,7 +159,10 @@ export async function POST(request: NextRequest) {
       query = db.from(table).delete()
       if (selectAfterMutation) query = query.select()
     } else if (operation === 'upsert') {
-      query = db.from(table).upsert(data)
+      const upsertOpts: any = {}
+      if (onConflict) upsertOpts.onConflict = onConflict
+      if (ignoreDuplicates) upsertOpts.ignoreDuplicates = ignoreDuplicates
+      query = db.from(table).upsert(data, Object.keys(upsertOpts).length > 0 ? upsertOpts : undefined)
       if (selectAfterMutation) query = query.select()
     }
 
@@ -176,6 +199,12 @@ export async function POST(request: NextRequest) {
     }
     if (single) query = query.single()
     if (maybeSingle) query = query.maybeSingle()
+
+    // Auto-scope user_id for tables with direct user ownership (safety net)
+    // Admin and manager roles bypass this for cross-user access
+    if (USER_SCOPED_TABLES.has(table) && userId && userRole !== 'admin' && userRole !== 'manager') {
+      query = query.eq('user_id', userId)
+    }
 
     const result = await query
     return NextResponse.json(result)
