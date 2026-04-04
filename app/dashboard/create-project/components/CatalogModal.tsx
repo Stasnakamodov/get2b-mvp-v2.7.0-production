@@ -1861,11 +1861,12 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                         in_stock: item.in_stock,
                         images: item.images,
                         sku: item.sku,
-                        // Добавляем информацию о количестве и поставщике в description для Step2
+                        // Добавляем информацию о количестве, поставщике и источнике для Step2
                         quantity: item.quantity,
                         supplier_name: item.supplier_name,
-                        supplier_id: item.supplier_id
-                      } as Product & { quantity: number, supplier_name: string, supplier_id: string }))
+                        supplier_id: item.supplier_id,
+                        room_type: item.room_type,
+                      } as Product & { quantity: number, supplier_name: string, supplier_id: string, room_type: string }))
                       
                       console.log('📦 Передаем товары в Step2:', productsToAdd)
                       console.log('🚨🚨🚨 [CART] Вызываем onAddProducts с корзиной:', productsToAdd.length, 'товаров')

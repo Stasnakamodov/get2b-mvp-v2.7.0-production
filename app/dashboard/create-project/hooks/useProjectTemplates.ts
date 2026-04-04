@@ -1,78 +1,7 @@
 import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
 import React, { useState, useEffect } from "react";
-export function useSaveTemplate() {
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
-  async function saveTemplate({ name, description, data }: { name: string; description?: string; data: any }) {
-    setIsSaving(true);
-    setError(null);
-    setSuccess(false);
-    // Получаем user_id
-    const { data: userData, error: userError } = await db.auth.getUser();
-    if (userError || !userData?.user?.id) {
-      setError("Не удалось получить пользователя");
-      setIsSaving(false);
-      return false;
-    }
-    const user_id = userData.user.id;
-    const { error } = await db.from("templates").insert([
-      {
-        user_id,
-        name,
-        description: description || null,
-        data,
-      },
-    ]);
-    if (error) {
-      setError(error.message);
-      setIsSaving(false);
-      return false;
-    }
-    setSuccess(true);
-    setIsSaving(false);
-    return true;
-  }
-
-  return { saveTemplate, isSaving, error, success };
-}
-
-export function useTemplates() {
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function fetchTemplates() {
-    setLoading(true);
-    setError(null);
-    // Получаем user_id
-    const { data: userData, error: userError } = await db.auth.getUser();
-    if (userError || !userData?.user?.id) {
-      setError("Не удалось получить пользователя");
-      setLoading(false);
-      return;
-    }
-    const user_id = userData.user.id;
-    const { data, error } = await db
-      .from("templates")
-      .select("id, name, description, data, created_at")
-      .eq("user_id", user_id)
-      .order("created_at", { ascending: false });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-    setTemplates(data || []);
-    setLoading(false);
-  }
-
-  return { templates, loading, error, fetchTemplates };
-}
-
-// Новый хук для работы с таблицей project_templates
 export function useProjectTemplates() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -83,7 +12,7 @@ export function useProjectTemplates() {
   const fetchTemplates = React.useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const { data: userData, error: userError } = await db.auth.getUser();
       if (userError || !userData?.user?.id) {
@@ -93,24 +22,24 @@ export function useProjectTemplates() {
         return;
       }
       const user_id = userData.user.id;
-      
-      
+
+
       // Добавляем таймаут для запроса
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Таймаут запроса')), 10000); // 10 секунд
       });
-      
+
       const fetchPromise = db
         .from("project_templates")
         .select("*")
         .eq("user_id", user_id)
         .order("created_at", { ascending: false });
-      
+
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
-      
+
       if (error) {
         logger.error('❌ [useProjectTemplates] Ошибка запроса шаблонов:', error);
-        
+
         // Обработка специфических ошибок
         if (error.message.includes('Failed to fetch') || error.message.includes('network')) {
           setError('Ошибка сети. Проверьте подключение к интернету.');
@@ -119,16 +48,16 @@ export function useProjectTemplates() {
         } else {
           setError(error.message);
         }
-        
+
         setLoading(false);
         return;
       }
-      
+
       setTemplates(data || []);
       setLoading(false);
     } catch (err: any) {
       logger.error('❌ [useProjectTemplates] Неожиданная ошибка:', err);
-      
+
       // Обработка сетевых ошибок
       if (err.message.includes('Failed to fetch') || err.message.includes('network')) {
         setError('Ошибка сети. Проверьте подключение к интернету.');
@@ -137,7 +66,7 @@ export function useProjectTemplates() {
       } else {
         setError('Неожиданная ошибка при загрузке шаблонов');
       }
-      
+
       setLoading(false);
     }
   }, [])
@@ -170,21 +99,25 @@ export function useProjectTemplates() {
       user_id,
       name,
       description: description || null,
-      company_name: companyData.name || '',
-      company_legal: companyData.legalName || '',
-      company_inn: companyData.inn || '',
-      company_kpp: companyData.kpp || '',
-      company_ogrn: companyData.ogrn || '',
-      company_address: companyData.address || '',
-      company_bank: companyData.bankName || '',
-      company_account: companyData.bankAccount || '',
-      company_corr: companyData.bankCorrAccount || '',
-      company_bik: companyData.bankBik || '',
-      company_email: companyData.email || '',
-      company_phone: companyData.phone || '',
-      company_website: companyData.website || '',
-      specification: specification,
       role,
+      data: {
+        company: {
+          name: companyData.name || '',
+          legalName: companyData.legalName || '',
+          inn: companyData.inn || '',
+          kpp: companyData.kpp || '',
+          ogrn: companyData.ogrn || '',
+          address: companyData.address || '',
+          bankName: companyData.bankName || '',
+          bankAccount: companyData.bankAccount || '',
+          bankCorrAccount: companyData.bankCorrAccount || '',
+          bankBik: companyData.bankBik || '',
+          email: companyData.email || '',
+          phone: companyData.phone || '',
+          website: companyData.website || '',
+        },
+        specification,
+      },
     };
     const { error } = await db.from("project_templates").insert([insertObj]);
     if (error) {
@@ -201,4 +134,4 @@ export function useProjectTemplates() {
   useEffect(() => { fetchTemplates(); }, []);
 
   return { templates, loading, error, fetchTemplates, saveProjectTemplate, saving, success };
-} 
+}

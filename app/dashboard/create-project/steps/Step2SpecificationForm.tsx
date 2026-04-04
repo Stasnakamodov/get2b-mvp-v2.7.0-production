@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, UploadCloud, FileText, Save, Package, Eye } from "lucide-react";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
-import { useSaveTemplate, useProjectTemplates } from "../hooks/useSaveTemplate";
+import { useProjectTemplates } from "../hooks/useProjectTemplates";
 import { useToast } from "@/components/ui/use-toast";
 import { useTelegramNotifications } from '../hooks/useTelegramNotifications';
 import { sendTelegramMessageClient, sendTelegramDocumentClient } from '@/lib/telegram-client';
@@ -79,7 +79,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { saveSpecification, loadSpecification, updateStep, saveSupplierData } = useProjectSupabase();
-  const { saveTemplate, isSaving, error: saveTemplateError, success } = useSaveTemplate();
+  const { saveProjectTemplate, saving: isSaving } = useProjectTemplates();
   const { toast } = useToast();
   const { sendSpecificationToTelegram } = useTelegramNotifications();
   const [isWaitingApproval, setIsWaitingApproval] = useState(false);
@@ -87,7 +87,6 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const router = useRouter();
-  const { saveProjectTemplate } = useProjectTemplates();
   const [showTemplateSelect, setShowTemplateSelect] = useState(false);
   
   // ДОБАВЛЯЕМ: состояние для отслеживания загрузки изображений по каждому элементу
@@ -945,8 +944,9 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       supplier_name: product.supplier_name || 'Поставщик из каталога',
       image_url: product.image_url || product.images?.[0] || '',
       category_name: product.category_name || 'Из каталога',
-      subcategory_name: product.subcategory_name
-      // catalog_product_id временно отключен из-за foreign key ошибок
+      subcategory_name: product.subcategory_name,
+      catalog_product_id: product.id || null,
+      catalog_product_source: product.room_type || null,
     }));
     
     logger.info('🔍 [Step2] Преобразованные товары для addItems:', specItems);

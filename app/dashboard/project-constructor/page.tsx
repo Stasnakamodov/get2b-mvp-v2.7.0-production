@@ -68,7 +68,7 @@ import {
   GitBranch,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { useProjectTemplates } from "../create-project/hooks/useSaveTemplate"
+import { useProjectTemplates } from "../create-project/hooks/useProjectTemplates"
 import CompanyForm from '@/components/project-constructor/forms/CompanyForm'
 import ContactsForm from '@/components/project-constructor/forms/ContactsForm'
 import BankForm from '@/components/project-constructor/forms/BankForm'

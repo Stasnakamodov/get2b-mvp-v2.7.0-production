@@ -164,7 +164,7 @@ jest.mock('../context/CreateProjectContext', () => {
 // }));
 
 // Мокаем useProjectTemplates для возврата тестовых шаблонов
-jest.mock('../hooks/useSaveTemplate', () => {
+jest.mock('../hooks/useProjectTemplates', () => {
   return {
     useProjectTemplates: () => ({
       templates: [
@@ -172,17 +172,20 @@ jest.mock('../hooks/useSaveTemplate', () => {
           id: 'template-1',
           name: 'Тестовый шаблон',
           description: 'Описание',
-          specification: [
-            { item_name: 'Товар 1', quantity: 2, price: 100 },
-            { item_name: 'Товар 2', quantity: 1, price: 200 },
-          ],
+          data: {
+            specification: [
+              { item_name: 'Товар 1', quantity: 2, price: 100 },
+              { item_name: 'Товар 2', quantity: 1, price: 200 },
+            ],
+          },
         },
       ],
       loading: false,
       error: null,
       fetchTemplates: jest.fn(),
+      saveProjectTemplate: jest.fn(),
+      saving: false,
     }),
-    useSaveTemplate: () => ({ saveTemplate: jest.fn(), isSaving: false, error: null, success: false }),
   };
 });
 

@@ -36,7 +36,7 @@ jest.mock('@/hooks/useSupplierProfiles', () => ({
   })
 }))
 
-jest.mock('../create-project/hooks/useSaveTemplate', () => ({
+jest.mock('../create-project/hooks/useProjectTemplates', () => ({
   useProjectTemplates: () => ({
     templates: [],
     loading: false,

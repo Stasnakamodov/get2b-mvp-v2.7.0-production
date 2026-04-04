@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, ArrowRight, CheckCircle, Info, Save, UploadCloud, Users, Building } from "lucide-react";
 import { motion } from "framer-motion";
-import { useSaveTemplate, useProjectTemplates } from "../hooks/useSaveTemplate";
+import { useProjectTemplates } from "../hooks/useProjectTemplates";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
@@ -30,7 +30,6 @@ export default function Step1CompanyForm(props: {
   const { companyData, setCompanyData, projectName, setProjectName, setCurrentStep, setProjectId, projectId, maxStepReached, setMaxStepReached, startMethod, specificationItems } = useCreateProjectContext();
   const { isLoading, isVerified, isVerifying } = props;
   const [isSaveDialogOpen, setIsSaveDialogOpenState] = useState(false);
-  const { saveTemplate, isSaving, error: saveTemplateError, success } = useSaveTemplate();
   const { saveProjectTemplate, saving: isSavingNew, error: saveProjectTemplateError, success: successNew } = useProjectTemplates();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const { toast } = useToast();
@@ -802,10 +801,10 @@ export default function Step1CompanyForm(props: {
   };
 
   useEffect(() => {
-    if (success) {
+    if (successNew) {
       setIsSaveDialogOpenState(false);
     }
-  }, [success]);
+  }, [successNew]);
 
   useEffect(() => {
       if (!projectId) return;
@@ -1783,13 +1782,13 @@ export default function Step1CompanyForm(props: {
           </DialogHeader>
           <div className="py-4">
             <p>Вы действительно хотите сохранить текущие данные как шаблон?</p>
-            {(isSaving || isSavingNew) && <p className="text-blue-500 mt-2">Сохраняем шаблон...</p>}
-            {(saveTemplateError || saveProjectTemplateError) && <p className="text-red-500 mt-2">Ошибка: {saveTemplateError || saveProjectTemplateError}</p>}
-            {(success || successNew) && <p className="text-green-600 mt-2 font-bold">Шаблон успешно сохранён!</p>}
+            {isSavingNew && <p className="text-blue-500 mt-2">Сохраняем шаблон...</p>}
+            {saveProjectTemplateError && <p className="text-red-500 mt-2">Ошибка: {saveProjectTemplateError}</p>}
+            {successNew && <p className="text-green-600 mt-2 font-bold">Шаблон успешно сохранён!</p>}
           </div>
           <DialogFooter>
             <Button onClick={() => setIsSaveDialogOpenState(false)} variant="outline">Отмена</Button>
-            <Button onClick={handleSaveTemplateAndRedirect} disabled={isSaving || isSavingNew || success || successNew} className="bg-blue-500 text-white">Сохранить</Button>
+            <Button onClick={handleSaveTemplateAndRedirect} disabled={isSavingNew || successNew} className="bg-blue-500 text-white">Сохранить</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

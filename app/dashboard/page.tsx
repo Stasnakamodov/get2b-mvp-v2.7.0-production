@@ -30,9 +30,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
 import ProjectTimeline from "@/components/ui/ProjectTimeline"
-import { useDeleteTemplate } from "./create-project/hooks/useDeleteTemplate"
 import { useRouter } from "next/navigation"
-import { useProjectTemplates } from "./create-project/hooks/useSaveTemplate"
+import { useProjectTemplates } from "./create-project/hooks/useProjectTemplates"
 import CatalogDropdown from "@/components/CatalogDropdown"
 import { cn } from "@/lib/utils"
 
@@ -167,8 +166,8 @@ function getCorrectStepForCard(project: any) {
 function DashboardPageContent() {
   const [isLoaded, setIsLoaded] = useState(false)
   const [projects, setProjects] = useState<Project[]>([])
-  const { deleteTemplate, isDeleting, error: deleteError, success: deleteSuccess } = useDeleteTemplate()
   const { templates, loading: loadingTemplates, error: errorTemplates, fetchTemplates } = useProjectTemplates();
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
   const router = useRouter()
   const FINAL_STEP = 7; // Количество шагов в проекте
   const [templateRole, setTemplateRole] = useState<'client' | 'supplier'>('client');
@@ -321,11 +320,7 @@ function DashboardPageContent() {
     };
   }, []);
 
-  // Функция для удаления шаблона
-  const handleDeleteTemplate = async (id: string) => {
-    await deleteTemplate(id);
-    await fetchTemplates();
-  }
+  // Функция для удаления шаблона (legacy — удалена)
 
   // Функция для создания проекта из шаблона
   const createProjectFromTemplate = async (templateId: string) => {
@@ -343,8 +338,10 @@ function DashboardPageContent() {
 
   // Функция для удаления шаблона из project_templates
   const handleDeleteProjectTemplate = async (id: string) => {
+    setIsDeletingTemplate(true);
     await db.from("project_templates").delete().eq("id", id);
     await fetchTemplates();
+    setIsDeletingTemplate(false);
   };
 
   // Варианты анимации для разных элементов
@@ -735,10 +732,10 @@ function DashboardPageContent() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteProjectTemplate(template.id)}
-                          disabled={isDeleting}
+                          disabled={isDeletingTemplate}
                           className="border-border hover:border-border/80"
                         >
-                          {isDeleting ? "Удаляем..." : "Удалить"}
+                          {isDeletingTemplate ? "Удаляем..." : "Удалить"}
                         </Button>
                       </motion.div>
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>

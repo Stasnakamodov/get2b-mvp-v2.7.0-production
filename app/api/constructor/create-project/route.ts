@@ -12,33 +12,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      draft_id, 
+    const {
       project_name,
       step_data,
-      step_configs 
+      step_configs
     } = body;
 
-    // 1. Получаем данные черновика
-    let draftData = null;
-    if (draft_id) {
-      const { data: draft, error: draftError } = await db
-        .from('constructor_drafts')
-        .select('*')
-        .eq('id', draft_id)
-        .eq('user_id', user.id)
-        .single();
-
-      if (draftError) {
-        console.error('Ошибка получения черновика:', draftError);
-        return NextResponse.json({ error: "Черновик не найден" }, { status: 404 });
-      }
-      draftData = draft;
-    }
-
-    // 2. Извлекаем данные из шагов
-    const stepData = draftData?.step_data || step_data || {};
-    const stepConfigs = draftData?.step_configs || step_configs || {};
+    // Извлекаем данные из шагов
+    const stepData = step_data || {};
+    const stepConfigs = step_configs || {};
 
     // Данные компании (Step1)
     const companyData = stepData[1] || {};
@@ -120,15 +102,6 @@ export async function POST(request: NextRequest) {
         console.error('Ошибка создания реквизитов:', reqError);
         // Не прерываем процесс, реквизиты не критичны
       }
-    }
-
-    // 6. Помечаем черновик как завершенный (если был)
-    if (draft_id) {
-      await db
-        .from('constructor_drafts')
-        .update({ is_complete: true })
-        .eq('id', draft_id)
-        .eq('user_id', user.id);
     }
 
     return NextResponse.json({ 

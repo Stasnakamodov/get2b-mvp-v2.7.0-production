@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
       image_url: item.image_url || '',
       supplier_name: item.supplier_name || '',
       currency: item.currency || 'USD',
+      catalog_product_id: item.catalog_product_id || null,
+      catalog_product_source: item.catalog_product_source || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }));

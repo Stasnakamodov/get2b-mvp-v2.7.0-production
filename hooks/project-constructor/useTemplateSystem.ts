@@ -45,30 +45,33 @@ export function useTemplateSystem({
     }
 
 
+    const tplData = template.data || {}
+    const company = tplData.company || {}
+
     return {
       id: template.id,
       name: template.name || 'Без названия',
       availableSteps: [1, 2], // По умолчанию шаблоны содержат шаги 1 и 2
       data: {
         1: {
-          name: template.company_name || '',
-          legalName: template.company_legal || '',
-          inn: template.company_inn || '',
-          kpp: template.company_kpp || '',
-          ogrn: template.company_ogrn || '',
-          address: template.company_address || '',
-          bankName: template.company_bank || '',
-          bankAccount: template.company_account || '',
-          bankCorrAccount: template.company_corr_account || template.company_corr || '',
-          bankBik: template.company_bik || '',
-          email: template.company_email || '',
-          phone: template.company_phone || '',
-          website: template.company_website || ''
+          name: company.name || '',
+          legalName: company.legalName || '',
+          inn: company.inn || '',
+          kpp: company.kpp || '',
+          ogrn: company.ogrn || '',
+          address: company.address || '',
+          bankName: company.bankName || '',
+          bankAccount: company.bankAccount || '',
+          bankCorrAccount: company.bankCorrAccount || '',
+          bankBik: company.bankBik || '',
+          email: company.email || '',
+          phone: company.phone || '',
+          website: company.website || ''
         },
         2: {
-          supplier: template.supplier_name || template.data?.supplier_name || template.data?.supplier || '',
-          currency: template.currency || 'RUB',
-          items: template.items || template.specification || template.data?.specification || []
+          supplier: tplData.specification?.[0]?.supplier_name || '',
+          currency: 'RUB',
+          items: tplData.specification || []
         }
       }
     }

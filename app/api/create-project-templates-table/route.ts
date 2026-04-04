@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const createTableSQL = `
       CREATE TABLE IF NOT EXISTS public.project_templates (
         id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-        user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
         description TEXT,
         data JSONB NOT NULL DEFAULT '{}',

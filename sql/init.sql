@@ -251,6 +251,7 @@ CREATE TABLE IF NOT EXISTS project_specifications (
   category_name text,
   subcategory_name text,
   catalog_product_id uuid,
+  catalog_product_source text CHECK (catalog_product_source IN ('verified', 'user')),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -1095,17 +1096,18 @@ CREATE TRIGGER tr_scenario_deltas_updated
 CREATE OR REPLACE FUNCTION auto_fill_category_from_catalog()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.catalog_product_id IS NOT NULL THEN
-    SELECT
-      cc.name,
-      cs.name
-    INTO
-      NEW.category_name,
-      NEW.subcategory_name
-    FROM catalog_products cp
-    LEFT JOIN catalog_categories cc ON cp.category_id = cc.id
-    LEFT JOIN catalog_subcategories cs ON cp.subcategory_id = cs.id
-    WHERE cp.id = NEW.catalog_product_id;
+  IF NEW.catalog_product_id IS NOT NULL AND NEW.catalog_product_source IS NOT NULL THEN
+    IF NEW.catalog_product_source = 'verified' THEN
+      SELECT cp.category, NULL
+      INTO NEW.category_name, NEW.subcategory_name
+      FROM catalog_verified_products cp
+      WHERE cp.id = NEW.catalog_product_id;
+    ELSIF NEW.catalog_product_source = 'user' THEN
+      SELECT cp.category, NULL
+      INTO NEW.category_name, NEW.subcategory_name
+      FROM catalog_user_products cp
+      WHERE cp.id = NEW.catalog_product_id;
+    END IF;
   END IF;
   RETURN NEW;
 END;
