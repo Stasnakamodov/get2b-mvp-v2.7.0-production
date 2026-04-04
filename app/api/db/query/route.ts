@@ -25,6 +25,10 @@ const AUTH_REQUIRED_TABLES = new Set([
   'catalog_cart_items',
   'constructor_drafts',
   'manager_assignments',
+  'project_invoices',
+  'bank_accounts',
+  'supplier_cards',
+  'crypto_wallets',
 ])
 
 // Tables that allow public read
@@ -50,7 +54,6 @@ const ALLOWED_RPC = new Set([
   'freeze_other_scenarios',
   'count_products_by_category_name',
   'count_products_by_subcategory',
-  'sync_catalog_suppliers',
 ])
 
 export async function POST(request: NextRequest) {
@@ -156,6 +159,7 @@ export async function POST(request: NextRequest) {
           case 'is': query = query.is(f.column, f.value); break
           case 'or': query = query.or(f.expr); break
           case 'contains': query = query.contains(f.column, f.value); break
+          case 'not': query = query.not(f.column, f.value.op, f.value.value); break
         }
       }
     }

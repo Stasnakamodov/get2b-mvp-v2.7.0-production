@@ -88,20 +88,35 @@ export default function Step4PaymentMethodForm() {
         for (const supplierName of suppliers) {
           logger.info(`[Step4] 🔍 Поиск эхо данных для поставщика: "${supplierName}"`);
           
-          // Находим проекты с этим поставщиком где есть payment_method (завершенные проекты)
-          const { data: echoProjects, error: echoError } = await db
+          // Находим проекты с этим поставщиком, потом фильтруем те, где есть payment_method
+          const { data: specRows, error: specError } = await db
             .from("project_specifications")
-            .select(`
-              project_id,
-              projects!inner(payment_method, user_id)
-            `)
-            .ilike("supplier_name", `%${supplierName}%`)
-            .not("projects.payment_method", "is", null);
-          
-          if (echoError) {
-            logger.error(`[Step4] Ошибка поиска эхо проектов для ${supplierName}:`, echoError);
+            .select("project_id")
+            .ilike("supplier_name", `%${supplierName}%`);
+
+          if (specError) {
+            logger.error(`[Step4] Ошибка поиска спецификаций для ${supplierName}:`, specError);
             continue;
           }
+
+          let echoProjects: any[] = [];
+          if (specRows && specRows.length > 0) {
+            const projectIds = [...new Set(specRows.map((r: any) => r.project_id))];
+            const { data: projects, error: projError } = await db
+              .from("projects")
+              .select("id, payment_method, user_id")
+              .in("id", projectIds)
+              .not("payment_method", "is", null);
+
+            if (!projError && projects) {
+              echoProjects = projects.map((p: any) => ({
+                project_id: p.id,
+                projects: { payment_method: p.payment_method, user_id: p.user_id }
+              }));
+            }
+          }
+
+          const echoError = null;
 
           // Ищем поставщика в каталоге независимо от эхо проектов
           logger.info(`[Step4] 🔍 Поиск реального поставщика ${supplierName} в каталоге...`);

@@ -252,6 +252,9 @@ CREATE TABLE IF NOT EXISTS project_specifications (
   subcategory_name text,
   catalog_product_id uuid,
   catalog_product_source text CHECK (catalog_product_source IN ('verified', 'user')),
+  currency text DEFAULT 'RUB',
+  description text DEFAULT '',
+  supplier_id text,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -872,6 +875,52 @@ ALTER TABLE supplier_profiles
 CREATE INDEX IF NOT EXISTS idx_supplier_profiles_category_id
   ON supplier_profiles(category_id);
 
+-- 6i. Payment requisite template tables (used by Step5)
+CREATE TABLE IF NOT EXISTS bank_accounts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name text,
+  country text,
+  details text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS supplier_cards (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  bank text,
+  card_number text,
+  holder_name text,
+  expiry_date text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS crypto_wallets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name text,
+  address text,
+  network text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 6j. Project invoices (used by useProjectInvoices hook)
+CREATE TABLE IF NOT EXISTS project_invoices (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  role text DEFAULT 'client',
+  file_url text NOT NULL,
+  file_name text,
+  uploaded_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_bank_accounts_user ON bank_accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_supplier_cards_user ON supplier_cards(user_id);
+CREATE INDEX IF NOT EXISTS idx_crypto_wallets_user ON crypto_wallets(user_id);
+CREATE INDEX IF NOT EXISTS idx_project_invoices_project ON project_invoices(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_invoices_user ON project_invoices(user_id);
+
 -- =========================
 -- 7. TRIGGERS
 -- =========================
@@ -1095,18 +1144,30 @@ CREATE TRIGGER tr_scenario_deltas_updated
 -- 7j. Auto-fill category from catalog for project_specifications
 CREATE OR REPLACE FUNCTION auto_fill_category_from_catalog()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_category text;
+  v_subcategory text;
 BEGIN
   IF NEW.catalog_product_id IS NOT NULL AND NEW.catalog_product_source IS NOT NULL THEN
     IF NEW.catalog_product_source = 'verified' THEN
-      SELECT cp.category, NULL
-      INTO NEW.category_name, NEW.subcategory_name
+      SELECT cp.category, sub.name
+      INTO v_category, v_subcategory
       FROM catalog_verified_products cp
+      LEFT JOIN catalog_subcategories sub ON cp.subcategory_id = sub.id
       WHERE cp.id = NEW.catalog_product_id;
     ELSIF NEW.catalog_product_source = 'user' THEN
-      SELECT cp.category, NULL
-      INTO NEW.category_name, NEW.subcategory_name
+      SELECT cp.category, sub.name
+      INTO v_category, v_subcategory
       FROM catalog_user_products cp
+      LEFT JOIN catalog_subcategories sub ON cp.subcategory_id = sub.id
       WHERE cp.id = NEW.catalog_product_id;
+    END IF;
+
+    IF v_category IS NOT NULL THEN
+      NEW.category_name := v_category;
+    END IF;
+    IF v_subcategory IS NOT NULL THEN
+      NEW.subcategory_name := v_subcategory;
     END IF;
   END IF;
   RETURN NEW;

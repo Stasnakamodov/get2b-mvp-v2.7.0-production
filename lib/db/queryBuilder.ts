@@ -303,11 +303,22 @@ export class QueryBuilder {
   }
 
   not(column: string, op: string, value: any): QueryBuilder {
-    const sqlOp = POSTGREST_OPS[op] || '='
-    this.whereClauses.push({
-      sql: `NOT ("${column}" ${sqlOp} ?)`,
-      values: [value],
-    })
+    if (op === 'is') {
+      if (value === null) {
+        this.whereClauses.push({ sql: `"${column}" IS NOT NULL`, values: [] })
+      } else {
+        this.whereClauses.push({
+          sql: `"${column}" IS NOT ${value ? 'TRUE' : 'FALSE'}`,
+          values: [],
+        })
+      }
+    } else {
+      const sqlOp = POSTGREST_OPS[op] || '='
+      this.whereClauses.push({
+        sql: `NOT ("${column}" ${sqlOp} ?)`,
+        values: [value],
+      })
+    }
     return this
   }
 

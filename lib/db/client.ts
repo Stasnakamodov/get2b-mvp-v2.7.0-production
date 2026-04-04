@@ -57,11 +57,35 @@ export const db = {
         },
 
         async remove(paths: string[]) {
-          return { data: null, error: null }
+          const token = authClient.getToken()
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+          if (token) headers['Authorization'] = `Bearer ${token}`
+          try {
+            const res = await fetch('/api/storage/remove', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ bucket, paths }),
+            })
+            return await res.json()
+          } catch (e: any) {
+            return { data: null, error: { message: e.message } }
+          }
         },
 
         async list(path?: string, options?: any) {
-          return { data: [], error: null }
+          const token = authClient.getToken()
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+          if (token) headers['Authorization'] = `Bearer ${token}`
+          try {
+            const res = await fetch('/api/storage/list', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ bucket, path, search: options?.search }),
+            })
+            return await res.json()
+          } catch (e: any) {
+            return { data: [], error: { message: e.message } }
+          }
         },
       }
     },
