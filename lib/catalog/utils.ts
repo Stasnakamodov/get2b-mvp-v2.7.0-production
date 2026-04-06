@@ -31,8 +31,8 @@ export function getCleanImages(product: CatalogProduct): string[] {
     if (typeof img === 'object' && img !== null && 'url' in img) {
       return img.url
     }
-    // Если это строка
-    if (typeof img === 'string' && img.startsWith('http')) {
+    // Если это строка с URL или локальный путь
+    if (typeof img === 'string' && (img.startsWith('http') || img.startsWith('/'))) {
       return img
     }
     // Fallback
@@ -56,8 +56,8 @@ export function getProductImage(product: CatalogProduct): string {
     return firstImage.url || '/images/products/placeholder-0.svg'
   }
 
-  // Если это строка с URL
-  if (typeof firstImage === 'string' && firstImage.startsWith('http')) {
+  // Если это строка с URL или локальный путь
+  if (typeof firstImage === 'string' && (firstImage.startsWith('http') || firstImage.startsWith('/'))) {
     return firstImage
   }
 
