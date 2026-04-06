@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, cart: data })
+    // rpc returns array of rows; unwrap the JSONB result
+    const cart = data?.[0]?.get_cart_with_products ?? { cart_id: null, items: [] }
+    return NextResponse.json({ success: true, cart })
   } catch (error) {
     logger.error('[API] Cart unexpected error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
