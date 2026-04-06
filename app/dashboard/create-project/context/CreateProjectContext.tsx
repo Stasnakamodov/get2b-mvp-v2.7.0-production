@@ -2,6 +2,7 @@
 
 import { createContext, useState, useContext, useMemo, useCallback, useEffect, type ReactNode } from "react"
 import { logger } from '@/src/shared/lib/logger';
+import { db } from '@/lib/db/client';
 // Create a context for project state
 interface ProjectContextType {
   // Основные состояния проекта
@@ -164,22 +165,29 @@ function ProjectProvider({ children }: { children: ReactNode }) {
       
       // ВАЖНО: Сохраняем товары в базу данных для Step 2
       if (projectId) {
-        // Вызываем API для сохранения товаров в базу данных
-        fetch('/api/project-specifications/bulk-insert', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            projectId: projectId,
-            items: mappedProducts,
-            role: 'client'
-          }),
-        }).then(response => response.json())
-        .then(data => {
-        })
-        .catch(error => {
-          logger.error("[fillSupplierData] Error saving products to DB:", error);
+        db.auth.getSession().then(({ data: { session } }) => {
+          if (!session?.access_token) {
+            logger.error("[fillSupplierData] Нет access_token для сохранения в БД");
+            return;
+          }
+          fetch('/api/project-specifications/bulk-insert', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              projectId: projectId,
+              items: mappedProducts,
+              role: 'client'
+            }),
+          }).then(response => {
+            if (!response.ok) logger.error("[fillSupplierData] Ошибка сохранения:", response.status);
+            return response.json();
+          })
+          .catch(error => {
+            logger.error("[fillSupplierData] Error saving products to DB:", error);
+          });
         });
       }
     }

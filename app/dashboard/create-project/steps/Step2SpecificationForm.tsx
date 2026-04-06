@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import CatalogModal from "../components/CatalogModal";
 import ProformaSelectionModal from "../components/ProformaSelectionModal";
-const CURRENCY = "USD";
+const DEFAULT_CURRENCY = "RUB";
 
 // Функция для очистки имени файла и частей пути
 function sanitizeFileName(filename: string) {
@@ -222,6 +222,9 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     const price = getFieldValue(item.id, 'price') || 0;
     return sum + (Number(quantity) * Number(price));
   }, 0);
+
+  // Валюта из первого товара спецификации (или дефолт)
+  const CURRENCY = specificationItems[0]?.currency || DEFAULT_CURRENCY;
 
   // Функция для обновления amount и currency в проекте
   const updateProjectAmountAndCurrency = async () => {

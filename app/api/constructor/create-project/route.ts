@@ -66,15 +66,21 @@ export async function POST(request: NextRequest) {
         project_id: project.id,
         user_id: user.id,
         role: 'client',
-        item_name: item.name,
+        item_name: item.name || item.item_name || '',
         item_code: item.code || item.sku || '',
         quantity: item.quantity || 1,
         unit: item.unit || 'шт',
         price: item.price || 0,
-        total: (item.price || 0) * (item.quantity || 1),
+        total: item.total || (item.price || 0) * (item.quantity || 1),
         image_url: item.image_url || '',
-        currency: item.currency || specificationData.currency || 'USD',
-        supplier_name: item.supplier_name || specificationData.supplier || ''
+        description: item.description || '',
+        currency: item.currency || specificationData.currency || 'RUB',
+        supplier_name: item.supplier_name || specificationData.supplier || '',
+        supplier_id: item.supplier_id || null,
+        catalog_product_id: item.catalog_product_id || null,
+        catalog_product_source: item.catalog_product_source || null,
+        category_name: item.category || null,
+        subcategory_name: item.subcategory || null,
       }));
 
       const { error: specError } = await db

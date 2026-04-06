@@ -1,0 +1,19 @@
+{
+  "_comment": "Manual mapping of root categories between GET2B and A-Spectorg",
+  "roots": {
+    "Электроника": { "get2b_key": "electronics", "spectorg_key": "electronics" },
+    "Автотовары": { "get2b_key": "automotive", "spectorg_key": "auto" },
+    "Строительство и ремонт": { "get2b_key": "construction", "spectorg_key": "construction" },
+    "Дом и быт": { "get2b_key": "home", "spectorg_key": "home" },
+    "Здоровье и медицина": { "get2b_key": "healthcare", "spectorg_key": "beauty" },
+    "Текстиль и одежда": { "get2b_key": "textiles", "spectorg_key": "clothing" }
+  },
+  "name_aliases": {
+    "Дом и быт": ["Дом и сад"],
+    "Здоровье и медицина": ["Красота и здоровье"],
+    "Текстиль и одежда": ["Одежда"],
+    "Автотовары": ["Автотовары"]
+  },
+  "unmapped_get2b": ["Промышленность", "Продукты питания"],
+  "unmapped_spectorg": ["Мебель", "Спорт и отдых"]
+}

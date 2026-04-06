@@ -220,12 +220,18 @@ export default function CatalogPage() {
         sku: item.product.sku || '',
         quantity: item.quantity,
         unit: 'шт',
-        price: item.product.price,
-        total_price: item.quantity * (item.product.price || 0),
+        price: item.variant?.price || item.product.price,
+        total_price: item.quantity * (item.variant?.price || item.product.price || 0),
         description: item.product.description || '',
         images: item.product.images || [],
         supplier_name: item.product.supplier_name || '',
         supplier_id: item.product.supplier_id || '',
+        catalog_product_id: item.product.id,
+        category: item.product.category || '',
+        subcategory: item.product.subcategory || '',
+        currency: item.product.currency || 'RUB',
+        catalog_product_source: 'verified' as const,
+        variant: item.variant ? { id: item.variant.id, name: item.variant.name, price: item.variant.price } : null,
       }))
       sessionStorage.setItem('project_cart', JSON.stringify(cartForProject))
     }

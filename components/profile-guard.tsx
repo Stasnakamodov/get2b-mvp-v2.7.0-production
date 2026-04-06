@@ -110,8 +110,7 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
 
   const handleProfileSetupClose = () => {
     setShowProfileSetup(false)
-    // Перенаправляем в дашборд, даже если профиль не создан
-    router.push('/dashboard')
+    setHasProfile(true) // Пропускаем проверку — пускаем юзера в дашборд без профиля
   }
 
   // Показываем загрузку

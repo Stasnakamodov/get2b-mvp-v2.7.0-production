@@ -1,8 +1,10 @@
 import { sendTelegramMessageClient, sendTelegramDocumentClient, sendTelegramProjectApprovalRequestClient } from '@/lib/telegram-client';
 import { logger } from '@/src/shared/lib/logger';
 interface SpecificationItem {
-  name: string;
-  code: string;
+  name?: string;
+  item_name?: string;
+  code?: string;
+  item_code?: string;
   quantity: number;
   unit: string;
   price: number;
@@ -30,7 +32,9 @@ export function useTelegramNotifications() {
     try {
       let text = `Проект: ${projectName}\nСпецификация:`;
       specificationItems.forEach((item, idx) => {
-        text += `\n${idx + 1}. ${item.name} | Код: ${item.code} | Кол-во: ${item.quantity} ${item.unit} | Цена: ${currency} ${item.price} | Сумма: ${currency} ${item.total}`;
+        const itemName = item.name || item.item_name || '';
+        const itemCode = item.code || item.item_code || '';
+        text += `\n${idx + 1}. ${itemName} | Код: ${itemCode} | Кол-во: ${item.quantity} ${item.unit} | Цена: ${currency} ${item.price} | Сумма: ${currency} ${item.total}`;
       });
       text += `\nИтого: ${currency} ${specificationItems.reduce((sum, item) => sum + (item.total || 0), 0)}`;
 

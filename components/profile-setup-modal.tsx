@@ -278,7 +278,7 @@ export function ProfileSetupModal({ isOpen, onComplete, onClose, userId }: Profi
             <div className="text-center pt-2">
               <button
                 type="button"
-                onClick={() => router.push('/dashboard')}
+                onClick={handleClose}
                 className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 underline underline-offset-2 transition-colors"
               >
                 Пропустить настройку профиля

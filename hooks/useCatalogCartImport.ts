@@ -14,16 +14,20 @@ interface CatalogCartImportResult {
     supplier: string
     currency: string
     items: Array<{
-      item_name: string
+      name: string
+      code: string
       quantity: number
       price: number
       unit: string
       total: number
       supplier_name?: string
       supplier_id?: string
-      product_id?: string
+      image_url?: string
+      catalog_product_id?: string
+      catalog_product_source?: string
       category?: string
-      images?: string[]
+      subcategory?: string
+      currency?: string
     }>
   } | null
   clearCatalogCart: () => void
@@ -105,19 +109,26 @@ export function useCatalogCartImport(): CatalogCartImportResult {
       const variantSuffix = item.variant
         ? ` (${Object.values(item.variant.attributes).join(', ')})`
         : ''
+      const itemPrice = (item.variant?.price ?? item.product.price) || 0
+      const firstImage = item.product.images?.[0]
+      const imageUrl = firstImage
+        ? (typeof firstImage === 'string' ? firstImage : 'url' in firstImage ? firstImage.url : '')
+        : ''
       return {
-        item_name: item.product.name + variantSuffix,
+        name: item.product.name + variantSuffix,
+        code: item.product.sku || '',
         quantity: item.quantity,
-        price: (item.variant?.price ?? item.product.price) || 0,
+        price: itemPrice,
         unit: 'шт',
-        total: ((item.variant?.price ?? item.product.price) || 0) * item.quantity,
+        total: itemPrice * item.quantity,
         supplier_name: item.product.supplier_name,
         supplier_id: item.product.supplier_id,
-        product_id: item.product.id,
+        image_url: imageUrl,
+        catalog_product_id: item.product.id,
+        catalog_product_source: 'verified' as const,
         category: item.product.category,
-        images: item.product.images?.map(img =>
-          typeof img === 'string' ? img : 'url' in img ? img.url : ''
-        ).filter(Boolean)
+        subcategory: item.product.subcategory,
+        currency: item.product.currency || 'RUB',
       }
     })
   } : null
@@ -130,6 +141,12 @@ export function useCatalogCartImport(): CatalogCartImportResult {
 
   const clearCatalogCart = useCallback(() => {
     setHasImportedFromCatalog(false)
+    setCartItems([])
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY)
+    } catch {
+      // localStorage may not be available
+    }
   }, [])
 
   return {

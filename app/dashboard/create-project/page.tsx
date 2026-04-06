@@ -275,10 +275,16 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
                 if (currentProjectId) {
                   clearInterval(checkProjectId);
                   
+                  const { data: { session } } = await db.auth.getSession();
+                  if (!session?.access_token) {
+                    logger.error('[ProjectIdLoader] Нет access_token');
+                    return;
+                  }
                   const response = await fetch('/api/project-specifications/bulk-insert', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${session.access_token}`,
                     },
                     body: JSON.stringify({
                       projectId: currentProjectId,
@@ -286,7 +292,8 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
                       role: 'client'
                     }),
                   });
-                  
+
+                  if (!response.ok) logger.error('[ProjectIdLoader] Ошибка сохранения:', response.status);
                   const result = await response.json();
                 }
               }, 100);
@@ -525,7 +532,7 @@ function ProjectStartFlow() {
   const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [projectInsertError, setProjectInsertError] = useState<string | null>(null);
-  const { setCompanyData, setStartMethod, setProjectId, setCurrentStep, setProjectName } = useCreateProjectContext();
+  const { setCompanyData, setStartMethod, setProjectId, setCurrentStep, setProjectName, specificationItems, hasCartItems } = useCreateProjectContext();
   const { createProject } = useProjectSupabase();
   const router = useRouter();
 
@@ -690,6 +697,39 @@ function ProjectStartFlow() {
         
         setProjectId(projectId);
         setCurrentStep(1);
+
+        // BUG-1 fix: если пришли из корзины каталога, сохраняем товары в БД
+        if (hasCartItems && specificationItems.length > 0) {
+          const specRows = specificationItems.map((item: any) => ({
+            item_name: item.name || item.item_name || '',
+            item_code: item.code || item.item_code || '',
+            image_url: item.image_url || '',
+            quantity: item.quantity || 1,
+            unit: item.unit || 'шт',
+            price: item.pricePerUnit ?? item.price ?? 0,
+            total: item.totalPrice ?? item.total ?? ((item.pricePerUnit ?? item.price ?? 0) * (item.quantity ?? 1)),
+            description: item.description || '',
+            supplier_name: item.supplier_name || '',
+            supplier_id: item.supplier_id || null,
+            currency: item.currency || 'RUB',
+            catalog_product_id: item.catalog_product_id || null,
+            catalog_product_source: item.catalog_product_source || null,
+            category_name: item.category || item.category_name || null,
+            subcategory_name: item.subcategory || item.subcategory_name || null,
+            project_id: projectId,
+            role: 'client',
+            user_id,
+          }));
+          const { error: specError } = await db
+            .from('project_specifications')
+            .insert(specRows);
+          if (specError) {
+            logger.error('[handleStepperSelect] Ошибка сохранения товаров из корзины:', specError);
+          } else {
+            logger.info('[handleStepperSelect] Товары из корзины сохранены в БД:', specRows.length);
+          }
+        }
+
         if (method === 'profile') {
           setShowProfileSelect(true);
         }
@@ -964,9 +1004,14 @@ function CartLoader() {
             pricePerUnit: parseFloat(item.price) || 0,
             totalPrice: item.total_price || (item.quantity * parseFloat(item.price)) || 0,
             description: item.description || "",
-            image_url: item.images && item.images[0] ? item.images[0] : item.image_url || "",
+            image_url: item.images && item.images[0] ? (typeof item.images[0] === 'string' ? item.images[0] : item.images[0].url) : item.image_url || "",
             supplier_name: item.supplier_name || "",
-            supplier_id: item.supplier_id || ""
+            supplier_id: item.supplier_id || "",
+            catalog_product_id: item.catalog_product_id || null,
+            category: item.category || "",
+            subcategory: item.subcategory || "",
+            currency: item.currency || "RUB",
+            catalog_product_source: item.catalog_product_source || null,
           }));
           
           

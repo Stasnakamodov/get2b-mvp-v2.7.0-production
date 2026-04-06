@@ -78,7 +78,6 @@ export function LoginFormSimple({ className, ...props }: React.ComponentPropsWit
 
   const handleProfileSetupClose = () => {
     setShowProfileSetup(false)
-    // Перенаправляем в дашборд, даже если профиль не создан
     router.push("/dashboard")
   }
 

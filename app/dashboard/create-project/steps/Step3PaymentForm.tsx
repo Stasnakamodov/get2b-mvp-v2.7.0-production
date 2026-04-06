@@ -246,7 +246,7 @@ export default function Step3PaymentForm() {
           <div className="flex-1 flex md:justify-end mt-4 md:mt-0">
             <div>
               <div className="text-gray-500 dark:text-gray-400 text-sm">Сумма к оплате</div>
-              <div className="text-2xl font-bold text-green-700 dark:text-green-400">{specificationItems && specificationItems.length > 0 ? `${specificationItems.reduce((sum, item) => sum + (item.total || 0), 0)} USD` : '—'}</div>
+              <div className="text-2xl font-bold text-green-700 dark:text-green-400">{specificationItems && specificationItems.length > 0 ? `${specificationItems.reduce((sum, item) => sum + (item.total || 0), 0)} ${specificationItems[0]?.currency || 'RUB'}` : '—'}</div>
             </div>
           </div>
         </div>
