@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+/* eslint-disable @next/next/no-img-element */
 import { Heart, ShoppingCart, X, Trash2, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -63,12 +63,11 @@ export function WishlistSheet({
                   >
                     <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                       {imageUrl ? (
-                        <Image
+                        <img
                           src={imageUrl}
                           alt={item.product.name}
-                          fill
-                          className="object-cover"
-                          sizes="56px"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

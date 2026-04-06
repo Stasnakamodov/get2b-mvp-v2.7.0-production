@@ -1,7 +1,7 @@
 'use client'
 
 import { memo, useState, useEffect } from 'react'
-import Image from 'next/image'
+/* eslint-disable @next/next/no-img-element */
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -62,12 +62,11 @@ export const ProductCard = memo(function ProductCard({
         <CardContent className="p-3 flex gap-4">
           <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 flex-shrink-0">
             {effectiveImageUrl ? (
-              <Image
+              <img
                 src={effectiveImageUrl}
                 alt={product.name}
-                fill
-                className="object-cover"
-                sizes="96px"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
                 onError={() => setImageError(true)}
               />
             ) : (
@@ -164,12 +163,11 @@ export const ProductCard = memo(function ProductCard({
         <CardContent className="p-0">
           <div className="relative aspect-[4/3] bg-gray-50 dark:bg-gray-800 rounded-t-xl overflow-hidden">
             {effectiveImageUrl ? (
-              <Image
+              <img
                 src={effectiveImageUrl}
                 alt={product.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
                 onError={() => setImageError(true)}
               />
             ) : (

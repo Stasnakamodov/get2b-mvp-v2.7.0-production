@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
+/* eslint-disable @next/next/no-img-element */
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -86,13 +86,10 @@ export function ProductDetail({
           <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden mb-4">
             {hasImages ? (
               <>
-                <Image
+                <img
                   src={images[currentImageIndex]}
                   alt={product.name}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  priority
+                  className="absolute inset-0 w-full h-full object-contain"
                 />
 
                 {/* Навигация */}
@@ -150,12 +147,10 @@ export function ProductDetail({
                       : 'border-transparent hover:border-gray-300'
                   }`}
                 >
-                  <Image
+                  <img
                     src={img}
                     alt={`${product.name} - ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="80px"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 </button>
               ))}
