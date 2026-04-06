@@ -364,20 +364,28 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
 }
 
 function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClose: () => void, onSelect: (role: 'client' | 'supplier', method: 'profile' | 'manual' | 'upload' | 'template', templateData?: any) => void }) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
-  const [role, setRole] = useState<'client' | 'supplier' | null>(null);
+  const [projectType, setProjectType] = useState<'classic' | 'constructor' | null>(null);
   const [method, setMethod] = useState<'profile' | 'manual' | 'upload' | 'template' | null>(null);
   const [showTemplateSelect, setShowTemplateSelect] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 
   const handleNext = () => {
-    if (step === 1 && role) setStep(2);
-    if (step === 2 && method && role) {
+    if (step === 1 && projectType) {
+      if (projectType === 'constructor') {
+        onClose();
+        router.push('/dashboard/project-constructor');
+        return;
+      }
+      setStep(2);
+    }
+    if (step === 2 && method) {
       if (method === 'template') {
         setShowTemplateSelect(true);
         return;
       }
-      onSelect(role, method);
+      onSelect('client', method);
       onClose();
     }
   };
@@ -387,7 +395,7 @@ function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClo
   const handleTemplateSelect = (template: any) => {
     setSelectedTemplate(template);
     setShowTemplateSelect(false);
-    onSelect(role!, 'template', template);
+    onSelect('client', 'template', template);
     onClose();
   };
   return (
@@ -396,13 +404,13 @@ function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClo
         <DialogContent className="max-w-md w-full">
           <DialogHeader>
             <DialogTitle>
-              {step === 1 ? 'Кем вы инициируете проект?' : 'Как вы хотите начать проект?'}
+              {step === 1 ? 'Как вы хотите создать проект?' : 'Как вы хотите начать проект?'}
             </DialogTitle>
           </DialogHeader>
           {step === 1 && (
             <div className="flex flex-col gap-4 mt-4">
-              <Button variant={role === 'client' ? 'default' : 'outline'} className="flex items-center gap-2" onClick={() => setRole('client')}><Users className="h-5 w-5" /> Клиент</Button>
-              <Button variant={role === 'supplier' ? 'default' : 'outline'} className="flex items-center gap-2" onClick={() => setRole('supplier')}><Building className="h-5 w-5" /> Поставщик</Button>
+              <Button variant={projectType === 'classic' ? 'default' : 'outline'} className="flex items-center gap-2" onClick={() => setProjectType('classic')}><FileText className="h-5 w-5" /> Классический стартер</Button>
+              <Button variant={projectType === 'constructor' ? 'default' : 'outline'} className="flex items-center gap-2" onClick={() => setProjectType('constructor')}><Settings className="h-5 w-5" /> Конструктор проектов</Button>
             </div>
           )}
           {step === 2 && (
@@ -415,11 +423,11 @@ function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClo
           )}
           <DialogFooter className="mt-6 flex justify-between">
             {step === 2 && <Button variant="outline" onClick={handleBack}>Назад</Button>}
-            <Button onClick={handleNext} disabled={step === 1 ? !role : !method}>Далее</Button>
+            <Button onClick={handleNext} disabled={step === 1 ? !projectType : !method}>Далее</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {showTemplateSelect && role && (
+      {showTemplateSelect && (
         <TemplateSelectModal open={showTemplateSelect} onClose={() => setShowTemplateSelect(false)} onSelect={handleTemplateSelect} />
       )}
     </>
