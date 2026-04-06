@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Landmark, CreditCard, Wallet, CheckCircle, Plus } from "lucide-react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { sendPaymentMethodToTelegram } from "../utils/telegram";
 import { db } from "@/lib/db/client";

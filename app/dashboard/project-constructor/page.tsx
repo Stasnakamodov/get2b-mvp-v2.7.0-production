@@ -106,7 +106,7 @@ import {
   getConfiguredStepsSummary as getConfiguredStepsSummaryUtil,
   type StepValidationContext
 } from "@/components/project-constructor/utils/StepValidationUtils"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import CatalogModal from "../create-project/components/CatalogModal"
 import { AutoFillNotification } from "@/components/project-constructor/notifications/AutoFillNotification"
 import { useTemplateSystem } from "@/hooks/project-constructor/useTemplateSystem"
@@ -226,6 +226,219 @@ function ProjectConstructorContent() {
         description: `Добавлено ${catalogTotalItems} товаров на сумму ${catalogTotalAmount.toLocaleString('ru-RU')} ₽`,
         duration: 5000
       })
+
+      // Загружаем данные поставщика для автозаполнения шагов 4 и 5
+      const firstItem = catalogStep2Data.items[0]
+      const supplierName = firstItem?.supplier_name || catalogStep2Data.supplier
+      const supplierId = firstItem?.supplier_id
+      if (supplierName) {
+        console.log('🔍 [Cart→Constructor] Загружаем данные поставщика для шагов 4/5:', supplierName)
+
+        // Вспомогательная: проверяет наличие реальных payment-данных у поставщика
+        const hasPaymentData = (s: any) =>
+          (Array.isArray(s.payment_methods) && s.payment_methods.length > 0) ||
+          (Array.isArray(s.bank_accounts) && s.bank_accounts.length > 0) ||
+          (Array.isArray(s.p2p_cards) && s.p2p_cards.length > 0) ||
+          (Array.isArray(s.crypto_wallets) && s.crypto_wallets.length > 0)
+
+        // Вспомогательная: собирает payment-массивы из плоских полей supplier_profiles
+        const buildPaymentFromProfile = (profile: any) => {
+          const methods: string[] = []
+          const bankAccounts: any[] = []
+          const p2pCards: any[] = []
+          const cryptoWallets: any[] = []
+
+          if (profile.bank_name || profile.account_number || profile.swift || profile.iban) {
+            methods.push('bank-transfer')
+            bankAccounts.push({
+              bank_name: profile.bank_name || '',
+              account_number: profile.account_number || '',
+              swift_code: profile.swift || '',
+              iban: profile.iban || '',
+              currency: profile.transfer_currency || 'USD',
+              recipient_name: profile.recipient_name || profile.company_name || profile.name
+            })
+          }
+          if (profile.p2p_card_number || profile.p2p_bank) {
+            methods.push('p2p')
+            p2pCards.push({
+              bank: profile.p2p_bank || '',
+              number: profile.p2p_card_number || '',
+              holder: profile.p2p_holder_name || '',
+              expiry: profile.p2p_expiry_date || ''
+            })
+          }
+          if (profile.crypto_address || profile.crypto_name) {
+            methods.push('crypto')
+            cryptoWallets.push({
+              currency: profile.crypto_name || 'USDT',
+              address: profile.crypto_address || '',
+              network: profile.crypto_network || 'TRC20'
+            })
+          }
+
+          // Дополняем из payment_methods jsonb если есть
+          if (Array.isArray(profile.payment_methods)) {
+            for (const m of profile.payment_methods) {
+              const normalized = m === 'bank_transfer' ? 'bank-transfer' : m
+              if (!methods.includes(normalized) && normalized !== 'cash') {
+                methods.push(normalized)
+              }
+            }
+          }
+
+          return {
+            payment_methods: methods.length > 0 ? methods : null,
+            bank_accounts: bankAccounts.length > 0 ? bankAccounts : [],
+            p2p_cards: p2pCards.length > 0 ? p2pCards : [],
+            crypto_wallets: cryptoWallets.length > 0 ? cryptoWallets : []
+          }
+        }
+
+        // Вспомогательная: устанавливает suggestions для шагов 4/5
+        const applySuggestions = (supplier: any) => {
+          const normalizedMethods = (supplier.payment_methods || ['bank_transfer'])
+            .map((method: string) => method === 'bank_transfer' ? 'bank-transfer' : method)
+            .filter((method: string) => method !== 'cash')
+            .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index)
+          const availableMethods = normalizedMethods.length > 0 ? normalizedMethods : ['bank-transfer']
+
+          const step4Data = {
+            type: 'multiple',
+            methods: availableMethods,
+            payment_method: availableMethods[0] || 'bank_transfer',
+            auto_filled: true,
+            supplier_name: supplier.name,
+            supplier_data: supplier,
+            catalog_source: supplier._source || 'verified_supplier'
+          }
+
+          const primaryType = supplier.payment_methods?.includes('bank-transfer') || supplier.bank_accounts?.length > 0 ? 'bank' :
+                              supplier.payment_methods?.includes('p2p') || supplier.p2p_cards?.length > 0 ? 'p2p' :
+                              supplier.payment_methods?.includes('crypto') || supplier.crypto_wallets?.length > 0 ? 'crypto' : 'bank'
+
+          const step5Data = {
+            type: primaryType,
+            supplier_name: supplier.name,
+            supplier_data: supplier,
+            bank_accounts: supplier.bank_accounts || [],
+            crypto_wallets: supplier.crypto_wallets || [],
+            p2p_cards: supplier.p2p_cards || [],
+            requisites: {
+              bank_accounts: supplier.bank_accounts || [],
+              crypto_wallets: supplier.crypto_wallets || [],
+              p2p_cards: supplier.p2p_cards || []
+            },
+            auto_filled: true,
+            catalog_source: supplier._source || 'verified_supplier'
+          }
+
+          const currentState = { stepConfigs, manualData }
+          const newSuggestions: Record<number, any> = {}
+
+          if (AutoFillService.canAutoFill(4, 'catalog', currentState)) {
+            newSuggestions[4] = step4Data
+            console.log('💡 [Cart→Constructor] Предложение для Step 4:', availableMethods)
+          }
+
+          const stateWithStep4 = {
+            stepConfigs: { ...stepConfigs, 4: 'catalog' },
+            manualData: { ...manualData, 4: step4Data }
+          }
+          if (AutoFillService.canAutoFill(5, 'catalog', stateWithStep4)) {
+            newSuggestions[5] = step5Data
+            console.log('💡 [Cart→Constructor] Предложение для Step 5:', primaryType)
+          }
+
+          if (Object.keys(newSuggestions).length > 0) {
+            setCatalogSuggestions(newSuggestions)
+            console.log('✅ [Cart→Constructor] Предложения для шагов 4/5 установлены')
+          }
+        }
+
+        // Шаг 1: Ищем в catalog_verified_suppliers
+        fetchCatalogData('suppliers', { verified: 'true', search: supplierName })
+          .then(async (data) => {
+            const supplier = data.suppliers?.find((s: any) =>
+              s.name.toLowerCase().includes(supplierName.toLowerCase())
+            )
+
+            if (supplier && hasPaymentData(supplier)) {
+              console.log('✅ [Cart→Constructor] Найден поставщик с payment-данными:', supplier.name)
+              applySuggestions(supplier)
+              return
+            }
+
+            // Шаг 2: Fallback — ищем в supplier_profiles
+            console.log('🔄 [Cart→Constructor] Нет payment-данных в каталоге, ищем в supplier_profiles...')
+            try {
+              const profilesRes = await fetch('/api/profile/supplier-profiles')
+              if (profilesRes.ok) {
+                const profilesJson = await profilesRes.json()
+                const profile = profilesJson.profiles?.find((p: any) =>
+                  p.name?.toLowerCase().includes(supplierName.toLowerCase()) ||
+                  p.company_name?.toLowerCase().includes(supplierName.toLowerCase())
+                )
+
+                if (profile) {
+                  const paymentData = buildPaymentFromProfile(profile)
+                  if (paymentData.payment_methods) {
+                    console.log('✅ [Cart→Constructor] Найден профиль поставщика с payment-данными:', profile.name)
+                    // Мержим данные каталога с payment-данными из профиля
+                    const enrichedSupplier = {
+                      ...(supplier || {}),
+                      name: supplier?.name || profile.name,
+                      company_name: supplier?.company_name || profile.company_name,
+                      ...paymentData,
+                      _source: 'supplier_profile'
+                    }
+                    applySuggestions(enrichedSupplier)
+                    return
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn('⚠️ [Cart→Constructor] Ошибка загрузки supplier_profiles:', err)
+            }
+
+            // Шаг 3: Fallback — supplier-autofill API (phantom data из прошлых проектов)
+            if (supplierId) {
+              console.log('🔄 [Cart→Constructor] Пробуем supplier-autofill API для:', supplierId)
+              try {
+                const autofillRes = await fetch(`/api/catalog/supplier-autofill/${supplierId}?include_phantom=true`)
+                if (autofillRes.ok) {
+                  const autofillJson = await autofillRes.json()
+                  if (autofillJson.success && autofillJson.autofill_data) {
+                    const af = autofillJson.autofill_data
+                    const methods = af.step4_data?.payment_methods_available || ['bank-transfer']
+                    // Собираем supplier-like объект из autofill response
+                    const autofillSupplier = {
+                      name: af.supplier_info?.name || supplierName,
+                      company_name: af.supplier_info?.company_name || '',
+                      payment_methods: methods,
+                      bank_accounts: af.step5_data?.requisites?.bank_accounts || [],
+                      p2p_cards: af.step5_data?.requisites?.p2p_cards || [],
+                      crypto_wallets: af.step5_data?.requisites?.crypto_wallets || [],
+                      _source: 'autofill_phantom'
+                    }
+                    if (hasPaymentData(autofillSupplier) || methods.length > 0) {
+                      console.log('✅ [Cart→Constructor] Данные из autofill API:', methods)
+                      applySuggestions(autofillSupplier)
+                      return
+                    }
+                  }
+                }
+              } catch (err) {
+                console.warn('⚠️ [Cart→Constructor] Ошибка supplier-autofill:', err)
+              }
+            }
+
+            console.log('ℹ️ [Cart→Constructor] Payment-данные поставщика не найдены, шаги 4/5 — ручное заполнение')
+          })
+          .catch(error => {
+            console.error('❌ [Cart→Constructor] Ошибка загрузки данных поставщика:', error)
+          })
+      }
 
       // Очищаем корзину каталога
       clearCatalogCart()

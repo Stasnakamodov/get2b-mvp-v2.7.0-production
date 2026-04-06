@@ -6,7 +6,7 @@ import type { CatalogProduct, CartItem, CartState, ProductVariant } from '@/lib/
 import { CART_STORAGE_KEY, MAX_CART_ITEMS } from '@/lib/catalog/constants'
 import { calculateCartTotal, calculateCartItemsCount } from '@/lib/catalog/utils'
 import { useServerCart } from './useServerCart'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 const ADD_TO_CART_DEBOUNCE_MS = 300
 
@@ -30,6 +30,9 @@ export function useProductCart() {
   useEffect(() => {
     db.auth.getUser().then(({ data: { user } }) => {
       setUserId(user?.id ?? null)
+    }).catch((err) => {
+      console.error('[useProductCart] getUser failed:', err)
+      setUserId(null)
     })
 
     const { data: { subscription } } = db.auth.onAuthStateChange((_event, session) => {
@@ -126,10 +129,7 @@ export function useProductCart() {
   const addToCart = useCallback((product: CatalogProduct, quantity: number = 1, variant?: ProductVariant) => {
     if (isAuthenticated) {
       serverCart.addToCart(product, quantity, variant)
-      toast({
-        title: 'Добавлено в корзину',
-        description: product.name,
-      })
+      // Toast показывается из onSuccess/onError мутации в useServerCart
       return
     }
 

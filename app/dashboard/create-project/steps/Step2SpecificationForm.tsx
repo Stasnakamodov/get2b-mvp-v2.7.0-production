@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, UploadCloud, FileText, Save, Package, Eye } from "lucide-react";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { useProjectTemplates } from "../hooks/useProjectTemplates";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useTelegramNotifications } from '../hooks/useTelegramNotifications';
 import { sendTelegramMessageClient, sendTelegramDocumentClient } from '@/lib/telegram-client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";

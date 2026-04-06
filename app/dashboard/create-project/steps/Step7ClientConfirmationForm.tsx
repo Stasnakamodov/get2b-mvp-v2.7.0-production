@@ -5,7 +5,7 @@ import { useCreateProjectContext } from "../context/CreateProjectContext";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, FileCheck, Banknote, ArrowLeft, Upload, X } from "lucide-react";
 import { motion } from "framer-motion";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import { sendTelegramMessageClient, sendTelegramDocumentClient } from "@/lib/telegram-client";
 export default function Step7ClientConfirmationForm() {

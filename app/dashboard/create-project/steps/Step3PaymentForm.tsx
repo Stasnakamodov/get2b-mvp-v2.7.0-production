@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UploadCloud } from "lucide-react";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { sendTelegramProjectApprovalRequestClient } from '@/lib/telegram-client';
 import { useRealtimeSpecification } from "../hooks/useRealtimeSpecification";
 import { useProjectSpecification } from '../hooks/useProjectSpecification';

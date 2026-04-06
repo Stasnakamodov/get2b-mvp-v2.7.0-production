@@ -12,7 +12,7 @@ import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { useProjectSpecification } from '../hooks/useProjectSpecification';
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import { ProjectStatus } from "@/lib/types/project-status";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 const requisiteTypeMap = {
   "bank-transfer": { table: "bank_accounts", type: "bank", label: "Банковский счёт" },
   "p2p": { table: "supplier_cards", type: "p2p", label: "Карта поставщика" },

@@ -4,6 +4,7 @@ import { db } from "@/lib/db/client"
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { CatalogProduct, CartItem, ProductVariant } from '@/lib/catalog/types'
 import { useCallback } from 'react'
+import { toast } from '@/hooks/use-toast'
 
 interface ServerCartResponse {
   cart_id: string | null
@@ -19,10 +20,14 @@ interface ServerCartResponse {
 
 /** Build headers with the current user's access token */
 async function authHeaders(): Promise<HeadersInit> {
-  const { data: { session } } = await db.auth.getSession()
   const headers: HeadersInit = { 'Content-Type': 'application/json' }
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`
+  try {
+    const { data: { session } } = await db.auth.getSession()
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`
+    }
+  } catch (err) {
+    console.error('[ServerCart] authHeaders getSession failed:', err)
   }
   return headers
 }
@@ -74,6 +79,11 @@ export function useServerCart(enabled = false) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['server-cart'] })
+      toast({ title: 'Добавлено в корзину' })
+    },
+    onError: (error: Error) => {
+      console.error('[ServerCart] addToCart failed:', error.message)
+      toast({ title: 'Ошибка добавления в корзину', description: error.message, variant: 'destructive' })
     },
   })
 
@@ -91,6 +101,10 @@ export function useServerCart(enabled = false) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['server-cart'] })
     },
+    onError: (error: Error) => {
+      console.error('[ServerCart] updateQuantity failed:', error.message)
+      toast({ title: 'Ошибка обновления количества', description: error.message, variant: 'destructive' })
+    },
   })
 
   const removeMutation = useMutation({
@@ -107,6 +121,10 @@ export function useServerCart(enabled = false) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['server-cart'] })
     },
+    onError: (error: Error) => {
+      console.error('[ServerCart] removeFromCart failed:', error.message)
+      toast({ title: 'Ошибка удаления из корзины', description: error.message, variant: 'destructive' })
+    },
   })
 
   const clearMutation = useMutation({
@@ -118,6 +136,10 @@ export function useServerCart(enabled = false) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['server-cart'] })
+    },
+    onError: (error: Error) => {
+      console.error('[ServerCart] clearCart failed:', error.message)
+      toast({ title: 'Ошибка очистки корзины', description: error.message, variant: 'destructive' })
     },
   })
 
@@ -134,6 +156,10 @@ export function useServerCart(enabled = false) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['server-cart'] })
+    },
+    onError: (error: Error) => {
+      console.error('[ServerCart] mergeCart failed:', error.message)
+      toast({ title: 'Ошибка синхронизации корзины', description: error.message, variant: 'destructive' })
     },
   })
 
