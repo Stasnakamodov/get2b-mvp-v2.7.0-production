@@ -202,34 +202,32 @@ export default function Step1CompanyForm(props: {
             const { data: { session } } = await db.auth.getSession();
             if (!session) {
               logger.error("[Step1] Нет активной сессии для сохранения товаров");
-              return;
+              // Не блокируем переход — товары можно сохранить позже
+            } else {
+              const response = await fetch('/api/project-specifications/bulk-insert', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                  projectId: currentProjectId,
+                  items: itemsToSave,
+                  role: 'client'
+                }),
+              });
+
+              if (!response.ok) {
+                logger.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
+                const errorText = await response.text();
+                logger.error("[Step1] Детали ошибки:", errorText);
+              } else {
+                const result = await response.json();
+                logger.info("[Step1] Товары успешно сохранены в БД:", result);
+                // Очищаем localStorage после успешного сохранения
+                localStorage.removeItem('cart_items_temp');
+              }
             }
-
-            const response = await fetch('/api/project-specifications/bulk-insert', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({
-                projectId: currentProjectId,
-                items: itemsToSave,
-                role: 'client'
-              }),
-            });
-
-            if (!response.ok) {
-              logger.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
-              const errorText = await response.text();
-              logger.error("[Step1] Детали ошибки:", errorText);
-              return;
-            }
-
-            const result = await response.json();
-            logger.info("[Step1] Товары успешно сохранены в БД:", result);
-
-            // Очищаем localStorage после успешного сохранения
-            localStorage.removeItem('cart_items_temp');
           } catch (saveError) {
             logger.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
           }
@@ -370,39 +368,37 @@ export default function Step1CompanyForm(props: {
             const { data: { session } } = await db.auth.getSession();
             if (!session) {
               logger.error("[Step1] Нет активной сессии для сохранения товаров");
-              return;
+              // Не блокируем переход — товары можно сохранить позже
+            } else {
+              const response = await fetch('/api/project-specifications/bulk-insert', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                  projectId: newProjectId,
+                  items: itemsToSave,
+                  role: 'client'
+                }),
+              });
+
+              if (!response.ok) {
+                logger.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
+                const errorText = await response.text();
+                logger.error("[Step1] Детали ошибки:", errorText);
+              } else {
+                const result = await response.json();
+                logger.info("[Step1] Товары успешно сохранены в БД:", result);
+                // Очищаем localStorage после успешного сохранения
+                localStorage.removeItem('cart_items_temp');
+              }
             }
-
-            const response = await fetch('/api/project-specifications/bulk-insert', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({
-                projectId: newProjectId,
-                items: itemsToSave,
-                role: 'client'
-              }),
-            });
-
-            if (!response.ok) {
-              logger.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
-              const errorText = await response.text();
-              logger.error("[Step1] Детали ошибки:", errorText);
-              return;
-            }
-
-            const result = await response.json();
-            logger.info("[Step1] Товары успешно сохранены в БД:", result);
-
-            // Очищаем localStorage после успешного сохранения
-            localStorage.removeItem('cart_items_temp');
           } catch (saveError) {
             logger.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
           }
         }
-        
+
       // --- СМЕНА СТАТУСА НА in_progress ---
       // Получаем текущий статус
       const { data: statusData2, error: statusError2 } = await db

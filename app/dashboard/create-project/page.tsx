@@ -37,7 +37,7 @@ import {
 } from "@/lib/telegram-client"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
 import { useCreateProjectContext, CreateProjectProvider } from "./context/CreateProjectContext"
 import { useProjectSupabase } from "./hooks/useProjectSupabase"
 import { useProjectTemplates } from "./hooks/useProjectTemplates"
@@ -225,21 +225,28 @@ function CreateProjectPageContent() {
       {/* Fixed Header */}
       <ProjectTimeline steps={steps} currentStep={currentStep} maxStepReached={maxStepReached} onStepClick={handleStepClick} />
       <AnimatePresence mode="wait">
-        {currentStep === 1 && (
-          <Step1CompanyForm
-            isLoading={isLoading}
-            isVerified={isVerified}
-            isVerifying={isVerifying}
-            setIsSaveDialogOpen={setSetIsSaveDialogOpen}
-          />
-        )}
-        {currentStep === 2 && <Step2SpecificationForm isTemplateMode={false} />}
-        {currentStep === 3 && <Step3PaymentForm />}
-        {currentStep === 4 && <Step4PaymentMethodForm />}
-        {currentStep === 5 && <Step5RequisiteSelectForm />}
-        {currentStep === 6 && <Step6ReceiptForClient />}
-        {currentStep === 7 && <Step7ClientConfirmationForm />}
-        {/* Здесь будут остальные шаги: currentStep === 6 и т.д. */}
+        <motion.div
+          key={`step-${currentStep}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+        >
+          {currentStep === 1 && (
+            <Step1CompanyForm
+              isLoading={isLoading}
+              isVerified={isVerified}
+              isVerifying={isVerifying}
+              setIsSaveDialogOpen={setSetIsSaveDialogOpen}
+            />
+          )}
+          {currentStep === 2 && <Step2SpecificationForm isTemplateMode={false} />}
+          {currentStep === 3 && <Step3PaymentForm />}
+          {currentStep === 4 && <Step4PaymentMethodForm />}
+          {currentStep === 5 && <Step5RequisiteSelectForm />}
+          {currentStep === 6 && <Step6ReceiptForClient />}
+          {currentStep === 7 && <Step7ClientConfirmationForm />}
+        </motion.div>
       </AnimatePresence>
     </div>
   );
@@ -840,12 +847,20 @@ function TemplateModeContent() {
   return (
     <div className="min-h-screen bg-background">
       <AnimatePresence mode="wait">
-        {currentStep === 1 && (
-          <Step1CompanyForm isTemplateMode={true} />
-        )}
-        {currentStep === 2 && (
-          <Step2SpecificationForm isTemplateMode={true} />
-        )}
+        <motion.div
+          key={`template-step-${currentStep}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+        >
+          {currentStep === 1 && (
+            <Step1CompanyForm isTemplateMode={true} />
+          )}
+          {currentStep === 2 && (
+            <Step2SpecificationForm isTemplateMode={true} />
+          )}
+        </motion.div>
       </AnimatePresence>
     </div>
   );
