@@ -18,6 +18,7 @@ import {
   Landmark,
   Wallet,
   Settings,
+  ShoppingCart,
   Plus,
   Trash2,
   Users,
@@ -366,7 +367,7 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
 function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClose: () => void, onSelect: (role: 'client' | 'supplier', method: 'profile' | 'manual' | 'upload' | 'template', templateData?: any) => void }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [projectType, setProjectType] = useState<'classic' | 'constructor' | null>(null);
+  const [projectType, setProjectType] = useState<'classic' | 'constructor' | 'catalog' | null>(null);
   const [method, setMethod] = useState<'profile' | 'manual' | 'upload' | 'template' | null>(null);
   const [showTemplateSelect, setShowTemplateSelect] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
@@ -376,6 +377,11 @@ function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClo
       if (projectType === 'constructor') {
         onClose();
         router.push('/dashboard/project-constructor');
+        return;
+      }
+      if (projectType === 'catalog') {
+        onClose();
+        router.push('/dashboard/catalog');
         return;
       }
       setStep(2);
@@ -411,6 +417,7 @@ function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClo
             <div className="flex flex-col gap-4 mt-4">
               <Button variant={projectType === 'classic' ? 'default' : 'outline'} className="flex items-center gap-2" onClick={() => setProjectType('classic')}><FileText className="h-5 w-5" /> Классический стартер</Button>
               <Button variant={projectType === 'constructor' ? 'default' : 'outline'} className="flex items-center gap-2" onClick={() => setProjectType('constructor')}><Settings className="h-5 w-5" /> Конструктор проектов</Button>
+              <Button variant={projectType === 'catalog' ? 'default' : 'outline'} className="flex items-center gap-2 border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50" onClick={() => setProjectType('catalog')}><ShoppingCart className="h-5 w-5" /> Из каталога</Button>
             </div>
           )}
           {step === 2 && (
