@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { FileText, ExternalLink, Download, CheckCircle, Clock, Calendar, Info, User, CreditCard, Banknote, X, ZoomIn, ZoomOut } from "lucide-react"
+import { parseReceipts } from "@/lib/utils/receipts"
 
 interface ProjectDocument {
   url?: string
@@ -55,27 +56,7 @@ const ProjectDocumentsGrid: React.FC<ProjectDocumentsGridProps> = ({ project, st
   const [selectedStep, setSelectedStep] = useState<number | null>(null)
   const [previewDocument, setPreviewDocument] = useState<{ url: string; title: string; type: string } | null>(null)
 
-  // Обработка чеков из поля receipts (может быть JSON)
-  const getReceiptData = () => {
-    if (!project.receipts) return { client_receipt: null, manager_receipt: null }
-    
-    try {
-      // Если receipts это JSON строка
-      const receiptsData = JSON.parse(project.receipts)
-      return {
-        client_receipt: receiptsData.client_receipt || null,
-        manager_receipt: receiptsData.manager_receipt || null
-      }
-    } catch {
-      // Если receipts это простая строка (старый формат)
-      return {
-        client_receipt: project.receipts,
-        manager_receipt: null
-      }
-    }
-  }
-
-  const { client_receipt, manager_receipt } = getReceiptData()
+  const { client_receipt, manager_receipt } = parseReceipts(project.receipts)
 
   // Вспомогательная функция для преобразования null в undefined
   const nullToUndefined = (value: string | null | undefined): string | undefined => {

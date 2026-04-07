@@ -1,4 +1,5 @@
 import { logger } from "@/src/shared/lib/logger"
+import { getManagerReceiptUrl } from "@/lib/utils/receipts";
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
@@ -78,18 +79,7 @@ export default function Step6ReceiptForClient() {
           let managerReceiptUrl = null;
           
           if (data.receipts) {
-            try {
-              // Пробуем парсить как JSON (новый формат)
-              const receiptsData = JSON.parse(data.receipts);
-              if (receiptsData.manager_receipt) {
-                managerReceiptUrl = receiptsData.manager_receipt;
-              }
-            } catch {
-              // Если не JSON, проверяем статус (старый формат)
-              if (data.status === "in_work") {
-                managerReceiptUrl = data.receipts;
-              }
-            }
+            managerReceiptUrl = getManagerReceiptUrl(data.receipts);
           }
           
           logger.info("🔍 [STEP6] Проверка чека менеджера:", {
@@ -117,17 +107,7 @@ export default function Step6ReceiptForClient() {
             }
           } else {
             setReceiptUrl(null);
-            // Проверяем наличие manager_receipt в JSON для установки hasManagerReceipt
-            if (data.receipts && data.status === "in_work") {
-              try {
-                const receiptsData = JSON.parse(data.receipts);
-                setHasManagerReceipt(!!receiptsData.manager_receipt);
-              } catch {
-                setHasManagerReceipt(false);
-              }
-            } else {
-              setHasManagerReceipt(false);
-            }
+            setHasManagerReceipt(false);
           }
         } else {
           setReceiptUrl(null);
@@ -218,13 +198,7 @@ export default function Step6ReceiptForClient() {
         // Проверяем, есть ли уже чек от менеджера
         let hasManagerReceiptLocal = false;
         if (fetchedProjectData.receipts) {
-          try {
-            const receiptsData = JSON.parse(fetchedProjectData.receipts);
-            hasManagerReceiptLocal = !!receiptsData.manager_receipt;
-          } catch {
-            // Старый формат - проверяем по статусу
-            hasManagerReceiptLocal = fetchedProjectData.status === "in_work";
-          }
+          hasManagerReceiptLocal = !!getManagerReceiptUrl(fetchedProjectData.receipts);
         }
         
         // Устанавливаем состояние

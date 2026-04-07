@@ -11,6 +11,7 @@ import { sendTelegramProjectApprovalRequestClient } from '@/lib/telegram-client'
 import { useRealtimeSpecification } from "../hooks/useRealtimeSpecification";
 import { useProjectSpecification } from '../hooks/useProjectSpecification';
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
+import { serializeReceipts, getClientReceiptUrl } from "@/lib/utils/receipts";
 
 interface Receipt {
   url: string;
@@ -44,7 +45,7 @@ export default function Step3PaymentForm() {
         return;
       }
       if (data && data.receipts) {
-        setReceiptUrl(data.receipts);
+        setReceiptUrl(getClientReceiptUrl(data.receipts) || data.receipts);
         if (data.status === 'waiting_receipt' || data.status === 'receipt_approved' || data.status === 'receipt_rejected') setIsWaitingApproval(true);
       } else {
         setReceiptUrl(null);
@@ -129,7 +130,7 @@ export default function Step3PaymentForm() {
     setReceiptFile(file);
     const date = new Date().toISOString().slice(0,10).replace(/-/g, '');
     const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-    const filePath = `step3-supplier-receipts/${projectId}/${date}_${cleanName}`;
+    const filePath = `${projectId}/${date}_${cleanName}`;
     const { data, error } = await db.storage.from("step3-supplier-receipts").upload(filePath, file);
     if (error) {
       toast({ title: "Ошибка загрузки чека", description: error.message, variant: "destructive" });
@@ -156,7 +157,7 @@ export default function Step3PaymentForm() {
     }
     try {
       // Сохраняем ссылку на чек (без смены статуса)
-      await saveSpecification({ projectId, currentStep: 3, receipts: urlData?.publicUrl || "" });
+      await saveSpecification({ projectId, currentStep: 3, receipts: serializeReceipts({ client_receipt: urlData?.publicUrl || null }) });
       // Смена статуса только если это разрешённый переход
       if (currentStatus === "receipt_approved") {
         setError("Чек уже одобрен менеджером. Загрузка нового чека невозможна. Если требуется заменить чек — обратитесь к менеджеру.");

@@ -34,6 +34,7 @@ import { useRouter } from "next/navigation"
 import { useProjectTemplates } from "./create-project/hooks/useProjectTemplates"
 import CatalogDropdown from "@/components/CatalogDropdown"
 import { cn } from "@/lib/utils"
+import { getManagerReceiptUrl } from "@/lib/utils/receipts"
 
 // Типы для проектов
 interface Project {
@@ -81,16 +82,7 @@ function getProjectStatusLabel(step: number, status: string, receipts?: string) 
       };
     } else if (status === 'in_work') {
       // Проверяем наличие чека от менеджера
-      let hasManagerReceipt = false;
-      if (receipts) {
-        try {
-          const receiptsData = JSON.parse(receipts);
-          hasManagerReceipt = !!receiptsData.manager_receipt;
-        } catch {
-          // Старый формат
-          hasManagerReceipt = !!receipts;
-        }
-      }
+      const hasManagerReceipt = !!getManagerReceiptUrl(receipts);
       
       if (hasManagerReceipt) {
         return {

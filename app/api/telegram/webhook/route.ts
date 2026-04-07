@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { ManagerBotService } from '@/lib/telegram/ManagerBotService';
 import { changeProjectStatusServer } from '@/lib/changeProjectStatusServer';
 import { ProjectStatus } from '@/lib/types/project-status';
+import { parseReceipts, serializeReceipts } from '@/lib/utils/receipts';
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,12 +81,13 @@ export async function POST(request: NextRequest) {
                 throw new Error("Проект не найден");
               }
 
-              const receiptsData = {
-                client_receipt: currentProject.receipts,
+              const existingReceipts = parseReceipts(currentProject.receipts);
+              const receiptsJson = serializeReceipts({
+                client_receipt: existingReceipts.client_receipt,
                 manager_receipt: supabaseFileUrl,
                 manager_uploaded_at: new Date().toISOString(),
                 manager_file_name: supabaseFileName
-              };
+              });
 
               // Обновляем проект с правильной сменой статуса
               await changeProjectStatusServer({
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest) {
                 changedBy: "telegram_bot",
                 comment: "Чек от менеджера загружен",
                 extraFields: {
-                  receipts: JSON.stringify(receiptsData),
+                  receipts: receiptsJson,
                   updated_at: new Date().toISOString()
                 }
               });
@@ -119,7 +121,7 @@ export async function POST(request: NextRequest) {
             
             const managerBot = new ManagerBotService();
             await managerBot.sendMessage(
-              `❌ Ошибка загрузки чека для проекта ${projectId}: ${error.message}`
+              `❌ Ошибка загрузки чека для проекта ${projectId}.\n\n📋 Причина: ${error.message}\n💡 Попробуйте отправить файл повторно в ответ на исходное сообщение.`
             );
             
             return NextResponse.json({ ok: false, error: error.message });

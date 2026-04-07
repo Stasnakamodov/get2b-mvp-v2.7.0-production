@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '@/lib/db/client';
 import { cleanProjectRequestId } from '@/utils/IdUtils';
 import { POLLING_INTERVALS } from '@/components/project-constructor/config/PollingConstants';
+import { getManagerReceiptUrl } from '@/lib/utils/receipts';
 
 interface UseProjectPollingProps {
   projectRequestId: string;
@@ -51,18 +52,7 @@ export function useProjectPolling({
         let receiptUrl = null;
 
         if (project.receipts) {
-          try {
-            // Пробуем парсить как JSON (новый формат)
-            const receiptsData = JSON.parse(project.receipts);
-            if (receiptsData.manager_receipt) {
-              receiptUrl = receiptsData.manager_receipt;
-            }
-          } catch {
-            // Если не JSON, проверяем статус (старый формат)
-            if (project.status === 'in_work') {
-              receiptUrl = project.receipts;
-            }
-          }
+          receiptUrl = getManagerReceiptUrl(project.receipts);
         }
 
         if (receiptUrl && !hasManagerReceipt) {

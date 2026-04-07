@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import { sendTelegramMessageClient, sendTelegramDocumentClient } from "@/lib/telegram-client";
+import { getManagerReceiptUrl } from "@/lib/utils/receipts";
 export default function Step7ClientConfirmationForm() {
   const { 
     projectId, 
@@ -49,17 +50,8 @@ export default function Step7ClientConfirmationForm() {
       
       // Проверяем есть ли чек от менеджера
       if (data.receipts) {
-        try {
-          const receipts = typeof data.receipts === 'string' 
-            ? JSON.parse(data.receipts) 
-            : data.receipts;
-          
-          if (receipts.manager_receipt) {
-            setManagerReceipt(receipts.manager_receipt);
-          }
-        } catch (e) {
-          logger.error("Ошибка парсинга receipts:", e);
-        }
+        const url = getManagerReceiptUrl(data.receipts);
+        if (url) setManagerReceipt(url);
       }
       
       // Проверяем есть ли уже загруженный чек клиента

@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { db as dbAdmin } from '@/lib/db'
 import { changeProjectStatusServer } from "@/lib/changeProjectStatusServer"
 import { ProjectStatus } from "@/lib/types/project-status"
+import { parseReceipts, serializeReceipts } from "@/lib/utils/receipts"
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
@@ -147,21 +148,22 @@ export async function POST(req: NextRequest) {
               });
 
               // Создаем объект с чеками (клиентский и менеджерский)
-              const receiptsData = {
-                client_receipt: currentProject.receipts, // Сохраняем старый чек клиента
-                manager_receipt: supabaseFileUrl, // Используем URL из Supabase Storage
+              const existingReceipts = parseReceipts(currentProject.receipts);
+              const receiptsJson = serializeReceipts({
+                client_receipt: existingReceipts.client_receipt,
+                manager_receipt: supabaseFileUrl,
                 manager_uploaded_at: new Date().toISOString(),
-                manager_file_name: supabaseFileName // Сохраняем имя файла для отладки
-              }
+                manager_file_name: supabaseFileName
+              });
 
-              logger.info("💾 Сохраняем данные в БД:", receiptsData);
+              logger.info("💾 Сохраняем данные в БД:", receiptsJson);
 
               // Сохраняем URL файла в проект
               const { error: updateError } = await db
                 .from("projects")
-                .update({ 
-                  receipts: JSON.stringify(receiptsData), // Сохраняем как JSON
-                  status: "in_work", // Меняем статус на "в работе"
+                .update({
+                  receipts: receiptsJson,
+                  status: "in_work",
                   updated_at: new Date().toISOString()
                 })
                 .eq("id", projectId)
@@ -206,7 +208,7 @@ export async function POST(req: NextRequest) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   chat_id: process.env.TELEGRAM_CHAT_ID,
-                  text: `❌ Ошибка загрузки чека для проекта ${projectId}: ${error.message}`,
+                  text: `❌ Ошибка загрузки чека для проекта ${projectId}.\n\n📋 Причина: ${error.message}\n💡 Попробуйте отправить файл повторно в ответ на исходное сообщение.`,
                   reply_to_message_id: message.message_id
                 })
               });
