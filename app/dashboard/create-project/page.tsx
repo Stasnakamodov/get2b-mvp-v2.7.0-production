@@ -364,7 +364,7 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
   return null;
 }
 
-function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClose: () => void, onSelect: (role: 'client' | 'supplier', method: 'profile' | 'manual' | 'upload' | 'template', templateData?: any) => void }) {
+function StartProjectStepper({ open, onClose, onSelect, fromCart = false }: { open: boolean, onClose: () => void, onSelect: (role: 'client' | 'supplier', method: 'profile' | 'manual' | 'upload' | 'template', templateData?: any) => void, fromCart?: boolean }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [projectType, setProjectType] = useState<'classic' | 'constructor' | 'catalog' | null>(null);
@@ -418,7 +418,7 @@ function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClo
             <div className="flex flex-col gap-4 mt-4">
               <Button variant={projectType === 'classic' ? 'default' : 'outline'} className="flex items-center gap-2" onClick={() => setProjectType('classic')}><FileText className="h-5 w-5" /> Классический стартер</Button>
               <Button variant={projectType === 'constructor' ? 'default' : 'outline'} className="flex items-center gap-2" onClick={() => setProjectType('constructor')}><Settings className="h-5 w-5" /> Конструктор проектов</Button>
-              <Button variant={projectType === 'catalog' ? 'default' : 'outline'} className="flex items-center gap-2 border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50" onClick={() => setProjectType('catalog')}><ShoppingCart className="h-5 w-5" /> Из каталога</Button>
+              {!fromCart && <Button variant={projectType === 'catalog' ? 'default' : 'outline'} className="flex items-center gap-2 border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50" onClick={() => setProjectType('catalog')}><ShoppingCart className="h-5 w-5" /> Из каталога</Button>}
             </div>
           )}
           {step === 2 && (
@@ -542,7 +542,7 @@ function TemplateSelectModal({ open, onClose, onSelect }: { open: boolean, onClo
 }
 
 // --- Новый компонент для stepper и выбора карточки ---
-function ProjectStartFlow() {
+function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
   const [showStepper, setShowStepper] = useState(true);
   const [startRole, setStartRole] = useState<'client' | 'supplier' | null>(null);
   const [startMethodLocal, setStartMethodLocal] = useState<'profile' | 'manual' | 'upload' | 'template' | null>(null);
@@ -799,7 +799,7 @@ function ProjectStartFlow() {
 
   return (
     <>
-      <StartProjectStepper open={showStepper} onClose={() => setShowStepper(false)} onSelect={handleStepperSelect} />
+      <StartProjectStepper open={showStepper} onClose={() => setShowStepper(false)} onSelect={handleStepperSelect} fromCart={fromCart} />
       {creating && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-card rounded-xl p-8 shadow-xl flex flex-col items-center">
@@ -877,7 +877,7 @@ export default function CreateProjectPage() {
       <CartLoader />
       {isStepLoaded && (
         <>
-          {!templateId && !projectId && mode !== 'catalog' && <ProjectStartFlow />}
+          {!templateId && !projectId && mode !== 'catalog' && <ProjectStartFlow fromCart={!!fromCart} />}
           <TemplateLoader />
           <CreateProjectPageContent />
         </>
