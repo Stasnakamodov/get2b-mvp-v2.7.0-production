@@ -687,6 +687,7 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
           .from('projects')
         .insert([
           {
+              name: `Проект ${new Date().toLocaleDateString('ru-RU')}`,
               user_id,
               initiator_role: role,
               start_method: method,
