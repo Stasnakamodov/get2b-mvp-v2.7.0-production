@@ -550,7 +550,7 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [projectInsertError, setProjectInsertError] = useState<string | null>(null);
-  const { setCompanyData, setStartMethod, setProjectId, setCurrentStep, setProjectName, specificationItems, hasCartItems } = useCreateProjectContext();
+  const { setCompanyData, setStartMethod, setProjectId, setCurrentStep, setProjectName, specificationItems, hasCartItems, projectId: ctxProjectId } = useCreateProjectContext();
   const { createProject } = useProjectSupabase();
   const router = useRouter();
 
@@ -780,19 +780,16 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
     setCompanyData(companyData);
     setProjectName(profile.name || '');
     // --- Обновляем проект в Supabase ---
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      const projectId = url.searchParams?.get('projectId');
-      if (projectId) {
-        await db
-          .from('projects')
-          .update({
-            name: profile.name || '',
-            company_data: companyData,
-          })
-          .eq('id', projectId);
-        // router.replace(`?projectId=${projectId}`); // можно оставить, если нужен переход
-      }
+    if (ctxProjectId) {
+      await db
+        .from('projects')
+        .update({
+          name: profile.name || '',
+          company_data: companyData,
+        })
+        .eq('id', ctxProjectId);
+      // Обновляем URL чтобы projectId был доступен при перезагрузке
+      router.replace(`/dashboard/create-project?projectId=${ctxProjectId}`);
     }
     // setCurrentStep(1); // если нужно явно перейти к шагу 1
   };
