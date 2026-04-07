@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db'
 import { ManagerBotService } from '@/lib/telegram/ManagerBotService';
-import { changeProjectStatus } from '@/lib/supabaseProjectStatus';
+import { changeProjectStatusServer } from '@/lib/changeProjectStatusServer';
 import { ProjectStatus } from '@/lib/types/project-status';
 
 export async function POST(request: NextRequest) {
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
               };
 
               // Обновляем проект с правильной сменой статуса
-              await changeProjectStatus({
+              await changeProjectStatusServer({
                 projectId,
                 newStatus: "in_work",
                 changedBy: "telegram_bot",
@@ -145,22 +145,9 @@ export async function POST(request: NextRequest) {
     const managerBot = new ManagerBotService();
 
     if (callbackData.startsWith('approve_')) {
-      // Правильное извлечение projectId из callback_data
-      let projectId: string;
-      if (callbackData.includes('_')) {
-        // Для формата approve_receipt_uuid или approve_uuid
-        const parts = callbackData.split('_');
-        if (parts.length >= 3) {
-          // approve_receipt_uuid -> берем uuid
-          projectId = parts.slice(2).join('_');
-        } else {
-          // approve_uuid -> берем uuid  
-          projectId = parts[1];
-        }
-      } else {
-        // Fallback - убираем только approve_
-        projectId = callbackData.replace(/^approve_/, '');
-      }
+      // Извлекаем UUID из callback_data (последний UUID-паттерн в строке)
+      const uuidMatch = callbackData.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+      const projectId = uuidMatch ? uuidMatch[1] : callbackData.replace(/^approve_(?:project_|receipt_|invoice_|client_receipt_)?/, '');
       
       // Определяем новый статус в зависимости от типа одобрения
       let newStatus: ProjectStatus;
@@ -179,7 +166,7 @@ export async function POST(request: NextRequest) {
       
       // Используем правильную систему смены статуса
       try {
-        const result = await changeProjectStatus({
+        const result = await changeProjectStatusServer({
           projectId,
           newStatus,
           changedBy: 'telegram_bot',
@@ -200,22 +187,9 @@ export async function POST(request: NextRequest) {
       }
       
     } else if (callbackData.startsWith('reject_')) {
-      // Правильное извлечение projectId из callback_data
-      let projectId: string;
-      if (callbackData.includes('_')) {
-        // Для формата reject_receipt_uuid или reject_uuid
-        const parts = callbackData.split('_');
-        if (parts.length >= 3) {
-          // reject_receipt_uuid -> берем uuid
-          projectId = parts.slice(2).join('_');
-        } else {
-          // reject_uuid -> берем uuid  
-          projectId = parts[1];
-        }
-      } else {
-        // Fallback - убираем только reject_
-        projectId = callbackData.replace(/^reject_/, '');
-      }
+      // Извлекаем UUID из callback_data (последний UUID-паттерн в строке)
+      const uuidMatch = callbackData.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+      const projectId = uuidMatch ? uuidMatch[1] : callbackData.replace(/^reject_(?:project_|receipt_|invoice_|client_receipt_)?/, '');
       
       // Определяем новый статус для отклонения
       let newStatus: ProjectStatus;
@@ -234,7 +208,7 @@ export async function POST(request: NextRequest) {
       
       // Используем правильную систему смены статуса
       try {
-        const result = await changeProjectStatus({
+        const result = await changeProjectStatusServer({
           projectId,
           newStatus,
           changedBy: 'telegram_bot',

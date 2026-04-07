@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { logger } from "@/src/shared/lib/logger";
 import { db } from "@/lib/db"
 import { db as dbAdmin } from '@/lib/db'
-import { changeProjectStatus } from "@/lib/supabaseProjectStatus"
+import { changeProjectStatusServer } from "@/lib/changeProjectStatusServer"
 import { ProjectStatus } from "@/lib/types/project-status"
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
@@ -249,33 +249,24 @@ export async function POST(req: NextRequest) {
         !isShortId(data)) {
       logger.info("📝 Обрабатываем одобрение/отклонение обычного проекта")
 
-      const data = body.callback_query.data;
-      const parts = data.split("_");
-      const action = parts[0]; // approve или reject
-      
-      let type = "";
-      let projectId = "";
-      
-      // Парсим callback_data в зависимости от формата
-      if (parts.length >= 3) {
-        if (parts[1] === "project") {
-          // Формат: approve_project_uuid или reject_project_uuid (классический конструктор)
-          type = "project";
-          projectId = parts.slice(2).join("_"); // все что после project (может содержать _ в UUID)
-        } else {
-          // Формат: approve_receipt_uuid или approve_invoice_uuid
-          type = parts[1]; // receipt, invoice, spec, etc.
-          projectId = parts.slice(2).join("_"); // все что после типа (может содержать _ в UUID)
-        }
-      } else if (parts.length === 2) {
-        // Формат: approve_uuid (без типа)
-        type = "spec"; // по умолчанию спецификация
-        projectId = parts[1];
-      } else {
-        throw new Error("Неверный формат callback_data: " + data);
+      const cbData = body.callback_query.data;
+      const action = cbData.startsWith("approve_") ? "approve" : "reject";
+
+      // Извлекаем UUID из callback_data (последний UUID-паттерн в строке)
+      const uuidMatch = cbData.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+      const projectId = uuidMatch ? uuidMatch[1] : "";
+
+      // Определяем тип по ключевым словам в callback_data
+      let type = "spec";
+      if (cbData.includes("receipt")) type = "receipt";
+      else if (cbData.includes("invoice")) type = "invoice";
+      else if (cbData.includes("project")) type = "project";
+
+      if (!projectId) {
+        throw new Error("Неверный формат callback_data (UUID не найден): " + cbData);
       }
       
-      logger.info("Parsed callback_data:", { data, action, type, projectId });
+      logger.info("Parsed callback_data:", { cbData, action, type, projectId });
       logger.info("🔍 [DEBUG] Validation - projectId:", { length: projectId.length, formatValid: /^[a-f0-9-]{36}$/.test(projectId) });
 
       // Получаем текущий статус проекта
@@ -406,7 +397,7 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        await changeProjectStatus({
+        await changeProjectStatusServer({
           projectId,
           newStatus,
           changedBy: "telegram_bot",
@@ -527,7 +518,7 @@ export async function POST(req: NextRequest) {
       const projectId = data.replace("confirm_receipt_", "")
       
       try {
-        await changeProjectStatus({
+        await changeProjectStatusServer({
           projectId,
           newStatus: "completed" as ProjectStatus,
           changedBy: "telegram_bot",

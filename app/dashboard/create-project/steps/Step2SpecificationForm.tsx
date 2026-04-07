@@ -126,9 +126,9 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           return;
         }
         // Если проект отклонён — можно добавить переход или уведомление
-        if (data.status === 'rejected') {
+        if (data.status === 'receipt_rejected') {
           setIsWaitingApproval(false);
-          setProjectStatus('rejected');
+          setProjectStatus('receipt_rejected');
           return;
         }
       } else {
@@ -273,7 +273,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
             await updateStep(projectId, nextStep);
           }
         }
-        if (data.status === 'rejected') {
+        if (data.status === 'receipt_rejected') {
           setIsWaitingApproval(false);
           if (pollingRef.current) clearInterval(pollingRef.current);
           toast({ title: 'Проект отклонён менеджером', description: 'Пожалуйста, обратитесь в поддержку для уточнения причин.', variant: 'destructive' });
@@ -1142,7 +1142,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           isWaitingApproval 
             ? projectStatus === 'waiting_approval' 
               ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-blue-200 dark:border-gray-600' 
-              : projectStatus === 'rejected'
+              : projectStatus === 'receipt_rejected'
               ? 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900 dark:to-red-800 border-red-200 dark:border-red-600'
               : 'bg-gradient-to-r from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-700 border-slate-200 dark:border-gray-600'
             : 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900 dark:to-green-800 border-green-200 dark:border-green-600'
@@ -1159,7 +1159,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
                     <div className="text-sm text-blue-600">Спецификация отправлена на проверку. Ожидайте ответа.</div>
                   </div>
                 </>
-              ) : projectStatus === 'rejected' ? (
+              ) : projectStatus === 'receipt_rejected' ? (
                 <>
                   <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center">
                     <span className="text-white text-lg font-bold">!</span>
@@ -1637,7 +1637,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
                   Перейти к следующему шагу
                 </Button>
               )}
-              {projectStatus === 'rejected' && (
+              {projectStatus === 'receipt_rejected' && (
                 <div className="flex flex-col items-center gap-2">
                   <div className="text-red-600 dark:text-red-400 font-semibold">Проект отклонён менеджером</div>
                   <div className="text-gray-700 dark:text-gray-300 text-sm mb-2">Пожалуйста, обратитесь в поддержку для уточнения причин.</div>
