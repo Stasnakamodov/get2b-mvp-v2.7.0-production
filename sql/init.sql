@@ -571,6 +571,10 @@ CREATE TABLE IF NOT EXISTS catalog_verified_suppliers (
   projects_count integer DEFAULT 0,
   completed_projects integer DEFAULT 0,
   verified_by uuid REFERENCES users(id),
+  payment_methods jsonb,
+  bank_accounts jsonb,
+  p2p_cards jsonb,
+  crypto_wallets jsonb,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );

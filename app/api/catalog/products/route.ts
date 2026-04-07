@@ -183,7 +183,25 @@ export async function GET(request: NextRequest) {
     }
 
     const hasMore = data && data.length > limit
-    const products = hasMore ? data.slice(0, limit) : (data || [])
+    const rawProducts = hasMore ? data.slice(0, limit) : (data || [])
+
+    // Обогащаем товары именем поставщика (одним запросом по уникальным supplier_id)
+    const supplierIds = [...new Set(rawProducts.map((p: any) => p.supplier_id).filter(Boolean))]
+    let supplierMap: Record<string, string> = {}
+    if (supplierIds.length > 0) {
+      const supplierTable = supplierType === 'verified' ? 'catalog_verified_suppliers' : 'catalog_user_suppliers'
+      const { data: suppliers } = await db
+        .from(supplierTable)
+        .select('id, name')
+        .in('id', supplierIds)
+      if (suppliers) {
+        supplierMap = Object.fromEntries(suppliers.map((s: any) => [s.id, s.name]))
+      }
+    }
+    const products = rawProducts.map((p: any) => ({
+      ...p,
+      supplier_name: supplierMap[p.supplier_id] || '',
+    }))
 
     let nextCursor: string | null = null
     if (hasMore && products.length > 0) {

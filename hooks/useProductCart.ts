@@ -127,6 +127,20 @@ export function useProductCart() {
   const items = isAuthenticated ? serverCart.items : localItems
 
   const addToCart = useCallback((product: CatalogProduct, quantity: number = 1, variant?: ProductVariant) => {
+    // Запрет на смешивание поставщиков — один проект = один поставщик
+    const currentItems = isAuthenticated ? serverCart.items : localItems
+    if (currentItems.length > 0) {
+      const existingSupplier = currentItems[0].product.supplier_id
+      if (existingSupplier && product.supplier_id && existingSupplier !== product.supplier_id) {
+        toast({
+          title: 'Разные поставщики',
+          description: 'В одном проекте можно использовать товары только от одного поставщика. Очистите корзину, чтобы выбрать другого.',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
     if (isAuthenticated) {
       serverCart.addToCart(product, quantity, variant)
       // Toast показывается из onSuccess/onError мутации в useServerCart
@@ -155,7 +169,7 @@ export function useProductCart() {
       title: 'Добавлено в корзину',
       description: product.name,
     })
-  }, [isAuthenticated, serverCart, toast])
+  }, [isAuthenticated, serverCart, localItems, toast])
 
   const removeFromCart = useCallback((productId: string) => {
     if (isAuthenticated) {

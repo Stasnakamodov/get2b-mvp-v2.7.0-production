@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCreateProjectContext } from "../context/CreateProjectContext"
+import { toast } from "@/hooks/use-toast"
 
 // Хук для безопасного получения контекста проекта
 function useOptionalCreateProjectContext() {
@@ -869,6 +870,16 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
 
   // 🛒 Функции работы с корзиной
   const addToCart = (product: Product, supplier: any) => {
+    // Запрет на смешивание поставщиков — один проект = один поставщик
+    if (cart.length > 0 && cart[0].supplier_id && supplier.id && cart[0].supplier_id !== supplier.id) {
+      toast({
+        title: 'Разные поставщики',
+        description: 'В одном проекте можно использовать товары только от одного поставщика. Очистите корзину, чтобы выбрать другого.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     const cartItem: CartItem = {
       ...product,
       quantity: 1,
@@ -880,12 +891,12 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       room_description: supplier.room_type === 'user' ? 'Персональные поставщики' : 'Аккредитованные поставщики',
       total_price: (parseFloat(product.price) || 0) * 1
     }
-    
+
     // Проверяем есть ли уже такой товар в корзине
-    const existingIndex = cart.findIndex(item => 
+    const existingIndex = cart.findIndex(item =>
       item.id === product.id && item.supplier_id === supplier.id
     )
-    
+
     if (existingIndex >= 0) {
       // Увеличиваем количество
       const updatedCart = [...cart]
@@ -896,7 +907,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
       // Добавляем новый товар
       setCart([...cart, cartItem])
     }
-    
+
     console.log('🛒 [CART] Товар добавлен в корзину:', product.name)
   }
 

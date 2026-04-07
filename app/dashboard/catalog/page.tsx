@@ -169,6 +169,16 @@ export default function CatalogPage() {
     clearWishlist,
   } = useWishlist()
 
+  // Если в корзине есть товары — показываем только товары этого поставщика
+  const cartSupplier = useMemo(() => {
+    if (cartItems.length === 0) return null
+    const first = cartItems[0]
+    return {
+      id: first.product.supplier_id,
+      name: first.product.supplier_name || '',
+    }
+  }, [cartItems])
+
   const {
     data,
     isLoading,
@@ -184,6 +194,7 @@ export default function CatalogPage() {
     minPrice: filters.minPrice,
     maxPrice: filters.maxPrice,
     country: filters.country,
+    supplierId: cartSupplier?.id || filters.supplierId,
     sortField: sort.field === 'popularity' ? 'created_at' : sort.field,
     sortOrder: sort.order,
     limit: 50,
@@ -334,6 +345,21 @@ export default function CatalogPage() {
                 onCategorySelect={handleCategorySelect}
               />
             </div>
+
+            {/* Плашка: каталог отфильтрован по поставщику из корзины */}
+            {cartSupplier && (
+              <div className="flex items-center justify-between gap-3 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
+                <span className="text-sm text-blue-700 dark:text-blue-300">
+                  Показаны товары поставщика <strong>{cartSupplier.name || 'из корзины'}</strong>
+                </span>
+                <button
+                  onClick={() => { clearCart(); }}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline underline-offset-2 shrink-0"
+                >
+                  Очистить корзину и показать всё
+                </button>
+              </div>
+            )}
 
             {/* Row 2: Breadcrumbs + mobile filter + count */}
             <div className="flex items-center gap-3 px-4 py-2 bg-white/50 dark:bg-zinc-900/50 border-b border-gray-100 dark:border-white/5">

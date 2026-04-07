@@ -1,5 +1,5 @@
 import { logger } from "@/src/shared/lib/logger"
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Landmark, CreditCard, Wallet, CheckCircle, Plus } from "lucide-react";
@@ -48,20 +48,28 @@ export default function Step4PaymentMethodForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Экранирование спецсимволов ilike (%, _) в строке поиска
+  function escapeIlike(str: string): string {
+    return str.replace(/%/g, '\\%').replace(/_/g, '\\_');
+  }
+
+  // Ref для отслеживания обработки эхо данных — не вызывает перерендер
+  const echoProcessedRef = useRef(false);
+
   // 🎯 СИСТЕМА ЭХО РЕКОМЕНДАЦИЙ - загружаем данные поставщика по supplier_name из спецификаций
   useEffect(() => {
-    // Пропускаем если нет проекта или уже есть обработанные эхо данные
-    if (!projectId || supplierData?.echo_source === 'processed') {
-      logger.info("[Step4] ⏭️ Пропускаем загрузку эхо данных:", { 
-        projectId: !!projectId, 
-        echoProcessed: supplierData?.echo_source === 'processed'
+    // Пропускаем если нет проекта или уже обработано (через ref, а не через supplierData)
+    if (!projectId || echoProcessedRef.current) {
+      logger.info("[Step4] ⏭️ Пропускаем загрузку эхо данных:", {
+        projectId: !!projectId,
+        echoProcessed: echoProcessedRef.current
       });
       return;
     }
 
     async function loadEchoSupplierData() {
       logger.info("[Step4] 🔍 Загружаем эхо данные поставщиков для автозаполнения...");
-      
+
       try {
         // 1. Получаем всех уникальных поставщиков из спецификаций проекта
         const { data: specifications, error: specsError } = await db
@@ -70,7 +78,7 @@ export default function Step4PaymentMethodForm() {
           .eq("project_id", projectId)
           .not("supplier_name", "is", null)
           .not("supplier_name", "eq", "");
-        
+
         if (specsError) {
           logger.error("[Step4] Ошибка получения спецификаций:", specsError);
           return;
@@ -81,18 +89,19 @@ export default function Step4PaymentMethodForm() {
           return;
         }
 
-        const suppliers = [...new Set(specifications.map(s => s.supplier_name))];
+        const suppliers = [...new Set(specifications.map(s => s.supplier_name))] as string[];
         logger.info("[Step4] Найдены поставщики:", suppliers);
 
         // 2. Для каждого поставщика ищем завершенные проекты с реквизитами И дополняем из каталога
         for (const supplierName of suppliers) {
           logger.info(`[Step4] 🔍 Поиск эхо данных для поставщика: "${supplierName}"`);
-          
+          const safeName = escapeIlike(supplierName);
+
           // Находим проекты с этим поставщиком, потом фильтруем те, где есть payment_method
           const { data: specRows, error: specError } = await db
             .from("project_specifications")
             .select("project_id")
-            .ilike("supplier_name", `%${supplierName}%`);
+            .ilike("supplier_name", `%${safeName}%`);
 
           if (specError) {
             logger.error(`[Step4] Ошибка поиска спецификаций для ${supplierName}:`, specError);
@@ -116,16 +125,16 @@ export default function Step4PaymentMethodForm() {
             }
           }
 
-          const echoError = null;
-
-          // Ищем поставщика в каталоге независимо от эхо проектов
+          // Ищем поставщика в каталоге — .limit(1) вместо .single() чтобы не падать при 0 или 2+ результатах
           logger.info(`[Step4] 🔍 Поиск реального поставщика ${supplierName} в каталоге...`);
-          const { data: catalogSupplier, error: catalogError } = await db
+          const { data: catalogRows, error: catalogError } = await db
             .from('catalog_verified_suppliers')
             .select('id, name, company_name, payment_methods, bank_accounts, crypto_wallets, p2p_cards')
-            .ilike('name', `%${supplierName}%`)
-            .single();
-          
+            .ilike('name', `%${safeName}%`)
+            .limit(1);
+
+          const catalogSupplier = catalogRows?.[0] || null;
+
           if (catalogError) {
             logger.info(`[Step4] Поставщик не найден в каталоге:`, catalogError.message);
           }
@@ -136,44 +145,41 @@ export default function Step4PaymentMethodForm() {
             continue;
           }
 
-          logger.info(`[Step4] ✅ Найдены данные для ${supplierName}:`, { 
-            echoProjects: echoProjects?.length || 0, 
-            catalogFound: !!catalogSupplier 
+          logger.info(`[Step4] ✅ Найдены данные для ${supplierName}:`, {
+            echoProjects: echoProjects?.length || 0,
+            catalogFound: !!catalogSupplier
           });
-          
-          // 3. Создаем улучшенные данные поставщика: существующие + эхо + каталог
+
+          // 3. Создаем улучшенные данные поставщика: эхо + каталог
           const echoPaymentMethods = echoProjects ? [...new Set(echoProjects.map((p: any) => p.projects?.payment_method).filter(Boolean))] : [];
-          
-          // Объединяем существующие данные с новыми из каталога
+
           const enhancedSupplierData = {
-            // Берем существующие данные как основу
-            ...(supplierData || {}),
-            // Обновляем основную информацию
-            name: supplierData?.name || supplierName,
-            company_name: supplierData?.company_name || catalogSupplier?.company_name || supplierName,
-            
-            // Объединяем методы оплаты: существующие + эхо + каталог
+            name: supplierName,
+            company_name: catalogSupplier?.company_name || supplierName,
+
+            // Объединяем методы оплаты: эхо + каталог (дедупликация)
             payment_methods: [
-              ...(supplierData?.payment_methods || []),
               ...echoPaymentMethods,
               ...(catalogSupplier?.payment_methods || [])
-            ].filter((method, index, arr) => arr.indexOf(method) === index), // убираем дубликаты
-            
-            // Дополняем реквизиты из каталога если их нет
-            bank_accounts: supplierData?.bank_accounts || catalogSupplier?.bank_accounts || [],
-            crypto_wallets: supplierData?.crypto_wallets || catalogSupplier?.crypto_wallets || [],
-            p2p_cards: supplierData?.p2p_cards || catalogSupplier?.p2p_cards || [],
-            
+            ].filter((method, index, arr) => arr.indexOf(method) === index),
+
+            bank_accounts: catalogSupplier?.bank_accounts || [],
+            crypto_wallets: catalogSupplier?.crypto_wallets || [],
+            p2p_cards: catalogSupplier?.p2p_cards || [],
+
             // Метаданные
-            echo_source: 'processed', // помечаем что обработано
+            echo_source: 'processed',
             echo_projects_count: echoProjects?.length || 0,
             catalog_found: !!catalogSupplier,
-            enhanced: true // помечаем как улучшенные данные
+            enhanced: true
           };
 
           logger.info(`[Step4] 🎯 Создаем улучшенные данные для ${supplierName}:`, enhancedSupplierData);
+
+          // Помечаем как обработано ДО setSupplierData, чтобы повторный вызов не сработал
+          echoProcessedRef.current = true;
           setSupplierData(enhancedSupplierData);
-          
+
           // Берем данные первого найденного поставщика для автозаполнения
           break;
         }
@@ -183,7 +189,7 @@ export default function Step4PaymentMethodForm() {
     }
 
     loadEchoSupplierData();
-  }, [projectId, supplierData, setSupplierData]);
+  }, [projectId, setSupplierData]);
 
   // 🎯 Определяем, для каких методов есть реквизиты поставщика
   const methodsWithSupplierData = useMemo(() => {

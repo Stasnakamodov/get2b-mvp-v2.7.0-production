@@ -59,18 +59,15 @@ function formatRequisiteForTelegram(requisite: any): string {
 export default function Step5RequisiteSelectForm() {
   const { projectId, paymentMethod, setCurrentStep, maxStepReached, setMaxStepReached, projectName, companyData, specificationItems, setSpecificationItems, supplierData } = useCreateProjectContext();
   
-  // 🔍 ВСЕГДА ЛОГИРУЕМ ПРИ КАЖДОМ РЕНДЕРЕ
-  logger.info("🚨 [Step5] COMPONENT RENDER - ВСЯ ИНФОРМАЦИЯ:");
-  logger.info("  projectId:", projectId);
-  logger.info("  paymentMethod:", paymentMethod);
-  logger.info("  supplierData:", supplierData);
-  logger.info("  supplierData type:", typeof supplierData);
-  logger.info("  supplierData keys:", supplierData ? Object.keys(supplierData) : "NO SUPPLIER DATA");
-  if (supplierData?.crypto_wallets) {
-    logger.info("  🪙 CRYPTO WALLETS FOUND:", supplierData.crypto_wallets);
-  } else {
-    logger.info("  ❌ NO CRYPTO WALLETS IN SUPPLIER DATA");
-  }
+  // Логируем только при изменении ключевых данных (не при каждом рендере)
+  useEffect(() => {
+    logger.info("[Step5] Данные обновлены:", {
+      projectId,
+      paymentMethod,
+      supplierDataKeys: supplierData ? Object.keys(supplierData) : null,
+      hasCryptoWallets: !!supplierData?.crypto_wallets,
+    });
+  }, [projectId, paymentMethod, supplierData]);
   const [requisites, setRequisites] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -150,34 +147,23 @@ export default function Step5RequisiteSelectForm() {
 
   useEffect(() => {
     if (!projectId) return;
-    async function fetchSpecById() {
-      // Получаем specification_id из проекта
-      const { data: projectData, error: projectError } = await db
-        .from('projects')
-        .select('specification_id')
-        .eq('id', projectId)
-        .single();
-      const specId = projectData?.specification_id;
-      if (specId) {
-        // Грузим спецификацию по id
-        const { data: specData, error: specError } = await db
-          .from('project_specifications')
-          .select('*')
-          .eq('id', specId)
-          .single();
-        if (specData) {
-          setSpecificationItems([specData]);
-          return;
-        }
+    async function loadAllSpecItems() {
+      // Загружаем ВСЕ позиции спецификации по project_id (не одну по specification_id)
+      const { data: allItems, error } = await db
+        .from('project_specifications')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('role', 'client')
+        .order('created_at', { ascending: true });
+
+      if (!error && allItems && allItems.length > 0) {
+        setSpecificationItems(allItems);
+        logger.info("[Step5] Загружены все позиции спецификации:", allItems.length);
+      } else if (error) {
+        logger.error("[Step5] Ошибка загрузки спецификации:", error);
       }
-      // Fallback: грузим по projectId/role (старый способ)
-      fetchSpecification().then(() => {
-        if (specItems && Array.isArray(specItems) && specItems.length > 0) {
-          setSpecificationItems(specItems);
-        }
-      });
     }
-    fetchSpecById();
+    loadAllSpecItems();
   }, [projectId]);
 
   // 🎯 Умное автозаполнение при единственном реквизите поставщика
