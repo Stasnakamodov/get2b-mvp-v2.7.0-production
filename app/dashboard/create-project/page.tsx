@@ -581,7 +581,6 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
       const user_id = userData.user.id;
       let projectId = null;
       if (method === 'template' && templateData) {
-        alert('Попытка создать проект из шаблона!');
         // Создаём проект с автозаполнением из нормализованных полей шаблона
         const { data: project, error: projectError } = await db
           .from('projects')
@@ -592,7 +591,7 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
               start_method: 'template',
               status: 'draft',
               current_step: 1,
-              name: (templateData.name || '').trim(),
+              name: (templateData.name || '').trim() || `Проект ${new Date().toLocaleDateString('ru-RU')}`,
               company_data: {
                 name: (templateData.company_name || '').trim(),
                 legalName: (templateData.company_legal || '').trim(),
@@ -635,9 +634,6 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
         
         setProjectId(projectId);
         setCurrentStep(1);
-        // --- Диагностика авторизации перед bulk insert ---
-        const { data: user, error: userError } = await db.auth.getUser();
-        const session = await db.auth.getSession();
         // --- Копируем спецификацию из шаблона в project_specifications ---
         if (Array.isArray(templateData.specification) && templateData.specification.length > 0) {
           // --- ЛОГИРОВАНИЕ bulk insert спецификации ---
@@ -716,6 +712,10 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
         
         setProjectId(projectId);
         setCurrentStep(1);
+        // Синхронизируем имя проекта в контексте с тем, что записано в БД
+        setProjectName(`Проект ${new Date().toLocaleDateString('ru-RU')}`);
+        // Обновляем URL чтобы projectId сохранялся при перезагрузке страницы
+        router.replace(`/dashboard/create-project?projectId=${projectId}`);
 
         // BUG-1 fix: если пришли из корзины каталога, сохраняем товары в БД
         if (hasCartItems && specificationItems.length > 0) {
