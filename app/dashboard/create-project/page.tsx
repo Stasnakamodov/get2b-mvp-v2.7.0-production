@@ -35,7 +35,7 @@ import {
   sendSupplierReceiptRequestToManagerClient,
   sendClientConfirmationRequestToTelegramClient,
 } from "@/lib/telegram-client"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { AnimatePresence } from "framer-motion"
 import { useCreateProjectContext, CreateProjectProvider } from "./context/CreateProjectContext"
@@ -412,6 +412,7 @@ function StartProjectStepper({ open, onClose, onSelect }: { open: boolean, onClo
             <DialogTitle>
               {step === 1 ? 'Как вы хотите создать проект?' : 'Как вы хотите начать проект?'}
             </DialogTitle>
+            <DialogDescription className="sr-only">Выберите способ создания проекта</DialogDescription>
           </DialogHeader>
           {step === 1 && (
             <div className="flex flex-col gap-4 mt-4">
@@ -468,6 +469,7 @@ function ProfileCardSelectModal({
       <DialogContent className="max-w-lg w-full">
         <DialogHeader>
           <DialogTitle>Выберите карточку {role === 'client' ? 'клиента' : 'поставщика'}</DialogTitle>
+          <DialogDescription className="sr-only">Список сохранённых карточек</DialogDescription>
         </DialogHeader>
         {loading && <div className="text-center py-8">Загрузка...</div>}
         {error && <div className="text-red-500 text-center py-8">{error}</div>}
@@ -508,6 +510,7 @@ function TemplateSelectModal({ open, onClose, onSelect }: { open: boolean, onClo
       <DialogContent className="max-w-lg w-full">
         <DialogHeader>
           <DialogTitle>Выберите шаблон</DialogTitle>
+          <DialogDescription className="sr-only">Список сохранённых шаблонов</DialogDescription>
         </DialogHeader>
         {loading && <div className="text-center py-8">Загрузка...</div>}
         {error && <div className="text-red-500 text-center py-8">{error}</div>}
