@@ -319,6 +319,10 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     if (!projectId) return;
     setIsLoading(true);
     try {
+      // Получаем user_id для changed_by
+      const { data: userData } = await db.auth.getUser();
+      const userId = userData?.user?.id || null;
+
       // Получаем текущий статус проекта
       const { data: project, error: fetchError } = await db
         .from("projects")
@@ -331,7 +335,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         await changeProjectStatus({
           projectId,
           newStatus: "in_progress",
-          changedBy: "client",
+          changedBy: userId,
           comment: "Начало заполнения спецификации",
         });
       }
@@ -339,7 +343,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       await changeProjectStatus({
         projectId,
         newStatus: "waiting_approval",
-        changedBy: "client",
+        changedBy: userId,
         comment: "Отправлено на проверку",
       });
     } catch (e: any) {
