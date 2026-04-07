@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ShoppingCart, Check, ImageIcon, MapPin, Heart } from 'lucide-react'
+import { ShoppingCart, Check, X, ImageIcon, MapPin, Heart } from 'lucide-react'
 import type { CatalogProduct } from '@/lib/catalog/types'
 import { formatPrice, formatMinOrder, getProductImage, truncateText } from '@/lib/catalog/utils'
 
@@ -14,6 +14,7 @@ interface ProductCardProps {
   product: CatalogProduct
   isInCart?: boolean
   onAddToCart?: (product: CatalogProduct) => void
+  onRemoveFromCart?: (productId: string) => void
   onProductClick?: (product: CatalogProduct) => void
   viewMode?: 'grid' | 'list'
   isInWishlist?: boolean
@@ -24,6 +25,7 @@ export const ProductCard = memo(function ProductCard({
   product,
   isInCart = false,
   onAddToCart,
+  onRemoveFromCart,
   onProductClick,
   viewMode = 'grid',
   isInWishlist = false,
@@ -42,6 +44,10 @@ export const ProductCard = memo(function ProductCard({
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (isInCart && onRemoveFromCart) {
+      onRemoveFromCart(product.id)
+      return
+    }
     onAddToCart?.(product)
   }
 
@@ -126,13 +132,15 @@ export const ProductCard = memo(function ProductCard({
               <Button
                 size="sm"
                 variant={isInCart ? 'secondary' : 'default'}
-                className={isInCart ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20'}
+                className={isInCart ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 group/cart' : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20'}
                 onClick={handleAddToCart}
               >
                 {isInCart ? (
                   <>
-                    <Check className="w-4 h-4 mr-1" />
-                    В корзине
+                    <Check className="w-4 h-4 mr-1 group-hover/cart:hidden" />
+                    <X className="w-4 h-4 mr-1 hidden group-hover/cart:block" />
+                    <span className="group-hover/cart:hidden">В корзине</span>
+                    <span className="hidden group-hover/cart:block">Убрать</span>
                   </>
                 ) : (
                   <>
@@ -263,13 +271,15 @@ export const ProductCard = memo(function ProductCard({
             <Button
               size="sm"
               variant={isInCart ? 'secondary' : 'default'}
-              className={`w-full ${isInCart ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20'}`}
+              className={`w-full ${isInCart ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 group/cart' : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20'}`}
               onClick={handleAddToCart}
             >
               {isInCart ? (
                 <>
-                  <Check className="w-4 h-4 mr-1" />
-                  В корзине
+                  <Check className="w-4 h-4 mr-1 group-hover/cart:hidden" />
+                  <X className="w-4 h-4 mr-1 hidden group-hover/cart:block" />
+                  <span className="group-hover/cart:hidden">В корзине</span>
+                  <span className="hidden group-hover/cart:block">Убрать</span>
                 </>
               ) : (
                 <>

@@ -17,6 +17,7 @@ interface CatalogGridProps {
   viewMode: CatalogViewMode
   isInCart: (productId: string) => boolean
   onAddToCart: (product: CatalogProduct) => void
+  onRemoveFromCart?: (productId: string) => void
   onProductClick: (product: CatalogProduct) => void
   isInWishlist?: (productId: string) => boolean
   onToggleWishlist?: (product: CatalogProduct) => void
@@ -40,6 +41,7 @@ export const CatalogGrid = memo(function CatalogGrid({
   viewMode,
   isInCart,
   onAddToCart,
+  onRemoveFromCart,
   onProductClick,
   isInWishlist,
   onToggleWishlist,
@@ -128,6 +130,7 @@ export const CatalogGrid = memo(function CatalogGrid({
               product={product}
               isInCart={isInCart(product.id)}
               onAddToCart={onAddToCart}
+              onRemoveFromCart={onRemoveFromCart}
               onProductClick={onProductClick}
               viewMode={viewMode === 'list' ? 'list' : 'grid'}
               isInWishlist={isInWishlist?.(product.id)}

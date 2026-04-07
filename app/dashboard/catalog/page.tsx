@@ -504,6 +504,7 @@ export default function CatalogPage() {
                   viewMode={viewMode}
                   isInCart={isInCart}
                   onAddToCart={handleAddToCart}
+                  onRemoveFromCart={removeFromCart}
                   onProductClick={handleProductClick}
                   isInWishlist={isInWishlist}
                   onToggleWishlist={handleToggleWishlist}
