@@ -1,6 +1,11 @@
 import { db } from "@/lib/db/client";
 import { ProjectStatus, isValidStatusTransition, getStepByStatus } from './types/project-status';
 
+// Проверка что строка — валидный UUID
+function isValidUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 // Универсальная функция смены статуса проекта
 export async function changeProjectStatus({
   projectId,
@@ -11,7 +16,7 @@ export async function changeProjectStatus({
 }: {
   projectId: string;
   newStatus: ProjectStatus;
-  changedBy?: string;
+  changedBy?: string | null;
   comment?: string;
   extraFields?: Record<string, any>;
 }) {
@@ -43,7 +48,7 @@ export async function changeProjectStatus({
       {
         project_id: projectId,
         status: newStatus,
-        changed_by: changedBy || null,
+        changed_by: (changedBy && isValidUUID(changedBy)) ? changedBy : null,
         comment: comment || null,
         previous_status: currentStatus,
         step: newStep,
