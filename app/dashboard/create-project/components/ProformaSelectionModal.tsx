@@ -313,7 +313,7 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
   const totalSelectedItems = selectedItems.filter(item => item.selected).length;
   const totalAmount = selectedItems
     .filter(item => item.selected)
-    .reduce((sum, item) => sum + ((item.proforma_quantity || item.quantity) * (item.proforma_price || item.price)), 0);
+    .reduce((sum, item) => sum + (Number(item.proforma_quantity || item.quantity || 0) * Number(item.proforma_price || item.price || 0)), 0);
 
   const renderSuppliersStep = () => (
     <div className="space-y-6">
@@ -616,7 +616,7 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
                   <div>
                     <label className="text-xs text-gray-500">Сумма</label>
                     <div className="mt-1 font-semibold text-green-600">
-                      ${((item.proforma_quantity || item.quantity) * (item.proforma_price || item.price)).toFixed(2)}
+                      ${(Number(item.proforma_quantity || item.quantity || 0) * Number(item.proforma_price || item.price || 0)).toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -756,8 +756,8 @@ const ProformaSelectionModal: React.FC<ProformaSelectionModalProps> = ({
                           {/* Items in this category */}
                           {(items as any[]).map((item: any) => {
                             itemIndex++;
-                            const quantity = item.proforma_quantity || 0;
-                            const price = item.proforma_price || 0;
+                            const quantity = Number(item.proforma_quantity) || 0;
+                            const price = Number(item.proforma_price) || 0;
                             const total = quantity * price;
 
                             return (

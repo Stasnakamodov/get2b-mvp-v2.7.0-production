@@ -153,7 +153,7 @@ const VerifiedSupplierCard = ({ supplier, onImport, onAddToCart }: any) => {
             </span>
             <span className="flex items-center gap-1">
               <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              {supplier.public_rating?.toFixed(1)} ({supplier.reviews_count})
+              {Number(supplier.public_rating || 0).toFixed(1)} ({supplier.reviews_count})
             </span>
             <span className="flex items-center gap-1">
               <Building className="w-3 h-3" />
@@ -952,7 +952,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
   }
 
   const getTotalPrice = () => {
-    return cart.reduce((sum, item) => sum + (item.total_price || 0), 0)
+    return cart.reduce((sum, item) => sum + Number(item.total_price || 0), 0)
   }
 
   if (!open) return null
@@ -1551,7 +1551,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                           {/* Статистика */}
                           <div className="grid grid-cols-3 gap-4 mb-4">
                             <div className="border-l-4 border-orange-600 pl-4">
-                              <div className="text-2xl font-light text-black dark:text-gray-100">{supplier.public_rating.toFixed(1)}</div>
+                              <div className="text-2xl font-light text-black dark:text-gray-100">{Number(supplier.public_rating || 0).toFixed(1)}</div>
                               <div className="text-sm text-gray-600 dark:text-gray-300 uppercase tracking-wider">Рейтинг</div>
                             </div>
                             <div className="border-l-4 border-blue-600 pl-4">
@@ -1792,7 +1792,7 @@ export default function CatalogModal({ open, onClose, onAddProducts }: CatalogMo
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
-                        <div className="text-sm font-medium">${item.total_price.toFixed(2)}</div>
+                        <div className="text-sm font-medium">${Number(item.total_price || 0).toFixed(2)}</div>
                       </div>
                     </div>
                   ))

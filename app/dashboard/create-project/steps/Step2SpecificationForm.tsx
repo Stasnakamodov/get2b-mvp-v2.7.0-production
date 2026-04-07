@@ -1554,7 +1554,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-slate-800 dark:text-gray-200">
-                          {CURRENCY} {(getFieldValue(item.id, 'total') || 0).toFixed(2)}
+                          {CURRENCY} {Number(getFieldValue(item.id, 'total') || 0).toFixed(2)}
                         </div>
                       </td>
                       <td className="px-4 py-3">
