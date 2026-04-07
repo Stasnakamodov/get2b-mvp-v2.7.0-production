@@ -749,6 +749,7 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
         if (method === 'profile') {
           // Для profile НЕ делаем router.replace — иначе ProjectStartFlow размонтируется
           // и модалка выбора профиля не появится. handleProfileSelect сам обновит URL.
+          setUserId(user_id); // гарантируем что userId доступен для ProfileCardSelectModal
           setShowProfileSelect(true);
         } else {
           // Для manual/upload/cart обновляем URL чтобы projectId сохранялся при перезагрузке
