@@ -163,6 +163,14 @@ CREATE TABLE IF NOT EXISTS projects (
   currency text,
   payment_method text,
   specification_id uuid,
+  initiator_role text DEFAULT 'client',
+  start_method text DEFAULT 'manual',
+  email text,
+  receipts text,
+  supplier_data jsonb,
+  supplier_id text,
+  supplier_type text,
+  company_card_file text,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
