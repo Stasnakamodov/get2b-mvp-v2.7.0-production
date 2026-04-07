@@ -714,9 +714,6 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
         setCurrentStep(1);
         // Синхронизируем имя проекта в контексте с тем, что записано в БД
         setProjectName(`Проект ${new Date().toLocaleDateString('ru-RU')}`);
-        // Обновляем URL чтобы projectId сохранялся при перезагрузке страницы
-        router.replace(`/dashboard/create-project?projectId=${projectId}`);
-
         // BUG-1 fix: если пришли из корзины каталога, сохраняем товары в БД
         if (hasCartItems && specificationItems.length > 0) {
           const specRows = specificationItems.map((item: any) => ({
@@ -750,7 +747,12 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
         }
 
         if (method === 'profile') {
+          // Для profile НЕ делаем router.replace — иначе ProjectStartFlow размонтируется
+          // и модалка выбора профиля не появится. handleProfileSelect сам обновит URL.
           setShowProfileSelect(true);
+        } else {
+          // Для manual/upload/cart обновляем URL чтобы projectId сохранялся при перезагрузке
+          router.replace(`/dashboard/create-project?projectId=${projectId}`);
         }
       }
     } catch (err: any) {
