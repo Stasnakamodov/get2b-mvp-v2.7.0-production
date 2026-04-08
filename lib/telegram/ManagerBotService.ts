@@ -6,6 +6,11 @@ import { TelegramService } from './TelegramService';
  * Функции: одобрение проектов, загрузка чеков
  */
 
+// Файлы с этими расширениями отправляем через sendPhoto, чтобы получить inline-превью.
+// Telegram Bot API URL-mode лимит: 5 MB для photo, 20 MB для document.
+// Если sendPhoto падает (превышен лимит / битый PHOTO_INVALID_DIMENSIONS) — fallback на sendDocument.
+const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|gif)(\?|$)/i;
+
 export class ManagerBotService {
   private telegramService: TelegramService;
   private chatId: string;
@@ -47,10 +52,25 @@ export class ManagerBotService {
 
   /**
    * Отправляет документ
+   * Для image-расширений (.jpg/.png/.webp/.gif) использует sendPhoto,
+   * чтобы Telegram сгенерил inline-превью в чате.
+   * Если sendPhoto падает (например >5MB лимит для URL) — fallback на sendDocument.
    */
   async sendDocument(documentUrl: string, caption?: string) {
     console.log("👨‍💼 ManagerBotService: отправка документа");
-    
+
+    if (IMAGE_EXTENSIONS.test(documentUrl)) {
+      try {
+        return await this.telegramService.sendPhoto({
+          chat_id: this.chatId,
+          photo: documentUrl,
+          caption: caption || ""
+        });
+      } catch (e) {
+        console.warn("⚠️ sendPhoto failed, falling back to sendDocument:", e);
+      }
+    }
+
     return await this.telegramService.sendDocument({
       chat_id: this.chatId,
       document: documentUrl,
@@ -79,6 +99,23 @@ export class ManagerBotService {
     };
 
     console.log("👨‍💼 [ManagerBotService] Отправляем документ с кнопками в Telegram...");
+
+    // Image-расширения → sendPhoto для inline-превью; fallback на sendDocument при ошибке
+    if (IMAGE_EXTENSIONS.test(documentUrl)) {
+      try {
+        const result = await this.telegramService.sendPhoto({
+          chat_id: this.chatId,
+          photo: documentUrl,
+          caption: caption,
+          reply_markup: replyMarkup
+        });
+        console.log("✅ [ManagerBotService] Фото с кнопками отправлено:", result);
+        return result;
+      } catch (e) {
+        console.warn("⚠️ sendPhoto failed, falling back to sendDocument:", e);
+      }
+    }
+
     const result = await this.telegramService.sendDocument({
       chat_id: this.chatId,
       document: documentUrl,

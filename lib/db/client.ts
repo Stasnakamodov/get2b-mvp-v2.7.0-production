@@ -51,8 +51,12 @@ export const db = {
         },
 
         getPublicUrl(path: string) {
+          // Use window.location.origin to build absolute URL.
+          // Telegram Bot API requires absolute https URLs to fetch images.
+          // SSR fallback: returns relative path (TelegramService normalizes it).
+          const origin = typeof window !== 'undefined' ? window.location.origin : ''
           return {
-            data: { publicUrl: `/api/storage/${bucket}/${path}` },
+            data: { publicUrl: `${origin}/api/storage/${bucket}/${path}` },
           }
         },
 

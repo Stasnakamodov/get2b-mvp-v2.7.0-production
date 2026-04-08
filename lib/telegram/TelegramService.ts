@@ -24,6 +24,7 @@ export interface TelegramPhoto {
   photo: string;
   caption?: string;
   parse_mode?: 'HTML' | 'Markdown';
+  reply_markup?: any;
 }
 
 export interface TelegramCallbackQuery {
@@ -42,6 +43,19 @@ export class TelegramService {
     }
     this.botToken = botToken;
     this.baseUrl = `https://api.telegram.org/bot${botToken}`;
+  }
+
+  /**
+   * Normalize URL — Telegram Bot API requires absolute https URLs.
+   * If a relative URL slips through, prepend NEXT_PUBLIC_BASE_URL or
+   * fall back to the public production origin.
+   */
+  private normalizeUrl(u: string): string {
+    if (!u || u.startsWith('http://') || u.startsWith('https://')) return u;
+    const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://get2b.pro';
+    const normalized = `${base}${u.startsWith('/') ? '' : '/'}${u}`;
+    console.warn(`⚠️ TelegramService: relative URL detected, normalizing → ${normalized}`);
+    return normalized;
   }
 
   /**
@@ -82,7 +96,8 @@ export class TelegramService {
    */
   async sendDocument(params: TelegramDocument): Promise<any> {
     const url = `${this.baseUrl}/sendDocument`;
-    
+    params = { ...params, document: this.normalizeUrl(params.document) };
+
     console.log("📄 TelegramService: отправка документа", {
       chat_id: params.chat_id,
       document_url: params.document
@@ -115,7 +130,8 @@ export class TelegramService {
    */
   async sendPhoto(params: TelegramPhoto): Promise<any> {
     const url = `${this.baseUrl}/sendPhoto`;
-    
+    params = { ...params, photo: this.normalizeUrl(params.photo) };
+
     console.log("📷 TelegramService: отправка изображения", {
       chat_id: params.chat_id,
       photo_url: params.photo

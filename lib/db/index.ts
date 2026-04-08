@@ -88,7 +88,11 @@ const authMethods = {
 // ── Storage (server-side, filesystem) ────────────────────────────
 
 function storageFrom(bucket: string) {
-  const baseUrl = process.env.STORAGE_URL || '/api/storage'
+  // Build absolute URL when possible — Telegram Bot API requires absolute https URLs.
+  // Order: STORAGE_URL (explicit) → NEXT_PUBLIC_BASE_URL+/api/storage → relative fallback.
+  // TelegramService.normalizeUrl provides last-resort safety net for relative URLs.
+  const baseUrl = process.env.STORAGE_URL
+    || (process.env.NEXT_PUBLIC_BASE_URL ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/storage` : '/api/storage')
   const safeBucket = bucket.replace(/[^a-zA-Z0-9_-]/g, '')
 
   return {
