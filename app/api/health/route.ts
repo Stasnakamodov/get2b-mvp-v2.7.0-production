@@ -2,74 +2,32 @@ import { db } from "@/lib/db"
 import { NextResponse } from 'next/server'
 import { logger } from "@/src/shared/lib/logger";
 
+// Minimal health endpoint for Docker healthcheck and deploy script.
+// Returns only binary healthy/unhealthy status without leaking internal state.
+// Do NOT add env var names, memory stats, service lists, version info, or
+// error details — they are a fingerprinting aid for attackers.
 export async function GET() {
   try {
     const startTime = Date.now()
-
-    // Проверяем подключение к Supabase
-    const { data, error } = await db.from('projects').select('id').limit(1)
+    const { error } = await db.from('projects').select('id').limit(1)
 
     if (error) {
       logger.error('Health check - Database error:', error)
       return NextResponse.json(
-        {
-          status: 'unhealthy',
-          timestamp: new Date().toISOString(),
-          database: 'error',
-          error: error.message
-        },
+        { status: 'unhealthy' },
         { status: 503 }
       )
     }
 
-    const responseTime = Date.now() - startTime
-
-    // Проверяем переменные окружения
-    const requiredEnvVars = [
-      'DATABASE_URL',
-      'JWT_SECRET',
-      'TELEGRAM_BOT_TOKEN'
-    ]
-
-    const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
-
-    const mem = process.memoryUsage()
-    const healthData: any = {
+    return NextResponse.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      database: 'connected',
-      responseTime: `${responseTime}ms`,
-      environment: process.env.NODE_ENV,
-      version: process.env.npm_package_version || '0.1.0',
-      memory: {
-        heapUsed: `${Math.round(mem.heapUsed / 1024 / 1024)}MB`,
-        heapTotal: `${Math.round(mem.heapTotal / 1024 / 1024)}MB`,
-        rss: `${Math.round(mem.rss / 1024 / 1024)}MB`,
-      },
-      services: {
-        supabase: error ? 'error' : 'connected',
-        telegram: process.env.TELEGRAM_BOT_TOKEN ? 'configured' : 'missing'
-      }
-    }
-
-    if (missingEnvVars.length > 0) {
-      healthData.services = {
-        ...healthData.services,
-        environment: `missing: ${missingEnvVars.join(', ')}`
-      }
-    }
-
-    return NextResponse.json(healthData)
-
+      responseTime: `${Date.now() - startTime}ms`,
+    })
   } catch (error) {
     logger.error('Health check error:', error)
     return NextResponse.json(
-      {
-        status: 'error',
-        timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { status: 'error' },
       { status: 500 }
     )
   }

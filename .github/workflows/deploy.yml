@@ -135,6 +135,36 @@ jobs:
             # Start application (depends on postgres)
             docker compose up -d
 
+            # --- Sync nginx configs from repo to system (idempotent) ---
+            # Repo is source of truth for nginx/get2b.conf and nginx/get2b-ratelimit.conf
+            nginx_needs_reload=0
+            if ! cmp -s /var/www/godplis/nginx/get2b.conf /etc/nginx/sites-enabled/get2b 2>/dev/null; then
+              cp /var/www/godplis/nginx/get2b.conf /etc/nginx/sites-enabled/get2b
+              nginx_needs_reload=1
+              echo "nginx: get2b.conf updated"
+            fi
+            if ! cmp -s /var/www/godplis/nginx/get2b-ratelimit.conf /etc/nginx/conf.d/get2b-ratelimit.conf 2>/dev/null; then
+              cp /var/www/godplis/nginx/get2b-ratelimit.conf /etc/nginx/conf.d/get2b-ratelimit.conf
+              nginx_needs_reload=1
+              echo "nginx: get2b-ratelimit.conf updated"
+            fi
+            if [ "$nginx_needs_reload" = "1" ]; then
+              if nginx -t; then
+                # Ensure bot-attacks log file exists (fail2ban reads it)
+                touch /var/log/nginx/bot-attacks.log
+                chown www-data:adm /var/log/nginx/bot-attacks.log 2>/dev/null || true
+                nginx -s reload
+                echo "nginx: config valid, reloaded"
+              else
+                echo "nginx: config test FAILED — reverting to previous version"
+                cd /var/www/godplis && git checkout HEAD~1 -- nginx/
+                cp /var/www/godplis/nginx/get2b.conf /etc/nginx/sites-enabled/get2b
+                cp /var/www/godplis/nginx/get2b-ratelimit.conf /etc/nginx/conf.d/get2b-ratelimit.conf
+                nginx -t && nginx -s reload
+                exit 1
+              fi
+            fi
+
             # Wait for health check
             echo "Waiting for application to start..."
             for i in $(seq 1 12); do

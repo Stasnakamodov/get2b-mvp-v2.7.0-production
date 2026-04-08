@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Hide X-Powered-By: Next.js header (reduces fingerprint for scanners)
+  poweredByHeader: false,
+
   // Standalone output — минимальный production билд для Docker/VPS
   // Копирует только нужные файлы из node_modules в .next/standalone
   output: 'standalone',
@@ -11,10 +14,17 @@ const nextConfig = {
     optimizeCss: false,
     // Ускоряем hot reload
     webVitalsAttribution: ['CLS', 'LCP'],
+    // CSRF protection for Server Actions: restrict to production domain
+    serverActions: {
+      allowedOrigins:
+        process.env.NODE_ENV === 'production'
+          ? ['get2b.pro', 'www.get2b.pro']
+          : ['localhost:3000', 'localhost:3001', 'localhost:3002'],
+    },
   },
-  
-  // Убираем Cross origin warnings от ngrok
-  allowedDevOrigins: ['389328403a7d.ngrok-free.app'],
+
+  // Dev-only ngrok domain (set NGROK_DOMAIN env var when using ngrok locally)
+  allowedDevOrigins: process.env.NGROK_DOMAIN ? [process.env.NGROK_DOMAIN] : [],
   
   // Включаем проверки для production, отключаем только в dev
   typescript: {
@@ -124,8 +134,9 @@ const nextConfig = {
   // Security headers с ограниченным CORS
   async headers() {
     const isDev = process.env.NODE_ENV === 'development'
+    const ngrokOrigin = process.env.NGROK_DOMAIN ? `https://${process.env.NGROK_DOMAIN}, ` : ''
     const allowedOrigins = isDev
-      ? 'https://389328403a7d.ngrok-free.app, http://localhost:3000, http://localhost:3001, http://localhost:3002'
+      ? `${ngrokOrigin}http://localhost:3000, http://localhost:3001, http://localhost:3002`
       : 'https://get2b.pro'
 
     return [

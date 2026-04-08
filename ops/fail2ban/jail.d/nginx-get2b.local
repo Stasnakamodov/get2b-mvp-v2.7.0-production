@@ -1,0 +1,55 @@
+# ============================================================
+# GET2B nginx fail2ban jails
+# Deploy manually (one-shot SSH after GH Actions autodeploy):
+#   sudo cp /var/www/godplis/ops/fail2ban/jail.d/nginx-get2b.local \
+#           /etc/fail2ban/jail.d/
+#   sudo cp /var/www/godplis/ops/fail2ban/filter.d/nginx-noscript.conf \
+#           /etc/fail2ban/filter.d/
+#   sudo touch /var/log/nginx/bot-attacks.log
+#   sudo chown www-data:adm /var/log/nginx/bot-attacks.log
+#   sudo fail2ban-client reload
+#   sudo fail2ban-client status
+# ============================================================
+
+# Catches scanners hitting WordPress/phpMyAdmin/generic CMS paths.
+# Very aggressive — 2 hits in 10 min → 24h ban.
+[nginx-botsearch]
+enabled  = true
+port     = http,https
+filter   = nginx-botsearch
+logpath  = /var/log/nginx/bot-attacks.log
+maxretry = 2
+findtime = 600
+bantime  = 86400
+
+# Catches clients exceeding nginx limit_req (triggers 429).
+# More lenient — 10 bursts in 10 min → 1h ban (legitimate heavy users survive).
+[nginx-limit-req]
+enabled  = true
+port     = http,https
+filter   = nginx-limit-req
+logpath  = /var/log/nginx/get2b-error.log
+maxretry = 10
+findtime = 600
+bantime  = 3600
+
+# Catches 400 Bad Request — usually malformed CVE probes or Shellshock attempts.
+[nginx-bad-request]
+enabled  = true
+port     = http,https
+filter   = nginx-bad-request
+logpath  = /var/log/nginx/get2b-access.log
+maxretry = 5
+findtime = 300
+bantime  = 7200
+
+# Custom filter: catches requests to paths we never serve (.env, .git, cgi-bin, etc.)
+# Aggressive — 2 hits → 24h ban. See filter.d/nginx-noscript.conf.
+[nginx-noscript]
+enabled  = true
+port     = http,https
+filter   = nginx-noscript
+logpath  = /var/log/nginx/bot-attacks.log
+maxretry = 2
+findtime = 600
+bantime  = 86400

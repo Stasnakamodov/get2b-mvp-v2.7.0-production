@@ -25,6 +25,14 @@ function rateLimit(ip: string): boolean {
 }
 
 export function middleware(request: NextRequest) {
+  // CVE-2025-29927 defense in depth: block middleware bypass header.
+  // Next.js 15.2.3+ already fixes this, and nginx strips the header,
+  // but keep this as a belt-and-suspenders check in case of version downgrade
+  // or a similar class of bug in the future.
+  if (request.headers.get('x-middleware-subrequest')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const ip = (request as any).ip ?? request.headers.get('X-Forwarded-For') ?? request.headers.get('X-Real-IP') ?? 'unknown'
 
   // Apply rate limiting только на API routes
