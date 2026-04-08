@@ -33,13 +33,15 @@ export function middleware(request: NextRequest) {
 
     if (isRateLimited) {
       console.warn(`Rate limited IP: ${ip}`)
-      return new Response('Too Many Requests', {
-        status: 429,
-        headers: {
-          'Content-Type': 'text/plain',
-          'Retry-After': '60',
-        },
-      })
+      return NextResponse.json(
+        { error: 'Too Many Requests', retryAfter: 60 },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+          },
+        }
+      )
     }
   }
 

@@ -1,5 +1,5 @@
 import { logger } from "@/src/shared/lib/logger"
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { db } from "@/lib/db/client";
 export function useProjectSupabase() {
   const [isLoading, setIsLoading] = useState(false);
@@ -7,13 +7,13 @@ export function useProjectSupabase() {
   const [companyData, setCompanyData] = useState<any>(null);
 
   // Создать новый проект
-  async function createProject({ name, companyData, user_id, initiator_role, start_method }: {
+  const createProject = useCallback(async ({ name, companyData, user_id, initiator_role, start_method }: {
     name: string;
     companyData: any;
     user_id: string;
     initiator_role: 'client' | 'supplier';
     start_method: 'manual' | 'template' | 'profile' | 'upload';
-  }) {
+  }) => {
     setIsLoading(true);
     setError(null);
     
@@ -71,10 +71,10 @@ export function useProjectSupabase() {
     
     setIsLoading(false);
     return projectId;
-  }
+  }, []);
 
   // Сохранить спецификацию, файл инвойса и текущий шаг
-  async function saveSpecification({ projectId, currentStep, receipts, paymentMethod, payment_method, status, maxStepReached }: {
+  const saveSpecification = useCallback(async ({ projectId, currentStep, receipts, paymentMethod, payment_method, status, maxStepReached }: {
     projectId: string;
     currentStep: number;
     receipts?: string | null;
@@ -82,7 +82,7 @@ export function useProjectSupabase() {
     payment_method?: string | null;
     status?: string;
     maxStepReached?: number;
-  }) {
+  }) => {
     logger.info("[useProjectSupabase] saveSpecification вызван с параметрами:", {
       projectId,
       currentStep,
@@ -129,10 +129,10 @@ export function useProjectSupabase() {
     
     logger.info("[useProjectSupabase] Проект успешно обновлен");
     return true;
-  }
+  }, []);
 
   // Загрузить только существующие поля по projectId
-  async function loadSpecification(projectId: string) {
+  const loadSpecification = useCallback(async (projectId: string) => {
     setIsLoading(true);
     setError(null);
     const { data, error } = await db
@@ -154,10 +154,10 @@ export function useProjectSupabase() {
       };
     }
     return data;
-  }
+  }, []);
 
   // Сохранить данные поставщика
-  async function saveSupplierData(projectId: string, supplierData: any, supplierId?: string, supplierType?: string) {
+  const saveSupplierData = useCallback(async (projectId: string, supplierData: any, supplierId?: string, supplierType?: string) => {
     logger.info("[useProjectSupabase] saveSupplierData вызван:", { projectId, supplierData, supplierId, supplierType });
     
     setIsLoading(true);
@@ -189,10 +189,10 @@ export function useProjectSupabase() {
     
     logger.info("[useProjectSupabase] Данные поставщика успешно сохранены");
     return true;
-  }
+  }, []);
 
   // Обновить шаг
-  async function updateStep(projectId: string, currentStep: number, maxStepReached?: number) {
+  const updateStep = useCallback(async (projectId: string, currentStep: number, maxStepReached?: number) => {
     logger.info("[useProjectSupabase] updateStep вызван:", { projectId, currentStep, maxStepReached });
     
     setIsLoading(true);
@@ -220,7 +220,7 @@ export function useProjectSupabase() {
       logger.info("[useProjectSupabase] updateStep успешно выполнен");
     }
     return !error;
-  }
+  }, []);
 
   return { createProject, saveSpecification, loadSpecification, saveSupplierData, updateStep, isLoading, error, companyData };
 }
