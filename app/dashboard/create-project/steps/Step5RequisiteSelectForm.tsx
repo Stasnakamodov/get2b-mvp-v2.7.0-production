@@ -147,6 +147,13 @@ export default function Step5RequisiteSelectForm() {
 
   useEffect(() => {
     if (!projectId) return;
+    // Guard: если в контексте уже есть позиции (из CartLoader или предыдущих шагов),
+    // не перезатираем их данными из БД — избегаем race condition с асинхронными
+    // inserts и потенциального показа дублей из старых записей.
+    if (specificationItems && specificationItems.length > 0) {
+      logger.info("[Step5] specificationItems уже заполнены, пропускаем загрузку из БД");
+      return;
+    }
     async function loadAllSpecItems() {
       // Загружаем ВСЕ позиции спецификации по project_id (не одну по specification_id)
       const { data: allItems, error } = await db
@@ -157,14 +164,22 @@ export default function Step5RequisiteSelectForm() {
         .order('created_at', { ascending: true });
 
       if (!error && allItems && allItems.length > 0) {
-        setSpecificationItems(allItems);
-        logger.info("[Step5] Загружены все позиции спецификации:", allItems.length);
+        // Dedupe по (item_name, quantity, price) — страховка от старых дублей в БД
+        const seen = new Set<string>();
+        const unique = allItems.filter((item: any) => {
+          const key = `${item.item_name}|${item.quantity}|${item.price}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setSpecificationItems(unique);
+        logger.info("[Step5] Загружены позиции спецификации:", unique.length, "(исходно:", allItems.length, ")");
       } else if (error) {
         logger.error("[Step5] Ошибка загрузки спецификации:", error);
       }
     }
     loadAllSpecItems();
-  }, [projectId]);
+  }, [projectId, specificationItems.length]);
 
   // 🎯 Умное автозаполнение при единственном реквизите поставщика
   useEffect(() => {

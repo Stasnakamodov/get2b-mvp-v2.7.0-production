@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { sendPaymentMethodToTelegram } from "../utils/telegram";
 import { db } from "@/lib/db/client";
+import { hasSupplierRecommendations } from "@/lib/suppliers/loadCatalogSupplier";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 const paymentMethods = [
   {
@@ -57,7 +58,16 @@ export default function Step4PaymentMethodForm() {
   const echoProcessedRef = useRef(false);
 
   // 🎯 СИСТЕМА ЭХО РЕКОМЕНДАЦИЙ - загружаем данные поставщика по supplier_name из спецификаций
+  // ВАЖНО: это fallback-механизм для старых проектов. Если supplierData уже заполнен
+  // (пришёл из каталога через CartLoader/Step2 или восстановлен из БД) — НЕ запускаем echo,
+  // иначе поиск по имени может перетереть валидные данные.
   useEffect(() => {
+    if (hasSupplierRecommendations(supplierData)) {
+      logger.info("[Step4] ⏭️ supplierData уже содержит рекомендации — echo не нужен");
+      echoProcessedRef.current = true;
+      return;
+    }
+
     // Пропускаем если нет проекта или уже обработано (через ref, а не через supplierData)
     if (!projectId || echoProcessedRef.current) {
       logger.info("[Step4] ⏭️ Пропускаем загрузку эхо данных:", {
@@ -189,7 +199,7 @@ export default function Step4PaymentMethodForm() {
     }
 
     loadEchoSupplierData();
-  }, [projectId, setSupplierData]);
+  }, [projectId, setSupplierData, supplierData]);
 
   // 🎯 Определяем, для каких методов есть реквизиты поставщика
   const methodsWithSupplierData = useMemo(() => {

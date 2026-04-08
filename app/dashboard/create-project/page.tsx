@@ -1,6 +1,7 @@
 "use client"
 
 import { db } from "@/lib/db/client"
+import { loadCatalogSupplier } from "@/lib/suppliers/loadCatalogSupplier"
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { logger } from "@/src/shared/lib/logger"
 import {
@@ -723,14 +724,18 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
         setProjectName(`Проект ${new Date().toLocaleDateString('ru-RU')}`);
         // BUG-1 fix: если пришли из корзины каталога, сохраняем товары в БД
         if (hasCartItems && specificationItems.length > 0) {
-          const specRows = specificationItems.map((item: any) => ({
+          const specRows = specificationItems.map((item: any) => {
+            const qty = Number(item.quantity ?? 1) || 1;
+            const priceNum = Number(item.pricePerUnit ?? item.price ?? 0) || 0;
+            const totalNum = Number(item.totalPrice ?? item.total) || (priceNum * qty);
+            return {
             item_name: item.name || item.item_name || '',
             item_code: item.code || item.item_code || '',
             image_url: item.image_url || '',
-            quantity: item.quantity || 1,
+            quantity: qty,
             unit: item.unit || 'шт',
-            price: item.pricePerUnit ?? item.price ?? 0,
-            total: item.totalPrice ?? item.total ?? ((item.pricePerUnit ?? item.price ?? 0) * (item.quantity ?? 1)),
+            price: priceNum,
+            total: totalNum,
             description: item.description || '',
             supplier_name: item.supplier_name || '',
             supplier_id: item.supplier_id || null,
@@ -742,7 +747,8 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
             project_id: projectId,
             role: 'client',
             user_id,
-          }));
+            };
+          });
           const { error: specError } = await db
             .from('project_specifications')
             .insert(specRows);
@@ -993,7 +999,7 @@ function CartLoader() {
   const searchParams = useSearchParams();
   const fromCart = searchParams?.get("from_cart");
   const cartData = searchParams?.get("cart"); // Legacy: данные корзины в URL
-  const { setSpecificationItems, setCurrentStep, setMaxStepReached, setHasCartItems } = useCreateProjectContext();
+  const { setSpecificationItems, setCurrentStep, setMaxStepReached, setHasCartItems, setSupplierData } = useCreateProjectContext();
   const [isCartLoading, setIsCartLoading] = useState(false);
   const [cartProcessed, setCartProcessed] = useState(false);
 
@@ -1056,6 +1062,24 @@ function CartLoader() {
           // Сохраняем в localStorage как запасной вариант
           localStorage.setItem('cart_items_temp', JSON.stringify(specItems));
 
+          // 🎯 ЗАГРУЖАЕМ ДАННЫЕ ПОСТАВЩИКА ДЛЯ АВТОРЕКОМЕНДАЦИЙ НА ШАГЕ 4-5
+          // В CartLoader projectId ещё нет (проект создастся в Step1),
+          // поэтому кладём данные только в контекст. Step1 сохранит их в БД после createProject.
+          const firstSupplierId = cartItems.find((i: any) => i.supplier_id)?.supplier_id;
+          if (firstSupplierId) {
+            try {
+              const supplierData = await loadCatalogSupplier(firstSupplierId);
+              if (supplierData) {
+                logger.info("[CartLoader] Загружены данные поставщика из каталога:", supplierData.name);
+                setSupplierData(supplierData);
+                // Дублируем в localStorage для восстановления (по аналогии с cart_items_temp)
+                localStorage.setItem('supplier_data_temp', JSON.stringify(supplierData));
+              }
+            } catch (supplierErr) {
+              logger.error("[CartLoader] Ошибка загрузки поставщика:", supplierErr);
+            }
+          }
+
           // Остаемся на первом шаге, но товары уже загружены и доступ к шагу 2 открыт
           setCurrentStep(1);
 
@@ -1077,7 +1101,7 @@ function CartLoader() {
     }
     
     loadCartData();
-  }, [fromCart, cartData, cartProcessed, setSpecificationItems, setCurrentStep, setMaxStepReached, setHasCartItems]);
+  }, [fromCart, cartData, cartProcessed, setSpecificationItems, setCurrentStep, setMaxStepReached, setHasCartItems, setSupplierData]);
 
   if (isCartLoading) {
     return (

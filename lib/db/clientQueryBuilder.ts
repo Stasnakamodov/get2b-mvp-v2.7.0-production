@@ -33,6 +33,37 @@ function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
 }
 
+async function parseResponseAsJson(res: Response): Promise<DbResponse> {
+  // Defensive: nginx or other upstream may return plain text (e.g. "Too Many Requests"
+  // for 429) which would crash res.json() with SyntaxError. Handle gracefully.
+  const contentType = res.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    const text = await res.text().catch(() => '')
+    return {
+      data: null,
+      error: {
+        message: res.status === 429
+          ? 'Слишком много запросов, попробуйте позже'
+          : (text || res.statusText || 'Non-JSON response from server'),
+      },
+      count: null,
+      status: res.status,
+      statusText: res.statusText,
+    }
+  }
+  try {
+    return await res.json()
+  } catch (e: any) {
+    return {
+      data: null,
+      error: { message: e.message || 'Failed to parse server response' },
+      count: null,
+      status: res.status,
+      statusText: res.statusText,
+    }
+  }
+}
+
 async function executeQuery(query: SerializedQuery): Promise<DbResponse> {
   try {
     const token = getToken()
@@ -49,7 +80,7 @@ async function executeQuery(query: SerializedQuery): Promise<DbResponse> {
       body: JSON.stringify(query),
     })
 
-    return await res.json()
+    return await parseResponseAsJson(res)
   } catch (e: any) {
     return {
       data: null,
@@ -240,7 +271,7 @@ export async function clientRpc(
       body: JSON.stringify({ rpc: fnName, args }),
     })
 
-    return await res.json()
+    return await parseResponseAsJson(res)
   } catch (e: any) {
     return {
       data: null,

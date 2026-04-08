@@ -18,6 +18,7 @@ import { useSupplierProfiles } from '@/hooks/useSupplierProfiles';
 import { useRealtimeProjectData } from "../hooks/useRealtimeProjectData";
 import { getStepByStatus } from '@/lib/types/project-status';
 import { changeProjectStatus } from '@/lib/supabaseProjectStatus';
+import { getCatalogSupplierType, hasSupplierRecommendations } from '@/lib/suppliers/loadCatalogSupplier';
 
 export default function Step1CompanyForm(props: {
   isLoading?: boolean;
@@ -27,13 +28,13 @@ export default function Step1CompanyForm(props: {
   setIsSaveDialogOpen?: (open: boolean) => void;
   isTemplateMode?: boolean;
 }) {
-  const { companyData, setCompanyData, projectName, setProjectName, setCurrentStep, setProjectId, projectId, maxStepReached, setMaxStepReached, startMethod, specificationItems } = useCreateProjectContext();
+  const { companyData, setCompanyData, projectName, setProjectName, setCurrentStep, setProjectId, projectId, maxStepReached, setMaxStepReached, startMethod, specificationItems, supplierData, setSupplierData } = useCreateProjectContext();
   const { isLoading, isVerified, isVerifying } = props;
   const [isSaveDialogOpen, setIsSaveDialogOpenState] = useState(false);
   const { saveProjectTemplate, saving: isSavingNew, error: saveProjectTemplateError, success: successNew } = useProjectTemplates();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const { toast } = useToast();
-  const { createProject, error: createProjectError, isLoading: isProjectCreating, updateStep, saveSpecification } = useProjectSupabase();
+  const { createProject, error: createProjectError, isLoading: isProjectCreating, updateStep, saveSpecification, saveSupplierData } = useProjectSupabase();
   const [localError, setLocalError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -182,55 +183,10 @@ export default function Step1CompanyForm(props: {
           return;
         }
 
-        // --- СОХРАНЕНИЕ ТОВАРОВ ИЗ КОРЗИНЫ (если есть) ---
-        // Получаем товары из контекста или localStorage
-        let itemsToSave = specificationItems;
-        if ((!itemsToSave || itemsToSave.length === 0) && typeof window !== 'undefined') {
-          const stored = localStorage.getItem('cart_items_temp');
-          if (stored) {
-            itemsToSave = JSON.parse(stored);
-            logger.info("[Step1] Товары восстановлены из localStorage:", itemsToSave);
-          }
-        }
-
-        // Если есть товары (из корзины), сохраняем их в БД
-        if (itemsToSave && itemsToSave.length > 0) {
-          logger.info("[Step1] Сохраняем товары из корзины в БД для проекта:", currentProjectId);
-          logger.info("[Step1] Товары для сохранения:", itemsToSave);
-          try {
-            // Получаем токен авторизации
-            const { data: { session } } = await db.auth.getSession();
-            if (!session) {
-              logger.error("[Step1] Нет активной сессии для сохранения товаров");
-              // Не блокируем переход — товары можно сохранить позже
-            } else {
-              const response = await fetch('/api/project-specifications/bulk-insert', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({
-                  projectId: currentProjectId,
-                  items: itemsToSave,
-                  role: 'client'
-                }),
-              });
-
-              if (!response.ok) {
-                logger.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
-                const errorText = await response.text();
-                logger.error("[Step1] Детали ошибки:", errorText);
-              } else {
-                const result = await response.json();
-                logger.info("[Step1] Товары успешно сохранены в БД:", result);
-                // Очищаем localStorage после успешного сохранения
-                localStorage.removeItem('cart_items_temp');
-              }
-            }
-          } catch (saveError) {
-            logger.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
-          }
+        // Cart items уже были вставлены в БД в ProjectStartFlow.handleStepperSelect
+        // (единая точка вставки). Здесь только чистим временное хранилище.
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('cart_items_temp');
         }
 
         // --- SAVE SPECIFICATION (если нужно) ---
@@ -340,63 +296,38 @@ export default function Step1CompanyForm(props: {
           return;
         }
         setProjectId(newProjectId);
-        
-        // Получаем товары из контекста или localStorage
-        let itemsToSave = specificationItems;
-        if ((!itemsToSave || itemsToSave.length === 0) && typeof window !== 'undefined') {
-          const stored = localStorage.getItem('cart_items_temp');
-          if (stored) {
-            itemsToSave = JSON.parse(stored);
-            logger.info("[Step1] Товары восстановлены из localStorage:", itemsToSave);
-          }
-        }
-        
-        // Проверяем наличие товаров
-        logger.info("[Step1] Проверка товаров:", {
-          itemsToSave,
-          length: itemsToSave?.length,
-          isEmpty: !itemsToSave || itemsToSave.length === 0,
-          firstItem: itemsToSave?.[0]
-        });
-        
-        // Если есть товары (из корзины), сохраняем их в БД
-        if (itemsToSave && itemsToSave.length > 0) {
-          logger.info("[Step1] Сохраняем товары из корзины в БД для проекта:", newProjectId);
-          logger.info("[Step1] Товары для сохранения:", itemsToSave);
-          try {
-            // Получаем токен авторизации
-            const { data: { session } } = await db.auth.getSession();
-            if (!session) {
-              logger.error("[Step1] Нет активной сессии для сохранения товаров");
-              // Не блокируем переход — товары можно сохранить позже
-            } else {
-              const response = await fetch('/api/project-specifications/bulk-insert', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({
-                  projectId: newProjectId,
-                  items: itemsToSave,
-                  role: 'client'
-                }),
-              });
 
-              if (!response.ok) {
-                logger.error("[Step1] Ошибка HTTP:", response.status, response.statusText);
-                const errorText = await response.text();
-                logger.error("[Step1] Детали ошибки:", errorText);
-              } else {
-                const result = await response.json();
-                logger.info("[Step1] Товары успешно сохранены в БД:", result);
-                // Очищаем localStorage после успешного сохранения
-                localStorage.removeItem('cart_items_temp');
+        // Cart items уже были вставлены в БД в ProjectStartFlow.handleStepperSelect
+        // (единая точка вставки). Здесь только чистим временное хранилище.
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('cart_items_temp');
+        }
+
+        // 🎯 СОХРАНЯЕМ ДАННЫЕ ПОСТАВЩИКА ИЗ КАТАЛОГА В БД
+        // supplierData попадает в контекст через CartLoader (при flow "корзина → проект").
+        // Восстанавливаем его из localStorage если контекст сбросился (например, при ре-маунте).
+        try {
+          let supplierToSave: any = hasSupplierRecommendations(supplierData) ? supplierData : null;
+          if (!supplierToSave && typeof window !== 'undefined') {
+            const stored = localStorage.getItem('supplier_data_temp');
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (hasSupplierRecommendations(parsed)) {
+                supplierToSave = parsed;
+                setSupplierData(parsed);
               }
             }
-          } catch (saveError) {
-            logger.error("[Step1] Ошибка сохранения товаров в БД:", saveError);
           }
+          if (supplierToSave) {
+            logger.info("[Step1] Сохраняем supplierData в БД для проекта:", newProjectId);
+            const supplierType = getCatalogSupplierType(supplierToSave);
+            await saveSupplierData(newProjectId, supplierToSave, undefined, supplierType);
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('supplier_data_temp');
+            }
+          }
+        } catch (supplierSaveError) {
+          logger.error("[Step1] Ошибка сохранения supplierData в БД (не критично):", supplierSaveError);
         }
 
       // --- СМЕНА СТАТУСА НА in_progress ---

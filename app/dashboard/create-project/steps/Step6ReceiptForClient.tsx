@@ -396,7 +396,10 @@ export default function Step6ReceiptForClient() {
                   ))}
                 </tbody>
               </table>
-              <div className="text-right font-semibold">Итого: {specificationItems.reduce((sum, item) => sum + (item.total || item.totalPrice || 0), 0)}</div>
+              <div className="text-right font-semibold">Итого: {specificationItems.reduce(
+                (sum, item) => sum + (Number(item.total ?? item.totalPrice) || 0),
+                0
+              ).toLocaleString('ru-RU')}</div>
             </div>
             <div className="mt-4">
               <div><b>Способ оплаты:</b> {paymentMethod === 'bank-transfer' ? 'Банковский перевод' : paymentMethod === 'p2p' ? 'P2P перевод' : paymentMethod === 'crypto' ? 'Криптовалюта' : '-'}</div>

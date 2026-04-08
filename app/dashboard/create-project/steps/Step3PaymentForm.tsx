@@ -9,7 +9,6 @@ import { useProjectSupabase } from "../hooks/useProjectSupabase";
 import { useToast } from "@/hooks/use-toast";
 import { sendTelegramProjectApprovalRequestClient } from '@/lib/telegram-client';
 import { useRealtimeSpecification } from "../hooks/useRealtimeSpecification";
-import { useProjectSpecification } from '../hooks/useProjectSpecification';
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import { serializeReceipts, getClientReceiptUrl } from "@/lib/utils/receipts";
 
@@ -32,7 +31,6 @@ export default function Step3PaymentForm() {
   const { saveSpecification, loadSpecification, updateStep } = useProjectSupabase();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { items: specItems, addItems } = useProjectSpecification(projectId, role);
   const [error, setError] = useState<string | null>(null);
 
   // Загрузка receipt при монтировании
@@ -75,9 +73,6 @@ export default function Step3PaymentForm() {
         if (data.status === 'receipt_approved') {
           setIsWaitingApproval(false);
           if (pollingRef.current) clearInterval(pollingRef.current);
-          if (specificationItems && specificationItems.length > 0) {
-            await addItems(specificationItems);
-          }
           const nextStep = 4;
           setCurrentStep(nextStep);
           if (nextStep > maxStepReached) {
@@ -95,7 +90,7 @@ export default function Step3PaymentForm() {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [isWaitingApproval, projectId, setCurrentStep, toast, maxStepReached, addItems]);
+  }, [isWaitingApproval, projectId, setCurrentStep, toast, maxStepReached]);
 
   // Загружаем companyData из projects
   useEffect(() => {

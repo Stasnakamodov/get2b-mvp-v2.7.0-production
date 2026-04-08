@@ -1,5 +1,6 @@
 import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
+import { loadCatalogSupplier, getCatalogSupplierType } from "@/lib/suppliers/loadCatalogSupplier";
 import React, { useState, useRef, useEffect } from "react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
 import { Button } from "@/components/ui/button";
@@ -887,53 +888,22 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     // 🎯 ЗАГРУЖАЕМ ДАННЫЕ ПОСТАВЩИКА ДЛЯ АВТОЗАПОЛНЕНИЯ ШАГОВ 4-5
     if (products.length > 0 && products[0].supplier_id) {
       const supplierId = products[0].supplier_id;
-      const supplierName = products[0].supplier_name || 'Неизвестный поставщик';
-      logger.info('🔍 [Step2] Загружаем данные поставщика для автозаполнения:', { supplierId, supplierName });
-      
+      logger.info('🔍 [Step2] Загружаем данные поставщика для автозаполнения:', { supplierId });
+
       try {
-        // Определяем тип поставщика по room_type или пытаемся найти в обеих таблицах
-        let fullSupplierData = null;
-        
-        // Сначала пытаемся найти в verified поставщиках
-        const { data: verifiedSupplier, error: verifiedError } = await db
-          .from('catalog_verified_suppliers')
-          .select('id, name, company_name, category, country, city, payment_methods, bank_accounts, crypto_wallets, p2p_cards')
-          .eq('id', supplierId)
-          .single();
-        
-        if (verifiedSupplier && !verifiedError) {
-          fullSupplierData = { ...verifiedSupplier, room_type: 'verified' };
-          logger.info('✅ [Step2] Поставщик найден в verified:', fullSupplierData);
-        } else {
-          // Если не найден в verified, ищем в user поставщиках
-          const { data: userSupplier, error: userError } = await db
-            .from('catalog_user_suppliers')
-            .select('id, name, company_name, category, country, city, payment_methods, bank_accounts, crypto_wallets, p2p_cards')
-            .eq('id', supplierId)
-            .single();
-          
-          if (userSupplier && !userError) {
-            fullSupplierData = { ...userSupplier, room_type: 'user' };
-            logger.info('✅ [Step2] Поставщик найден в user:', fullSupplierData);
-          } else {
-            logger.warn('⚠️ [Step2] Поставщик не найден в обеих таблицах:', { verifiedError, userError });
-          }
-        }
-        
-        // Сохраняем данные поставщика в контекст и БД для автозаполнения
+        const fullSupplierData = await loadCatalogSupplier(supplierId);
+
         if (fullSupplierData) {
           logger.info('💾 [Step2] Сохраняем данные поставщика в контекст для Steps 4-5');
           setSupplierData(fullSupplierData);
-          
+
           // 🎯 СОХРАНЯЕМ В БД ДЛЯ ВОССТАНОВЛЕНИЯ ПРИ ОБНОВЛЕНИИ СТРАНИЦЫ
           if (projectId) {
-            logger.info('💾 [Step2] Сохраняем данные поставщика в БД');
-            const supplierType = fullSupplierData.room_type === 'verified' ? 'catalog_verified' : 'catalog_user';
+            const supplierType = getCatalogSupplierType(fullSupplierData);
             // Не передаем supplierId чтобы избежать foreign key constraint error
             await saveSupplierData(projectId, fullSupplierData, undefined, supplierType);
           }
         }
-        
       } catch (error) {
         logger.error('❌ [Step2] Ошибка загрузки данных поставщика:', error);
       }
