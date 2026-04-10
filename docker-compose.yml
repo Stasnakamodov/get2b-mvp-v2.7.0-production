@@ -46,6 +46,8 @@ services:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
       - DATABASE_URL=postgresql://get2b:${DB_PASSWORD}@postgres:5432/get2b
+    extra_hosts:
+      - "api.telegram.org:149.154.167.220"
     volumes:
       - uploads:/data/uploads
     deploy:

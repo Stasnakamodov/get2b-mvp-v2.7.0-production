@@ -5,6 +5,7 @@ import { db as dbAdmin } from '@/lib/db'
 import { changeProjectStatusServer } from "@/lib/changeProjectStatusServer"
 import { ProjectStatus } from "@/lib/types/project-status"
 import { parseReceipts, serializeReceipts } from "@/lib/utils/receipts"
+import { ChatBotService } from "@/lib/telegram/ChatBotService"
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
@@ -226,9 +227,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, message: "File processed" });
     }
 
+    // Обработка текстовых команд (/start, /help и т.д.)
+    if (body.message?.text?.startsWith('/')) {
+      const text = body.message.text;
+      const chatId = body.message.chat.id;
+      const userName = body.message.from?.first_name || 'Пользователь';
+      logger.info("🤖 Команда бота:", { text, chatId, userName });
+      try {
+        const chatBot = new ChatBotService();
+        const responseText = chatBot.getCommandResponse(text, userName);
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: responseText, parse_mode: "Markdown" })
+        });
+        logger.info("✅ Ответ на команду отправлен:", text);
+      } catch (cmdError) {
+        logger.error("❌ Ошибка обработки команды:", cmdError);
+      }
+      return NextResponse.json({ ok: true, message: "Command processed" });
+    }
+
     // Если нет callback_query, завершаем
     if (!body.callback_query) {
-      logger.info("❌ Нет callback_query, завершаем");
+      logger.info("ℹ️ Текстовое сообщение без команды, пропускаем");
       return NextResponse.json({ ok: true })
     }
 
