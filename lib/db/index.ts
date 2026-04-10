@@ -112,6 +112,8 @@ function storageFrom(bucket: string) {
           buffer = file
         } else if (file instanceof Uint8Array) {
           buffer = Buffer.from(file)
+        } else if (file instanceof ArrayBuffer) {
+          buffer = Buffer.from(file)
         } else if (file && typeof file.arrayBuffer === 'function') {
           buffer = Buffer.from(await file.arrayBuffer())
         } else if (typeof file === 'string') {
