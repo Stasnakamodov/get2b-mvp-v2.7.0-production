@@ -309,7 +309,27 @@ export async function POST(req: NextRequest) {
             case "waiting_approval":
               newStatus = "waiting_receipt";
               break;
+            case "waiting_receipt":
+              newStatus = "receipt_approved";
+              break;
+            case "receipt_approved":
+              newStatus = "filling_requisites";
+              break;
             default:
+              if (project.status === "filling_requisites" || project.status === "in_work" || project.status === "completed") {
+                if (body.callback_query?.id && process.env.TELEGRAM_BOT_TOKEN) {
+                  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      callback_query_id: body.callback_query.id,
+                      text: "Проект уже обработан",
+                      show_alert: false
+                    })
+                  })
+                }
+                return NextResponse.json({ ok: true, message: `Project ${projectId} already processed` })
+              }
               throw new Error("Некорректный статус для апрува проекта: " + project.status);
           }
         }
@@ -366,9 +386,25 @@ export async function POST(req: NextRequest) {
         if (type === "project") {
           switch (project.status) {
             case "waiting_approval":
+            case "waiting_receipt":
+            case "receipt_approved":
               newStatus = "receipt_rejected";
               break;
             default:
+              if (project.status === "receipt_rejected" || project.status === "completed" || project.status === "in_work") {
+                if (body.callback_query?.id && process.env.TELEGRAM_BOT_TOKEN) {
+                  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      callback_query_id: body.callback_query.id,
+                      text: "Проект уже обработан",
+                      show_alert: false
+                    })
+                  })
+                }
+                return NextResponse.json({ ok: true, message: `Project ${projectId} already processed` })
+              }
               throw new Error("Некорректный статус для отклонения проекта: " + project.status);
           }
         }
