@@ -50,6 +50,7 @@ services:
       - "api.telegram.org:149.154.167.220"
     volumes:
       - uploads:/data/uploads
+      - product-images:/app/public/images/products
     deploy:
       resources:
         limits:
@@ -72,3 +73,4 @@ services:
 volumes:
   pgdata:
   uploads:
+  product-images:
