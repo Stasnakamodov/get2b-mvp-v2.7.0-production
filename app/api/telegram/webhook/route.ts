@@ -167,36 +167,37 @@ export async function POST(request: NextRequest) {
       }
       
       // Используем правильную систему смены статуса
+      let answerText = responseMessage;
       try {
-        const result = await changeProjectStatusServer({
+        await changeProjectStatusServer({
           projectId,
           newStatus,
           changedBy: 'telegram_bot',
           comment: 'Одобрено менеджером через Telegram'
         });
-        
-        
-        await managerBot.answerCallbackQuery(
-          callbackQueryId,
-          responseMessage
-        );
       } catch (error: any) {
         console.error("❌ [WEBHOOK] Ошибка смены статуса:", error);
-        await managerBot.answerCallbackQuery(
-          callbackQueryId,
-          `❌ Ошибка обновления проекта: ${error.message}`
-        );
+        if (error.message?.includes('Invalid status transition')) {
+          answerText = `⚠️ Проект уже обработан ранее`;
+        } else {
+          answerText = `❌ Ошибка: ${error.message}`;
+        }
       }
-      
+      try {
+        await managerBot.answerCallbackQuery(callbackQueryId, answerText);
+      } catch (e) {
+        console.error("❌ [WEBHOOK] answerCallbackQuery failed:", e);
+      }
+
     } else if (callbackData.startsWith('reject_')) {
       // Извлекаем UUID из callback_data (последний UUID-паттерн в строке)
       const uuidMatch = callbackData.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
       const projectId = uuidMatch ? uuidMatch[1] : callbackData.replace(/^reject_(?:project_|receipt_|invoice_|client_receipt_)?/, '');
-      
+
       // Определяем новый статус для отклонения
       let newStatus: ProjectStatus;
       let responseMessage: string;
-      
+
       if (callbackData.includes('receipt')) {
         newStatus = 'receipt_rejected';
         responseMessage = `❌ Чек для проекта ${projectId} отклонен`;
@@ -207,27 +208,28 @@ export async function POST(request: NextRequest) {
         newStatus = 'receipt_rejected';
         responseMessage = `❌ Проект ${projectId} отклонен`;
       }
-      
+
       // Используем правильную систему смены статуса
+      let rejectAnswerText = responseMessage;
       try {
-        const result = await changeProjectStatusServer({
+        await changeProjectStatusServer({
           projectId,
           newStatus,
           changedBy: 'telegram_bot',
           comment: 'Отклонено менеджером через Telegram'
         });
-        
-        
-        await managerBot.answerCallbackQuery(
-          callbackQueryId,
-          responseMessage
-        );
       } catch (error: any) {
         console.error("❌ [WEBHOOK] Ошибка смены статуса при отклонении:", error);
-        await managerBot.answerCallbackQuery(
-          callbackQueryId,
-          `❌ Ошибка обновления проекта: ${error.message}`
-        );
+        if (error.message?.includes('Invalid status transition')) {
+          rejectAnswerText = `⚠️ Проект уже обработан ранее`;
+        } else {
+          rejectAnswerText = `❌ Ошибка: ${error.message}`;
+        }
+      }
+      try {
+        await managerBot.answerCallbackQuery(callbackQueryId, rejectAnswerText);
+      } catch (e) {
+        console.error("❌ [WEBHOOK] answerCallbackQuery failed:", e);
       }
     } else if (callbackData.startsWith('upload_supplier_receipt_')) {
       const projectId = callbackData.replace('upload_supplier_receipt_', '');
@@ -263,9 +265,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error("💥 [WEBHOOK] ОШИБКА:", error);
-    return NextResponse.json(
-      { error: "Webhook processing failed" },
-      { status: 500 }
-    );
+    // Всегда возвращаем 200 для Telegram, иначе он будет ретраить запрос
+    return NextResponse.json({ ok: true, error: "Webhook processing failed" });
   }
 }
