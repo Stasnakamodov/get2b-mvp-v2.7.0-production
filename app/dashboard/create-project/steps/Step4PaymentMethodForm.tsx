@@ -77,6 +77,29 @@ export default function Step4PaymentMethodForm() {
       return;
     }
 
+    // 🎯 Сначала пробуем загрузить по supplier_id из БД (надёжный путь)
+    async function loadSupplierById() {
+      const { data: project } = await db
+        .from('projects')
+        .select('supplier_id, supplier_type')
+        .eq('id', projectId)
+        .single();
+
+      if (!project?.supplier_id) return false;
+
+      logger.info("[Step4] 🔍 Загружаем поставщика по supplier_id из БД:", project.supplier_id);
+      const { loadCatalogSupplier } = await import('@/lib/suppliers/loadCatalogSupplier');
+      const catalogData = await loadCatalogSupplier(project.supplier_id);
+
+      if (catalogData && hasSupplierRecommendations(catalogData)) {
+        logger.info("[Step4] ✅ Загружены рекомендации по supplier_id:", catalogData.name);
+        echoProcessedRef.current = true;
+        setSupplierData(catalogData);
+        return true;
+      }
+      return false;
+    }
+
     async function loadEchoSupplierData() {
       logger.info("[Step4] 🔍 Загружаем эхо данные поставщиков для автозаполнения...");
 
@@ -198,7 +221,12 @@ export default function Step4PaymentMethodForm() {
       }
     }
 
-    loadEchoSupplierData();
+    // Сначала пробуем по ID, если не нашли — fallback на echo
+    loadSupplierById().then(found => {
+      if (!found) {
+        loadEchoSupplierData();
+      }
+    });
   }, [projectId, setSupplierData, supplierData]);
 
   // 🎯 Определяем, для каких методов есть реквизиты поставщика

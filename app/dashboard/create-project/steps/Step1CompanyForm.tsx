@@ -321,7 +321,7 @@ export default function Step1CompanyForm(props: {
           if (supplierToSave) {
             logger.info("[Step1] Сохраняем supplierData в БД для проекта:", newProjectId);
             const supplierType = getCatalogSupplierType(supplierToSave);
-            await saveSupplierData(newProjectId, supplierToSave, undefined, supplierType);
+            await saveSupplierData(newProjectId, supplierToSave, supplierToSave.id || undefined, supplierType);
             if (typeof window !== 'undefined') {
               localStorage.removeItem('supplier_data_temp');
             }
