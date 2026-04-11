@@ -147,7 +147,8 @@ export class TelegramService {
 
     try {
       const { buffer, fileName, mimeType } = await this.fetchFileBuffer(params.document);
-      const blob = new Blob([buffer], { type: mimeType });
+      const uint8 = new Uint8Array(buffer);
+      const blob = new Blob([uint8], { type: mimeType });
 
       const formData = new FormData();
       formData.append('chat_id', String(params.chat_id));
@@ -184,7 +185,8 @@ export class TelegramService {
 
     try {
       const { buffer, fileName, mimeType } = await this.fetchFileBuffer(params.photo);
-      const blob = new Blob([buffer], { type: mimeType });
+      const uint8 = new Uint8Array(buffer);
+      const blob = new Blob([uint8], { type: mimeType });
 
       const formData = new FormData();
       formData.append('chat_id', String(params.chat_id));
