@@ -92,24 +92,70 @@ export class TelegramService {
   }
 
   /**
-   * Отправляет документ/файл
+   * Скачивает файл по URL и возвращает Buffer + имя файла.
+   * Для локальных URL (наш сервер) — читает файл с диска напрямую.
+   */
+  private async fetchFileBuffer(fileUrl: string): Promise<{ buffer: Buffer; fileName: string; mimeType: string }> {
+    const UPLOAD_DIR = process.env.UPLOAD_DIR || '/data/uploads';
+    const localPrefix = '/api/storage/';
+    const normalizedUrl = this.normalizeUrl(fileUrl);
+
+    // Проверяем, является ли URL локальным storage путём
+    let storagePath = '';
+    if (fileUrl.startsWith(localPrefix)) {
+      storagePath = fileUrl.substring(localPrefix.length);
+    } else if (normalizedUrl.includes(localPrefix)) {
+      storagePath = normalizedUrl.split(localPrefix)[1];
+    }
+
+    if (storagePath) {
+      // Локальный файл — читаем с диска (надёжнее чем HTTP)
+      const path = require('path');
+      const fs = require('fs/promises');
+      const fullPath = path.join(UPLOAD_DIR, storagePath);
+      console.log("📂 TelegramService: читаем локальный файл:", fullPath);
+      const buffer = await fs.readFile(fullPath);
+      const fileName = path.basename(storagePath);
+      const ext = path.extname(fileName).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+        '.gif': 'image/gif', '.webp': 'image/webp', '.pdf': 'application/pdf',
+      };
+      return { buffer, fileName, mimeType: mimeMap[ext] || 'application/octet-stream' };
+    }
+
+    // Внешний URL — скачиваем по HTTP
+    console.log("🌐 TelegramService: скачиваем внешний файл:", normalizedUrl);
+    const response = await fetch(normalizedUrl);
+    if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const fileName = normalizedUrl.split('/').pop()?.split('?')[0] || 'file';
+    const mimeType = response.headers.get('content-type') || 'application/octet-stream';
+    return { buffer, fileName, mimeType };
+  }
+
+  /**
+   * Отправляет документ/файл через multipart upload (надёжно, не зависит от доступности URL для Telegram)
    */
   async sendDocument(params: TelegramDocument): Promise<any> {
     const url = `${this.baseUrl}/sendDocument`;
-    params = { ...params, document: this.normalizeUrl(params.document) };
 
-    console.log("📄 TelegramService: отправка документа", {
+    console.log("📄 TelegramService: отправка документа (multipart)", {
       chat_id: params.chat_id,
       document_url: params.document
     });
 
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      });
+      const { buffer, fileName, mimeType } = await this.fetchFileBuffer(params.document);
+      const blob = new Blob([buffer], { type: mimeType });
 
+      const formData = new FormData();
+      formData.append('chat_id', String(params.chat_id));
+      formData.append('document', blob, fileName);
+      if (params.caption) formData.append('caption', params.caption);
+      if (params.reply_markup) formData.append('reply_markup', JSON.stringify(params.reply_markup));
+
+      const response = await fetch(url, { method: "POST", body: formData });
       const result = await response.json();
 
       if (!response.ok) {
@@ -117,7 +163,7 @@ export class TelegramService {
         throw new Error(`Telegram API error: ${result.description || response.statusText}`);
       }
 
-      console.log("✅ Документ отправлен успешно");
+      console.log("✅ Документ отправлен успешно (multipart)");
       return result;
     } catch (error) {
       console.error("❌ Ошибка отправки документа:", error);
@@ -126,24 +172,28 @@ export class TelegramService {
   }
 
   /**
-   * Отправляет изображение
+   * Отправляет изображение через multipart upload
    */
   async sendPhoto(params: TelegramPhoto): Promise<any> {
     const url = `${this.baseUrl}/sendPhoto`;
-    params = { ...params, photo: this.normalizeUrl(params.photo) };
 
-    console.log("📷 TelegramService: отправка изображения", {
+    console.log("📷 TelegramService: отправка изображения (multipart)", {
       chat_id: params.chat_id,
       photo_url: params.photo
     });
 
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      });
+      const { buffer, fileName, mimeType } = await this.fetchFileBuffer(params.photo);
+      const blob = new Blob([buffer], { type: mimeType });
 
+      const formData = new FormData();
+      formData.append('chat_id', String(params.chat_id));
+      formData.append('photo', blob, fileName);
+      if (params.caption) formData.append('caption', params.caption);
+      if (params.parse_mode) formData.append('parse_mode', params.parse_mode);
+      if (params.reply_markup) formData.append('reply_markup', JSON.stringify(params.reply_markup));
+
+      const response = await fetch(url, { method: "POST", body: formData });
       const result = await response.json();
 
       if (!response.ok) {
@@ -151,7 +201,7 @@ export class TelegramService {
         throw new Error(`Telegram API error: ${result.description || response.statusText}`);
       }
 
-      console.log("✅ Изображение отправлено успешно");
+      console.log("✅ Изображение отправлено успешно (multipart)");
       return result;
     } catch (error) {
       console.error("❌ Ошибка отправки изображения:", error);
