@@ -16,9 +16,16 @@ export async function POST(request: NextRequest) {
       const replyToMessage = message.reply_to_message;
       
       // Проверяем, что это ответ на сообщение о загрузке чека
-      if (replyToMessage && replyToMessage.text?.includes("Загрузка чека для проекта")) {
-        
-        const projectIdMatch = replyToMessage.text.match(/проекта ([a-f0-9-]+)/);
+      // Поддерживаем ДВА формата:
+      // 1. "📤 Загрузка чека для проекта <uuid>" (сообщение после нажатия кнопки)
+      // 2. "Проект: <uuid>" (исходное сообщение с кнопкой загрузки)
+      const isReceiptReply = replyToMessage && (
+        replyToMessage.text?.includes("Загрузка чека для проекта") ||
+        replyToMessage.text?.includes("Проект:")
+      );
+      if (isReceiptReply) {
+        // Извлекаем UUID: "проекта <uuid>" или "Проект: <uuid>"
+        const projectIdMatch = replyToMessage.text.match(/(?:проекта|Проект:)\s*([a-f0-9-]+)/);
         
         if (projectIdMatch) {
           const projectId = projectIdMatch[1];
@@ -233,26 +240,24 @@ export async function POST(request: NextRequest) {
       }
     } else if (callbackData.startsWith('upload_supplier_receipt_')) {
       const projectId = callbackData.replace('upload_supplier_receipt_', '');
-      
+
+      // ВАЖНО: сначала отправляем сообщение, потом answerCallbackQuery
+      // answerCallbackQuery может упасть с "query is too old", но это не должно
+      // блокировать отправку сообщения для reply
       try {
-        // Отвечаем на callback query
-        await managerBot.answerCallbackQuery(
-          callbackQueryId,
-          "Пожалуйста, отправьте чек в ответ на следующее сообщение",
-          true
-        );
-        
-        // Отправляем сообщение с просьбой загрузить файл
         const text = `📤 Загрузка чека для проекта ${projectId}\n\nПожалуйста, отправьте чек (фото или файл) в ответ на это сообщение. Файл будет автоматически прикреплен к проекту.`;
-        
         await managerBot.sendMessage(text);
-        
       } catch (error: any) {
-        console.error("❌ [WEBHOOK] Ошибка при открытии диалога загрузки:", error);
+        console.error("❌ [WEBHOOK] Ошибка отправки сообщения для загрузки чека:", error);
+      }
+
+      try {
         await managerBot.answerCallbackQuery(
           callbackQueryId,
-          `❌ Ошибка: ${error.message}`
+          "Пожалуйста, отправьте чек в ответ на следующее сообщение"
         );
+      } catch (e) {
+        console.error("❌ [WEBHOOK] answerCallbackQuery failed (non-critical):", e);
       }
     } else {
       await managerBot.answerCallbackQuery(
