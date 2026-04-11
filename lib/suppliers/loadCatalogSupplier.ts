@@ -17,7 +17,10 @@ export interface CatalogSupplierData {
 
 export type CatalogSupplierType = 'catalog_verified' | 'catalog_user'
 
-const SELECT_FIELDS =
+const VERIFIED_SELECT_FIELDS =
+  'id, name, company_name, category, country, city, payment_methods, bank_accounts, crypto_wallets, p2p_cards'
+
+const USER_SELECT_FIELDS =
   'id, name, company_name, category, country, city, payment_methods, bank_accounts, crypto_wallets, p2p_cards'
 
 /**
@@ -39,7 +42,7 @@ export async function loadCatalogSupplier(
   // Сначала verified (они приоритетны)
   const { data: verified, error: verifiedError } = await db
     .from('catalog_verified_suppliers')
-    .select(SELECT_FIELDS)
+    .select(VERIFIED_SELECT_FIELDS)
     .eq('id', supplierId)
     .single()
 
@@ -51,7 +54,7 @@ export async function loadCatalogSupplier(
   // Затем user (пользовательские)
   const { data: user, error: userError } = await db
     .from('catalog_user_suppliers')
-    .select(SELECT_FIELDS)
+    .select(USER_SELECT_FIELDS)
     .eq('id', supplierId)
     .single()
 
