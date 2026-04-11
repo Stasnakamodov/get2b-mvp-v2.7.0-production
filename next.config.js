@@ -9,6 +9,7 @@ const nextConfig = {
 
   // ОПТИМИЗАЦИЯ ДЛЯ DEV РЕЖИМА - ускоряем компиляцию
   experimental: {
+    instrumentationHook: true,
     forceSwcTransforms: true,
     // Отключаем лишние оптимизации в dev
     optimizeCss: false,
