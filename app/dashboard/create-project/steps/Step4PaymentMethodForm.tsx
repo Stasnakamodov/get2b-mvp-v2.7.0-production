@@ -486,7 +486,11 @@ export default function Step4PaymentMethodForm() {
                 {method.hasSupplierData ? (
                   <div className="flex items-center justify-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium mt-1">
                     <CheckCircle className="w-3 h-3" />
-                    <span>Реквизиты поставщика</span>
+                    <span>
+                      {supplierData?.source === 'ocr_invoice'
+                        ? 'По данным из инвойса'
+                        : 'Реквизиты поставщика'}
+                    </span>
                     {method.supplierRequisitesCount > 1 && (
                       <span className="ml-1 px-1 bg-green-200 rounded-full text-xs">
                         {method.supplierRequisitesCount}

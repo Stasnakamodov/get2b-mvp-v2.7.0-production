@@ -1351,12 +1351,17 @@ export default function Step5RequisiteSelectForm() {
       {/* 🎯 РЕКВИЗИТЫ ПОСТАВЩИКА */}
       {!showAddForm && supplierRequisites.length > 0 && (
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-2">
             <h3 className="text-lg font-semibold">Реквизиты поставщика</h3>
             <div className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
               Рекомендуется
             </div>
           </div>
+          {supplierData?.source === 'ocr_invoice' && (
+            <p className="text-xs text-gray-500 mb-4">
+              По данным из загруженного инвойса. Проверьте перед отправкой.
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {supplierRequisites.map((req: any, index: number) => {
               const supplierId = `supplier_${paymentMethod}_${index}`;

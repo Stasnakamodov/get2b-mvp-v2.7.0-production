@@ -36,6 +36,8 @@ export interface ParsedInvoice {
     accountNumber?: string;
     swift?: string;
     recipientName?: string;
+    recipientAddress?: string;
+    transferCurrency?: string;
   };
 }
 

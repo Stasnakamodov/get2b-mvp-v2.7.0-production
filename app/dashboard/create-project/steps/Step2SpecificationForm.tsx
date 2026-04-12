@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
 import { loadCatalogSupplier, getCatalogSupplierType } from "@/lib/suppliers/loadCatalogSupplier";
+import { invoiceHintsToSupplierData, isCatalogSupplierData } from "@/lib/suppliers/invoiceHintsToSupplierData";
 import React, { useState, useRef, useEffect } from "react";
 import { useCreateProjectContext } from "../context/CreateProjectContext";
 import { Button } from "@/components/ui/button";
@@ -72,7 +73,7 @@ function TemplateSelectModal({ open, onClose, onSelect }: { open: boolean, onClo
 // --- КОНЕЦ ВСТАВКИ ---
 
 export default function Step2SpecificationForm({ isTemplateMode = false }: { isTemplateMode?: boolean }) {
-  const { projectId, setCurrentStep, companyData, setCompanyData, maxStepReached, setMaxStepReached, setSupplierData } = useCreateProjectContext();
+  const { projectId, setCurrentStep, companyData, setCompanyData, maxStepReached, setMaxStepReached, supplierData, setSupplierData } = useCreateProjectContext();
   const [invoiceType, setInvoiceType] = useState<'create' | 'upload'>("create");
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -427,6 +428,33 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     toast({ title: "Шаблон (компания + спецификация) успешно сохранён!", variant: "default" });
   };
 
+  // Прокидываем OCR-подсказки (bankInfo + seller) в supplierData, чтобы Step 4/5
+  // увидели их как рекомендацию. Каталог приоритетнее — не перетираем.
+  const applyInvoiceOcrHints = async (extractedData: any) => {
+    if (!projectId || !extractedData) return;
+    const hints = invoiceHintsToSupplierData(extractedData);
+    if (!hints) {
+      logger.info("[Step2] OCR: bankInfo пустой/невалидный — пропускаем применение hints");
+      return;
+    }
+    if (isCatalogSupplierData(supplierData)) {
+      logger.info("[Step2] OCR: каталог приоритетнее OCR — supplierData не трогаем");
+      return;
+    }
+    try {
+      setSupplierData(hints);
+      await saveSupplierData(projectId, hints, undefined, undefined);
+      logger.info("[Step2] OCR: supplierData обновлён hints из инвойса", hints);
+      toast({
+        title: "✅ Реквизиты из инвойса сохранены",
+        description: "Появятся как рекомендация на шагах 4–5.",
+        variant: "default",
+      });
+    } catch (error) {
+      logger.error("[Step2] OCR: ошибка сохранения hints в supplierData:", error);
+    }
+  };
+
   // Загрузка инвойса — ядро, одинаковое для click-picker и drag-n-drop
   const processInvoiceFile = async (file: File) => {
     if (!projectId) return;
@@ -515,6 +543,8 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           logger.info("   - invoiceInfo:", extractedData.invoiceInfo);
           logger.info("   - items count:", extractedData.items?.length || 0);
           logger.info("   - items:", extractedData.items);
+
+          await applyInvoiceOcrHints(extractedData);
 
           if (analysisResult.llmUnavailable) {
             logger.warn("⚠️ YandexGPT недоступен при анализе инвойса, llmError:", analysisResult.llmError);
@@ -756,6 +786,8 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         logger.info("   - items:", extractedData?.items);
         logger.info("   - extractedText length:", analysisResult.extractedText?.length || 0);
         logger.info("   - extractedText preview:", analysisResult.extractedText?.substring(0, 200));
+
+        await applyInvoiceOcrHints(extractedData);
 
         if (analysisResult.llmUnavailable) {
           logger.warn("⚠️ YandexGPT недоступен при повторном анализе инвойса, llmError:", analysisResult.llmError);
