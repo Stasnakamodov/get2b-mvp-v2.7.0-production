@@ -1,6 +1,6 @@
 /**
  * Сервис для работы с Yandex Foundation Models (YandexGPT)
- * Используется для интеллектуального анализа изображений товаров
+ * Используется для интеллектуального анализа изображений товаров и парсинга инвойсов
  */
 
 export interface ProductAnalysis {
@@ -9,6 +9,41 @@ export interface ProductAnalysis {
   productType: string | null;
   keywords: string[];
   description: string;
+}
+
+export interface ParsedInvoiceItem {
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+  code?: string;
+  unit?: string;
+}
+
+export interface ParsedInvoice {
+  items: ParsedInvoiceItem[];
+  invoiceInfo: {
+    number?: string;
+    date?: string;
+    seller?: string;
+    buyer?: string;
+    totalAmount?: string;
+    currency?: string;
+    vat?: string;
+  };
+  bankInfo?: {
+    bankName?: string;
+    accountNumber?: string;
+    swift?: string;
+    recipientName?: string;
+  };
+}
+
+export class YandexGPTUnavailableError extends Error {
+  constructor(message = 'YandexGPT API не настроен: проверьте YANDEX_VISION_API_KEY (или YANDEX_GPT_API_KEY) и YANDEX_FOLDER_ID') {
+    super(message);
+    this.name = 'YandexGPTUnavailableError';
+  }
 }
 
 export class YandexGPTService {
@@ -309,6 +344,180 @@ ${marketplace ? `- Маркетплейс: ${marketplace}` : ''}
       keywords: keywords.slice(0, 10),
       description: title
     };
+  }
+
+  /**
+   * Парсит OCR-текст инвойса через YandexGPT в структурированный ParsedInvoice.
+   *
+   * Бросает YandexGPTUnavailableError, если ключи не настроены (caller решает что делать),
+   * и пробрасывает обычный Error при 4xx/5xx от API или таймауте.
+   */
+  async parseInvoiceText(
+    ocrText: string,
+    options: { timeoutMs?: number } = {}
+  ): Promise<ParsedInvoice> {
+    if (!this.apiKey || !this.folderId) {
+      throw new YandexGPTUnavailableError();
+    }
+
+    if (!ocrText || !ocrText.trim()) {
+      return { items: [], invoiceInfo: {} };
+    }
+
+    const timeoutMs = options.timeoutMs ?? 45_000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const prompt = this.buildInvoicePrompt(ocrText);
+
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Authorization': `Api-Key ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'X-Data-Center': 'ru-central1',
+        },
+        body: JSON.stringify({
+          modelUri: `gpt://${this.folderId}/yandexgpt/latest`,
+          completionOptions: {
+            stream: false,
+            temperature: 0.1,
+            maxTokens: 2000,
+          },
+          messages: [{ role: 'user', text: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`YandexGPT API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const gptResponse: string = data?.result?.alternatives?.[0]?.message?.text || '';
+      return this.parseInvoiceResponse(gptResponse);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private buildInvoicePrompt(ocrText: string): string {
+    return `Ты — эксперт по обработке инвойсов, коммерческих счетов и proforma-invoice. Извлеки из OCR-текста структурированные данные.
+
+OCR-ТЕКСТ ИНВОЙСА:
+"""
+${ocrText}
+"""
+
+ЗАДАЧА:
+Извлеки позиции товаров, информацию об инвойсе и банковские реквизиты получателя.
+
+ПРАВИЛА:
+1. Извлекай ТОЛЬКО реальные товары и услуги, присутствующие в тексте. Не выдумывай позиции.
+2. Цены (price, total) и количество (quantity) — обычные числа. Убирай пробелы, разделители тысяч, валютные символы.
+3. Если в total явно указана цена × количество — сохраняй как указано.
+4. Из полей seller/buyer/recipientName убирай префиксы: "| Agent:", "| Buyer:", "| Seller:", "Поставщик:", "Продавец:", "Покупатель:".
+5. Из recipientName убирай китайские скобки (账户名称) и английские (Account Name).
+6. Если какого-то поля нет в тексте — просто опускай его в ответе, не подставляй null и не выдумывай.
+7. Если товаров нет — верни "items": [].
+8. Ответ — СТРОГО валидный JSON без markdown-обёрток, без комментариев, без вступительного текста.
+
+ФОРМАТ ОТВЕТА:
+{
+  "items": [
+    {
+      "name": "Название товара",
+      "quantity": 10,
+      "price": 100.5,
+      "total": 1005,
+      "code": "SKU-001",
+      "unit": "шт"
+    }
+  ],
+  "invoiceInfo": {
+    "number": "INV-2025-001",
+    "date": "2025-04-12",
+    "seller": "Gamma Trading Co., Ltd",
+    "buyer": "ООО Ромашка",
+    "totalAmount": "1005.00",
+    "currency": "USD",
+    "vat": "167.50"
+  },
+  "bankInfo": {
+    "bankName": "BANK OF CHINA",
+    "accountNumber": "397475795838",
+    "swift": "BKCHCNBJ92B",
+    "recipientName": "ZHEJIANG GAMMA TRADING CO., LTD"
+  }
+}
+
+ОТВЕТ (только JSON):`;
+  }
+
+  private parseInvoiceResponse(response: string): ParsedInvoice {
+    if (!response || !response.trim()) {
+      return { items: [], invoiceInfo: {} };
+    }
+
+    try {
+      const clean = response
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        return { items: [], invoiceInfo: {} };
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      const items: ParsedInvoiceItem[] = Array.isArray(parsed.items)
+        ? parsed.items
+            .filter((raw: any) => raw && typeof raw.name === 'string' && raw.name.trim().length > 0)
+            .map((raw: any): ParsedInvoiceItem => {
+              const quantity = Number(raw.quantity) || 0;
+              const price = Number(raw.price) || 0;
+              const total = raw.total !== undefined && raw.total !== null && !Number.isNaN(Number(raw.total))
+                ? Number(raw.total)
+                : quantity * price;
+              const item: ParsedInvoiceItem = {
+                name: String(raw.name).trim(),
+                quantity,
+                price,
+                total,
+              };
+              if (raw.code !== undefined && raw.code !== null && String(raw.code).trim()) {
+                item.code = String(raw.code).trim();
+              }
+              if (raw.unit !== undefined && raw.unit !== null && String(raw.unit).trim()) {
+                item.unit = String(raw.unit).trim();
+              }
+              return item;
+            })
+        : [];
+
+      const invoiceInfo =
+        parsed.invoiceInfo && typeof parsed.invoiceInfo === 'object' && !Array.isArray(parsed.invoiceInfo)
+          ? parsed.invoiceInfo
+          : {};
+
+      const bankInfo =
+        parsed.bankInfo && typeof parsed.bankInfo === 'object' && !Array.isArray(parsed.bankInfo)
+          ? parsed.bankInfo
+          : undefined;
+
+      const result: ParsedInvoice = { items, invoiceInfo };
+      if (bankInfo) {
+        result.bankInfo = bankInfo;
+      }
+      return result;
+    } catch (error) {
+      console.error('❌ YandexGPT: не удалось распарсить ответ парсера инвойса:', error);
+      return { items: [], invoiceInfo: {} };
+    }
   }
 
   /**
