@@ -594,9 +594,12 @@ export default function Step1CompanyForm(props: {
               setExtractionInfo(extractedData.extractionInfo);
             }
             
-            // Автозаполнение названия проекта
-            if (extractedData.companyName && !projectName) {
-              setProjectName(extractedData.companyName);
+            // Автозаполнение названия проекта (перезаписываем дефолтное «Проект DD.MM.YYYY»)
+            if (extractedData.companyName) {
+              const isDefaultName = !projectName || /^Проект \d{2}\.\d{2}\.\d{4}$/.test(projectName.trim());
+              if (isDefaultName) {
+                setProjectName(extractedData.companyName);
+              }
             }
             
             // НЕ показываем форму автоматически - только после нажатия кнопки
