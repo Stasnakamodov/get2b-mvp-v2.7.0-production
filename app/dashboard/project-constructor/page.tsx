@@ -1,5 +1,6 @@
 "use client"
 import { db } from "@/lib/db/client"
+import { authClient } from "@/lib/auth/client"
 
 import * as React from "react"
 import type {
@@ -1080,18 +1081,69 @@ function ProjectConstructorContent() {
         templateSystem.setTemplateSelection(true)
         return
       }
-      
+
       // Для других источников применяем стандартную логику
       setStepConfigs(prev => ({
         ...prev,
         [lastHoveredStep]: source
       }))
       setSelectedSource(source)
-      
+
       // Если выбран каталог, открываем полный каталог напрямую
       if (source === "catalog") {
         console.log("Выбран каталог для шага", lastHoveredStep)
         setShowCatalogModal(true)
+        return
+      }
+
+      // Синяя комната: личные поставщики пользователя (catalog_user_suppliers).
+      // Список уже содержит payment_methods, bank_accounts, ..., catalog_user_products —
+      // enrichment в обработчике клика не требуется.
+      if (source === "blue_room") {
+        const targetStep = lastHoveredStep
+        setCatalogSourceStep(targetStep)
+        setBlueRoomLoading(true)
+        ;(async () => {
+          try {
+            const token = authClient.getToken()
+            const res = await fetch('/api/catalog/user-suppliers', {
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            })
+            const json = await res.json()
+            if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`)
+            setBlueRoomSuppliers((json.suppliers ?? []) as SupplierData[])
+          } catch (err) {
+            console.error('❌ [blue_room] Ошибка загрузки списка поставщиков:', err)
+            setBlueRoomSuppliers([])
+          } finally {
+            setBlueRoomLoading(false)
+            openModal('blueRoomSupplier')
+          }
+        })()
+        return
+      }
+
+      // Оранжевая комната: аккредитованные поставщики (catalog_verified_suppliers).
+      // Список возвращает only payment fields и total_products count — продукты
+      // подгружаются отдельно в handleSelectOrangeRoomSupplier.
+      if (source === "orange_room") {
+        const targetStep = lastHoveredStep
+        setCatalogSourceStep(targetStep)
+        setOrangeRoomLoading(true)
+        ;(async () => {
+          try {
+            const res = await fetch('/api/catalog/suppliers?verified=true')
+            const json = await res.json()
+            if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`)
+            setOrangeRoomSuppliers((json.suppliers ?? []) as SupplierData[])
+          } catch (err) {
+            console.error('❌ [orange_room] Ошибка загрузки списка поставщиков:', err)
+            setOrangeRoomSuppliers([])
+          } finally {
+            setOrangeRoomLoading(false)
+            openModal('orangeRoomSupplier')
+          }
+        })()
         return
       }
       
@@ -1247,25 +1299,45 @@ function ProjectConstructorContent() {
     }
   }
 
-  // Функция для перехода к этапу 2 (упрощена после извлечения Stage2Container)
+  // Функция для перехода к этапу 2: отправляет данные менеджеру и переводит UI в состояние ожидания.
   const proceedToStage2 = async () => {
     console.log('✅ Переход к этапу 2: Подготовка инфраструктуры')
-
-    // Закрываем модальное окно перехода
     closeModal('stageTransition')
 
-    // Переходим к этапу 2
-    setCurrentStage(2)
-    console.log('✅ Этап изменен на 2')
+    const token = authClient.getToken()
+    if (!token) {
+      alert('Сессия истекла — войдите заново.')
+      return
+    }
 
-    // Сбрасываем состояние показа модального окна перехода
-    setStageTransitionShown(false)
+    try {
+      const res = await fetch('/api/atomic-constructor/send-to-manager', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          stepConfigs,
+          manualData,
+          uploadedFiles: ocrUpload.uploadedFiles || {},
+          currentStage: 2,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success || !json.requestId) {
+        throw new Error(json.error || `HTTP ${res.status}`)
+      }
 
-    // Устанавливаем статус ожидания апрува менеджера
-    setManagerApprovalStatus('pending')
-    console.log('✅ Статус менеджера установлен в pending')
-
-    // Отправка данных менеджеру теперь обрабатывается в Stage2Container
+      setProjectRequestId(json.requestId)
+      setCurrentStage(2)
+      setStageTransitionShown(false)
+      setManagerApprovalStatus('pending')
+      console.log('✅ Stage 2: requestId =', json.requestId)
+    } catch (err) {
+      console.error('❌ Stage 2: ошибка отправки менеджеру:', err)
+      alert('Не удалось отправить данные менеджеру. Попробуйте ещё раз.')
+    }
   }
 
 
@@ -1847,143 +1919,132 @@ function ProjectConstructorContent() {
   }
 
   const handleSelectBlueRoomSupplier = async (supplier: any) => {
-    console.log('🎯 === НАЧАЛО handleSelectBlueRoomSupplier ===')
-    console.log('🎯 supplier:', supplier)
-    console.log('🎯 catalogSourceStep:', catalogSourceStep)
-    console.log('🎯 lastHoveredStep:', lastHoveredStep)
-    
+    console.log('🎯 [BlueRoom] supplier:', supplier?.name, 'targetStep:', catalogSourceStep)
+
     if (!catalogSourceStep) {
       console.log('❌ catalogSourceStep не установлен, выходим')
       return
     }
-    
+
     try {
-      // Используем данные поставщика напрямую (они уже включают catalog_user_products)
+      // Список /api/catalog/user-suppliers возвращает полный row (включая
+      // payment_methods[], bank_accounts[], p2p_cards[], crypto_wallets[])
+      // + joined catalog_user_products[], так что отдельный fetch не нужен.
       const fullSupplier = supplier
-      
-      // Сохраняем данные поставщика для использования в других шагах
       setSelectedSupplierData(fullSupplier)
-      
-      // АВТОМАТИЧЕСКИ заполняем связанные шаги при выборе поставщика!
-      console.log('🎯 Автоматически заполняем связанные шаги для поставщика:', fullSupplier.name)
-      
-      // Шаг 2: Товары поставщика (ОБЯЗАТЕЛЬНО!)
-      const specificationData = {
-        supplier: fullSupplier.name,
-        currency: fullSupplier.currency || 'USD',
-        items: fullSupplier.catalog_user_products?.map((product: any) => ({
-          name: product.name,
-          description: product.description || '',
-          quantity: 1,
-          price: product.price || 0,
-          unit: product.unit || 'шт'
-        })) || [],
-        user_choice: true
-      }
-      
-      // Шаг 4: Методы оплаты поставщика
-      const paymentMethods = []
-      if (fullSupplier.payment_methods?.bank) {
-        paymentMethods.push('bank')
-      }
-      if (fullSupplier.payment_methods?.card) {
-        paymentMethods.push('p2p')
-      }
-      if (fullSupplier.payment_methods?.crypto) {
-        paymentMethods.push('crypto')
-      }
-      
-      const paymentData = {
-        type: 'multiple',
-        methods: paymentMethods,
-        defaultMethod: paymentMethods[0] || 'bank',
-        supplier: fullSupplier.name,
-        user_choice: true
-      }
-      
-      // Шаг 5: Реквизиты поставщика
-      const allRequisites = []
-      if (fullSupplier.payment_methods?.bank) {
-        allRequisites.push({
-          type: 'bank',
-          bankName: fullSupplier.payment_methods.bank.bank_name,
-          accountNumber: fullSupplier.payment_methods.bank.account_number,
-          bik: fullSupplier.payment_methods.bank.bik,
-          correspondentAccount: fullSupplier.payment_methods.bank.correspondent_account,
-          supplier: fullSupplier.name
-        })
-      }
-      if (fullSupplier.payment_methods?.card) {
-        allRequisites.push({
-          type: 'p2p',
-          card_number: fullSupplier.payment_methods.card.number,
-          card_bank: fullSupplier.payment_methods.card.bank,
-          card_holder: fullSupplier.payment_methods.card.holder,
-          supplier: fullSupplier.name
-        })
-      }
-      if (fullSupplier.payment_methods?.crypto) {
-        allRequisites.push({
-          type: 'crypto',
-          crypto_address: fullSupplier.payment_methods.crypto.address,
-          crypto_network: fullSupplier.payment_methods.crypto.network,
-          supplier: fullSupplier.name
-        })
-      }
-      
-      const requisitesData = {
-        type: 'multiple',
-        requisites: allRequisites,
-        defaultRequisite: allRequisites[0] || null,
-        supplier: fullSupplier.name,
-        user_choice: true
-      }
-      
-      // Сохраняем данные для шагов 2, 4, 5 (НЕ шаг 1!)
-      setManualData(prev => ({
-        ...prev,
-        2: specificationData,
-        4: paymentData,
-        5: requisitesData
-      }))
-      
-      // Устанавливаем источники для шагов 2, 4, 5
-      setStepConfigs(prev => ({
-        ...prev,
-        2: 'blue_room',
-        4: 'blue_room',
-        5: 'blue_room'
-      }))
-      
-      console.log('✅ Автоматически заполнены связанные шаги для поставщика:')
-      console.log('  - Шаг 2 (товары):', specificationData.items.length, 'товаров')
-      console.log('  - Шаг 4 (оплата):', paymentMethods.length, 'методов')
-      console.log('  - Шаг 5 (реквизиты):', allRequisites.length, 'реквизитов')
-      console.log('  - Шаг 1 (клиент): НЕ заполняется (пользователь выберет сам)')
-      
-      // Закрываем модальное окно каталога
+
+      const products = fullSupplier.catalog_user_products || []
+      applySupplierAutofill(fullSupplier, products, 'blue_room')
+
       setShowCatalogSourceModal(false)
       setCatalogSourceStep(null)
-      
-      // Показываем уведомление об успешном заполнении
-      console.log(`✅ Данные поставщика "${fullSupplier.name}" успешно применены ко ВСЕМ шагам!`)
-
-      // ЭХО ДАННЫЕ в атомарном конструкторе ОТКЛЮЧЕНЫ для упрощения работы
-      // Рекомендации из каталога показываются через stepConfigs[5] = 'catalog'
-
+      console.log(`✅ Blue Room: данные поставщика "${fullSupplier.name}" применены`)
     } catch (error) {
-      console.error('❌ Ошибка при выборе поставщика:', error)
+      console.error('❌ Ошибка при выборе поставщика из синей комнаты:', error)
       alert('Ошибка при выборе поставщика')
     }
 
     closeModal('blueRoomSupplier')
   }
 
+  /**
+   * Общий автозаполнитель шагов 2/4/5 данными поставщика.
+   * Работает с унифицированной формой полей (payment_methods — массив строк,
+   * bank_accounts/p2p_cards/crypto_wallets — массивы объектов).
+   */
+  const applySupplierAutofill = (
+    fullSupplier: any,
+    products: any[],
+    source: 'blue_room' | 'orange_room'
+  ) => {
+    const specificationData = {
+      supplier: fullSupplier.name,
+      currency: fullSupplier.currency || 'USD',
+      items: (products || []).map((product: any) => ({
+        name: product.name,
+        description: product.description || '',
+        quantity: 1,
+        price: product.price || 0,
+        unit: product.unit || 'шт',
+      })),
+      user_choice: true,
+    }
+
+    const paymentMethods: string[] = Array.isArray(fullSupplier.payment_methods)
+      ? fullSupplier.payment_methods
+      : []
+
+    const paymentData = {
+      type: 'multiple',
+      methods: paymentMethods,
+      defaultMethod: paymentMethods[0] || 'bank-transfer',
+      supplier: fullSupplier.name,
+      user_choice: true,
+    }
+
+    const allRequisites: any[] = []
+    if (Array.isArray(fullSupplier.bank_accounts)) {
+      fullSupplier.bank_accounts.forEach((account: any) => {
+        allRequisites.push({
+          type: 'bank',
+          bankName: account.bank_name,
+          accountNumber: account.account_number,
+          bik: account.bik,
+          correspondentAccount: account.correspondent_account,
+          supplier: fullSupplier.name,
+        })
+      })
+    }
+    if (Array.isArray(fullSupplier.p2p_cards)) {
+      fullSupplier.p2p_cards.forEach((card: any) => {
+        allRequisites.push({
+          type: 'p2p',
+          card_number: card.card_number,
+          card_bank: card.bank_name,
+          card_holder: card.card_holder,
+          supplier: fullSupplier.name,
+        })
+      })
+    }
+    if (Array.isArray(fullSupplier.crypto_wallets)) {
+      fullSupplier.crypto_wallets.forEach((wallet: any) => {
+        allRequisites.push({
+          type: 'crypto',
+          crypto_address: wallet.wallet_address,
+          crypto_network: wallet.network,
+          supplier: fullSupplier.name,
+        })
+      })
+    }
+
+    const requisitesData = {
+      type: 'multiple',
+      requisites: allRequisites,
+      defaultRequisite: allRequisites[0] || null,
+      supplier: fullSupplier.name,
+      user_choice: true,
+    }
+
+    setManualData(prev => ({
+      ...prev,
+      2: specificationData,
+      4: paymentData,
+      5: requisitesData,
+    }))
+
+    setStepConfigs(prev => ({
+      ...prev,
+      2: source,
+      4: source,
+      5: source,
+    }))
+
+    console.log(`✅ [${source}] autofill: товаров=${specificationData.items.length}, методов=${paymentMethods.length}, реквизитов=${allRequisites.length}`)
+  }
+
   // Обработчик выбора поставщика из оранжевой комнаты (аккредитованные поставщики)
   const handleSelectOrangeRoomSupplier = async (supplier: any) => {
-    console.log('🟠 === НАЧАЛО handleSelectOrangeRoomSupplier ===')
-    console.log('🟠 supplier:', supplier)
-    console.log('🟠 catalogSourceStep:', catalogSourceStep)
+    console.log('🟠 [OrangeRoom] supplier:', supplier?.name, 'targetStep:', catalogSourceStep)
 
     if (!catalogSourceStep) {
       console.log('❌ catalogSourceStep не установлен, выходим')
@@ -1991,103 +2052,27 @@ function ProjectConstructorContent() {
     }
 
     try {
-      // Используем данные аккредитованного поставщика
-      const fullSupplier = supplier
+      // Список /api/catalog/suppliers?verified=true возвращает только total_products
+      // (count), без самих товаров. Для автозаполнения Step2 нужен отдельный
+      // запрос с ?id=X, который присоединяет catalog_verified_products.
+      let fullSupplier: any = supplier
+      try {
+        const res = await fetch(`/api/catalog/suppliers?verified=true&id=${encodeURIComponent(supplier.id)}`)
+        const json = await res.json()
+        if (res.ok && json?.supplier) {
+          fullSupplier = json.supplier
+        }
+      } catch (fetchErr) {
+        console.warn('⚠️ [OrangeRoom] не удалось дозагрузить детали поставщика, используем данные из списка:', fetchErr)
+      }
 
-      // Сохраняем данные поставщика для использования в других шагах
       setSelectedSupplierData(fullSupplier)
 
-      console.log('🟠 Автоматически заполняем связанные шаги для аккредитованного поставщика:', fullSupplier.name)
+      const products = fullSupplier.catalog_verified_products || []
+      applySupplierAutofill(fullSupplier, products, 'orange_room')
 
-      // Шаг 2: Товары поставщика
-      const specificationData = {
-        supplier: fullSupplier.name,
-        currency: fullSupplier.currency || 'USD',
-        items: fullSupplier.catalog_verified_products?.map((product: any) => ({
-          name: product.name,
-          description: product.description || '',
-          quantity: 1,
-          price: product.price || 0,
-          unit: product.unit || 'шт'
-        })) || [],
-        user_choice: true
-      }
-
-      // Шаг 4: Методы оплаты
-      const paymentMethods = fullSupplier.payment_methods || []
-      const paymentData = {
-        type: 'multiple',
-        methods: paymentMethods,
-        defaultMethod: paymentMethods[0] || 'bank',
-        supplier: fullSupplier.name,
-        user_choice: true
-      }
-
-      // Шаг 5: Реквизиты
-      const allRequisites: any[] = []
-      if (fullSupplier.bank_accounts?.length > 0) {
-        fullSupplier.bank_accounts.forEach((account: any) => {
-          allRequisites.push({
-            type: 'bank',
-            bankName: account.bank_name,
-            accountNumber: account.account_number,
-            bik: account.bik,
-            correspondentAccount: account.correspondent_account,
-            supplier: fullSupplier.name
-          })
-        })
-      }
-      if (fullSupplier.p2p_cards?.length > 0) {
-        fullSupplier.p2p_cards.forEach((card: any) => {
-          allRequisites.push({
-            type: 'p2p',
-            card_number: card.card_number,
-            card_bank: card.bank_name,
-            card_holder: card.card_holder,
-            supplier: fullSupplier.name
-          })
-        })
-      }
-      if (fullSupplier.crypto_wallets?.length > 0) {
-        fullSupplier.crypto_wallets.forEach((wallet: any) => {
-          allRequisites.push({
-            type: 'crypto',
-            crypto_address: wallet.wallet_address,
-            crypto_network: wallet.network,
-            supplier: fullSupplier.name
-          })
-        })
-      }
-
-      const requisitesData = {
-        type: 'multiple',
-        requisites: allRequisites,
-        defaultRequisite: allRequisites[0] || null,
-        supplier: fullSupplier.name,
-        user_choice: true
-      }
-
-      // Сохраняем данные для шагов 2, 4, 5
-      setManualData(prev => ({
-        ...prev,
-        2: specificationData,
-        4: paymentData,
-        5: requisitesData
-      }))
-
-      // Устанавливаем источники для шагов 2, 4, 5
-      setStepConfigs(prev => ({
-        ...prev,
-        2: 'orange_room',
-        4: 'orange_room',
-        5: 'orange_room'
-      }))
-
-      console.log('✅ Автоматически заполнены связанные шаги для аккредитованного поставщика:')
-      console.log('  - Шаг 2 (товары):', specificationData.items.length, 'товаров')
-      console.log('  - Шаг 4 (оплата):', paymentMethods.length, 'методов')
-      console.log('  - Шаг 5 (реквизиты):', allRequisites.length, 'реквизитов')
-
+      setCatalogSourceStep(null)
+      console.log(`✅ Orange Room: данные поставщика "${fullSupplier.name}" применены`)
     } catch (error) {
       console.error('❌ Ошибка при выборе аккредитованного поставщика:', error)
       alert('Ошибка при выборе поставщика')
