@@ -137,7 +137,7 @@ export function useProjectSupabase() {
     setError(null);
     const { data, error } = await db
       .from("projects")
-      .select("current_step, max_step_reached, receipts, payment_method, name, company_data, status, amount, currency, email, supplier_data, supplier_id, supplier_type")
+      .select("current_step, max_step_reached, receipts, payment_method, name, company_data, status, amount, currency, email, supplier_data, supplier_id, supplier_type, start_method")
       .eq("id", projectId)
       .single();
     setIsLoading(false);

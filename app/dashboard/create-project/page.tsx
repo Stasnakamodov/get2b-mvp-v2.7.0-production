@@ -258,7 +258,7 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
   const router = useRouter();
   const projectId = searchParams?.get("projectId");
   const stepParam = searchParams?.get("step");
-  const { setProjectId, setCurrentStep, setProjectName, setCompanyData, setSpecificationItems, setMaxStepReached, setPaymentMethod, setSupplierData } = useCreateProjectContext();
+  const { setProjectId, setCurrentStep, setProjectName, setCompanyData, setSpecificationItems, setMaxStepReached, setPaymentMethod, setSupplierData, setStartMethod } = useCreateProjectContext();
   const { loadSpecification } = useProjectSupabase();
   const [isStepLoading, setIsStepLoading] = useState(true);
 
@@ -329,6 +329,10 @@ function ProjectIdLoader({ onLoaded }: { onLoaded: () => void }) {
           setCompanyData(data.company_data);
         }
         if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
+        // Ремаунт CreateProjectProvider после router.replace(?projectId=…) стирает
+        // startMethod из контекста — без этой строки Step1CompanyForm всегда падает
+        // в ветку пустой формы, и выбранный юзером upload/profile/template UI не показывается.
+        if (data.start_method) setStartMethod(data.start_method);
         
         // 🎯 ВОССТАНАВЛИВАЕМ ДАННЫЕ ПОСТАВЩИКА ИЗ БД
         if (data.supplier_data) {
