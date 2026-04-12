@@ -171,9 +171,22 @@ CREATE TABLE IF NOT EXISTS projects (
   supplier_id text,
   supplier_type text,
   company_card_file text,
+  client_confirmation_url text,
+  constructor_type text,
+  atomic_stage integer,
+  atomic_scenario text DEFAULT 'none',
+  atomic_step_configs jsonb,
+  atomic_manual_data jsonb,
+  atomic_uploaded_files jsonb,
+  atomic_request_id text UNIQUE,
+  atomic_moderation_status text DEFAULT 'pending',
+  steps jsonb,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_projects_atomic_request_id ON projects (atomic_request_id);
+CREATE INDEX IF NOT EXISTS idx_projects_constructor_type  ON projects (constructor_type);
 
 -- =========================
 -- 3. TABLES FROM API ROUTE CODE
