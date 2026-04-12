@@ -22,6 +22,16 @@ type Suggestions = Partial<ParsedInvoice> & {
   invoiceInfo?: ParsedInvoice['invoiceInfo']
 }
 
+/**
+ * Строит legacy-shape supplierData из OCR-подсказок инвойса.
+ *
+ * Важно: `payment_methods` НЕ захардкожен в `['bank_transfer']`. Флаг ставится
+ * только если в распознанных реквизитах есть и `bankName`, и `accountNumber` —
+ * т.е. движок `supplierRecommendationEngine` сможет собрать хотя бы partial-реквизит.
+ * Если из банковского блока есть только одно поле — всё равно сохраняем его в
+ * `bank_accounts`, чтобы Step4 увидел это через движок как "partial / Неполные
+ * реквизиты", но не рекламировал метод через `payment_methods`.
+ */
 export function invoiceHintsToSupplierData(
   suggestions: Suggestions | null | undefined
 ): InvoiceSupplierHints | null {
@@ -32,23 +42,30 @@ export function invoiceHintsToSupplierData(
 
   const bankName = bankInfo?.bankName?.trim() || ''
   const accountNumber = bankInfo?.accountNumber?.trim() || ''
+  const swift = bankInfo?.swift?.trim() || ''
+  const recipientName = bankInfo?.recipientName?.trim() || ''
+  const recipientAddress = bankInfo?.recipientAddress?.trim() || ''
+  const currency = (bankInfo?.transferCurrency || invoiceInfo?.currency || '').trim()
 
-  if (!bankName && !accountNumber) return null
+  const hasAnyBankField = Boolean(bankName || accountNumber || recipientName)
+  if (!hasAnyBankField) return null
 
   const seller = invoiceInfo?.seller?.trim() || 'Поставщик из инвойса'
+
+  const hasUsableBankAccount = Boolean(bankName && accountNumber)
 
   return {
     name: seller,
     company_name: seller,
-    payment_methods: ['bank_transfer'],
+    payment_methods: hasUsableBankAccount ? ['bank_transfer'] : [],
     bank_accounts: [
       {
         bank_name: bankName,
         account_number: accountNumber,
-        swift: bankInfo?.swift?.trim() || '',
-        recipient_name: bankInfo?.recipientName?.trim() || '',
-        recipient_address: bankInfo?.recipientAddress?.trim() || '',
-        currency: (bankInfo?.transferCurrency || invoiceInfo?.currency || '').trim(),
+        swift,
+        recipient_name: recipientName,
+        recipient_address: recipientAddress,
+        currency,
       },
     ],
     p2p_cards: [],
@@ -59,5 +76,6 @@ export function invoiceHintsToSupplierData(
 
 export function isCatalogSupplierData(data: any): boolean {
   if (!data || typeof data !== 'object') return false
+  if (data.source === 'ocr_invoice') return false
   return data.source === 'catalog' || Boolean(data.id) || data.room_type === 'verified' || data.room_type === 'user'
 }
