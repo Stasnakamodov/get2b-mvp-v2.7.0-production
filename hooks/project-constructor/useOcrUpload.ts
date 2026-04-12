@@ -2,26 +2,21 @@
 import { db } from "@/lib/db/client"
 
 import { useState } from 'react'
-// SupabaseClient type removed
 
 /**
- * 🔍 useOcrUpload Hook
+ * useOcrUpload — загрузка файлов и OCR анализ в атомарном конструкторе.
  *
- * Управление загрузкой файлов и OCR анализом для атомарного конструктора.
- *
- * ⚠️ КРИТИЧНО: Все OCR паттерны сохранены из монолита!
- * См. docs/architecture/ocr-patterns-inventory.md
- *
- * Поддерживаемые документы:
+ * Поддерживаемые шаги:
  * - Step 1: Карточка компании (documentType: 'company_card')
- * - Step 2: Спецификация/инвойс (documentType: 'invoice')
+ * - Step 2: Спецификация / инвойс (documentType: 'invoice')
  *
- * OCR паттерны:
- * - Очистка supplierName от префиксов (| Agent:, | Buyer:, Поставщик:)
- * - Очистка recipientName от китайских символов (账户名称)
- * - Fallback regex для банковских реквизитов
- * - Логика закрытия модала (успех/частичный успех/провал)
+ * API: POST /api/document-analysis → YandexVision OCR → RussianCompanyExtractor (company_card)
+ *      или YandexGPT invoice parser (invoice).
+ *
+ * См. docs/architecture/ocr-patterns-inventory.md
  */
+
+const OCR_TIMEOUT_MS = 120_000
 
 interface OcrUploadParams {
   db: any
@@ -132,10 +127,8 @@ export function useOcrUpload({
     setOcrError(prev => ({ ...prev, [stepId]: '' }))
 
     try {
-
-      // Добавляем таймаут для запроса
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 секунд
+      const timeoutId = setTimeout(() => controller.abort(), OCR_TIMEOUT_MS)
 
       let analysisResult: any
       try {
@@ -143,9 +136,9 @@ export function useOcrUpload({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            fileUrl: fileUrl,
-            fileType: fileType,
-            documentType: 'company_card' // ⚠️ КРИТИЧНО!
+            fileUrl,
+            fileType,
+            documentType: 'company_card'
           }),
           signal: controller.signal
         })
@@ -163,7 +156,7 @@ export function useOcrUpload({
       } catch (fetchError: any) {
         clearTimeout(timeoutId)
         if (fetchError.name === 'AbortError') {
-          throw new Error('Превышено время ожидания (60 сек). Попробуйте загрузить файл меньшего размера.')
+          throw new Error('Превышено время ожидания (120 сек). Попробуйте загрузить файл меньшего размера или с меньшим количеством страниц.')
         }
         throw fetchError
       }
@@ -234,10 +227,8 @@ export function useOcrUpload({
     setOcrError(prev => ({ ...prev, [stepId]: '' }))
 
     try {
-
-      // Добавляем таймаут для запроса
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 секунд
+      const timeoutId = setTimeout(() => controller.abort(), OCR_TIMEOUT_MS)
 
       let analysisResult: any
       try {
@@ -245,9 +236,9 @@ export function useOcrUpload({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            fileUrl: fileUrl,
-            fileType: fileType,
-            documentType: 'invoice' // ⚠️ КРИТИЧНО!
+            fileUrl,
+            fileType,
+            documentType: 'invoice'
           }),
           signal: controller.signal
         })
@@ -265,9 +256,20 @@ export function useOcrUpload({
       } catch (fetchError: any) {
         clearTimeout(timeoutId)
         if (fetchError.name === 'AbortError') {
-          throw new Error('Превышено время ожидания (60 сек). Попробуйте загрузить файл меньшего размера.')
+          throw new Error('Превышено время ожидания (120 сек). Попробуйте загрузить файл меньшего размера или с меньшим количеством страниц.')
         }
         throw fetchError
+      }
+
+      // AI-парсер не смог обработать инвойс — честно говорим пользователю, не закрываем модал
+      if (analysisResult.llmUnavailable) {
+        setOcrError(prev => ({
+          ...prev,
+          [stepId]: analysisResult.llmError === 'unavailable'
+            ? 'AI-парсер инвойсов не настроен. Добавьте позиции вручную или обратитесь к менеджеру.'
+            : 'AI-парсер временно недоступен. Попробуйте ещё раз или добавьте позиции вручную.'
+        }))
+        return
       }
 
       const extractedData = analysisResult.suggestions
@@ -328,7 +330,9 @@ export function useOcrUpload({
           suggestPaymentMethodAndRequisites(bankRequisites, supplierName)
         }
       } else {
-        // ПАТТЕРН 6: Если товары не найдены, но есть информация о поставщике, сохраняем её
+        // Частичный успех: распознан заголовок инвойса, но товары не найдены.
+        // Сохраняем то что есть в manualData, но модал НЕ закрываем — пользователь сам решит,
+        // оставить ли распознанное и добавить товары вручную, или перезагрузить другой файл.
         if (extractedData && extractedData.invoiceInfo && supplierName) {
           const specificationData = {
             supplier: supplierName,
@@ -338,18 +342,16 @@ export function useOcrUpload({
           }
 
           setManualData((prev: any) => ({ ...prev, [stepId]: specificationData }))
-          setOcrError(prev => ({ ...prev, [stepId]: 'Найдена информация об инвойсе, но товары не извлечены. Добавьте позиции вручную.' }))
+          setOcrError(prev => ({
+            ...prev,
+            [stepId]: 'Распознан заголовок инвойса, но товары не найдены. Закройте окно чтобы добавить позиции вручную, или загрузите другой файл.'
+          }))
 
-          // ✅ ЗАКРЫВАЕМ МОДАЛ ДАЖЕ ЕСЛИ НЕ ВСЕ ДАННЫЕ ИЗВЛЕЧЕНЫ (частичный успех)
-          setSelectedSource(null)
-
-          // 🔥 НОВОЕ: Предлагаем реквизиты даже если нет товаров
           if (bankRequisites.hasRequisites) {
             suggestPaymentMethodAndRequisites(bankRequisites, supplierName)
           }
         } else {
-          setOcrError(prev => ({ ...prev, [stepId]: 'Не удалось извлечь товары из документа' }))
-          // ❌ НЕ ЗАКРЫВАЕМ МОДАЛ при полном провале
+          setOcrError(prev => ({ ...prev, [stepId]: 'Не удалось извлечь данные из документа. Попробуйте другой файл или добавьте позиции вручную.' }))
         }
       }
     } catch (error) {

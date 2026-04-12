@@ -507,15 +507,25 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
           const analysisResult = await analysisResponse.json();
           extractedData = analysisResult.suggestions;
           analysisText = analysisResult.extractedText;
-          
+
           logger.info("✅ Данные инвойса извлечены:", extractedData);
-        logger.info("📊 Детали извлеченных данных:");
-        logger.info("   - invoiceInfo:", extractedData.invoiceInfo);
-        logger.info("   - items count:", extractedData.items?.length || 0);
-        logger.info("   - items:", extractedData.items);
-          
+          logger.info("📊 Детали извлеченных данных:");
+          logger.info("   - invoiceInfo:", extractedData.invoiceInfo);
+          logger.info("   - items count:", extractedData.items?.length || 0);
+          logger.info("   - items:", extractedData.items);
+
+          if (analysisResult.llmUnavailable) {
+            logger.warn("⚠️ YandexGPT недоступен при анализе инвойса, llmError:", analysisResult.llmError);
+            toast({
+              title: "⚠️ AI-парсер недоступен",
+              description: analysisResult.llmError === 'unavailable'
+                ? "AI-парсер инвойсов не настроен. Добавьте позиции вручную."
+                : "AI-парсер временно недоступен. Попробуйте ещё раз или добавьте позиции вручную.",
+              variant: "destructive"
+            });
+          }
           // Автозаполнение спецификации извлеченными данными
-          if (extractedData && extractedData.items && extractedData.items.length > 0) {
+          else if (extractedData && extractedData.items && extractedData.items.length > 0) {
             // Очищаем существующие позиции
             for (const item of specificationItems) {
               await deleteItem(item.id);
@@ -687,11 +697,11 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         logger.info("✅ Ответ от API успешный!");
         const responseText = await analysisResponse.text();
         logger.info("🔍 СЫРОЙ ОТВЕТ ОТ API:", responseText);
-        
+
         const analysisResult = JSON.parse(responseText);
         logger.info("🔍 ПАРСИНГ ОТВЕТА:", analysisResult);
         const extractedData = analysisResult.suggestions;
-        
+
         logger.info("✅ Данные инвойса извлечены для показа:", extractedData);
         logger.info("📊 Детали извлеченных данных для показа:");
         logger.info("   - invoiceInfo:", extractedData?.invoiceInfo);
@@ -699,9 +709,19 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
         logger.info("   - items:", extractedData?.items);
         logger.info("   - extractedText length:", analysisResult.extractedText?.length || 0);
         logger.info("   - extractedText preview:", analysisResult.extractedText?.substring(0, 200));
-        
+
+        if (analysisResult.llmUnavailable) {
+          logger.warn("⚠️ YandexGPT недоступен при повторном анализе инвойса, llmError:", analysisResult.llmError);
+          toast({
+            title: "⚠️ AI-парсер недоступен",
+            description: analysisResult.llmError === 'unavailable'
+              ? "AI-парсер инвойсов не настроен. Добавьте позиции вручную."
+              : "AI-парсер временно недоступен. Попробуйте ещё раз или добавьте позиции вручную.",
+            variant: "destructive"
+          });
+        }
         // Автозаполнение спецификации извлеченными данными
-        if (extractedData && extractedData.items && extractedData.items.length > 0) {
+        else if (extractedData && extractedData.items && extractedData.items.length > 0) {
           logger.info("🎯 НАЧИНАЕМ АВТОЗАПОЛНЕНИЕ! Количество позиций:", extractedData.items.length);
           
           // Очищаем существующие позиции
