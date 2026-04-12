@@ -153,6 +153,59 @@ export async function POST(request: NextRequest) {
     
     const managerBot = new ManagerBotService();
 
+    // ── Atomic constructor callbacks ───────────────────────────────────
+    // Эти ветки должны идти ДО общих approve_/reject_, иначе префикс
+    // approve_atomic_/reject_atomic_ будет съеден общим хендлером,
+    // который пытается парсить projectId как UUID и фейлится.
+    if (
+      callbackData.startsWith('approve_atomic_') ||
+      callbackData.startsWith('reject_atomic_') ||
+      callbackData.startsWith('request_changes_atomic_')
+    ) {
+      let prefix = '';
+      let newStatus: 'approved' | 'rejected' | 'pending' = 'pending';
+      let answerText = '';
+
+      if (callbackData.startsWith('approve_atomic_')) {
+        prefix = 'approve_atomic_';
+        newStatus = 'approved';
+        answerText = '✅ Атомарный проект одобрен';
+      } else if (callbackData.startsWith('reject_atomic_')) {
+        prefix = 'reject_atomic_';
+        newStatus = 'rejected';
+        answerText = '❌ Атомарный проект отклонён';
+      } else {
+        prefix = 'request_changes_atomic_';
+        newStatus = 'pending';
+        answerText = '📋 Запрошены изменения';
+      }
+
+      const atomicRequestId = callbackData.substring(prefix.length);
+
+      if (newStatus !== 'pending') {
+        const { error: updateError } = await db
+          .from('projects')
+          .update({
+            atomic_moderation_status: newStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('atomic_request_id', atomicRequestId);
+
+        if (updateError) {
+          console.error('❌ [WEBHOOK] Atomic update error:', updateError);
+          answerText = `❌ Ошибка: ${updateError.message || 'не удалось обновить статус'}`;
+        }
+      }
+
+      try {
+        await managerBot.answerCallbackQuery(callbackQueryId, answerText);
+      } catch (e) {
+        console.error('❌ [WEBHOOK] answerCallbackQuery (atomic) failed:', e);
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
     if (callbackData.startsWith('approve_')) {
       // Извлекаем UUID из callback_data (последний UUID-паттерн в строке)
       const uuidMatch = callbackData.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
