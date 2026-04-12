@@ -79,6 +79,39 @@ export class ManagerBotService {
   }
 
   /**
+   * Отправляет все файлы атомарного конструктора в менеджерский чат
+   * как отдельные документы (через multipart upload). Пропускает пустые
+   * значения и продолжает цикл при единичной ошибке, чтобы один битый
+   * файл не блокировал весь flow.
+   */
+  async sendAtomicConstructorFiles(
+    uploadedFiles: Record<string | number, string | null | undefined>,
+    requestId: string
+  ): Promise<void> {
+    const entries = Object.entries(uploadedFiles || {}).filter(
+      ([, url]) => typeof url === 'string' && url.length > 0
+    );
+
+    if (entries.length === 0) {
+      console.log('📎 [ManagerBotService] Атомарный: файлов для отправки нет');
+      return;
+    }
+
+    console.log(`📎 [ManagerBotService] Атомарный: отправляем ${entries.length} файлов (req=${requestId})`);
+
+    for (const [stepId, url] of entries) {
+      try {
+        await this.sendDocument(
+          url as string,
+          `🗂 Шаг ${stepId} · atomic ${requestId}`
+        );
+      } catch (err) {
+        console.error(`❌ [ManagerBotService] Не удалось отправить файл шага ${stepId}:`, err);
+      }
+    }
+  }
+
+  /**
    * Отправляет чек клиента с кнопками одобрения/отклонения
    */
   async sendClientReceiptApprovalRequest(documentUrl: string, caption: string, projectRequestId: string) {

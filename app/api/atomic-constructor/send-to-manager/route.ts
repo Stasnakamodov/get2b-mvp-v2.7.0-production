@@ -1,61 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { db } from '@/lib/db'
+import { getUserFromRequest } from '@/lib/auth'
 import { ManagerBotService } from '@/lib/telegram/ManagerBotService'
 
 export async function POST(request: NextRequest) {
   try {
+    const authUser = await getUserFromRequest(request)
+    if (!authUser?.id) {
+      return NextResponse.json({ error: 'Требуется авторизация' }, { status: 401 })
+    }
+
     const {
       stepConfigs,
       manualData,
       uploadedFiles,
-      user,
       currentStage
     } = await request.json()
 
-    // Проверяем авторизацию
-    if (!user?.id) {
-      return NextResponse.json({ error: 'Требуется авторизация' }, { status: 401 })
-    }
+    const requestId = randomUUID()
 
-    // Создаем уникальный ID для запроса (короткий для Telegram)
-    const requestId = `atomic${Date.now()}`
-    
-    // Формируем сообщение для менеджера
     const message = formatAtomicConstructorMessage({
       stepConfigs,
       manualData,
-      uploadedFiles,
-      user,
+      user: authUser,
       currentStage,
       requestId
     })
 
-    // Отправляем в Telegram
     const managerBot = new ManagerBotService()
     await managerBot.sendAtomicConstructorApprovalRequest({
       text: message,
       requestId,
-      userEmail: user.email,
-      userName: user.user_metadata?.full_name || user.email,
+      userEmail: authUser.email,
+      userName: authUser.name || authUser.email,
       currentStage,
       activeScenario: stepConfigs?.activeScenario || 'quick'
     })
 
-    // Сохраняем запрос в базе данных
+    // Отправляем файлы отдельными документами (multipart), а не как URL-строки в тексте
+    await managerBot.sendAtomicConstructorFiles(uploadedFiles || {}, requestId)
+
     await saveAtomicConstructorRequest({
       requestId,
-      userId: user.id,
-      userEmail: user.email,
+      userId: authUser.id,
+      userEmail: authUser.email,
       stepConfigs,
       manualData,
       uploadedFiles,
       currentStage
     })
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Данные отправлены менеджеру',
-      requestId 
+      requestId
     })
 
   } catch (error) {
@@ -70,15 +69,13 @@ export async function POST(request: NextRequest) {
 function formatAtomicConstructorMessage({
   stepConfigs,
   manualData,
-  uploadedFiles,
   user,
   currentStage,
   requestId
 }: {
   stepConfigs: Record<number, string>
   manualData: Record<number, any>
-  uploadedFiles: Record<number, string>
-  user: any
+  user: { id: string; email: string; name?: string }
   currentStage: number
   requestId: string
 }) {
@@ -139,18 +136,10 @@ function formatAtomicConstructorMessage({
     message += `🌐 SWIFT: ${manualData[5].swift || 'Не указано'}\n\n`
   }
 
-  // Загруженные файлы
-  const filesList = Object.entries(uploadedFiles)
-    .filter(([_, url]) => url)
-    .map(([stepId, url]) => `Шаг ${stepId}: ${url}`)
-    .join('\n')
-
-  if (filesList) {
-    message += `📎 ЗАГРУЖЕННЫЕ ФАЙЛЫ:\n${filesList}\n\n`
-  }
+  // Файлы отправляются отдельными документами через sendAtomicConstructorFiles — не дублируем в тексте.
 
   message += `⏰ Время отправки: ${new Date().toLocaleString('ru-RU')}\n`
-  message += `🔗 Ссылка на проект: https://get2b.ru/dashboard/project-constructor`
+  message += `🔗 Ссылка на проект: https://get2b.pro/dashboard/project-constructor`
 
   return message
 }
@@ -195,19 +184,8 @@ async function saveAtomicConstructorRequest({
   uploadedFiles: Record<number, string>
   currentStage: number
 }) {
-  // Фиксированные значения для атомарного конструктора
-  const initiatorRole = 'client' // По умолчанию клиент для атомарного конструктора
-  const startMethod = 'upload' // для атомарного конструктора всегда upload
-
-  // Извлекаем данные Step1 (компания) и Step2 (спецификация) из manualData
-  const companyData = manualData[1] || {}
-  const supplierData = manualData[2]?.supplier ? { supplier: manualData[2].supplier } : {}
-  const stepsData = {
-    step1: manualData[1],
-    step2: manualData[2],
-    step4: manualData[4],
-    step5: manualData[5]
-  }
+  const companyData = manualData?.[1] || {}
+  const supplierData = manualData?.[2]?.supplier ? { supplier: manualData[2].supplier } : {}
 
   const { error } = await db
     .from('projects')
@@ -215,22 +193,21 @@ async function saveAtomicConstructorRequest({
       user_id: userId,
       name: `Атомарный проект ${requestId}`,
       status: 'draft',
-      initiator_role: initiatorRole,
-      start_method: startMethod,
+      initiator_role: 'client',
+      start_method: 'upload',
       current_step: 1,
       max_step_reached: 1,
       constructor_type: 'atomic',
       atomic_stage: currentStage,
-      atomic_scenario: 'none', // Сценарии удалены, используем 'none'
+      atomic_scenario: 'none',
       atomic_step_configs: stepConfigs,
       atomic_manual_data: manualData,
       atomic_uploaded_files: uploadedFiles,
       atomic_request_id: requestId,
       atomic_moderation_status: 'pending',
-      // Используем существующие поля
       company_data: companyData,
       supplier_data: supplierData,
-      steps: stepsData,
+      email: userEmail,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
