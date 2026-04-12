@@ -102,6 +102,9 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
   // ДОБАВЛЯЕМ: состояние для показа заполненной формы после анализа
   const [showFilledForm, setShowFilledForm] = useState(false);
   const [analyzingFile, setAnalyzingFile] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const ACCEPTED_INVOICE_EXTENSIONS = ['.pdf', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.docx'] as const;
   
   // --- Новый хук для спецификации ---
   // TODO: определять роль динамически (например, из контекста или параметра)
@@ -424,10 +427,9 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     toast({ title: "Шаблон (компания + спецификация) успешно сохранён!", variant: "default" });
   };
 
-  // Загрузка инвойса
-  const handleInvoiceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !projectId) return;
+  // Загрузка инвойса — ядро, одинаковое для click-picker и drag-n-drop
+  const processInvoiceFile = async (file: File) => {
+    if (!projectId) return;
     setIsUploading(true);
     setError(null);
     
@@ -645,6 +647,51 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       }
     }
   };
+  const handleInvoiceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await processInvoiceFile(file);
+    if (e.target) e.target.value = '';
+  };
+
+  const isAcceptedInvoiceFile = (file: File) => {
+    const lower = file.name.toLowerCase();
+    return ACCEPTED_INVOICE_EXTENSIONS.some((ext) => lower.endsWith(ext));
+  };
+
+  const handleInvoiceDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleInvoiceDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
+
+  const handleInvoiceDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+
+    if (!isAcceptedInvoiceFile(file)) {
+      toast({
+        title: "Неподдерживаемый формат",
+        description: `Поддерживаются: ${ACCEPTED_INVOICE_EXTENSIONS.join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await processInvoiceFile(file);
+  };
+
   const handleRemoveInvoiceFile = async (invoiceId: string) => {
     await deleteInvoice(invoiceId);
   };
@@ -1302,9 +1349,20 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
             
             <input type="file" accept=".pdf,.xls,.xlsx,.jpg,.jpeg,.png,.docx" className="hidden" ref={fileInputRef} onChange={handleInvoiceFileChange}/>
             
-            <div className="border-2 border-dashed border-slate-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-slate-400 dark:hover:border-gray-500 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            <div
+              className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
+                isDragging
+                  ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20'
+                  : 'border-slate-300 dark:border-gray-600 hover:border-slate-400 dark:hover:border-gray-500'
+              }`}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleInvoiceDragOver}
+              onDragEnter={handleInvoiceDragOver}
+              onDragLeave={handleInvoiceDragLeave}
+              onDrop={handleInvoiceDrop}
+            >
               <div className="w-16 h-16 bg-slate-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UploadCloud className="w-8 h-8 text-slate-600 dark:text-gray-300" />
+                <UploadCloud className={`w-8 h-8 ${isDragging ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-gray-300'}`} />
               </div>
               <h4 className="text-lg font-medium text-slate-800 dark:text-gray-200 mb-2">Выберите файл инвойса</h4>
               
