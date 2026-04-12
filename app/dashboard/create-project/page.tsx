@@ -883,8 +883,13 @@ export default function CreateProjectPage() {
   const mode = searchParams?.get("mode");
   const role = searchParams?.get("role");
   const fromCart = searchParams?.get("from_cart");
-  // Уникальный ключ для сброса контекста при новом проекте/шаблоне
-  const contextKey = projectId || templateId || mode || "new";
+  // Ключ захватываем один раз при маунте и больше не меняем.
+  // Если этого не сделать, router.replace(`?projectId=${id}`) в handleStepperSelect
+  // после создания свежего проекта меняет projectId с null на uuid → ключ
+  // "new" → uuid → CreateProjectProvider ремаунтится → startMethod, companyData
+  // и остальное состояние стираются прямо между кликом «Далее» и рендером Step1,
+  // из-за чего юзер видит пустую форму вместо drop-zone.
+  const [contextKey] = useState(() => projectId || templateId || mode || "new");
   const [isStepLoaded, setIsStepLoaded] = useState(false);
 
   // --- Новый режим: создание шаблона клиента ---
