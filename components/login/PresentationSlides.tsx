@@ -356,10 +356,10 @@ function SlideCashFlow() {
       dashed: false,
     },
     {
-      d: "M 740 328 Q 450 475 160 328",
+      d: "M 800 335 C 800 650, 100 650, 100 335",
       label: "4. Поставка товара",
       lx: 450,
-      ly: 515,
+      ly: 625,
       anchor: "middle" as const,
       delay: 1.4,
       dashed: true,
@@ -408,7 +408,7 @@ function SlideCashFlow() {
         className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-6"
       >
         <svg
-          viewBox="0 0 900 560"
+          viewBox="0 0 900 670"
           className="h-auto w-full"
           preserveAspectRatio="xMidYMid meet"
         >
