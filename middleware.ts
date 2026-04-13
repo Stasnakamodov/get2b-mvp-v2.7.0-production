@@ -55,6 +55,19 @@ export function middleware(request: NextRequest) {
 
   const response = NextResponse.next()
 
+  // PDF из public/ должен встраиваться в same-origin iframe (например, презентация на /login).
+  // Глобальный DENY/frame-ancestors 'none' ниже ломает это, поэтому для .pdf отдаём SAMEORIGIN.
+  if (/\.pdf$/i.test(request.nextUrl.pathname)) {
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set(
+      'Content-Security-Policy',
+      "default-src 'self'; frame-ancestors 'self'"
+    )
+    return response
+  }
+
   // Security headers для всех запросов
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
