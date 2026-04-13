@@ -5,7 +5,7 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { LoginFormSimple } from "../../components/login-form-simple"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, Share2, ChevronUp, ChevronDown } from "lucide-react"
+import { MessageCircle, Share2, ChevronUp, ChevronDown, FileText } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -121,8 +121,17 @@ export default function LoginContent() {
           <ThemeToggle />
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
+          <div className="w-full max-w-xs flex flex-col gap-6">
             <LoginFormSimple />
+            <a
+              href="/Get2B_FichList.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/90 hover:border-white/30 hover:bg-white/10 transition-colors"
+            >
+              <FileText className="h-4 w-4" />
+              Презентация Get2B (PDF)
+            </a>
           </div>
         </div>
       </div>
