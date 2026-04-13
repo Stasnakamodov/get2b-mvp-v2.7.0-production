@@ -210,11 +210,11 @@ export async function POST(request: NextRequest) {
       // Извлекаем UUID из callback_data (последний UUID-паттерн в строке)
       const uuidMatch = callbackData.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
       const projectId = uuidMatch ? uuidMatch[1] : callbackData.replace(/^approve_(?:project_|receipt_|invoice_|client_receipt_)?/, '');
-      
+
       // Определяем новый статус в зависимости от типа одобрения
       let newStatus: ProjectStatus;
       let responseMessage: string;
-      
+
       if (callbackData.includes('receipt')) {
         newStatus = 'receipt_approved';
         responseMessage = `✅ Чек для проекта ${projectId} одобрен!`;
@@ -225,16 +225,27 @@ export async function POST(request: NextRequest) {
         newStatus = 'waiting_receipt';
         responseMessage = `✅ Проект ${projectId} одобрен! Переведен на следующий шаг`;
       }
-      
-      // Используем правильную систему смены статуса
+
+      // Pre-check: если проект уже в целевом статусе (повторный клик / ретрай Telegram),
+      // отвечаем быстро без changeProjectStatusServer, иначе падает Invalid transition X→X.
       let answerText = responseMessage;
       try {
-        await changeProjectStatusServer({
-          projectId,
-          newStatus,
-          changedBy: 'telegram_bot',
-          comment: 'Одобрено менеджером через Telegram'
-        });
+        const { data: current } = await db
+          .from('projects')
+          .select('status')
+          .eq('id', projectId)
+          .single();
+
+        if (current?.status === newStatus) {
+          answerText = `✅ Проект уже одобрен ранее`;
+        } else {
+          await changeProjectStatusServer({
+            projectId,
+            newStatus,
+            changedBy: 'telegram_bot',
+            comment: 'Одобрено менеджером через Telegram'
+          });
+        }
       } catch (error: any) {
         console.error("❌ [WEBHOOK] Ошибка смены статуса:", error);
         if (error.message?.includes('Invalid status transition')) {
@@ -269,15 +280,25 @@ export async function POST(request: NextRequest) {
         responseMessage = `❌ Проект ${projectId} отклонен`;
       }
 
-      // Используем правильную систему смены статуса
+      // Pre-check: если проект уже в целевом статусе — не падаем на Invalid transition X→X.
       let rejectAnswerText = responseMessage;
       try {
-        await changeProjectStatusServer({
-          projectId,
-          newStatus,
-          changedBy: 'telegram_bot',
-          comment: 'Отклонено менеджером через Telegram'
-        });
+        const { data: current } = await db
+          .from('projects')
+          .select('status')
+          .eq('id', projectId)
+          .single();
+
+        if (current?.status === newStatus) {
+          rejectAnswerText = `⚠️ Проект уже отклонён ранее`;
+        } else {
+          await changeProjectStatusServer({
+            projectId,
+            newStatus,
+            changedBy: 'telegram_bot',
+            comment: 'Отклонено менеджером через Telegram'
+          });
+        }
       } catch (error: any) {
         console.error("❌ [WEBHOOK] Ошибка смены статуса при отклонении:", error);
         if (error.message?.includes('Invalid status transition')) {
