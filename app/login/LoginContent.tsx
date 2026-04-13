@@ -1,159 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { GalleryVerticalEnd, MessageCircle, Share2, ArrowRight, X } from "lucide-react"
+import { GalleryVerticalEnd, MessageCircle, Share2 } from "lucide-react"
 import { LoginFormSimple } from "../../components/login-form-simple"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { motion, AnimatePresence } from "framer-motion"
-
-function PresentationTab() {
-  const [isOpen, setIsOpen] = useState(false)
-
-  useEffect(() => {
-    if (!isOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false)
-    }
-    window.addEventListener("keydown", onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => {
-      window.removeEventListener("keydown", onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [isOpen])
-
-  const ease = [0.16, 1, 0.3, 1] as const
-
-  return (
-    <div className="relative h-full w-full overflow-hidden bg-gradient-to-b from-zinc-900 via-zinc-950 to-black">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-      <div className="absolute -left-32 -top-32 h-[520px] w-[520px] rounded-full bg-blue-500/10 blur-[120px]" />
-      <div className="absolute -bottom-40 -right-32 h-[520px] w-[520px] rounded-full bg-orange-500/10 blur-[120px]" />
-
-      <div className="relative flex h-full w-full items-center justify-center px-8 py-10 md:px-14">
-        <div className="w-full max-w-2xl">
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease, delay: 0.05 }}
-            className="mb-7 text-[11px] font-medium uppercase tracking-[0.22em] text-gray-500"
-          >
-            Презентация платформы · PDF
-          </motion.p>
-
-          <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease, delay: 0.12 }}
-            className="mb-7 text-[40px] font-light leading-[0.95] tracking-tight text-white md:text-5xl lg:text-[64px]"
-          >
-            Get2B{" "}
-            <span className="block font-normal bg-gradient-to-r from-blue-400 via-purple-400 to-orange-400 bg-clip-text text-transparent">
-              в деталях
-            </span>
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease, delay: 0.22 }}
-            className="mb-10 max-w-lg text-base font-light leading-relaxed text-gray-400 md:text-lg"
-          >
-            Каталог поставщиков, конструктор проектов, оплаты и закрывающие
-            документы — всё, что умеет платформа, в одном фичлисте.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease, delay: 0.3 }}
-            className="mb-10 flex flex-wrap items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-gray-500"
-          >
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-sm">
-              PDF
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-sm">
-              257 KB
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-sm">
-              ~3 мин чтения
-            </span>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease, delay: 0.38 }}
-          >
-            <button
-              type="button"
-              onClick={() => setIsOpen(true)}
-              className="group inline-flex items-center gap-3 rounded-full bg-white px-7 py-3.5 text-sm font-medium text-black transition-all hover:bg-gray-100 hover:shadow-[0_0_40px_rgba(255,255,255,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-            >
-              Открыть презентацию
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </button>
-          </motion.div>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            key="pdf-modal"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Презентация Get2B"
-          >
-            <div
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
-              onClick={() => setIsOpen(false)}
-            />
-            <motion.div
-              className="relative z-10 flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-white/10"
-              initial={{ opacity: 0, scale: 0.96, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 16 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-gradient-to-r from-blue-400 via-purple-400 to-orange-400" />
-                  <h2 className="text-sm font-semibold tracking-tight text-gray-900">
-                    Презентация Get2B
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                  aria-label="Закрыть презентацию"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="flex-1 bg-gray-100">
-                <iframe
-                  src="/Get2B_FichList.pdf#view=FitH&toolbar=1&navpanes=0"
-                  title="Презентация Get2B"
-                  className="h-full w-full border-0"
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
+import { PresentationSlides } from "@/components/login/PresentationSlides"
 
 export default function LoginContent() {
   const [activePanel, setActivePanel] = useState<"slider" | "chat" | "about">("slider")
@@ -220,7 +74,7 @@ export default function LoginContent() {
                   transition={{ duration: 0.3 }}
                   className="h-full"
                 >
-                  <PresentationTab />
+                  <PresentationSlides />
                 </motion.div>
               )}
               {activePanel === "chat" && (
