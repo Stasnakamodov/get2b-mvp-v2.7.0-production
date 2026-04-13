@@ -329,46 +329,46 @@ function SlideModel() {
 function SlideCashFlow() {
   const arrows = [
     {
-      d: "M 240 432 L 340 318",
+      d: "M 240 300 L 350 300",
       label: "1. Оплата товара (₽)",
-      lx: 260,
-      ly: 380,
-      anchor: "start" as const,
+      lx: 295,
+      ly: 286,
+      anchor: "middle" as const,
       delay: 0.9,
       dashed: false,
     },
     {
-      d: "M 560 318 L 660 432",
+      d: "M 550 300 L 660 300",
       label: "2. Валюта поставщику",
-      lx: 640,
-      ly: 380,
-      anchor: "end" as const,
+      lx: 605,
+      ly: 286,
+      anchor: "middle" as const,
       delay: 1.05,
       dashed: false,
     },
     {
-      d: "M 450 232 L 450 122",
+      d: "M 450 258 L 450 120",
       label: "3. Удержание комиссии",
       lx: 460,
-      ly: 180,
+      ly: 195,
       anchor: "start" as const,
       delay: 1.2,
       dashed: false,
     },
     {
-      d: "M 660 465 Q 450 580 240 465",
+      d: "M 740 328 Q 450 475 160 328",
       label: "4. Поставка товара",
       lx: 450,
-      ly: 560,
+      ly: 505,
       anchor: "middle" as const,
       delay: 1.4,
       dashed: true,
     },
     {
-      d: "M 338 94 Q 110 220 110 410",
+      d: "M 340 120 Q 190 140 130 278",
       label: "5. Отчёт агента + УПД",
-      lx: 30,
-      ly: 260,
+      lx: 45,
+      ly: 200,
       anchor: "start" as const,
       delay: 1.55,
       dashed: true,
@@ -408,7 +408,7 @@ function SlideCashFlow() {
         className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-6"
       >
         <svg
-          viewBox="0 0 900 600"
+          viewBox="0 0 900 560"
           className="h-auto w-full"
           preserveAspectRatio="xMidYMid meet"
         >
@@ -480,7 +480,7 @@ function SlideCashFlow() {
           >
             <rect
               x="330"
-              y="46"
+              y="70"
               width="240"
               height="50"
               rx="10"
@@ -490,7 +490,7 @@ function SlideCashFlow() {
             />
             <text
               x="450"
-              y="77"
+              y="101"
               fill="white"
               fontSize="16"
               fontWeight="600"
@@ -503,21 +503,21 @@ function SlideCashFlow() {
           <motion.g
             initial={{ opacity: 0, scale: 0.88 }}
             animate={{ opacity: 1, scale: 1 }}
-            style={{ transformOrigin: "450px 280px" }}
+            style={{ transformOrigin: "450px 300px" }}
             transition={{ duration: 0.7, ease: EASE, delay: 0.6 }}
           >
             <ellipse
               cx="450"
-              cy="280"
-              rx="115"
-              ry="48"
+              cy="300"
+              rx="100"
+              ry="42"
               fill="url(#nominal-fill)"
               stroke="rgb(251 146 60 / 0.7)"
               strokeWidth="1.5"
             />
             <text
               x="450"
-              y="277"
+              y="297"
               fill="white"
               fontSize="15"
               fontWeight="600"
@@ -527,7 +527,7 @@ function SlideCashFlow() {
             </text>
             <text
               x="450"
-              y="295"
+              y="315"
               fill="white"
               fontSize="15"
               fontWeight="600"
@@ -538,13 +538,13 @@ function SlideCashFlow() {
           </motion.g>
 
           <motion.g
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, ease: EASE, delay: 0.7 }}
           >
             <rect
               x="20"
-              y="415"
+              y="275"
               width="220"
               height="50"
               rx="10"
@@ -554,7 +554,7 @@ function SlideCashFlow() {
             />
             <text
               x="130"
-              y="446"
+              y="306"
               fill="rgb(226 232 240)"
               fontSize="14"
               fontWeight="500"
@@ -565,13 +565,13 @@ function SlideCashFlow() {
           </motion.g>
 
           <motion.g
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, ease: EASE, delay: 0.8 }}
           >
             <rect
               x="660"
-              y="415"
+              y="275"
               width="220"
               height="50"
               rx="10"
@@ -581,7 +581,7 @@ function SlideCashFlow() {
             />
             <text
               x="770"
-              y="446"
+              y="306"
               fill="rgb(226 232 240)"
               fontSize="14"
               fontWeight="500"
