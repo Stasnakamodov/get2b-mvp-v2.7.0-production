@@ -3,7 +3,6 @@
 import * as React from "react"
 import { GalleryVerticalEnd } from "lucide-react"
 import { LoginFormSimple } from "../../components/login-form-simple"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { PresentationSlides } from "@/components/login/PresentationSlides"
 
 export default function LoginContent() {
@@ -14,15 +13,12 @@ export default function LoginContent() {
       <div className="pointer-events-none absolute -bottom-48 -right-40 h-[560px] w-[560px] rounded-full bg-orange-500/10 blur-[140px]" />
 
       <div className="relative flex flex-col gap-4 overflow-auto p-6 md:p-10">
-        <div className="flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2 font-medium">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <GalleryVerticalEnd className="size-4" />
-            </div>
-            Get2B
-          </a>
-          <ThemeToggle />
-        </div>
+        <a href="/" className="flex items-center gap-2 font-medium self-start">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <GalleryVerticalEnd className="size-4" />
+          </div>
+          Get2B
+        </a>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
             <LoginFormSimple />
