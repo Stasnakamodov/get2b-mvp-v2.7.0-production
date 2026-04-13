@@ -5,71 +5,18 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { LoginFormSimple } from "../../components/login-form-simple"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, Share2, ChevronUp, ChevronDown, FileText } from "lucide-react"
+import { MessageCircle, Share2 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { motion, AnimatePresence } from "framer-motion"
 
-function ImageSlider() {
-  const [currentSlide, setCurrentSlide] = useState(0)
-
-  const slides = [
-    {
-      url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202025-03-04%20%D0%B2%2011.55.29-T01sZe4t0K494jKOXqCtpCvOnJwtaX.png",
-      title: "Международные оплаты",
-    },
-    {
-      url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202025-03-04%20%D0%B2%2011.56.01-iKnhMdHSbIZR4MiEOQgOXbLKvnzFLp.png",
-      title: "Наши услуги",
-    },
-    {
-      url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202025-03-04%20%D0%B2%2011.56.21-EOjN4nLinFTPDuyqmaYP7CLE6s3kxF.png",
-      title: "Переводы денежных средств",
-    },
-    {
-      url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202025-03-04%20%D0%B2%2011.56.45-uiwOoCBxWvBI7HkOqjVtYj2f4r2Wa1.png",
-      title: "Платежный агент",
-    },
-    {
-      url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202025-03-04%20%D0%B2%2011.57.19-BbSstkk0Ge7os0LW1OW1hfmgjNoxdW.png",
-      title: "Наша миссия",
-    },
-  ]
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length)
-  }
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
-  }
-
+function PresentationViewer() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-gray-100 dark:bg-gray-900">
-      <div className="absolute inset-0">
-        <img
-          src={slides[currentSlide].url || "/placeholder.svg"}
-          alt={slides[currentSlide].title}
-          className="h-full w-full object-contain"
-        />
-      </div>
-      <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="bg-black/50 text-white hover:bg-black/70 hover:scale-110 transition-all duration-300"
-          onClick={prevSlide}
-        >
-          <ChevronUp className="h-6 w-6" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="bg-black/50 text-white hover:bg-black/70 hover:scale-110 transition-all duration-300"
-          onClick={nextSlide}
-        >
-          <ChevronDown className="h-6 w-6" />
-        </Button>
-      </div>
+      <iframe
+        src="/Get2B_FichList.pdf#view=FitH&toolbar=1&navpanes=0"
+        title="Презентация Get2B"
+        className="h-full w-full border-0"
+      />
     </div>
   )
 }
@@ -121,17 +68,8 @@ export default function LoginContent() {
           <ThemeToggle />
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs flex flex-col gap-6">
+          <div className="w-full max-w-xs">
             <LoginFormSimple />
-            <a
-              href="/Get2B_FichList.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/90 hover:border-white/30 hover:bg-white/10 transition-colors"
-            >
-              <FileText className="h-4 w-4" />
-              Презентация Get2B (PDF)
-            </a>
           </div>
         </div>
       </div>
@@ -148,7 +86,7 @@ export default function LoginContent() {
                   transition={{ duration: 0.3 }}
                   className="h-full"
                 >
-                  <ImageSlider />
+                  <PresentationViewer />
                 </motion.div>
               )}
               {activePanel === "chat" && (
