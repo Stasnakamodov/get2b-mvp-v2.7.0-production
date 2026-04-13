@@ -40,11 +40,7 @@ export function PresentationSlides() {
   }, [next, prev])
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-gradient-to-b from-zinc-900 via-zinc-950 to-black">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-      <div className="pointer-events-none absolute -left-32 -top-32 h-[520px] w-[520px] rounded-full bg-blue-500/10 blur-[120px]" />
-      <div className="pointer-events-none absolute -bottom-40 -right-32 h-[520px] w-[520px] rounded-full bg-orange-500/10 blur-[120px]" />
-
+    <div className="relative h-full w-full overflow-hidden">
       <a
         href="/Get2B_FichList.pdf"
         target="_blank"
