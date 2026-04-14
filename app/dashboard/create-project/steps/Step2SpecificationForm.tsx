@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import CatalogModal from "../components/CatalogModal";
 import ProformaSelectionModal from "../components/ProformaSelectionModal";
+import { templatePayload } from "@/lib/templates/projectTemplateMapper";
 const DEFAULT_CURRENCY = "RUB";
 
 // Функция для очистки имени файла и частей пути
@@ -404,17 +405,30 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
 
   // Сохранить шаблон
   const handleSaveSpecOnly = async () => {
+    if (!specificationItems || specificationItems.length === 0) {
+      setShowSaveDialog(false);
+      toast({
+        title: "Нечего сохранять",
+        description: "Спецификация пуста — добавьте хотя бы одну позицию.",
+        variant: "destructive",
+      });
+      return;
+    }
     const actualCompanyData = await getActualCompanyData();
+    const nameHint = actualCompanyData?.name
+      || specificationItems[0]?.item_name
+      || specificationItems[0]?.name
+      || new Date().toLocaleDateString('ru-RU');
     const ok = await saveProjectTemplate({
-      name: actualCompanyData?.name ? `Шаблон: ${actualCompanyData.name}` : "Шаблон спецификации",
+      name: `Спецификация: ${nameHint}`,
       description: "",
-      companyData: actualCompanyData,
+      companyData: null, // step 2 only — не сохраняем компанию
       specification: specificationItems,
       role: 'client',
     });
     setShowSaveDialog(false);
     if (ok) {
-      toast({ title: "Шаблон спецификации успешно сохранён!", variant: "default" });
+      toast({ title: "Шаблон спецификации сохранён", variant: "default" });
     } else {
       toast({
         title: "Не удалось сохранить шаблон",
@@ -942,14 +956,9 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
 
   const handleTemplateSelect = async (template: any) => {
     setShowTemplateSelect(false);
-    let spec = null;
-    if (template.data?.specification) {
-      spec = template.data.specification;
-    } else if (template.specification) {
-      spec = template.specification;
-    }
-    if (!spec || !Array.isArray(spec) || spec.length === 0) {
-      toast({ title: 'Ошибка', description: 'В шаблоне не найдена спецификация', variant: 'destructive' });
+    const { specification: spec } = templatePayload(template);
+    if (spec.length === 0) {
+      toast({ title: 'В шаблоне нет спецификации', description: 'Выберите шаблон, содержащий Шаг 2.', variant: 'destructive' });
       return;
     }
     // Фильтруем только осмысленные позиции

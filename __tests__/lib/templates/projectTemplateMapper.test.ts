@@ -1,6 +1,7 @@
 import {
   CompanyData,
   EMPTY_COMPANY_DATA,
+  isCompanyDataEmpty,
   toCompanyData,
   templatePayload,
   buildTemplateRow,
@@ -157,6 +158,26 @@ describe('projectTemplateMapper', () => {
         companyData: null,
       })
       expect(row.data.company).toEqual(EMPTY_COMPANY_DATA)
+    })
+  })
+
+  describe('isCompanyDataEmpty', () => {
+    it('returns true for EMPTY_COMPANY_DATA', () => {
+      expect(isCompanyDataEmpty(EMPTY_COMPANY_DATA)).toBe(true)
+    })
+
+    it('returns true for fresh clone', () => {
+      expect(isCompanyDataEmpty({ ...EMPTY_COMPANY_DATA })).toBe(true)
+    })
+
+    it('returns false when any field is filled', () => {
+      expect(isCompanyDataEmpty({ ...EMPTY_COMPANY_DATA, name: 'Acme' })).toBe(false)
+      expect(isCompanyDataEmpty({ ...EMPTY_COMPANY_DATA, inn: '123' })).toBe(false)
+      expect(isCompanyDataEmpty({ ...EMPTY_COMPANY_DATA, website: 'x.com' })).toBe(false)
+    })
+
+    it('returns false for full company', () => {
+      expect(isCompanyDataEmpty(FILLED)).toBe(false)
     })
   })
 

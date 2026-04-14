@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { templatePayload } from '@/lib/templates/projectTemplateMapper'
+import { templatePayload, isCompanyDataEmpty } from '@/lib/templates/projectTemplateMapper'
 
 interface TemplateData {
   id: string
@@ -34,7 +34,9 @@ export function useTemplateSystem({
   } | null>(null)
 
   /**
-   * Получить данные шаблона по ID
+   * Получить данные шаблона по ID.
+   * availableSteps вычисляется из контента: [1] если есть компания, [2] если есть спецификация,
+   * [1, 2] если оба. Модалка выбора шагов показывается только при length > 1.
    */
   const getTemplateData = (templateId: string): TemplateData | null => {
     const template = templates?.find(t => t.id === templateId)
@@ -45,11 +47,16 @@ export function useTemplateSystem({
     }
 
     const { company, specification } = templatePayload(template)
+    const availableSteps: number[] = []
+    if (!isCompanyDataEmpty(company)) availableSteps.push(1)
+    if (specification.length > 0) availableSteps.push(2)
+    // Fallback: пустой шаблон — применим пустой step 1 (no-op на свежем проекте)
+    if (availableSteps.length === 0) availableSteps.push(1)
 
     return {
       id: template.id,
       name: template.name || 'Без названия',
-      availableSteps: [1, 2],
+      availableSteps,
       data: {
         1: company,
         2: {

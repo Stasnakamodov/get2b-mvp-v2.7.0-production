@@ -19,7 +19,7 @@ import { useRealtimeProjectData } from "../hooks/useRealtimeProjectData";
 import { getStepByStatus } from '@/lib/types/project-status';
 import { changeProjectStatus } from '@/lib/supabaseProjectStatus';
 import { getCatalogSupplierType, hasSupplierRecommendations } from '@/lib/suppliers/loadCatalogSupplier';
-import { templatePayload } from '@/lib/templates/projectTemplateMapper';
+import { templatePayload, isCompanyDataEmpty } from '@/lib/templates/projectTemplateMapper';
 
 export default function Step1CompanyForm(props: {
   isLoading?: boolean;
@@ -942,6 +942,14 @@ export default function Step1CompanyForm(props: {
   const handleTemplateSelect = (template: any) => {
     setShowTemplateSelect(false);
     const { company } = templatePayload(template);
+    if (isCompanyDataEmpty(company)) {
+      toast({
+        title: 'В шаблоне нет данных компании',
+        description: 'Выберите шаблон, содержащий Шаг 1, или заполните форму вручную.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setCompanyData(company);
     setProjectName(template.name || '');
     if (typeof window !== 'undefined') {

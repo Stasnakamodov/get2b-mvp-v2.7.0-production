@@ -44,6 +44,10 @@ export const EMPTY_COMPANY_DATA: CompanyData = {
   website: '',
 }
 
+export function isCompanyDataEmpty(c: CompanyData): boolean {
+  return Object.values(c).every((v) => !v)
+}
+
 export function toCompanyData(input: unknown): CompanyData {
   if (!input || typeof input !== 'object') return { ...EMPTY_COMPANY_DATA }
   const i = input as Record<string, unknown>
