@@ -2,14 +2,14 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { CatalogCategory, CatalogSubcategory } from '@/lib/catalog/types'
-import { DEFAULT_CATEGORIES } from '@/lib/catalog/constants'
 
-interface ApiSubcategory {
+interface ApiChild {
   id: string
-  name: string
   key?: string
+  name: string
+  icon?: string
   category_id: string
-  products_count: number
+  products_count?: number
 }
 
 interface ApiCategory {
@@ -17,78 +17,52 @@ interface ApiCategory {
   key: string
   name: string
   icon?: string
+  sort_order?: number
   products_count?: number
-  subcategories?: ApiSubcategory[]
+  subcategories?: ApiChild[]
 }
 
-// Build ordering/icon lookup from DEFAULT_CATEGORIES
-const DEFAULT_BY_NAME = new Map(
-  DEFAULT_CATEGORIES.map((d, i) => [d.name, { ...d, order: i }])
-)
-
 /**
- * Hook for fetching real categories from the API.
- * API-first: uses ALL categories from API, not just those in DEFAULT_CATEGORIES.
- * DEFAULT_CATEGORIES provides icon and ordering fallback only.
+ * Fetch the 2-level category tree from the API.
+ * Source of truth = DB (`catalog_categories` with parent_id/level).
+ * No client-side merge with hardcoded constants.
  */
 export function useCatalogCategories() {
   const { data, isLoading, error } = useQuery<CatalogCategory[]>({
     queryKey: ['catalog-categories'],
     queryFn: async () => {
-      const treeRes = await fetch('/api/catalog/categories?includeSubcategories=true')
-      if (!treeRes.ok) throw new Error('Failed to fetch category tree')
+      const res = await fetch('/api/catalog/categories')
+      if (!res.ok) throw new Error('Failed to fetch categories')
 
-      const treeJson = await treeRes.json()
-      const apiCategories: ApiCategory[] = treeJson.categories || []
+      const json = await res.json()
+      const apiCategories: ApiCategory[] = json.categories || []
 
-      // Map ALL API categories, using DEFAULT_CATEGORIES for icon/ordering
-      const mapped: (CatalogCategory & { _order: number })[] = apiCategories.map(api => {
-        const def = DEFAULT_BY_NAME.get(api.name)
-
+      return apiCategories.map(api => {
         const children: CatalogSubcategory[] = (api.subcategories || []).map(sub => ({
           id: sub.id,
           key: sub.key || sub.name.toLowerCase().replace(/\s+/g, '_'),
           name: sub.name,
+          icon: sub.icon,
           category_id: sub.category_id,
           products_count: sub.products_count || 0,
         }))
 
-        // Use API-provided products_count directly (already calculated as max of subcategory sum and direct count)
-        const totalProducts = api.products_count || 0
-
         return {
           id: api.id,
-          key: api.key || (def?.key ?? api.name.toLowerCase().replace(/\s+/g, '_')),
+          key: api.key,
           name: api.name,
-          icon: api.icon || def?.icon || '📦',
-          products_count: totalProducts,
+          icon: api.icon,
+          products_count: api.products_count || 0,
           children,
-          _order: def?.order ?? 999,
         }
       })
-
-      // Sort: known categories first (by DEFAULT order), then unknown alphabetically
-      mapped.sort((a, b) => {
-        if (a._order !== b._order) return a._order - b._order
-        return a.name.localeCompare(b.name, 'ru')
-      })
-
-      // Strip internal _order field
-      return mapped.map(({ _order, ...cat }) => cat)
     },
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
   })
 
   return {
-    categories: data || DEFAULT_CATEGORIES.map(cat => ({
-      id: cat.key,
-      key: cat.key,
-      name: cat.name,
-      icon: cat.icon,
-      products_count: 0,
-      children: [],
-    })),
+    categories: data || [],
     isLoading,
     error,
   }

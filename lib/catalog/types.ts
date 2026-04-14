@@ -62,6 +62,7 @@ export interface CatalogSubcategory {
   id: string
   key: string
   name: string
+  icon?: string
   category_id: string
   products_count: number
 }

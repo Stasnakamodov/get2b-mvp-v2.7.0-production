@@ -151,8 +151,42 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Apply filters to both queries
-    if (category) { query = query.eq('category', category); countQuery = countQuery.eq('category', category) }
+    // Apply filters to both queries.
+    //
+    // Category expansion: catalog_verified_products.category is a text field tied to
+    // the narrow (level=1) name, never to a parent (level=0) name. If a parent name
+    // comes in, we expand it to all its level=1 child names and filter with IN(...).
+    // Narrow names match literally. Unknown names (not in catalog_categories) also
+    // fall back to literal match so we never silently drop a filter.
+    if (category) {
+      const { data: catRow } = await db
+        .from('catalog_categories')
+        .select('id, level')
+        .eq('name', category)
+        .eq('is_active', true)
+        .limit(1)
+
+      const row = Array.isArray(catRow) ? catRow[0] : null
+      if (row && row.level === 0) {
+        const { data: childRows } = await db
+          .from('catalog_categories')
+          .select('name')
+          .eq('parent_id', row.id)
+          .eq('is_active', true)
+        const childNames = (childRows || []).map((c: any) => c.name).filter(Boolean)
+
+        if (childNames.length > 0) {
+          query = query.in('category', childNames)
+          countQuery = countQuery.in('category', childNames)
+        } else {
+          query = query.eq('category', category)
+          countQuery = countQuery.eq('category', category)
+        }
+      } else {
+        query = query.eq('category', category)
+        countQuery = countQuery.eq('category', category)
+      }
+    }
     if (subcategory) { query = query.eq('subcategory_id', subcategory); countQuery = countQuery.eq('subcategory_id', subcategory) }
     if (inStock === 'true') { query = query.eq('in_stock', true); countQuery = countQuery.eq('in_stock', true) }
     if (supplierId) { query = query.eq('supplier_id', supplierId); countQuery = countQuery.eq('supplier_id', supplierId) }

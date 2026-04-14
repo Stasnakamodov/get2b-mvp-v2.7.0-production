@@ -1,43 +1,30 @@
 import { db } from "@/lib/db"
-import { NextRequest, NextResponse } from "next/server";
-import { CATEGORY_CERTIFICATIONS } from "@/src/shared/config";
+import { NextRequest, NextResponse } from "next/server"
+import { CATEGORY_CERTIFICATIONS } from "@/src/shared/config"
 
-const BASE_CATEGORIES = [
-  'Автотовары', 'Электроника', 'Дом и быт',
-  'Здоровье и красота', 'Продукты питания', 'Промышленность',
-  'Строительство', 'Текстиль и одежда'
-]
-
-// GET: Categories with hierarchy, tree, and stats support
+/**
+ * Catalog categories API
+ *
+ * Source of truth is the DB: `catalog_categories` table already encodes
+ * the parent/child hierarchy via `parent_id` + `level` (0 = root, 1 = narrow).
+ * This route returns the 2-level tree. No hardcoded category names, no
+ * hardcoded icons — they all live in DB columns.
+ *
+ * Modes:
+ * - default: tree of active level=0 with children = active level=1 under them
+ * - ?simple=true: flat array of category names (alphabetical)
+ * - ?tree=true: RPC get_category_tree (legacy consumers)
+ * - ?stats=true: products_count per level=0 category by matching
+ *   catalog_verified_products.category (text) to level=1 child names
+ */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const includeSubcategories = searchParams.get('includeSubcategories') !== 'false';
-    const simpleList = searchParams.get('simple') === 'true';
-    const treeMode = searchParams.get('tree') === 'true';
-    const statsMode = searchParams.get('stats') === 'true';
+    const { searchParams } = new URL(request.url)
+    const simpleList = searchParams.get('simple') === 'true'
+    const treeMode = searchParams.get('tree') === 'true'
+    const statsMode = searchParams.get('stats') === 'true'
 
-    // ?stats=true — return product counts per category (replaces category-stats)
-    if (statsMode) {
-      const countPromises = BASE_CATEGORIES.map(async (category) => {
-        const { count, error } = await db
-          .from('catalog_verified_products')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_active', true)
-          .eq('category', category)
-        return { category, count: error ? 0 : (count || 0) }
-      })
-      const results = await Promise.all(countPromises)
-      const categoryStats: Record<string, { verified: number; user: number; total: number }> = {}
-      for (const { category, count } of results) {
-        categoryStats[category] = { verified: count, user: 0, total: count }
-      }
-      const response = NextResponse.json({ success: true, categoryStats })
-      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
-      return response
-    }
-
-    // ?tree=true — return full category tree via RPC (replaces category-tree)
+    // ?tree=true — legacy RPC path
     if (treeMode) {
       const { data, error } = await db.rpc('get_category_tree')
       if (error) {
@@ -47,291 +34,205 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, tree: data })
     }
 
-    // ?simple=true — return just category names
+    // ?simple=true — just names
     if (simpleList) {
       const { data: categories, error } = await db
         .from("catalog_categories")
         .select("name")
-        .order("name");
+        .eq("is_active", true)
+        .order("name")
 
       if (error) {
-        console.error("[API] Ошибка загрузки категорий:", error);
-        return NextResponse.json({
-          success: false,
-          error: error.message
-        }, { status: 500 });
+        console.error("[API] Ошибка загрузки категорий:", error)
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
       }
 
-      // Извлекаем названия категорий
-      const categoryNames = categories?.map(c => c.name).filter(Boolean) || [];
-
-      return NextResponse.json({
-        success: true,
-        categories: categoryNames,
-        count: categoryNames.length
-      });
+      const categoryNames = categories?.map(c => c.name).filter(Boolean) || []
+      return NextResponse.json({ success: true, categories: categoryNames, count: categoryNames.length })
     }
 
-    // ПРАВИЛЬНАЯ АРХИТЕКТУРА: Используем отдельные таблицы
-    // catalog_categories - корневые категории (8 штук)
-    // catalog_subcategories - подкатегории (33 штуки)
-
-    // Загружаем корневые категории
-    const { data: rootCategories, error: categoriesError } = await db
+    // Load full active set once (both levels) — parents + children in a single query.
+    const { data: allRows, error: allError } = await db
       .from("catalog_categories")
       .select("*")
-      .order("name");
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true })
 
-    if (categoriesError) {
-      console.error("[API] Ошибка загрузки категорий:", categoriesError);
-      return NextResponse.json({
-        success: false,
-        error: categoriesError.message
-      }, { status: 500 });
+    if (allError) {
+      console.error("[API] Ошибка загрузки категорий:", allError)
+      return NextResponse.json({ success: false, error: allError.message }, { status: 500 })
     }
 
+    const rows = allRows || []
+    const parents = rows.filter((r: any) => r.level === 0)
+    const children = rows.filter((r: any) => r.level === 1 && r.parent_id)
 
-    // ОПТИМИЗАЦИЯ: Загружаем подкатегории ТОЛЬКО если нужно
-    let subcategories = null;
-    if (includeSubcategories) {
-      const { data, error: subcategoriesError } = await db
-        .from("catalog_subcategories")
-        .select("*")
-        .order("name");
+    // Count products per narrow category name in a single GROUP BY RPC
+    const childNames = children.map((c: any) => c.name)
+    const countsByName: Record<string, number> = {}
 
-      if (subcategoriesError) {
-        console.error("[API] Ошибка загрузки подкатегорий:", subcategoriesError);
-        return NextResponse.json({
-          success: false,
-          error: subcategoriesError.message
-        }, { status: 500 });
-      }
-
-      subcategories = data;
-    }
-
-    // ОПТИМИЗАЦИЯ: Загружаем подкатегории ТОЛЬКО если запрошено
-    let categoriesWithSubcategories = rootCategories;
-    let totalSubcategories = 0;
-
-    if (includeSubcategories) {
-
-      // Подсчитываем количество товаров через RPC (GROUP BY на сервере, без загрузки строк)
-      const subcategoryIds = (subcategories || []).map(s => s.id);
-      const countsBySubcategory: Record<string, number> = {};
-
-      if (subcategoryIds.length > 0) {
-        const { data: countData, error: rpcError } = await db.rpc(
-          'count_products_by_subcategory',
-          { subcategory_ids: subcategoryIds }
-        );
-
-        if (!rpcError && countData) {
-          for (const row of countData) {
-            if (row.subcategory_id) {
-              countsBySubcategory[row.subcategory_id] = Number(row.count);
-            }
-          }
-        } else if (rpcError) {
-          console.warn("[API] RPC fallback: count_products_by_subcategory failed:", rpcError.message);
-          // Fallback: parallel HEAD count queries
-          const countPromises = subcategoryIds.map(async (id) => {
-            const { count } = await db
-              .from("catalog_verified_products")
-              .select("*", { count: 'exact', head: true })
-              .eq('subcategory_id', id)
-              .eq('is_active', true);
-            return { id, count: count || 0 };
-          });
-          const counts = await Promise.all(countPromises);
-          for (const { id, count } of counts) {
-            countsBySubcategory[id] = count;
-          }
+    if (childNames.length > 0) {
+      const { data: countData, error: rpcError } = await db.rpc(
+        'count_products_by_category_name',
+        { category_names: childNames }
+      )
+      if (!rpcError && countData) {
+        for (const row of countData) {
+          if (row.category_name) countsByName[row.category_name] = Number(row.count)
         }
+      } else if (rpcError) {
+        console.warn("[API] RPC fallback: count_products_by_category_name failed:", rpcError.message)
+        const countPromises = childNames.map(async (name: string) => {
+          const { count } = await db
+            .from("catalog_verified_products")
+            .select("*", { count: 'exact', head: true })
+            .eq('category', name)
+            .eq('is_active', true)
+          return { name, count: count || 0 }
+        })
+        const results = await Promise.all(countPromises)
+        for (const { name, count } of results) countsByName[name] = count
       }
-
-      const subcategoriesWithCounts = (subcategories || []).map(sub => ({
-        ...sub,
-        products_count: countsBySubcategory[sub.id] || 0
-      }));
-
-      // Count products directly by category name (single GROUP BY RPC instead of N HEAD queries)
-      const countsByCategory: Record<string, number> = {};
-      if (rootCategories && rootCategories.length > 0) {
-        const categoryNames = rootCategories.map(cat => cat.name);
-        const { data: catCountData, error: catRpcError } = await db.rpc(
-          'count_products_by_category_name',
-          { category_names: categoryNames }
-        );
-
-        if (!catRpcError && catCountData) {
-          for (const row of catCountData) {
-            if (row.category_name) {
-              countsByCategory[row.category_name] = Number(row.count);
-            }
-          }
-        } else if (catRpcError) {
-          console.warn("[API] RPC fallback: count_products_by_category_name failed:", catRpcError.message);
-          // Fallback: parallel HEAD count queries (N+1, only if RPC unavailable)
-          const countPromises = rootCategories.map(async (cat) => {
-            const { count } = await db
-              .from("catalog_verified_products")
-              .select("*", { count: 'exact', head: true })
-              .eq('category', cat.name)
-              .eq('is_active', true);
-            return { name: cat.name, count: count || 0 };
-          });
-          const catCounts = await Promise.all(countPromises);
-          for (const { name, count } of catCounts) {
-            countsByCategory[name] = count;
-          }
-        }
-      }
-
-      // Добавляем подкатегории к корневым категориям
-      categoriesWithSubcategories = rootCategories.map(category => {
-        const catSubs = subcategoriesWithCounts?.filter(sub => sub.category_id === category.id) || [];
-        const subcategoryTotal = catSubs.reduce((sum, s) => sum + (s.products_count || 0), 0);
-        // Use direct category count when subcategory count is 0
-        const directCount = countsByCategory[category.name] || 0;
-        return {
-          ...category,
-          products_count: Math.max(subcategoryTotal, directCount),
-          subcategories: catSubs,
-        };
-      });
-
-      totalSubcategories = subcategories?.length || 0;
-    } else {
     }
 
-    // Статистика
+    // ?stats=true — sum child counts per parent (used by legacy callers)
+    if (statsMode) {
+      const categoryStats: Record<string, { verified: number; user: number; total: number }> = {}
+      for (const p of parents) {
+        const total = children
+          .filter((c: any) => c.parent_id === p.id)
+          .reduce((sum: number, c: any) => sum + (countsByName[c.name] || 0), 0)
+        categoryStats[p.name] = { verified: total, user: 0, total }
+      }
+      const response = NextResponse.json({ success: true, categoryStats })
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+      return response
+    }
+
+    // Default: tree of level=0 with embedded level=1 children
+    const categoriesWithChildren = parents.map((parent: any) => {
+      const parentChildren = children
+        .filter((c: any) => c.parent_id === parent.id)
+        .map((c: any) => ({
+          id: c.id,
+          key: c.key || c.name.toLowerCase().replace(/\s+/g, '_'),
+          name: c.name,
+          icon: c.icon || '📦',
+          category_id: parent.id,
+          products_count: countsByName[c.name] || 0,
+        }))
+
+      const totalProducts = parentChildren.reduce((sum, c) => sum + c.products_count, 0)
+
+      return {
+        ...parent,
+        products_count: totalProducts,
+        subcategories: parentChildren,
+      }
+    })
+
     const stats = {
-      total_categories: rootCategories?.length || 0,
-      total_subcategories: totalSubcategories,
-    };
+      total_categories: parents.length,
+      total_subcategories: children.length,
+    }
 
     const response = NextResponse.json({
       success: true,
-      categories: categoriesWithSubcategories,
-      stats
-    });
-
-    // Cache for 60s, serve stale for 5 min
-    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-
-    return response;
+      categories: categoriesWithChildren,
+      stats,
+    })
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    return response
   } catch (error) {
-    console.error("[API] Критическая ошибка загрузки категорий:", error);
-    return NextResponse.json({ success: false, error: "Ошибка сервера" }, { status: 500 });
+    console.error("[API] Критическая ошибка загрузки категорий:", error)
+    return NextResponse.json({ success: false, error: "Ошибка сервера" }, { status: 500 })
   }
 }
 
-// POST: Синхронизация категорий из кода в БД
+// POST: Legacy sync of root categories from CATEGORY_CERTIFICATIONS. Icons are
+// NOT set here — they are managed in DB migrations. Hierarchy (parent_id/level)
+// is also not touched.
 export async function POST() {
   try {
-
-    // Получаем существующие категории
     const { data: existingCategories, error: selectError } = await db
       .from("catalog_categories")
-      .select("key, name, id");
+      .select("key, name, id")
 
     if (selectError) {
-      console.error("[API] Ошибка получения существующих категорий:", selectError);
-      return NextResponse.json({ error: selectError.message }, { status: 500 });
+      console.error("[API] Ошибка получения существующих категорий:", selectError)
+      return NextResponse.json({ error: selectError.message }, { status: 500 })
     }
 
-    const existingKeys = new Set(existingCategories?.map(cat => cat.key) || []);
-    
-    // Подготавливаем данные для вставки
+    const existingKeys = new Set(existingCategories?.map(cat => cat.key) || [])
+
     const categoriesToInsert = CATEGORY_CERTIFICATIONS
       .filter(cat => !existingKeys.has(cat.category.toLowerCase().replace(/\s+/g, '_')))
       .map(cat => ({
         key: cat.category.toLowerCase().replace(/\s+/g, '_'),
         name: cat.category,
         description: `${cat.category}. Сертификации: ${cat.certifications.join(', ')}`,
-        icon: getCategoryIcon(cat.category),
-        is_active: true
-      }));
+        is_active: true,
+      }))
 
     if (categoriesToInsert.length === 0) {
-      return NextResponse.json({ 
-        message: "Все категории уже синхронизированы", 
+      return NextResponse.json({
+        message: "Все категории уже синхронизированы",
         existing: existingCategories?.length || 0,
-        total: CATEGORY_CERTIFICATIONS.length
-      });
+        total: CATEGORY_CERTIFICATIONS.length,
+      })
     }
 
-    // Вставляем новые категории
     const { data, error } = await db
       .from("catalog_categories")
       .insert(categoriesToInsert)
-      .select();
+      .select()
 
     if (error) {
-      console.error("[API] Ошибка создания категорий:", error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.error("[API] Ошибка создания категорий:", error)
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
-    
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: "Категории успешно синхронизированы",
       created: data?.length || 0,
       existing: existingCategories?.length || 0,
-      total: (existingCategories?.length || 0) + (data?.length || 0)
-    });
-
+      total: (existingCategories?.length || 0) + (data?.length || 0),
+    })
   } catch (error) {
-    console.error("[API] Критическая ошибка синхронизации:", error);
-    return NextResponse.json({ success: false, error: "Ошибка сервера" }, { status: 500 });
+    console.error("[API] Критическая ошибка синхронизации:", error)
+    return NextResponse.json({ success: false, error: "Ошибка сервера" }, { status: 500 })
   }
-}
-
-// Функция для получения иконки категории
-function getCategoryIcon(category: string): string {
-  const iconMap: Record<string, string> = {
-    "Текстиль и одежда": "👕",
-    "Электроника и электротехника": "⚡",
-    "Электроника": "📱", 
-    "Оборудование и машиностроение": "⚙️",
-    "FMCG (продукты, напитки, косметика)": "🛒",
-    "Строительные материалы": "🏗️",
-    "Мебель и интерьер": "🪑",
-    "Химия и сырье": "⚗️",
-    "Логистика и транспорт": "🚛"
-  };
-  
-  return iconMap[category] || "📦";
 }
 
 // PATCH: Обновление категории
 export async function PATCH(request: NextRequest) {
-  const { id, ...updateData } = await request.json();
+  const { id, ...updateData } = await request.json()
   if (!id) {
-    return NextResponse.json({ error: "Поле id обязательно для обновления" }, { status: 400 });
+    return NextResponse.json({ error: "Поле id обязательно для обновления" }, { status: 400 })
   }
   const { data, error } = await db
     .from("catalog_categories")
     .update(updateData)
     .eq("id", id)
     .select()
-    .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ category: data });
+    .single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ category: data })
 }
 
 // DELETE: Удаление категории
 export async function DELETE(request: NextRequest) {
-  const { id } = await request.json();
+  const { id } = await request.json()
   if (!id) {
-    return NextResponse.json({ error: "Поле id обязательно для удаления" }, { status: 400 });
+    return NextResponse.json({ error: "Поле id обязательно для удаления" }, { status: 400 })
   }
   const { data, error } = await db
     .from("catalog_categories")
     .delete()
     .eq("id", id)
     .select()
-    .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ category: data });
-} 
+    .single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ category: data })
+}

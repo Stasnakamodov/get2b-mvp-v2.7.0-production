@@ -4,17 +4,18 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight, Folder, EyeOff, Eye } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { CatalogCategory, FacetCount, SubcategoryFacetCount } from '@/lib/catalog/types'
-import { DEFAULT_CATEGORIES } from '@/lib/catalog/constants'
+import type { CatalogCategory, FacetCount } from '@/lib/catalog/types'
 
 interface CatalogSidebarProps {
   categories?: CatalogCategory[]
   selectedCategory?: string
+  /** Legacy: kept for call-site compatibility, no longer drives rendering. */
   selectedSubcategory?: string
   onCategorySelect: (category: string | undefined, subcategory?: string) => void
   isLoading?: boolean
   facetCounts?: FacetCount[]
-  subcategoryFacetCounts?: SubcategoryFacetCount[]
+  /** Legacy: kept for call-site compatibility, no longer drives rendering. */
+  subcategoryFacetCounts?: unknown
 }
 
 function formatCount(n: number): string {
@@ -30,36 +31,30 @@ function formatCount(n: number): string {
 export function CatalogSidebar({
   categories,
   selectedCategory,
-  selectedSubcategory,
   onCategorySelect,
   isLoading = false,
   facetCounts,
-  subcategoryFacetCounts,
 }: CatalogSidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [hideEmpty, setHideEmpty] = useState(true)
 
-  const displayCategories = categories || DEFAULT_CATEGORIES.map(cat => ({
-    id: cat.key,
-    key: cat.key,
-    name: cat.name,
-    icon: cat.icon,
-    products_count: 0,
-    children: []
-  }))
+  const displayCategories = categories || []
 
-  // Auto-expand selected category
+  // Auto-expand: if selectedCategory matches either a parent or one of its children,
+  // make sure that parent is expanded so the selection is visible.
   useEffect(() => {
-    if (selectedCategory) {
-      const cat = displayCategories.find(c => c.name === selectedCategory)
-      if (cat && cat.children && cat.children.length > 0) {
-        setExpandedCategories(prev => {
-          if (prev.has(cat.id)) return prev
-          const next = new Set(prev)
-          next.add(cat.id)
-          return next
-        })
-      }
+    if (!selectedCategory) return
+    const parent = displayCategories.find(c =>
+      c.name === selectedCategory ||
+      (c.children && c.children.some(ch => ch.name === selectedCategory))
+    )
+    if (parent && parent.children && parent.children.length > 0) {
+      setExpandedCategories(prev => {
+        if (prev.has(parent.id)) return prev
+        const next = new Set(prev)
+        next.add(parent.id)
+        return next
+      })
     }
   }, [selectedCategory, displayCategories])
 
@@ -71,25 +66,26 @@ export function CatalogSidebar({
     }
   }
 
-  // Build a map of subcategory facet counts by ID
-  const subFacetCountMap = new Map<string, number>()
-  if (subcategoryFacetCounts) {
-    for (const sc of subcategoryFacetCounts) {
-      subFacetCountMap.set(sc.id, sc.count)
-    }
-  }
-
-  // Helper: get count for a category (facet-based when available, static otherwise)
+  // Helper: get count for a category. For a parent (has children), sum facet counts
+  // of its children — because products are tied to narrow category names, never to
+  // the parent name itself. Without this aggregation every parent reads as 0.
   const getCategoryCount = (cat: CatalogCategory) => {
-    if (facetCounts) {
-      return facetCountMap.get(cat.name) ?? 0
+    if (cat.children && cat.children.length > 0) {
+      if (facetCounts) {
+        return cat.children.reduce(
+          (sum, ch) => sum + (facetCountMap.get(ch.name) ?? 0),
+          0
+        )
+      }
+      return cat.children.reduce((sum, ch) => sum + (ch.products_count || 0), 0)
     }
+    if (facetCounts) return facetCountMap.get(cat.name) ?? 0
     return cat.products_count
   }
 
   const totalProducts = facetCounts
     ? facetCounts.reduce((sum, fc) => sum + fc.count, 0)
-    : displayCategories.reduce((sum, cat) => sum + cat.products_count, 0)
+    : displayCategories.reduce((sum, cat) => sum + getCategoryCount(cat), 0)
 
   const toggleExpand = (categoryId: string) => {
     setExpandedCategories(prev => {
@@ -104,18 +100,21 @@ export function CatalogSidebar({
   }
 
   const handleCategoryClick = (categoryName: string) => {
-    if (selectedCategory === categoryName && !selectedSubcategory) {
+    if (selectedCategory === categoryName) {
       onCategorySelect(undefined)
     } else {
       onCategorySelect(categoryName)
     }
   }
 
-  const handleSubcategoryClick = (parentCategoryName: string, subcategoryId: string) => {
-    if (selectedSubcategory === subcategoryId) {
-      onCategorySelect(parentCategoryName)
+  // Click on a narrow (level=1) child: treat the child name as the category filter.
+  // No subcategory_id — products are filtered by text category name, which is the
+  // child's own name. The parent just groups them visually.
+  const handleChildClick = (childName: string) => {
+    if (selectedCategory === childName) {
+      onCategorySelect(undefined)
     } else {
-      onCategorySelect(parentCategoryName, subcategoryId)
+      onCategorySelect(childName)
     }
   }
 
@@ -175,8 +174,8 @@ export function CatalogSidebar({
             ))
           ) : (
             displayCategories.map(category => {
-              const isSelected = selectedCategory === category.name && !selectedSubcategory
-              const isParentOfSelected = selectedCategory === category.name && !!selectedSubcategory
+              const isSelected = selectedCategory === category.name
+              const isParentOfSelected = !!category.children?.some(ch => ch.name === selectedCategory)
               const isExpanded = expandedCategories.has(category.id)
               const hasChildren = category.children && category.children.length > 0
               const dynamicCount = getCategoryCount(category)
@@ -252,7 +251,9 @@ export function CatalogSidebar({
                   {isExpanded && hasChildren && (() => {
                     const filteredChildren = hideEmpty
                       ? category.children!.filter(sub => {
-                          const c = subcategoryFacetCounts ? (subFacetCountMap.get(sub.id) ?? 0) : sub.products_count
+                          const c = facetCounts
+                            ? (facetCountMap.get(sub.name) ?? 0)
+                            : sub.products_count
                           return c > 0
                         })
                       : category.children!
@@ -260,9 +261,9 @@ export function CatalogSidebar({
                     return (
                       <div className="ml-5 mt-1 mb-1 pl-3 border-l-2 border-gray-100 dark:border-gray-700 space-y-0.5">
                         {filteredChildren.map(sub => {
-                          const isSubSelected = selectedSubcategory === sub.id
-                          const subCount = subcategoryFacetCounts
-                            ? (subFacetCountMap.get(sub.id) ?? 0)
+                          const isSubSelected = selectedCategory === sub.name
+                          const subCount = facetCounts
+                            ? (facetCountMap.get(sub.name) ?? 0)
                             : sub.products_count
                           return (
                             <button
@@ -272,11 +273,11 @@ export function CatalogSidebar({
                                   ? 'bg-orange-50 text-orange-700 font-medium dark:bg-orange-900/30 dark:text-orange-300'
                                   : 'hover:bg-gray-50 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-800 dark:text-gray-400'
                               }`}
-                              onClick={() => handleSubcategoryClick(category.name, sub.id)}
+                              onClick={() => handleChildClick(sub.name)}
                             >
-                              <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
-                                isSubSelected ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'
-                              }`} />
+                              <span className="text-base leading-none shrink-0">
+                                {sub.icon || '📦'}
+                              </span>
                               <span className="flex-1 text-left leading-snug">{sub.name}</span>
                               {subCount > 0 && (
                                 <span className={`text-[10px] ${

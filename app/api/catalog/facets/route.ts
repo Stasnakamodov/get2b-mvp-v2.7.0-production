@@ -13,7 +13,7 @@ import { logger } from '@/src/shared/lib/logger'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category') || null
+    let category = searchParams.get('category') || null
     const subcategory = searchParams.get('subcategory') || null
     const search = searchParams.get('search') || null
     const inStock = searchParams.get('in_stock') === 'true' ? true : null
@@ -21,6 +21,23 @@ export async function GET(request: NextRequest) {
     const maxPrice = searchParams.get('max_price') ? parseFloat(searchParams.get('max_price')!) : null
     const supplierCountry = searchParams.get('supplier_country') || null
     const supplierId = searchParams.get('supplier_id') || null
+
+    // The facet RPC filters by one narrow (level=1) category name. Parent (level=0)
+    // names never match any product row, so passing a parent through would zero
+    // every facet. Drop the filter in that case — the sidebar still aggregates
+    // children counts from the returned facets and renders the correct parent count.
+    if (category) {
+      const { data: catRow } = await db
+        .from('catalog_categories')
+        .select('level')
+        .eq('name', category)
+        .eq('is_active', true)
+        .limit(1)
+      const row = Array.isArray(catRow) ? catRow[0] : null
+      if (row && row.level === 0) {
+        category = null
+      }
+    }
 
     const { data, error } = await db.rpc('get_product_facets', {
       p_category: category,
