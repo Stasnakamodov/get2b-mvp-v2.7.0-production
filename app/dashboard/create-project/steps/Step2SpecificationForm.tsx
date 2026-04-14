@@ -18,7 +18,7 @@ import { useProjectSpecification } from "../hooks/useProjectSpecification";
 import { useProjectInvoices, ProjectInvoice } from "../hooks/useProjectInvoices";
 import { useRouter } from "next/navigation";
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
-import CatalogModal from "../components/CatalogModal";
+import Step2CatalogPickerModal from "../components/Step2CatalogPickerModal";
 import ProformaSelectionModal from "../components/ProformaSelectionModal";
 import { templatePayload } from "@/lib/templates/projectTemplateMapper";
 const DEFAULT_CURRENCY = "RUB";
@@ -1802,7 +1802,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       )}
       
       {/* Каталог товаров */}
-      <CatalogModal
+      <Step2CatalogPickerModal
         open={showCatalogModal}
         onClose={() => setShowCatalogModal(false)}
         onAddProducts={handleCatalogSelect}
