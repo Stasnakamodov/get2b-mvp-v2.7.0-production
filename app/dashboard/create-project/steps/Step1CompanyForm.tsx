@@ -304,6 +304,40 @@ export default function Step1CompanyForm(props: {
           localStorage.removeItem('cart_items_temp');
         }
 
+        // 📋 Копируем спецификацию из шаблона в project_specifications.
+        // Для cart-пути spec уже вставлен в ProjectStartFlow.handleStepperSelect (Step1
+        // туда не попадает — там projectId уже есть). Для dashboard-пути
+        // (?templateId=...) ProjectStartFlow пропускается, поэтому bulk insert делаем здесь.
+        if (specificationItems && specificationItems.length > 0) {
+          try {
+            const specRows = specificationItems.map((item: any) => {
+              const qty = Number(item.quantity ?? 1) || 1;
+              const priceNum = Number(item.pricePerUnit ?? item.price ?? 0) || 0;
+              const totalNum = Number(item.totalPrice ?? item.total) || (priceNum * qty);
+              return {
+                item_name: item.name || item.item_name || '',
+                item_code: item.code || item.item_code || '',
+                image_url: item.image_url || item.image || '',
+                quantity: qty,
+                unit: item.unit || 'шт',
+                price: priceNum,
+                total: totalNum,
+                project_id: newProjectId,
+                role: 'client',
+                user_id,
+              };
+            });
+            const { error: specErr } = await db.from('project_specifications').insert(specRows);
+            if (specErr) {
+              logger.error('[Step1] Ошибка копирования template spec:', specErr);
+            } else {
+              logger.info('[Step1] Скопирована template spec:', specRows.length);
+            }
+          } catch (e) {
+            logger.error('[Step1] Ошибка bulk insert template spec:', e);
+          }
+        }
+
         // 🎯 СОХРАНЯЕМ ДАННЫЕ ПОСТАВЩИКА ИЗ КАТАЛОГА В БД
         // supplierData попадает в контекст через CartLoader (при flow "корзина → проект").
         // Восстанавливаем его из localStorage если контекст сбросился (например, при ре-маунте).
