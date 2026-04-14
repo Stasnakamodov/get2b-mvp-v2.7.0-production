@@ -950,60 +950,6 @@ function ProjectConstructorContent() {
     setSelectedSource
   })
 
-  // Функция для получения данных из шаблонов для конкретного шага
-  const getTemplateDataForStep = async (stepId: number) => {
-    console.log('Запрос данных из шаблонов для шага:', stepId)
-    
-    try {
-      // Используем уже загруженные шаблоны из хука
-      if (!templates || templates.length === 0) {
-        console.log('❌ У пользователя нет шаблонов')
-        return null
-      }
-      
-      console.log('✅ Используем загруженные шаблоны:', templates.length)
-      
-      // Берем первый шаблон (можно добавить выбор)
-      const template = templates[0]
-      
-      // Преобразуем данные шаблона в формат для конкретного шага
-      switch (stepId) {
-        case 1: // Данные компании
-          return {
-            name: template.company_name || '',
-            legalName: template.company_legal || '',
-            inn: template.company_inn || '',
-            kpp: template.company_kpp || '',
-            ogrn: template.company_ogrn || '',
-            address: template.company_address || '',
-            bankName: template.company_bank || '',
-            bankAccount: template.company_account || '',
-            bankCorrAccount: template.company_corr || '',
-            bankBik: template.company_bik || '',
-            email: template.company_email || '',
-            phone: template.company_phone || '',
-            website: template.company_website || ''
-          }
-          
-        case 2: // Спецификация товаров
-          return {
-            supplier: template.supplier_name || '',
-            currency: template.currency || 'RUB',
-            items: template.specification || []
-          }
-          
-        default:
-          return null
-      }
-      
-    } catch (error) {
-      console.error('❌ Ошибка получения данных шаблона:', error)
-      throw new Error('Ошибка при обработке данных шаблона')
-    }
-  }
-
-
-
   // getProfileData теперь в useCatalogData хуке WITH BUG FIX (company_name fallback)
 
   // Функция для применения выбранного профиля клиента к шагу 1

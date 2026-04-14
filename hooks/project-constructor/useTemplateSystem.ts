@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { templatePayload } from '@/lib/templates/projectTemplateMapper'
 
 interface TemplateData {
   id: string
@@ -36,7 +37,6 @@ export function useTemplateSystem({
    * Получить данные шаблона по ID
    */
   const getTemplateData = (templateId: string): TemplateData | null => {
-    // Находим реальный шаблон в базе данных
     const template = templates?.find(t => t.id === templateId)
 
     if (!template) {
@@ -44,36 +44,20 @@ export function useTemplateSystem({
       return null
     }
 
-
-    const tplData = template.data || {}
-    const company = tplData.company || {}
+    const { company, specification } = templatePayload(template)
 
     return {
       id: template.id,
       name: template.name || 'Без названия',
-      availableSteps: [1, 2], // По умолчанию шаблоны содержат шаги 1 и 2
+      availableSteps: [1, 2],
       data: {
-        1: {
-          name: company.name || '',
-          legalName: company.legalName || '',
-          inn: company.inn || '',
-          kpp: company.kpp || '',
-          ogrn: company.ogrn || '',
-          address: company.address || '',
-          bankName: company.bankName || '',
-          bankAccount: company.bankAccount || '',
-          bankCorrAccount: company.bankCorrAccount || '',
-          bankBik: company.bankBik || '',
-          email: company.email || '',
-          phone: company.phone || '',
-          website: company.website || ''
-        },
+        1: company,
         2: {
-          supplier: tplData.specification?.[0]?.supplier_name || '',
+          supplier: (specification[0] as any)?.supplier_name || '',
           currency: 'RUB',
-          items: tplData.specification || []
-        }
-      }
+          items: specification,
+        },
+      },
     }
   }
 

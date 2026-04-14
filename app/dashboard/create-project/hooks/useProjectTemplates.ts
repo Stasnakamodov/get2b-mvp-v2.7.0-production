@@ -1,5 +1,6 @@
 import { db } from "@/lib/db/client"
 import { logger } from "@/src/shared/lib/logger"
+import { buildTemplateRow } from "@/lib/templates/projectTemplateMapper"
 import React, { useState, useEffect } from "react";
 
 export function useProjectTemplates() {
@@ -95,31 +96,15 @@ export function useProjectTemplates() {
       return false;
     }
     const user_id = userData.user.id;
-    const insertObj = {
+    const row = buildTemplateRow({
       user_id,
       name,
-      description: description || null,
+      description,
       role,
-      data: {
-        company: {
-          name: companyData.name || '',
-          legalName: companyData.legalName || '',
-          inn: companyData.inn || '',
-          kpp: companyData.kpp || '',
-          ogrn: companyData.ogrn || '',
-          address: companyData.address || '',
-          bankName: companyData.bankName || '',
-          bankAccount: companyData.bankAccount || '',
-          bankCorrAccount: companyData.bankCorrAccount || '',
-          bankBik: companyData.bankBik || '',
-          email: companyData.email || '',
-          phone: companyData.phone || '',
-          website: companyData.website || '',
-        },
-        specification,
-      },
-    };
-    const { error } = await db.from("project_templates").insert([insertObj]);
+      companyData,
+      specification,
+    });
+    const { error } = await db.from("project_templates").insert([row]);
     if (error) {
       setError(error.message);
       setSaving(false);

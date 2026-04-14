@@ -19,6 +19,7 @@ import { useRealtimeProjectData } from "../hooks/useRealtimeProjectData";
 import { getStepByStatus } from '@/lib/types/project-status';
 import { changeProjectStatus } from '@/lib/supabaseProjectStatus';
 import { getCatalogSupplierType, hasSupplierRecommendations } from '@/lib/suppliers/loadCatalogSupplier';
+import { templatePayload } from '@/lib/templates/projectTemplateMapper';
 
 export default function Step1CompanyForm(props: {
   isLoading?: boolean;
@@ -114,7 +115,7 @@ export default function Step1CompanyForm(props: {
 
   const handleSaveTemplate = async () => {
     // Сохраняем в новую таблицу project_templates с ролью client
-    await saveProjectTemplate({
+    return await saveProjectTemplate({
       name: projectName || "Без названия",
       description: "", // Можно добавить отдельное поле для описания
       companyData,
@@ -776,8 +777,16 @@ export default function Step1CompanyForm(props: {
 
   // --- Новый обработчик для шаблона ---
   const handleSaveTemplateAndRedirect = async () => {
-    await handleSaveTemplate();
-    toast({ title: 'Шаблон сохранён', description: 'Шаблон успешно сохранён!', variant: 'default' });
+    const ok = await handleSaveTemplate();
+    if (ok) {
+      toast({ title: 'Шаблон сохранён', description: 'Шаблон успешно сохранён!', variant: 'default' });
+    } else {
+      toast({
+        title: 'Не удалось сохранить шаблон',
+        description: saveProjectTemplateError || 'Неизвестная ошибка',
+        variant: 'destructive',
+      });
+    }
   };
 
   // --- Проверка валидности формы без setErrors ---
@@ -898,66 +907,20 @@ export default function Step1CompanyForm(props: {
 
   const handleTemplateSelect = (template: any) => {
     setShowTemplateSelect(false);
-    let companyData: any = null;
-    // 1. Новый формат: companyData или company_data
-    if (template.data?.companyData) {
-      companyData = template.data.companyData;
-    } else if (template.data?.company_data) {
-      companyData = template.data.company_data;
-    } else if (template.data?.company) {
-      companyData = template.data.company;
-    } else if (
-      template.company_name || template.company_inn || template.company_ogrn
-    ) {
-      companyData = {
-        name: template.company_name || '',
-        legalName: template.company_legal || '',
-        inn: template.company_inn || '',
-        kpp: template.company_kpp || '',
-        ogrn: template.company_ogrn || '',
-        address: template.company_address || '',
-        bankName: template.company_bank || '',
-        bankAccount: template.company_account || '',
-        bankCorrAccount: template.company_corr || '',
-        bankBik: template.company_bik || '',
-        email: template.company_email || '',
-        phone: template.company_phone || '',
-        website: template.company_website || '',
-      };
-    }
-    if (!companyData) {
-      toast({ title: 'Ошибка', description: 'В шаблоне не найдены данные компании', variant: 'destructive' });
-      return;
-    }
-    // Гарантируем все обязательные поля (даже если пустые)
-    setCompanyData({
-      name: companyData.name || '',
-      legalName: companyData.legalName || '',
-      inn: companyData.inn || '',
-      kpp: companyData.kpp || '',
-      ogrn: companyData.ogrn || '',
-      address: companyData.address || '',
-      bankName: companyData.bankName || '',
-      bankAccount: companyData.bankAccount || '',
-      bankCorrAccount: companyData.bankCorrAccount || '',
-      bankBik: companyData.bankBik || '',
-      email: companyData.email || '',
-      phone: companyData.phone || '',
-      website: companyData.website || '',
-    });
+    const { company } = templatePayload(template);
+    setCompanyData(company);
     setProjectName(template.name || '');
-    // --- Обновляем проект в Supabase ---
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
-      const projectId = url.searchParams.get('projectId');
-      if (projectId) {
+      const currentProjectId = url.searchParams.get('projectId');
+      if (currentProjectId) {
         db
           .from('projects')
           .update({
             name: template.name || '',
-            company_data: companyData,
+            company_data: company,
           })
-          .eq('id', projectId);
+          .eq('id', currentProjectId);
       }
     }
   };

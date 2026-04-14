@@ -53,6 +53,7 @@ import Step4PaymentMethodForm from "./steps/Step4PaymentMethodForm"
 import Step5RequisiteSelectForm from "./steps/Step5RequisiteSelectForm"
 import Step6ReceiptForClient from "./steps/Step6ReceiptForClient"
 import Step7ClientConfirmationForm from "./steps/Step7ClientConfirmationForm"
+import { templatePayload, EMPTY_COMPANY_DATA } from "@/lib/templates/projectTemplateMapper"
 // --- ДОБАВЬ: функция для отправки данных в Telegram ---
 async function sendCompanyDataToTelegram(companyData: any) {
   try {
@@ -593,7 +594,7 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
       const user_id = userData.user.id;
       let projectId = null;
       if (method === 'template' && templateData) {
-        // Создаём проект с автозаполнением из нормализованных полей шаблона
+        const payload = templatePayload(templateData);
         const { data: project, error: projectError } = await db
           .from('projects')
         .insert([
@@ -604,21 +605,7 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
               status: 'draft',
               current_step: 1,
               name: (templateData.name || '').trim() || `Проект ${new Date().toLocaleDateString('ru-RU')}`,
-              company_data: {
-                name: (templateData.company_name || '').trim(),
-                legalName: (templateData.company_legal || '').trim(),
-                inn: (templateData.company_inn || '').replace(/[^0-9]/g, '').trim(),
-                kpp: (templateData.company_kpp || '').replace(/[^0-9]/g, '').trim(),
-                ogrn: (templateData.company_ogrn || '').replace(/[^0-9]/g, '').trim(),
-                address: (templateData.company_address || '').trim(),
-                bankName: (templateData.company_bank || '').trim(),
-                bankAccount: (templateData.company_account || '').trim(),
-                bankCorrAccount: (templateData.company_corr || '').trim(),
-                bankBik: (templateData.company_bik || '').trim(),
-                email: (templateData.company_email || '').trim(),
-                phone: (templateData.company_phone || '').trim(),
-                website: (templateData.company_website || '').trim(),
-              },
+              company_data: payload.company,
             },
           ])
           .select('id')
@@ -647,9 +634,8 @@ function ProjectStartFlow({ fromCart = false }: { fromCart?: boolean }) {
         setProjectId(projectId);
         setCurrentStep(1);
         // --- Копируем спецификацию из шаблона в project_specifications ---
-        if (Array.isArray(templateData.specification) && templateData.specification.length > 0) {
-          // --- ЛОГИРОВАНИЕ bulk insert спецификации ---
-          const specRows = templateData.specification.map((item: any) => ({
+        if (payload.specification.length > 0) {
+          const specRows = payload.specification.map((item: any) => ({
             item_name: item.name || item.item_name || "",
             item_code: item.code || item.item_code || "",
             image_url: item.image_url || item.image || "",
@@ -941,50 +927,22 @@ function TemplateLoader() {
     if (!templateId) {
       // Сбросить всё в дефолт, если нет templateId
       setProjectName("");
-      setCompanyData({
-        name: "",
-        legalName: "",
-        inn: "",
-        kpp: "",
-        ogrn: "",
-        address: "",
-        bankName: "",
-        bankAccount: "",
-        bankCorrAccount: "",
-        bankBik: "",
-        email: "",
-        phone: "",
-        website: "",
-      });
+      setCompanyData({ ...EMPTY_COMPANY_DATA });
       setSpecificationItems([]);
       return;
     }
     async function fetchTemplate() {
       setIsTemplateLoading(true);
-      // Ищем шаблон в project_templates
       const { data, error } = await db
         .from("project_templates")
         .select("*")
         .eq("id", templateId)
         .single();
       if (!error && data) {
+        const { company, specification } = templatePayload(data);
         setProjectName(data.name || "");
-        setCompanyData({
-          name: data.company_name || "",
-          legalName: data.company_legal || "",
-          inn: data.company_inn || "",
-          kpp: data.company_kpp || "",
-          ogrn: data.company_ogrn || "",
-          address: data.company_address || "",
-          bankName: data.company_bank || "",
-          bankAccount: data.company_account || "",
-          bankCorrAccount: data.company_corr || "",
-          bankBik: data.company_bik || "",
-          email: data.company_email || "",
-          phone: data.company_phone || "",
-          website: data.company_website || "",
-        });
-        setSpecificationItems(data.specification || []);
+        setCompanyData(company);
+        setSpecificationItems(specification);
       }
       setIsTemplateLoading(false);
     }

@@ -405,7 +405,7 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
   // Сохранить шаблон
   const handleSaveSpecOnly = async () => {
     const actualCompanyData = await getActualCompanyData();
-    await saveProjectTemplate({
+    const ok = await saveProjectTemplate({
       name: actualCompanyData?.name ? `Шаблон: ${actualCompanyData.name}` : "Шаблон спецификации",
       description: "",
       companyData: actualCompanyData,
@@ -413,11 +413,19 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       role: 'client',
     });
     setShowSaveDialog(false);
-    toast({ title: "Шаблон спецификации успешно сохранён!", variant: "default" });
+    if (ok) {
+      toast({ title: "Шаблон спецификации успешно сохранён!", variant: "default" });
+    } else {
+      toast({
+        title: "Не удалось сохранить шаблон",
+        description: "Проверьте подключение и попробуйте снова",
+        variant: "destructive",
+      });
+    }
   };
   const handleSaveCompanyAndSpec = async () => {
     const actualCompanyData = await getActualCompanyData();
-    await saveProjectTemplate({
+    const ok = await saveProjectTemplate({
       name: actualCompanyData?.name ? `Шаблон: ${actualCompanyData.name}` : "Шаблон спецификации",
       description: "",
       companyData: actualCompanyData,
@@ -425,7 +433,15 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       role: 'client',
     });
     setShowSaveDialog(false);
-    toast({ title: "Шаблон (компания + спецификация) успешно сохранён!", variant: "default" });
+    if (ok) {
+      toast({ title: "Шаблон (компания + спецификация) успешно сохранён!", variant: "default" });
+    } else {
+      toast({
+        title: "Не удалось сохранить шаблон",
+        description: "Проверьте подключение и попробуйте снова",
+        variant: "destructive",
+      });
+    }
   };
 
   // Прокидываем OCR-подсказки (bankInfo + seller) в supplierData, чтобы Step 4/5
