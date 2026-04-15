@@ -224,7 +224,7 @@ export function CatalogSidebar({
 
                     {/* Name */}
                     <button
-                      className="flex-1 text-left text-sm font-medium leading-snug"
+                      className="flex-1 min-w-0 text-left text-sm font-medium leading-snug truncate"
                       onClick={() => handleCategoryClick(category.name)}
                     >
                       {category.name}
@@ -234,7 +234,7 @@ export function CatalogSidebar({
                     {(
                       <Badge
                         variant="secondary"
-                        className={`text-[10px] rounded-full px-2 py-0 h-5 font-medium ${
+                        className={`shrink-0 tabular-nums text-[10px] rounded-full px-2 py-0 h-5 font-medium ${
                           isSelected
                             ? 'bg-orange-100 text-orange-600 dark:bg-orange-800 dark:text-orange-200'
                             : dynamicCount === 0
@@ -278,12 +278,12 @@ export function CatalogSidebar({
                               <span className="text-base leading-none shrink-0">
                                 {sub.icon || '📦'}
                               </span>
-                              <span className="flex-1 text-left leading-snug">{sub.name}</span>
+                              <span className="flex-1 min-w-0 text-left leading-snug truncate">{sub.name}</span>
                               {subCount > 0 && (
-                                <span className={`text-[10px] ${
+                                <span className={`shrink-0 tabular-nums text-[10px] ${
                                   isSubSelected ? 'text-orange-500' : 'text-gray-400'
                                 }`}>
-                                  {subCount}
+                                  {formatCount(subCount)}
                                 </span>
                               )}
                             </button>
