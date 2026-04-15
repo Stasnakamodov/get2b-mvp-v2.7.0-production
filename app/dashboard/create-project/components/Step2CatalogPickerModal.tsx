@@ -502,30 +502,31 @@ export default function Step2CatalogPickerModal({
           {renderSelectionPanel()}
         </div>
 
-        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+        <div className="flex items-center justify-between px-4 py-1.5 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
           <button
             onClick={() => {
               if (pickerCount === 0) return
               setPanelCollapsed(false)
             }}
             disabled={pickerCount === 0}
-            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 disabled:cursor-default hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 disabled:cursor-default hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
           >
-            <ShoppingCart className="w-4 h-4" />
+            <ShoppingCart className="w-3.5 h-3.5" />
             Выбрано:{' '}
             <span className="font-semibold text-gray-900 dark:text-gray-100">{pickerCount}</span>
             {pickerCount > 0 && panelCollapsed && (
-              <span className="text-xs text-orange-500 ml-1">показать</span>
+              <span className="text-[10px] text-orange-500 ml-1">показать</span>
             )}
           </button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" size="sm" className="h-7 px-3 text-xs" onClick={handleCancel}>
               Отмена
             </Button>
             <Button
               onClick={handleConfirm}
               disabled={pickerCount === 0}
-              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
+              size="sm"
+              className="h-7 px-3 text-xs bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
             >
               Добавить в проект ({pickerCount})
             </Button>
