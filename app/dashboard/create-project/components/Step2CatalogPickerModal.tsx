@@ -457,37 +457,37 @@ export default function Step2CatalogPickerModal({
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
       <DialogContent className="max-w-7xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0">
         {/* Phase 1 — DialogTitle/Description (a11y), без ручного X (Radix Close в углу) */}
-        <div className="flex items-center gap-4 px-5 py-3 pr-12 border-b border-gray-100 dark:border-gray-800">
-          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">
+        <div className="flex items-center gap-4 px-4 py-1.5 pr-10 border-b border-gray-100 dark:border-gray-800">
+          <DialogTitle className="text-sm font-semibold text-gray-900 dark:text-gray-100 m-0">
             Каталог товаров
           </DialogTitle>
           <DialogDescription className="sr-only">
             Выбор товаров для добавления в спецификацию проекта
           </DialogDescription>
-          <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg ml-auto">
+          <div className="flex items-center gap-0.5 p-0.5 bg-gray-100 dark:bg-gray-800 rounded-md ml-auto">
             <button
               onClick={() => {
                 setTab('categories')
                 setViewingSupplier(null)
               }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                 tab === 'categories'
                   ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
                   : 'text-gray-600 dark:text-gray-400'
               }`}
             >
-              <Grid3X3 className="w-4 h-4" />
+              <Grid3X3 className="w-3.5 h-3.5" />
               Категории
             </button>
             <button
               onClick={() => setTab('suppliers')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                 tab === 'suppliers'
                   ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
                   : 'text-gray-600 dark:text-gray-400'
               }`}
             >
-              <Users className="w-4 h-4" />
+              <Users className="w-3.5 h-3.5" />
               Поставщики
             </button>
           </div>
