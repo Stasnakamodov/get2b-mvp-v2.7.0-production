@@ -43,6 +43,43 @@ export const CreateListingInput = z
 
 export type CreateListingInputType = z.infer<typeof CreateListingInput>
 
+const BATCH_MAX_ITEMS = 30
+
+export const BatchListingItem = z.object({
+  title: z.string().min(10).max(150),
+  description: z.string().min(20).max(2000),
+  quantity: z.number().positive(),
+  unit: z.string().min(1).max(50),
+  category_id: z.string().uuid().nullable().optional(),
+})
+
+export const BatchCreateListingInput = z
+  .object({
+    items: z.array(BatchListingItem).min(1).max(BATCH_MAX_ITEMS),
+    deadline_date: z.string().date().nullable().optional(),
+    is_urgent: z.boolean().optional().default(false),
+    expires_at: isoDateTime,
+    author_client_profile_id: z.string().uuid(),
+  })
+  .refine(
+    (data) => {
+      const expires = new Date(data.expires_at).getTime()
+      return expires > Date.now()
+    },
+    { message: 'expires_at must be in the future', path: ['expires_at'] }
+  )
+  .refine(
+    (data) => {
+      const expires = new Date(data.expires_at).getTime()
+      const maxAllowed = Date.now() + MAX_EXPIRES_DAYS * 24 * 60 * 60 * 1000
+      return expires <= maxAllowed
+    },
+    { message: `expires_at must be within ${MAX_EXPIRES_DAYS} days`, path: ['expires_at'] }
+  )
+
+export type BatchCreateListingInputType = z.infer<typeof BatchCreateListingInput>
+export type BatchListingItemType = z.infer<typeof BatchListingItem>
+
 export const UpdateListingInput = z
   .object({
     title: z.string().min(10).max(150).optional(),
