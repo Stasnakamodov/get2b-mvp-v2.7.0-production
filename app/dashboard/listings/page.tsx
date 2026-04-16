@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { CatalogSidebar } from '@/app/dashboard/catalog/components/CatalogSidebar'
 import { useCatalogCategories } from '@/hooks/useCatalogCategories'
 import {
   flattenListings,
@@ -22,6 +21,7 @@ import {
 } from '@/hooks/useInfiniteListings'
 import { useListingFacets } from '@/hooks/useListingFacets'
 import { ListingsGrid } from './components/ListingsGrid'
+import { CategoryChipRow } from './components/CategoryChipRow'
 import type { CatalogCategory, FacetCount } from '@/lib/catalog/types'
 
 export default function ListingsPage() {
@@ -72,8 +72,6 @@ export default function ListingsPage() {
       .filter((fc) => fc.count > 0)
   }, [facetsQuery.data, allCategoryNodes])
 
-  // Parent-категории теперь резолвятся на сервере (WHERE id=$1 OR parent_id=$1),
-  // клиент всегда шлёт один category_id. Это фиксит пагинацию и totalCount.
   const listingsQuery = useInfiniteListings({
     categoryId: selectedCategory?.id,
     search: search || undefined,
@@ -88,8 +86,14 @@ export default function ListingsPage() {
 
   const totalCount = getListingsTotalCount(listingsQuery.data)
 
-  const handleCategorySelect = (name?: string) => {
-    setSelectedCategoryName(name || undefined)
+  const hasActiveFilters =
+    !!search || urgentOnly || !!selectedCategoryName
+
+  const handleResetFilters = () => {
+    setSearch('')
+    setSearchInput('')
+    setUrgentOnly(false)
+    setSelectedCategoryName(undefined)
   }
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -98,103 +102,105 @@ export default function ListingsPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
-      <div className="hidden md:block shrink-0">
-        <CatalogSidebar
+    <main className="h-[calc(100vh-3.5rem)] overflow-y-auto">
+      <div className="mx-auto max-w-7xl px-6 py-6 space-y-5">
+        <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 shadow-md shadow-orange-500/20">
+                <Megaphone className="h-5 w-5 text-white" />
+              </span>
+              Каталог объявлений
+            </h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Заявки от клиентов на покупку — связывайтесь напрямую через ЧатХаб
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/dashboard/listings/my">Мои объявления</Link>
+            </Button>
+            <Button asChild className="gap-2">
+              <Link href="/dashboard/listings/new">
+                <Plus className="h-4 w-4" /> Создать объявление
+              </Link>
+            </Button>
+          </div>
+        </header>
+
+        <form
+          onSubmit={handleSearchSubmit}
+          className="flex flex-col sm:flex-row gap-3"
+        >
+          <div className="relative w-full sm:max-w-[480px] flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Поиск по названию или описанию"
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              type="button"
+              variant={urgentOnly ? 'default' : 'outline'}
+              onClick={() => setUrgentOnly((v) => !v)}
+              className="gap-1.5"
+            >
+              <Flame className="h-4 w-4" />
+              Срочные
+            </Button>
+            <Select value={sort} onValueChange={(v) => setSort(v as ListingsSort)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">По дате (новые)</SelectItem>
+                <SelectItem value="urgent">Срочные сверху</SelectItem>
+                <SelectItem value="deadline">По дедлайну</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button type="submit">Найти</Button>
+          </div>
+        </form>
+
+        <CategoryChipRow
           categories={categories}
-          selectedCategory={selectedCategoryName}
-          onCategorySelect={handleCategorySelect}
-          isLoading={facetsQuery.isLoading}
           facetCounts={facetCounts}
+          selected={selectedCategoryName}
+          onSelect={setSelectedCategoryName}
+          isLoading={facetsQuery.isLoading}
         />
-      </div>
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
-          <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Megaphone className="h-6 w-6 text-orange-500" />
-                Каталог объявлений
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Заявки от клиентов на покупку — связывайтесь напрямую через ЧатХаб
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button asChild variant="outline">
-                <Link href="/dashboard/listings/my">Мои объявления</Link>
-              </Button>
-              <Button asChild className="gap-2">
-                <Link href="/dashboard/listings/new">
-                  <Plus className="h-4 w-4" /> Создать объявление
-                </Link>
-              </Button>
-            </div>
-          </header>
-
-          <form
-            onSubmit={handleSearchSubmit}
-            className="flex flex-col sm:flex-row gap-3"
-          >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Поиск по названию или описанию"
-                className="pl-9"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant={urgentOnly ? 'default' : 'outline'}
-                onClick={() => setUrgentOnly((v) => !v)}
-                className="gap-1.5"
-              >
-                <Flame className="h-4 w-4" />
-                Срочные
-              </Button>
-              <Select value={sort} onValueChange={(v) => setSort(v as ListingsSort)}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">По дате (новые)</SelectItem>
-                  <SelectItem value="urgent">Срочные сверху</SelectItem>
-                  <SelectItem value="deadline">По дедлайну</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button type="submit">Найти</Button>
-            </div>
-          </form>
-
-          <div className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>
             Найдено: <span className="font-semibold text-foreground">{totalCount}</span>
             {selectedCategoryName && (
               <>
                 {' · '}
                 <button
                   type="button"
-                  onClick={() => handleCategorySelect(undefined)}
+                  onClick={() => setSelectedCategoryName(undefined)}
                   className="underline underline-offset-2 hover:text-foreground"
                 >
                   сбросить «{selectedCategoryName}»
                 </button>
               </>
             )}
-          </div>
-
-          <ListingsGrid
-            listings={visibleListings}
-            isLoading={listingsQuery.isLoading}
-            isFetchingNextPage={listingsQuery.isFetchingNextPage}
-            hasNextPage={!!listingsQuery.hasNextPage}
-            fetchNextPage={listingsQuery.fetchNextPage}
-          />
+          </span>
         </div>
-      </main>
-    </div>
+
+        <ListingsGrid
+          listings={visibleListings}
+          isLoading={listingsQuery.isLoading}
+          isFetchingNextPage={listingsQuery.isFetchingNextPage}
+          hasNextPage={!!listingsQuery.hasNextPage}
+          fetchNextPage={listingsQuery.fetchNextPage}
+          hasActiveFilters={hasActiveFilters}
+          onResetFilters={handleResetFilters}
+        />
+      </div>
+    </main>
   )
 }
