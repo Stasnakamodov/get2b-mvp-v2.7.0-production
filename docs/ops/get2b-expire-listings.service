@@ -1,0 +1,12 @@
+[Unit]
+Description=GET2B expire stale listings (listings catalog cron)
+After=network.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/var/www/godplis/.env
+ExecStart=/usr/bin/curl --fail --silent --show-error --max-time 30 \
+  -X POST \
+  -H "Authorization: Bearer ${CRON_SECRET}" \
+  http://localhost:3000/api/cron/expire-listings

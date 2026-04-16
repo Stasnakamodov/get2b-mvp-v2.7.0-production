@@ -39,9 +39,11 @@ type CursorData = z.infer<typeof CursorDataSchema>
 const ALLOWED_SORT_FIELDS = ['created_at', 'price', 'name'] as const
 type SortField = typeof ALLOWED_SORT_FIELDS[number]
 
+// Whitelist-санитайзер (попутный H2-fix): пропускает только буквы/цифры/пробелы/дефис.
+// Закрывает injection в PostgREST-парсер `.or()` (точки/запятые токены, %/_ LIKE).
 function sanitizeSearch(search: string): string {
   return search
-    .replace(/[%_\\'"();]/g, ' ')
+    .replace(/[^a-zA-Zа-яА-ЯёЁ0-9\s\-]/g, '')
     .trim()
     .slice(0, 100)
 }

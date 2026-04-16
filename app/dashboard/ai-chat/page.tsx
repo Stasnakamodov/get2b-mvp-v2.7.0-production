@@ -7,6 +7,7 @@ import { logger } from "@/src/shared/lib/logger"
 // 🚀 AI CHAT WITH BOTHUB API INTEGRATION
 
 import React, { useState, useRef, useEffect, useCallback, memo } from "react"
+import Link from "next/link"
 import {
   MessageCircle,
   Plus,
@@ -20,7 +21,8 @@ import {
   ArrowRight,
   Calendar,
   DollarSign,
-  Trash
+  Trash,
+  Megaphone
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -64,11 +66,15 @@ const ChatRoomItem = memo(({
     >
       <div className="flex items-center space-x-3">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center
-                      ${room.room_type === 'ai' 
-                        ? 'bg-blue-100 text-blue-600' 
+                      ${room.room_type === 'ai'
+                        ? 'bg-blue-100 text-blue-600'
+                        : room.room_type === 'listing'
+                        ? 'bg-orange-100 text-orange-600'
                         : 'bg-green-100 text-green-600'}`}>
           {room.room_type === 'ai' ? (
             <Bot className="w-5 h-5" />
+          ) : room.room_type === 'listing' ? (
+            <Megaphone className="w-5 h-5" />
           ) : (
             <Building2 className="w-5 h-5" />
           )}
@@ -97,8 +103,14 @@ const ChatRoomItem = memo(({
               </Tooltip>
             </div>
           </div>
+          {room.room_type === 'listing' && room.other_participant_name && (
+            <p className="text-xs text-muted-foreground/80 truncate leading-tight">
+              💬 {room.other_participant_name}
+              {room.other_participant_company ? ` · ${room.other_participant_company}` : ''}
+            </p>
+          )}
           <p className="text-xs text-muted-foreground truncate">
-            {room.last_message_content 
+            {room.last_message_content
               ? room.last_message_content.replace(/[🎯💡📋💰🌍⚖️📊❓•]/g, '').substring(0, 50) + (room.last_message_content.length > 50 ? '...' : '')
               : "Нет сообщений"
             }
@@ -114,6 +126,7 @@ const ChatRoomItem = memo(({
     prevProps.room.name === nextProps.room.name &&
     prevProps.room.unread_count === nextProps.room.unread_count &&
     prevProps.room.last_message_content === nextProps.room.last_message_content &&
+    prevProps.room.other_participant_name === nextProps.room.other_participant_name &&
     prevProps.isSelected === nextProps.isSelected
   );
 });
@@ -966,20 +979,44 @@ export default function ChatHubPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center
-                                ${selectedRoom.room_type === 'ai' 
-                                  ? 'bg-blue-100 text-blue-600' 
+                                ${selectedRoom.room_type === 'ai'
+                                  ? 'bg-blue-100 text-blue-600'
+                                  : selectedRoom.room_type === 'listing'
+                                  ? 'bg-orange-100 text-orange-600'
                                   : 'bg-green-100 text-green-600'}`}>
                     {selectedRoom.room_type === 'ai' ? (
                       <Bot className="w-4 h-4" />
+                    ) : selectedRoom.room_type === 'listing' ? (
+                      <Megaphone className="w-4 h-4" />
                     ) : (
                       <Building2 className="w-4 h-4" />
                     )}
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm">{selectedRoom.name}</h2>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedRoom.room_type === 'ai' ? 'AI Ассистент' : 'Менеджер Get2B'}
-                    </p>
+                    {selectedRoom.room_type === 'listing' && selectedRoom.listing_id ? (
+                      <>
+                        <Link
+                          href={`/dashboard/listings/${selectedRoom.listing_id}`}
+                          className="font-semibold text-foreground text-sm hover:underline block truncate"
+                          title={`По объявлению: ${selectedRoom.name}`}
+                        >
+                          По объявлению: {selectedRoom.name}
+                        </Link>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {selectedRoom.other_participant_name || 'Собеседник'}
+                          {selectedRoom.other_participant_company
+                            ? ` · ${selectedRoom.other_participant_company}`
+                            : ''}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h2 className="font-semibold text-foreground text-sm">{selectedRoom.name}</h2>
+                        <p className="text-xs text-muted-foreground">
+                          {selectedRoom.room_type === 'ai' ? 'AI Ассистент' : 'Менеджер Get2B'}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">

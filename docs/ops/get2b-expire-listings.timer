@@ -1,0 +1,10 @@
+[Unit]
+Description=Run GET2B expire-listings every hour
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=get2b-expire-listings.service
+
+[Install]
+WantedBy=timers.target

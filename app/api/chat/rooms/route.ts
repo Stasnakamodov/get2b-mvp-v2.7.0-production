@@ -1,9 +1,15 @@
 import { logger } from "@/src/shared/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { pool } from "@/lib/db/pool";
 import { getUserFromRequest } from "@/lib/auth";
 
-// GET: Получить комнаты пользователя
+// GET: Получить комнаты пользователя.
+//
+// Multi-party: возвращаем комнаты, где пользователь либо owner (`chat_rooms.user_id`),
+// либо участник через `chat_participants`. Это нужно, в частности, для листинг-комнат
+// (`room_type='listing'`), где owner — автор объявления, а второй участник —
+// поставщик, добавленный в `chat_participants` через POST /api/listings/[id]/contact.
 export async function GET(request: NextRequest) {
   try {
     const user = await getUserFromRequest(request)
@@ -11,37 +17,49 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Возвращаем только комнаты авторизованного пользователя
-    const { data: rooms, error } = await db
-      .from('chat_rooms')
-      .select(`
-        id,
-        name,
-        room_type,
-        user_id,
-        project_id,
-        is_active,
-        created_at,
-        updated_at
-      `)
-      .eq('is_active', true)
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false });
-
-    if (error) {
-      logger.error('❌ DEBUG: Database error:', error);
-      return NextResponse.json(
-        { error: "Failed to fetch rooms", details: error.message },
-        { status: 500 }
-      );
-    }
-
-    // Rooms fetched successfully
+    // Для listing-комнат подтягиваем:
+    //   - listing_title (для шапки «По объявлению: …»)
+    //   - other_participant_name/company (другой участник — автор для поставщика,
+    //     поставщик для автора) через LATERAL LIMIT 1.
+    // Для project/ai-комнат эти поля просто null.
+    const result = await pool.query(
+      `SELECT cr.id, cr.name, cr.room_type, cr.user_id, cr.project_id,
+              cr.listing_id, cr.is_active, cr.created_at, cr.updated_at,
+              l.title AS listing_title,
+              COALESCE(ot_sp.name, ot_cp.name, ot_u.email) AS other_participant_name,
+              COALESCE(ot_sp.company_name, ot_cp.legal_name) AS other_participant_company
+         FROM chat_rooms cr
+         LEFT JOIN listings l ON l.id = cr.listing_id
+         LEFT JOIN LATERAL (
+           SELECT cp2.user_id
+             FROM chat_participants cp2
+            WHERE cp2.room_id = cr.id
+              AND cp2.user_id <> $1
+              AND cp2.is_active = true
+            ORDER BY cp2.joined_at
+            LIMIT 1
+         ) ot_link ON true
+         LEFT JOIN users ot_u ON ot_u.id = ot_link.user_id
+         LEFT JOIN supplier_profiles ot_sp
+           ON ot_sp.user_id = ot_link.user_id AND ot_sp.is_default = true
+         LEFT JOIN client_profiles ot_cp
+           ON ot_cp.user_id = ot_link.user_id AND ot_cp.is_default = true
+        WHERE cr.is_active = true
+          AND (cr.user_id = $1
+               OR EXISTS (
+                 SELECT 1 FROM chat_participants cps
+                  WHERE cps.room_id = cr.id
+                    AND cps.user_id = $1
+                    AND cps.is_active = true
+               ))
+        ORDER BY cr.updated_at DESC`,
+      [user.id]
+    );
 
     return NextResponse.json({
       success: true,
-      rooms: rooms || [],
-      count: rooms?.length || 0,
+      rooms: result.rows,
+      count: result.rowCount ?? 0,
       timestamp: new Date().toISOString()
     });
 

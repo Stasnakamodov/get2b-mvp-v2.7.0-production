@@ -5,7 +5,7 @@
 // 🏠 ТИПЫ КОМНАТ
 // ========================================
 
-export type ChatRoomType = 'ai' | 'project';
+export type ChatRoomType = 'ai' | 'project' | 'listing';
 
 export interface ChatRoom {
   id: string;
@@ -13,6 +13,7 @@ export interface ChatRoom {
   room_type: ChatRoomType;
   name: string;
   project_id?: string;
+  listing_id?: string | null;
   ai_context?: string;
   description?: string;
   avatar_url?: string;
@@ -21,6 +22,12 @@ export interface ChatRoom {
   created_at: string;
   updated_at: string;
   last_message_at?: string;
+  // Для listing-комнат (и при желании — project-комнат) API возвращает дополнительные
+  // поля из JOIN'ов: title объявления и инфо другого участника (поставщика для автора
+  // и наоборот). Используются в шапке и в списке комнат.
+  listing_title?: string | null;
+  other_participant_name?: string | null;
+  other_participant_company?: string | null;
 }
 
 export interface ChatRoomWithStats extends ChatRoom {
@@ -77,7 +84,7 @@ export interface ChatMessageWithReply extends ChatMessage {
 // 👥 ТИПЫ УЧАСТНИКОВ
 // ========================================
 
-export type ParticipantRole = 'owner' | 'participant' | 'manager' | 'ai';
+export type ParticipantRole = 'owner' | 'participant' | 'manager' | 'ai' | 'member' | 'author' | 'supplier';
 
 export interface ChatParticipant {
   id: string;

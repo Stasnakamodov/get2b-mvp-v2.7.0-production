@@ -83,7 +83,57 @@ ssh root@83.220.172.8 "cd /var/www/godplis && \
 - **`docker compose down -v` запрещён** — убьёт PostgreSQL volume.
 - **Миграции SQL** применяются отдельно (`docker exec -i get2b-postgres psql -U get2b -d get2b < sql/migrations/NNN.sql`). Деплой их не запускает.
 - **Telegram webhook'и** автоматически переустанавливаются при старте `get2b-app` (видно в логах: `✅ [Webhook] Manager bot: ...`).
-- **`.env` на сервере** не трогаем — он прописан один раз и живёт своей жизнью.
+- **`.env` на сервере** не трогаем — он прописан один раз и живёт своей жизнью. Исключение: добавление новых переменных (например, `CRON_SECRET` — см. «Каталог объявлений» ниже).
+
+## Каталог объявлений — миграция 014 + cron
+
+Новая фича `/dashboard/listings` требует **однократной** настройки перед первым деплоем:
+
+### 1. Применить миграции ДО redeploy контейнера
+
+```bash
+# Миграция 013 (создание таблицы listings) — если ещё не применена
+scp sql/migrations/013_create_listings.sql root@83.220.172.8:/tmp/013.sql
+ssh root@83.220.172.8 'docker exec -i get2b-postgres psql -U get2b -d get2b < /tmp/013.sql && rm /tmp/013.sql'
+
+# Миграция 014 (UNIQUE на chat_rooms для дедупа + CHECK constraints)
+scp sql/migrations/014_listings_catalog_hardening.sql root@83.220.172.8:/tmp/014.sql
+ssh root@83.220.172.8 'docker exec -i get2b-postgres psql -U get2b -d get2b < /tmp/014.sql && rm /tmp/014.sql'
+
+# Проверка
+ssh root@83.220.172.8 "docker exec get2b-postgres psql -U get2b -d get2b -c \"\\d+ chat_rooms\" | grep chk"
+```
+
+### 2. Сгенерировать `CRON_SECRET` и добавить в `.env` на VPS
+
+```bash
+SECRET=$(openssl rand -hex 32)
+ssh root@83.220.172.8 "grep -q '^CRON_SECRET=' /var/www/godplis/.env || echo 'CRON_SECRET=$SECRET' >> /var/www/godplis/.env"
+# Перечитать env в контейнере (docker compose up -d обновит из env_file)
+ssh root@83.220.172.8 'cd /var/www/godplis && docker compose up -d'
+```
+
+### 3. Установить systemd timer для автоматического expire
+
+```bash
+scp docs/ops/get2b-expire-listings.service docs/ops/get2b-expire-listings.timer root@83.220.172.8:/etc/systemd/system/
+ssh root@83.220.172.8 'systemctl daemon-reload && systemctl enable --now get2b-expire-listings.timer'
+# Проверка
+ssh root@83.220.172.8 'systemctl list-timers get2b-expire-listings.timer --no-pager'
+# Ручной запуск (для smoke-теста)
+ssh root@83.220.172.8 'systemctl start get2b-expire-listings.service && sleep 2 && journalctl -u get2b-expire-listings.service -n 10 --no-pager'
+```
+
+Ожидаемый вывод в логах: `{"success":true,"updated":N,"ids":[...]}`.
+
+### 4. Smoke-тест endpoint'а
+
+```bash
+# Без auth — 401
+curl -sk -X POST https://get2b.pro/api/cron/expire-listings -w "\nHTTP %{http_code}\n"
+# С верным секретом (локально на VPS) — 200
+ssh root@83.220.172.8 'source /var/www/godplis/.env && curl -s -X POST -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/expire-listings'
+```
 
 ## Когда нужен полный редеплой
 
