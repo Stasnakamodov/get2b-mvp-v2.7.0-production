@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Megaphone, Plus, Search } from 'lucide-react'
+import { Flame, Megaphone, Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -99,13 +99,7 @@ export default function ListingsPage() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
-      <aside className="w-72 border-r bg-card/30 overflow-y-auto shrink-0">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold flex items-center gap-2 text-sm">
-            <Megaphone className="h-4 w-4 text-orange-500" />
-            Категории объявлений
-          </h2>
-        </div>
+      <div className="hidden md:block shrink-0">
         <CatalogSidebar
           categories={categories}
           selectedCategory={selectedCategoryName}
@@ -113,10 +107,10 @@ export default function ListingsPage() {
           isLoading={facetsQuery.isLoading}
           facetCounts={facetCounts}
         />
-      </aside>
+      </div>
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="p-6 space-y-6">
           <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -157,9 +151,10 @@ export default function ListingsPage() {
                 type="button"
                 variant={urgentOnly ? 'default' : 'outline'}
                 onClick={() => setUrgentOnly((v) => !v)}
-                className="gap-1"
+                className="gap-1.5"
               >
-                🚨 Срочные
+                <Flame className="h-4 w-4" />
+                Срочные
               </Button>
               <Select value={sort} onValueChange={(v) => setSort(v as ListingsSort)}>
                 <SelectTrigger className="w-[200px]">
