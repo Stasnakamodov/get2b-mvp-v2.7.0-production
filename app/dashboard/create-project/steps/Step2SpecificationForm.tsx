@@ -19,6 +19,9 @@ import { useProjectInvoices, ProjectInvoice } from "../hooks/useProjectInvoices"
 import { useRouter } from "next/navigation";
 import { changeProjectStatus } from "@/lib/supabaseProjectStatus";
 import Step2CatalogPickerModal from "../components/Step2CatalogPickerModal";
+import Step2ListingsPickerModal from "../components/Step2ListingsPickerModal";
+import { Megaphone, MessageSquare } from "lucide-react";
+import type { ListingItem } from "@/hooks/useInfiniteListings";
 import ProformaSelectionModal from "../components/ProformaSelectionModal";
 import { templatePayload } from "@/lib/templates/projectTemplateMapper";
 const DEFAULT_CURRENCY = "RUB";
@@ -97,6 +100,8 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
   
   // ДОБАВЛЯЕМ: состояние для каталога
   const [showCatalogModal, setShowCatalogModal] = useState(false);
+  const [showListingsModal, setShowListingsModal] = useState(false);
+  const [contactingListingId, setContactingListingId] = useState<string | null>(null);
 
   // ДОБАВЛЯЕМ: состояние для модала проформ поставщиков
   const [showProformaModal, setShowProformaModal] = useState(false);
@@ -1069,6 +1074,79 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
     }
   };
 
+  // Phase 7 — добавление позиций из объявлений (заявки клиентов на покупку).
+  // Цена пустая: поставщик выставит свою. source_listing_id хранит линк на объявление,
+  // чтобы потом показать кнопку «Связаться с автором» рядом со строкой.
+  const handleListingsSelect = async (listings: ListingItem[]) => {
+    if (listings.length === 0) return;
+
+    const specItems = listings.map((l) => ({
+      item_name: l.title,
+      item_code: '',
+      quantity: Number(l.quantity) || 1,
+      unit: l.unit,
+      price: 0,
+      currency: 'USD',
+      total: 0,
+      supplier_name: '',
+      image_url: '',
+      category_name: 'Из объявления',
+      description: l.description,
+      source_listing_id: l.id,
+    }));
+
+    try {
+      await addItems(specItems);
+      await fetchSpecification();
+      if (projectId) {
+        await saveSpecification({ projectId, currentStep: 2 });
+      }
+      logger.info(`✅ [Step2] Добавлено ${specItems.length} позиций из объявлений`);
+    } catch (error) {
+      logger.error('❌ [Step2] Ошибка в handleListingsSelect:', error);
+    }
+  };
+
+  // Phase 7 — связаться с автором объявления из строки спеки.
+  // Использует тот же endpoint, что кнопка «Связаться» на детальной странице.
+  // ВАЖНО: подразумевается, что у текущего юзера есть supplier_profile.
+  // Если нет — endpoint вернёт 403 с понятной ошибкой, мы покажем алерт.
+  const handleContactListingAuthor = async (listingId: string) => {
+    setContactingListingId(listingId);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const supplierRes = await db
+        .from('supplier_profiles')
+        .select('id')
+        .order('is_default', { ascending: false })
+        .limit(1);
+      const supplierProfileId = (supplierRes.data as any[] | null)?.[0]?.id;
+      if (!supplierProfileId) {
+        alert('Сначала создайте профиль поставщика в /dashboard/profile, чтобы связаться с автором.');
+        return;
+      }
+
+      const res = await fetch(`/api/listings/${listingId}/contact`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ supplier_profile_id: supplierProfileId }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json.error || 'Не удалось связаться с автором');
+        return;
+      }
+      window.open(`/dashboard/ai-chat?room=${json.roomId}`, '_blank');
+    } catch (error) {
+      logger.error('❌ [Step2] Ошибка handleContactListingAuthor:', error);
+    } finally {
+      setContactingListingId(null);
+    }
+  };
+
   // Загрузка изображения для позиции
   const handleImageUpload = async (id: string, file: File) => {
     setUploadingImages(prev => ({ ...prev, [id]: true }));
@@ -1373,6 +1451,27 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
               type="button"
               className="relative p-4 rounded-xl border-2 border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-slate-300 dark:hover:border-gray-500 hover:shadow-sm transition-all duration-200"
               onClick={() => {
+                setInvoiceType('create');
+                setShowListingsModal(true);
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <Megaphone className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-left">
+                  <div className="font-medium text-slate-700 dark:text-gray-300">
+                    Добавить объявление
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-gray-400">Заявка клиента из каталога</div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="relative p-4 rounded-xl border-2 border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-slate-300 dark:hover:border-gray-500 hover:shadow-sm transition-all duration-200"
+              onClick={() => {
                 setShowProformaModal(true);
               }}
             >
@@ -1667,14 +1766,29 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={()=>handleDeleteItem(item.id)}
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          {item.source_listing_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleContactListingAuthor(item.source_listing_id)}
+                              disabled={contactingListingId === item.source_listing_id}
+                              className="text-orange-600 border-orange-200 hover:bg-orange-50 gap-1"
+                              title="Связаться с автором объявления"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                              {contactingListingId === item.source_listing_id ? '…' : ''}
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={()=>handleDeleteItem(item.id)}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1802,6 +1916,11 @@ export default function Step2SpecificationForm({ isTemplateMode = false }: { isT
       )}
       
       {/* Каталог товаров */}
+      <Step2ListingsPickerModal
+        open={showListingsModal}
+        onClose={() => setShowListingsModal(false)}
+        onAddListings={handleListingsSelect}
+      />
       <Step2CatalogPickerModal
         open={showCatalogModal}
         onClose={() => setShowCatalogModal(false)}

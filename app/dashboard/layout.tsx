@@ -5,7 +5,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
-import { FileText, BarChart3, MessageSquare, User, Menu, X, Home, BookOpen, PlusCircle, Package, ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react"
+import { FileText, BarChart3, MessageSquare, User, Menu, X, Home, BookOpen, PlusCircle, Package, ChevronLeft, ChevronRight, ShoppingCart, Megaphone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
 import ThemeToggle from "@/components/theme-toggle"
@@ -63,6 +63,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       title: "Каталог Get2B",
       href: "/dashboard/catalog",
       icon: Package,
+    },
+    {
+      title: "Каталог объявлений",
+      href: "/dashboard/listings",
+      icon: Megaphone,
     },
     {
       title: "Создать проект",
