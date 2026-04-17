@@ -1,6 +1,6 @@
 'use client'
 
-import { Trash2, Sparkles, Loader2 } from 'lucide-react'
+import { Trash2, Sparkles, Loader2, AlertCircle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,6 +23,7 @@ export interface PositionRow {
   category_id?: string
   category_suggestion?: { id: string; name: string; confidence: number } | null
   classifying?: boolean
+  serverErrors?: Record<string, string[]>
 }
 
 interface PositionsTableProps {
@@ -33,6 +34,22 @@ interface PositionsTableProps {
   onRequestClassify?: (localId: string) => void
 }
 
+const FIELDS_THAT_CLEAR_ERRORS = new Set<keyof PositionRow>([
+  'title',
+  'description',
+  'quantity',
+  'unit',
+  'category_id',
+])
+
+const FIELD_LABELS: Record<string, string> = {
+  title: 'Название',
+  description: 'Описание',
+  quantity: 'Количество',
+  unit: 'Единица',
+  category_id: 'Категория',
+}
+
 export function PositionsTable({
   rows,
   onChange,
@@ -41,7 +58,16 @@ export function PositionsTable({
   onRequestClassify,
 }: PositionsTableProps) {
   const update = (localId: string, patch: Partial<PositionRow>) => {
-    onChange(rows.map((r) => (r.localId === localId ? { ...r, ...patch } : r)))
+    const shouldClearErrors = Object.keys(patch).some((k) =>
+      FIELDS_THAT_CLEAR_ERRORS.has(k as keyof PositionRow)
+    )
+    onChange(
+      rows.map((r) =>
+        r.localId === localId
+          ? { ...r, ...patch, ...(shouldClearErrors ? { serverErrors: undefined } : {}) }
+          : r
+      )
+    )
   }
 
   return (
@@ -50,14 +76,17 @@ export function PositionsTable({
         const titleInvalid = r.title.length > 0 && r.title.length < 10
         const descInvalid = r.description.length > 0 && r.description.length < 20
         const qtyInvalid = r.quantity !== '' && !(Number(r.quantity) > 0)
+        const hasServerErrors =
+          r.serverErrors && Object.keys(r.serverErrors).length > 0
+        const borderClass = hasServerErrors
+          ? 'border-destructive bg-destructive/5'
+          : r.selected
+          ? 'border-orange-200 bg-orange-50/30 dark:border-orange-900/40 dark:bg-orange-900/10'
+          : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900'
         return (
           <div
             key={r.localId}
-            className={`rounded-xl border p-4 space-y-3 transition-colors ${
-              r.selected
-                ? 'border-orange-200 bg-orange-50/30 dark:border-orange-900/40 dark:bg-orange-900/10'
-                : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900'
-            }`}
+            className={`rounded-xl border p-4 space-y-3 transition-colors ${borderClass}`}
           >
             <div className="flex items-start gap-3">
               <div className="pt-2">
@@ -84,9 +113,15 @@ export function PositionsTable({
                     value={r.title}
                     onChange={(e) => update(r.localId, { title: e.target.value })}
                     placeholder="Название товара (10–150 символов)"
-                    className={titleInvalid ? 'border-amber-400' : ''}
+                    className={
+                      r.serverErrors?.title
+                        ? 'border-destructive'
+                        : titleInvalid
+                        ? 'border-amber-400'
+                        : ''
+                    }
                   />
-                  {titleInvalid && (
+                  {titleInvalid && !r.serverErrors?.title && (
                     <p className="text-[11px] text-amber-600 mt-1">
                       нужно минимум 10 символов
                     </p>
@@ -97,7 +132,13 @@ export function PositionsTable({
                   onChange={(e) => update(r.localId, { description: e.target.value })}
                   placeholder="Описание (материал/ГОСТ/требования). Минимум 20 символов."
                   rows={2}
-                  className={descInvalid ? 'border-amber-400' : ''}
+                  className={
+                    r.serverErrors?.description
+                      ? 'border-destructive'
+                      : descInvalid
+                      ? 'border-amber-400'
+                      : ''
+                  }
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Input
@@ -107,13 +148,21 @@ export function PositionsTable({
                     value={r.quantity}
                     onChange={(e) => update(r.localId, { quantity: e.target.value })}
                     placeholder="Кол-во"
-                    className={qtyInvalid ? 'border-amber-400' : ''}
+                    className={
+                      r.serverErrors?.quantity
+                        ? 'border-destructive'
+                        : qtyInvalid
+                        ? 'border-amber-400'
+                        : ''
+                    }
                   />
                   <Select
                     value={r.unit}
                     onValueChange={(v) => update(r.localId, { unit: v })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger
+                      className={r.serverErrors?.unit ? 'border-destructive' : ''}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -132,7 +181,9 @@ export function PositionsTable({
                       })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger
+                      className={r.serverErrors?.category_id ? 'border-destructive' : ''}
+                    >
                       <SelectValue placeholder="Без категории" />
                     </SelectTrigger>
                     <SelectContent>
@@ -145,6 +196,21 @@ export function PositionsTable({
                     </SelectContent>
                   </Select>
                 </div>
+                {hasServerErrors && (
+                  <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/30 p-2 text-xs text-destructive">
+                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <div className="space-y-0.5">
+                      {Object.entries(r.serverErrors!).map(([field, messages]) => (
+                        <div key={field}>
+                          <span className="font-medium">
+                            {FIELD_LABELS[field] ?? field}:
+                          </span>{' '}
+                          {messages.join(', ')}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {(r.category_suggestion || r.classifying) && (
                   <div className="flex items-center gap-2 text-xs">
                     {r.classifying ? (

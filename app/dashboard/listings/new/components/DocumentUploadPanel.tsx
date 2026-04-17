@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+  AlertCircle,
   CheckCircle2,
   FileText,
   Loader2,
@@ -14,7 +15,10 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
 import { db } from '@/lib/db/client'
+import { fetchWithTimeout, FetchTimeoutError } from '@/src/shared/lib/fetchWithTimeout'
+import type { BatchInvalidItem } from '@/lib/listings/schemas'
 import { PositionsTable, type PositionRow } from './PositionsTable'
 
 interface DocumentUploadPanelProps {
@@ -23,6 +27,15 @@ interface DocumentUploadPanelProps {
   defaultExpires: string
   maxExpires: string
 }
+
+type UploadPhase =
+  | { kind: 'idle' }
+  | { kind: 'uploading'; startedAt: number }
+  | { kind: 'analyzing'; startedAt: number }
+  | { kind: 'error'; message: string }
+  | { kind: 'done' }
+
+const OCR_TIMEOUT_MS = 120_000
 
 function getAuthHeaders(extra?: Record<string, string>): Record<string, string> {
   if (typeof window === 'undefined') return { 'Content-Type': 'application/json', ...(extra || {}) }
@@ -50,10 +63,11 @@ export function DocumentUploadPanel({
 }: DocumentUploadPanelProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const [fileName, setFileName] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [phase, setPhase] = useState<UploadPhase>({ kind: 'idle' })
+  const [elapsedSec, setElapsedSec] = useState(0)
   const [positions, setPositions] = useState<PositionRow[]>([])
 
   const [deadlineDate, setDeadlineDate] = useState('')
@@ -61,13 +75,43 @@ export function DocumentUploadPanel({
   const [isUrgent, setIsUrgent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [invalidBanner, setInvalidBanner] = useState<string | null>(null)
 
   const selectedCount = positions.filter((p) => p.selected).length
 
+  const isActive = phase.kind === 'uploading' || phase.kind === 'analyzing'
+
+  useEffect(() => {
+    if (!isActive) {
+      setElapsedSec(0)
+      return
+    }
+    const startedAt =
+      phase.kind === 'uploading' || phase.kind === 'analyzing' ? phase.startedAt : Date.now()
+    setElapsedSec(Math.floor((Date.now() - startedAt) / 1000))
+    const id = setInterval(() => {
+      setElapsedSec(Math.floor((Date.now() - startedAt) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [isActive, phase])
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
   async function handleFile(file: File) {
-    setUploading(true)
-    setUploadError(null)
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setFileName(file.name)
+    setPositions([])
+    setSubmitError(null)
+    setInvalidBanner(null)
+    setPhase({ kind: 'uploading', startedAt: Date.now() })
+
     try {
       const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
       const timestamp = Date.now()
@@ -79,32 +123,48 @@ export function DocumentUploadPanel({
       if (uploadErr) {
         throw new Error(uploadErr.message || 'Ошибка загрузки файла')
       }
+      if (controller.signal.aborted) return
 
       const origin = typeof window !== 'undefined' ? window.location.origin : ''
       const fileUrl = uploadData?.fullPath
         ? `${origin}${uploadData.fullPath}`
         : `${origin}/api/storage/${uploadData?.path || pathKey}`
 
-      const ocrRes = await fetch('/api/document-analysis', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          fileUrl,
-          fileType: file.type || 'application/octet-stream',
-          documentType: 'invoice',
-        }),
-      })
+      setPhase({ kind: 'analyzing', startedAt: Date.now() })
+
+      const ocrRes = await fetchWithTimeout(
+        '/api/document-analysis',
+        {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            fileUrl,
+            fileType: file.type || 'application/octet-stream',
+            documentType: 'invoice',
+          }),
+          signal: controller.signal,
+        },
+        OCR_TIMEOUT_MS
+      )
       const ocrJson = await ocrRes.json()
+      if (controller.signal.aborted) return
+
       if (!ocrRes.ok || !ocrJson.success) {
         throw new Error(ocrJson.error || 'OCR не справился с документом')
       }
       if (ocrJson.llmUnavailable) {
-        setUploadError('AI-парсер временно недоступен. Попробуйте позже или заполните вручную.')
+        setPhase({
+          kind: 'error',
+          message: 'AI-парсер временно недоступен. Попробуйте позже или заполните вручную.',
+        })
         return
       }
       const items = ocrJson.suggestions?.items || []
       if (items.length === 0) {
-        setUploadError('В документе не нашлось позиций. Проверьте файл или заполните вручную.')
+        setPhase({
+          kind: 'error',
+          message: 'В документе не нашлось позиций. Проверьте файл или заполните вручную.',
+        })
         return
       }
       const rows: PositionRow[] = items.map((it: any) => {
@@ -129,10 +189,24 @@ export function DocumentUploadPanel({
         }
       })
       setPositions(rows)
+      setPhase({ kind: 'done' })
     } catch (e: any) {
-      setUploadError(e?.message || 'Неизвестная ошибка')
+      if (controller.signal.aborted && !(e instanceof FetchTimeoutError)) {
+        return
+      }
+      if (e instanceof FetchTimeoutError) {
+        setPhase({
+          kind: 'error',
+          message:
+            'Распознавание заняло больше 2 минут. Файл слишком большой или сервер перегружен — попробуйте разбить документ.',
+        })
+        return
+      }
+      setPhase({ kind: 'error', message: e?.message || 'Неизвестная ошибка' })
     } finally {
-      setUploading(false)
+      if (abortRef.current === controller) {
+        abortRef.current = null
+      }
     }
   }
 
@@ -200,6 +274,7 @@ export function DocumentUploadPanel({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitError(null)
+    setInvalidBanner(null)
     if (!profileId) {
       setSubmitError('Выберите профиль клиента наверху формы.')
       return
@@ -227,6 +302,7 @@ export function DocumentUploadPanel({
     setSubmitting(true)
     try {
       const expiresIso = new Date(`${expiresDate}T23:59:59Z`).toISOString()
+      const sentLocalIds = selected.map((p) => p.localId)
       const res = await fetch('/api/listings/batch', {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -245,6 +321,21 @@ export function DocumentUploadPanel({
         }),
       })
       const json = await res.json()
+      if (res.status === 422 && Array.isArray(json.invalidItems)) {
+        applyServerErrors(json.invalidItems, sentLocalIds)
+        setInvalidBanner(
+          `Исправьте ${json.invalidItems.length} ${pluralizeRows(
+            json.invalidItems.length
+          )} и нажмите Опубликовать ещё раз.`
+        )
+        if (json.topLevelErrors) {
+          const topMsg = Object.entries(json.topLevelErrors as Record<string, string[]>)
+            .map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`)
+            .join('; ')
+          if (topMsg) setSubmitError(topMsg)
+        }
+        return
+      }
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'Не удалось опубликовать объявления')
       }
@@ -255,6 +346,36 @@ export function DocumentUploadPanel({
       setSubmitting(false)
     }
   }
+
+  function applyServerErrors(invalidItems: BatchInvalidItem[], sentLocalIds: string[]) {
+    const byLocalId = new Map<string, Record<string, string[]>>()
+    for (const item of invalidItems) {
+      const localId = sentLocalIds[item.index]
+      if (localId) byLocalId.set(localId, item.errors)
+    }
+    setPositions((prev) =>
+      prev.map((p) => ({
+        ...p,
+        serverErrors: byLocalId.get(p.localId) ?? undefined,
+      }))
+    )
+  }
+
+  function pluralizeRows(n: number): string {
+    const mod10 = n % 10
+    const mod100 = n % 100
+    if (mod10 === 1 && mod100 !== 11) return 'строку'
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'строки'
+    return 'строк'
+  }
+
+  const phaseLabel =
+    phase.kind === 'uploading'
+      ? 'Загружаем файл в хранилище…'
+      : phase.kind === 'analyzing'
+      ? 'Распознаём и парсим документ… (до 2 минут)'
+      : ''
+  const progressValue = phase.kind === 'uploading' ? 30 : phase.kind === 'analyzing' ? 70 : 0
 
   return (
     <div className="space-y-5">
@@ -283,10 +404,10 @@ export function DocumentUploadPanel({
           <Button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
+            disabled={isActive}
             className="gap-2"
           >
-            {uploading ? (
+            {isActive ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" /> Обработка…
               </>
@@ -297,13 +418,35 @@ export function DocumentUploadPanel({
             )}
           </Button>
         </div>
-        {fileName && !uploading && (
+
+        {isActive && (
+          <div className="mt-4 space-y-2">
+            <Progress value={progressValue} className="h-2" />
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" /> {phaseLabel}
+              </span>
+              <span>прошло {elapsedSec}с</span>
+            </div>
+            {fileName && (
+              <p className="text-xs text-muted-foreground">
+                Файл: <span className="font-medium text-foreground">{fileName}</span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {!isActive && fileName && phase.kind !== 'error' && (
           <p className="text-xs text-muted-foreground mt-3">
             Файл: <span className="font-medium text-foreground">{fileName}</span>
           </p>
         )}
-        {uploadError && (
-          <p className="text-sm text-destructive mt-3">{uploadError}</p>
+
+        {phase.kind === 'error' && (
+          <div className="mt-3 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>{phase.message}</span>
+          </div>
         )}
       </div>
 
@@ -328,6 +471,13 @@ export function DocumentUploadPanel({
               <Sparkles className="h-4 w-4" /> Подобрать категории AI
             </Button>
           </div>
+
+          {invalidBanner && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{invalidBanner}</span>
+            </div>
+          )}
 
           <PositionsTable
             rows={positions}
