@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
         const { rows } = await client.query(
           `INSERT INTO listings
             (author_id, author_client_profile_id, title, description, quantity, unit,
-             category_id, deadline_date, is_urgent, status, expires_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'open', $10)
+             category_id, image_url, deadline_date, is_urgent, status, expires_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'open', $11)
            RETURNING *`,
           [
             user.id,
@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
             item.quantity,
             item.unit,
             item.category_id ?? null,
+            item.image_url ?? null,
             meta.deadline_date ?? null,
             meta.is_urgent ?? false,
             meta.expires_at,

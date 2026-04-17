@@ -20,6 +20,7 @@ export const CreateListingInput = z
     quantity: z.number().positive(),
     unit: z.string().min(1).max(50),
     category_id: z.string().uuid().nullable().optional(),
+    image_url: z.string().url().max(500).nullable().optional(),
     deadline_date: z.string().date().nullable().optional(),
     is_urgent: z.boolean().optional().default(false),
     expires_at: isoDateTime,
@@ -51,6 +52,7 @@ export const BatchListingItem = z.object({
   quantity: z.number().positive(),
   unit: z.string().min(1).max(50),
   category_id: z.string().uuid().nullable().optional(),
+  image_url: z.string().url().max(500).nullable().optional(),
 })
 
 export const BatchCreateListingInput = z
@@ -113,6 +115,7 @@ export const UpdateListingInput = z
     quantity: z.number().positive().optional(),
     unit: z.string().min(1).max(50).optional(),
     category_id: z.string().uuid().nullable().optional(),
+    image_url: z.string().url().max(500).nullable().optional(),
     deadline_date: z.string().date().nullable().optional(),
     is_urgent: z.boolean().optional(),
     expires_at: isoDateTime.optional(),
@@ -167,6 +170,7 @@ export interface Listing {
   quantity: number
   unit: string
   category_id: string | null
+  image_url: string | null
   deadline_date: string | null
   is_urgent: boolean
   status: ListingStatus

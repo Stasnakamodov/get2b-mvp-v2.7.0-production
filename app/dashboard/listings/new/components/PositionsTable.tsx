@@ -1,6 +1,8 @@
 'use client'
 
-import { Trash2, Sparkles, Loader2, AlertCircle } from 'lucide-react'
+import { useState } from 'react'
+import { Trash2, Sparkles, Loader2, AlertCircle, Camera } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,6 +14,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { LISTING_UNITS } from '@/lib/listings/schemas'
+import { PositionImageUploader } from './PositionImageUploader'
+import { CatalogImageSearchDialog } from './CatalogImageSearchDialog'
 
 export interface PositionRow {
   localId: string
@@ -21,6 +25,7 @@ export interface PositionRow {
   quantity: string
   unit: string
   category_id?: string
+  image_url?: string | null
   category_suggestion?: { id: string; name: string; confidence: number } | null
   classifying?: boolean
   serverErrors?: Record<string, string[]>
@@ -40,6 +45,7 @@ const FIELDS_THAT_CLEAR_ERRORS = new Set<keyof PositionRow>([
   'quantity',
   'unit',
   'category_id',
+  'image_url',
 ])
 
 const FIELD_LABELS: Record<string, string> = {
@@ -57,6 +63,8 @@ export function PositionsTable({
   categories,
   onRequestClassify,
 }: PositionsTableProps) {
+  const [searchDialogFor, setSearchDialogFor] = useState<string | null>(null)
+
   const update = (localId: string, patch: Partial<PositionRow>) => {
     const shouldClearErrors = Object.keys(patch).some((k) =>
       FIELDS_THAT_CLEAR_ERRORS.has(k as keyof PositionRow)
@@ -72,6 +80,22 @@ export function PositionsTable({
 
   return (
     <div className="space-y-3">
+      <CatalogImageSearchDialog
+        open={searchDialogFor !== null}
+        onClose={() => setSearchDialogFor(null)}
+        onApply={(payload) => {
+          if (!searchDialogFor) return
+          const patch: Partial<PositionRow> = {
+            title: payload.title.length >= 10 ? payload.title : payload.title,
+            image_url: payload.image_url,
+          }
+          if (payload.description.length >= 20) {
+            patch.description = payload.description
+          }
+          update(searchDialogFor, patch)
+          setSearchDialogFor(null)
+        }}
+      />
       {rows.map((r, idx) => {
         const titleInvalid = r.title.length > 0 && r.title.length < 10
         const descInvalid = r.description.length > 0 && r.description.length < 20
@@ -95,18 +119,32 @@ export function PositionsTable({
                   onCheckedChange={(v) => update(r.localId, { selected: v === true })}
                 />
               </div>
+              <PositionImageUploader
+                imageUrl={r.image_url ?? null}
+                onChange={(url) => update(r.localId, { image_url: url })}
+                compact
+              />
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-medium text-muted-foreground">
                     Позиция {idx + 1}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => onRemove(r.localId)}
-                    className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> Удалить
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSearchDialogFor(r.localId)}
+                      className="text-xs text-orange-600 hover:text-orange-700 inline-flex items-center gap-1"
+                    >
+                      <Camera className="h-3.5 w-3.5" /> Найти в каталоге
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRemove(r.localId)}
+                      className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Удалить
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <Input

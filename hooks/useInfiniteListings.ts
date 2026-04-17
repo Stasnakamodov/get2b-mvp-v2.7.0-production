@@ -11,6 +11,7 @@ export interface ListingItem {
   quantity: string | number
   unit: string
   category_id: string | null
+  image_url: string | null
   deadline_date: string | null
   is_urgent: boolean
   status: 'draft' | 'open' | 'closed' | 'expired'

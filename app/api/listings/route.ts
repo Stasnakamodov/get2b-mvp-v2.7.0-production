@@ -199,6 +199,7 @@ export async function POST(request: NextRequest) {
         quantity: data.quantity,
         unit: data.unit,
         category_id: data.category_id ?? null,
+        image_url: data.image_url ?? null,
         deadline_date: data.deadline_date ?? null,
         is_urgent: data.is_urgent ?? false,
         status: 'open',

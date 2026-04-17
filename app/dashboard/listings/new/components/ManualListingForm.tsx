@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Flame, Megaphone, Sparkles, Loader2 } from 'lucide-react'
+import { Camera, Flame, Megaphone, Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/select'
 import { LISTING_UNITS } from '@/lib/listings/schemas'
 import { CatalogSuggestAssistant, type CatalogSuggestion } from './CatalogSuggestAssistant'
+import { PositionImageUploader } from './PositionImageUploader'
+import { CatalogImageSearchDialog } from './CatalogImageSearchDialog'
 
 interface ManualListingFormProps {
   profileId: string | null
@@ -46,6 +48,8 @@ export function ManualListingForm({
   const [quantity, setQuantity] = useState('')
   const [unit, setUnit] = useState<string>('шт')
   const [categoryId, setCategoryId] = useState<string | undefined>()
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false)
   const [deadlineDate, setDeadlineDate] = useState('')
   const [isUrgent, setIsUrgent] = useState(false)
   const [expiresDate, setExpiresDate] = useState(defaultExpires)
@@ -143,6 +147,7 @@ export function ManualListingForm({
           quantity: qty,
           unit,
           category_id: categoryId || null,
+          image_url: imageUrl,
           deadline_date: deadlineDate || null,
           is_urgent: isUrgent,
           expires_at: expiresIso,
@@ -161,7 +166,39 @@ export function ManualListingForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <CatalogImageSearchDialog
+        open={searchDialogOpen}
+        onClose={() => setSearchDialogOpen(false)}
+        onApply={(payload) => {
+          if (payload.title.length >= 10) setTitle(payload.title)
+          if (payload.description.length >= 20) setDescription(payload.description)
+          if (payload.image_url) setImageUrl(payload.image_url)
+          setSearchDialogOpen(false)
+        }}
+      />
       <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4 dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex items-start gap-4">
+          <div>
+            <Label className="mb-1.5 block">Фото товара</Label>
+            <PositionImageUploader imageUrl={imageUrl} onChange={setImageUrl} />
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setSearchDialogOpen(true)}
+              className="gap-2 self-start"
+            >
+              <Camera className="h-4 w-4" /> Найти в каталоге по фото
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Загрузите фото товара или найдите аналог у верифицированных поставщиков —
+              подставим название, описание и картинку.
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="title">Название*</Label>
           <Input

@@ -313,6 +313,7 @@ export function DocumentUploadPanel({
             quantity: Number(p.quantity),
             unit: p.unit,
             category_id: p.category_id || null,
+            image_url: p.image_url ?? null,
           })),
           deadline_date: deadlineDate || null,
           is_urgent: isUrgent,

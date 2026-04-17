@@ -49,7 +49,21 @@ export function ListingCard({ listing, badgeStatus = false }: ListingCardProps) 
       href={`/dashboard/listings/${listing.id}`}
       className="group block focus:outline-none"
     >
-      <Card className="h-full transition-all border-border/60 hover:border-orange-300 hover:shadow-md group-focus-visible:border-orange-400">
+      <Card className="h-full overflow-hidden transition-all border-border/60 hover:border-orange-300 hover:shadow-md group-focus-visible:border-orange-400">
+        {listing.image_url ? (
+          <div className="aspect-[4/3] bg-muted overflow-hidden">
+            <img
+              src={listing.image_url}
+              alt={listing.title}
+              loading="lazy"
+              className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
+            />
+          </div>
+        ) : (
+          <div className="aspect-[4/3] bg-muted/40 flex items-center justify-center">
+            <Package className="h-8 w-8 text-muted-foreground/30" />
+          </div>
+        )}
         <CardHeader className="pb-3 space-y-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-semibold leading-snug line-clamp-2 text-foreground">
