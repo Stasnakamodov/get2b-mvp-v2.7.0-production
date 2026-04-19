@@ -68,6 +68,7 @@ export function DocumentUploadPanel({
   const [fileName, setFileName] = useState<string | null>(null)
   const [phase, setPhase] = useState<UploadPhase>({ kind: 'idle' })
   const [elapsedSec, setElapsedSec] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
   const [positions, setPositions] = useState<PositionRow[]>([])
 
   const [deadlineDate, setDeadlineDate] = useState('')
@@ -378,17 +379,49 @@ export function DocumentUploadPanel({
       : ''
   const progressValue = phase.kind === 'uploading' ? 30 : phase.kind === 'analyzing' ? 70 : 0
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (isActive) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    if (!isDragging) setIsDragging(true)
+  }
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setIsDragging(false)
+  }
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (isActive) return
+    const file = e.dataTransfer.files?.[0]
+    if (file) handleFile(file)
+  }
+
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-dashed border-orange-300 bg-orange-50/40 p-5 dark:border-orange-900/50 dark:bg-orange-900/10">
+      <div
+        onDragEnter={handleDragOver}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`rounded-2xl border-2 border-dashed p-5 transition-colors ${
+          isDragging
+            ? 'border-orange-500 bg-orange-100/60 dark:border-orange-500 dark:bg-orange-900/30'
+            : 'border-orange-300 bg-orange-50/40 dark:border-orange-900/50 dark:bg-orange-900/10'
+        }`}
+      >
         <div className="flex items-center gap-3">
           <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20">
             <Upload className="h-5 w-5" />
           </span>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold">Загрузите спецификацию</h3>
+            <h3 className="font-semibold">
+              {isDragging ? 'Отпустите файл' : 'Загрузите спецификацию'}
+            </h3>
             <p className="text-sm text-muted-foreground">
-              Поддерживаем PDF, JPG, PNG, XLSX. Yandex Vision + YandexGPT распознают позиции.
+              {isDragging
+                ? 'Начнём распознавание, как только отпустите'
+                : 'Перетащите файл сюда или нажмите кнопку. PDF, JPG, PNG, XLSX — Yandex Vision + YandexGPT распознают позиции.'}
             </p>
           </div>
           <input
